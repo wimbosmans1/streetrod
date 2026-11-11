@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Street Rod: engine sound + driving demo (v1)</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
+header { padding: 10px 18px 4px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 26px; letter-spacing: 1px; color: #ffcf4a; font-style: italic; }
+header span { color: #b9ab8c; }
+main { display: flex; gap: 16px; padding: 8px 18px 18px; align-items: flex-start; flex-wrap: wrap; }
+#stage { flex: 1 1 760px; min-width: 320px; }
+canvas#dash { width: 100%; display: block; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.6); background: #000; }
+aside { flex: 0 1 330px; background: #2a1d13; border: 1px solid #5b4430; border-radius: 10px; padding: 12px 14px; }
+button { display: block; width: 100%; margin: 0 0 7px; padding: 8px 10px; font: inherit; color: #1a120c; background: #e8dcc0; border: 0; border-radius: 6px; cursor: pointer; text-align: left; }
+button:hover { background: #fff3d6; }
+button.big { background: #ffcf4a; font-weight: bold; font-size: 17px; text-align: center; }
+button.on { background: #ffcf4a; font-weight: bold; }
+.row { display: flex; gap: 7px; } .row button { flex: 1; }
+h3 { margin: 12px 0 4px; font-size: 15px; color: #ffcf4a; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowrap; color: #ffe6a0; font-family: 'Courier New', monospace; }
+#specs { font-size: 13.5px; } .dim { color: #a89a7c; }
+.note { font-size: 12.5px; color: #a89a7c; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header><h1>Street Rod</h1><span>Procedural V8 sound + longitudinal driving demo, v1</span></header>
+<main>
+  <div id="stage"><canvas id="dash" width="1280" height="720"></canvas></div>
+  <aside>
+    <button id="start" class="big">Start engine</button>
+    <div class="row"><button id="car1" class="on">1: '67 GT350</button><button id="car2">2: '59 Cadillac</button></div>
+    <button id="listen">Listening: outside rear (V)</button>
+    <button id="units">Units: km/h (U)</button>
+    <button id="mute">Mute (M)</button>
+    <h3>Controls</h3>
+    <table>
+      <tr><td>&uarr;</td><td>Throttle (hold; it ramps up)</td></tr>
+      <tr><td>&darr;</td><td>Brake (hold; ramps to full pedal, can lock the wheels)</td></tr>
+      <tr><td>&rarr; / &larr;</td><td>GT350: shift up / down (clutch is automatic).<br>Cadillac: selector N &rarr; D &rarr; S &rarr; L (Hydra-Matic shifts itself)</td></tr>
+      <tr><td>S or I</td><td>Ignition: start / stop engine</td></tr>
+      <tr><td>1 / 2</td><td>Select car</td></tr>
+      <tr><td>V</td><td>Listening position (outside rear / in-cabin approx.)</td></tr>
+      <tr><td>U</td><td>km/h &harr; mph</td></tr>
+      <tr><td>T</td><td>Reset trip meter</td></tr>
+      <tr><td>M</td><td>Mute</td></tr>
+    </table>
+    <h3>Car</h3>
+    <div id="specs"></div>
+    <p class="note">The engine sound is synthesised live in your browser (no recordings). The in-cabin view is a filtered approximation, not a measured cabin response.</p>
+  </aside>
+</main>
+<script>/* js/engine-dsp.js */
+/*
+ * engine-dsp.js: JavaScript port of engine-sound v1 (engine_synth.py).
+ *
+ * Everything lives inside engineWorkletMain() so the same source can be
+ *   (a) turned into a Blob URL and loaded with audioWorklet.addModule()
+ *       (works from file:// as well as http), and
+ *   (b) called directly in Node / the page for offline tests.
+ * The per-sample kernel is a literal port of _kernel(): same parameter
+ * derivation, same xorshift64 RNG, same numpy RandomState (MT19937 + legacy
+ * gauss) for the cylinder imbalance, so the output matches the Python render
+ * to within floating-point rounding.
+ */
+function engineWorkletMain() {
+  'use strict';
+  const NBQ = 6, NSLOT = 48, DL_LEN = 8192, DL_MASK = DL_LEN - 1;
+  const RV_COMB = [1116, 1188, 1277, 1356], RV_AP = [556, 441, 579, 464];
+  const C_EXHAUST = 520.0;
+  const TWO_PI = 2 * Math.PI;
+  // delay line ids
+  const DL_H0 = 0, DL_P0 = 2, DL_C0 = 4, DL_A0 = 8, DL_A2 = 10, NDL = 12;
+
+  const DEFAULT_SPEC = {
+    name: 'V8', displacement_ci: 289.0, compression: 10.5, idle_rpm: 800.0, redline: 6500.0,
+    firing_order: [1, 5, 4, 2, 6, 3, 7, 8], left_bank: [5, 6, 7, 8],
+    cam_duration_050: 220.0, lsa: 114.0, lifters: 'solid', carb_cfm: 715.0, air_cleaner: 'open',
+    headers: 'tubular', header_len_m: 0.85, pipe_len_m: 3.2, exhaust: 'sport', richness: 1.0,
+    cyl_imbalance: 0.06, rev_inertia: 1.0, hcross: 0.15, rev_limiter: false, seed: 1,
+  };
+
+  function lopeOf(sp) {
+    const l = (sp.cam_duration_050 - 190.0) / 55.0 + (114.0 - sp.lsa) / 16.0;
+    return Math.min(1.6, Math.max(0.0, l));
+  }
+
+  // ---- RBJ biquad design (identical to _bq) -------------------------------
+  function bq(kind, f0, q, fs, gain_db) {
+    gain_db = gain_db || 0;
+    const A = Math.pow(10, gain_db / 40.0);
+    const w0 = 2 * Math.PI * Math.min(f0, 0.45 * fs) / fs;
+    const c = Math.cos(w0), s = Math.sin(w0), al = s / (2 * q);
+    let b, a;
+    if (kind === 'lp') { b = [(1 - c) / 2, 1 - c, (1 - c) / 2]; a = [1 + al, -2 * c, 1 - al]; }
+    else if (kind === 'hp') { b = [(1 + c) / 2, -(1 + c), (1 + c) / 2]; a = [1 + al, -2 * c, 1 - al]; }
+    else if (kind === 'bp') { b = [al, 0, -al]; a = [1 + al, -2 * c, 1 - al]; }
+    else if (kind === 'peak') { b = [1 + al * A, -2 * c, 1 - al * A]; a = [1 + al / A, -2 * c, 1 - al / A]; }
+    else if (kind === 'lowshelf') {
+      const sq = 2 * Math.sqrt(A) * al;
+      b = [A * ((A + 1) - (A - 1) * c + sq), 2 * A * ((A - 1) - (A + 1) * c), A * ((A + 1) - (A - 1) * c - sq)];
+      a = [(A + 1) + (A - 1) * c + sq, -2 * ((A - 1) + (A + 1) * c), (A + 1) + (A - 1) * c - sq];
+    } else if (kind === 'highshelf') {
+      const sq = 2 * Math.sqrt(A) * al;
+      b = [A * ((A + 1) + (A - 1) * c + sq), -2 * A * ((A - 1) + (A + 1) * c), A * ((A + 1) + (A - 1) * c - sq)];
+      a = [(A + 1) - (A - 1) * c + sq, 2 * ((A - 1) - (A + 1) * c), (A + 1) - (A - 1) * c - sq];
+    } else throw new Error('biquad kind ' + kind);
+    return [b[0] / a[0], b[1] / a[0], b[2] / a[0], a[1] / a[0], a[2] / a[0]];
+  }
+
+  // ---- numpy.random.RandomState(seed) subset: randn(), rand() ------------
+  class NpRandomState {
+    constructor(seed) {
+      this.mt = new Uint32Array(624); this.idx = 624; this.hasGauss = false; this.gauss = 0;
+      const mt = this.mt; mt[0] = seed >>> 0;
+      for (let i = 1; i < 624; i++) {
+        const p = mt[i - 1] ^ (mt[i - 1] >>> 30);
+        mt[i] = (Math.imul(1812433253, p) + i) >>> 0;
+      }
+    }
+    int32() {
+      const mt = this.mt;
+      if (this.idx >= 624) {
+        for (let k = 0; k < 624; k++) {
+          const y = (mt[k] & 0x80000000) | (mt[(k + 1) % 624] & 0x7fffffff);
+          mt[k] = mt[(k + 397) % 624] ^ (y >>> 1) ^ ((y & 1) ? 0x9908b0df : 0);
+        }
+        this.idx = 0;
+      }
+      let y = mt[this.idx++];
+      y ^= y >>> 11; y ^= (y << 7) & 0x9d2c5680; y ^= (y << 15) & 0xefc60000; y ^= y >>> 18;
+      return y >>> 0;
+    }
+    double() { const a = this.int32() >>> 5, b = this.int32() >>> 6; return (a * 67108864.0 + b) / 9007199254740992.0; }
+    randn() {
+      if (this.hasGauss) { this.hasGauss = false; return this.gauss; }
+      let x1, x2, r2;
+      do { x1 = 2 * this.double() - 1; x2 = 2 * this.double() - 1; r2 = x1 * x1 + x2 * x2; } while (r2 >= 1 || r2 === 0);
+      const f = Math.sqrt(-2 * Math.log(r2) / r2);
+      this.gauss = f * x1; this.hasGauss = true; return f * x2;
+    }
+  }
+
+  // ---- the synth ----------------------------------------------------------
+  class EngineSynth {
+    constructor(specIn, fs) {
+      this.spec = Object.assign({}, DEFAULT_SPEC, specIn);
+      this.fs = fs || 44100;
+      this._build();
+      this._rpm = this.spec.idle_rpm; this._thr = 0.0;
+    }
+    _build() {
+      const sp = this.spec, fs = this.fs, lope = lopeOf(sp), dpc = sp.displacement_ci / 8.0;
+      const pick = (o, k) => { if (!(k in o)) throw new Error('unknown option ' + k); return o[k]; };
+      const P = {};
+      P.fs = fs; P.idle = sp.idle_rpm; P.red = sp.redline; P.lope = lope;
+      P.sig0 = 0.05; P.sigl = 0.06 + 0.24 * lope; P.misf = 0.005 + 0.07 * lope * lope;
+      P.huntd = 0.004 + 0.022 * lope; P.hunthz = 0.7 + 0.6 * lope; P.kick = 0.008 + 0.05 * lope;
+      P.lopespan = 900.0 + 1300.0 * lope; P.idlemap = 0.30 + 0.10 * lope; P.ovmap = 0.07;
+      P.vepk = 2600.0 + 2000.0 * (sp.cam_duration_050 - 190.0) / 60.0; P.vew = 2200.0;
+      P.blowdeg = 52.0 + 18.0 * lope; P.wmin = 0.45e-3 * fs; P.wmax = (1.6 + 0.035 * dpc) * 1e-3 * fs;
+      P.att = Math.min(0.35, Math.max(0.12, 0.26 - 0.015 * (sp.compression - 8.0)));
+      P.amp = (dpc / 36.0) * (0.85 + 0.05 * sp.compression / 10.0);
+      P.rasp = pick({ turbo: 0.10, sport: 0.22, glasspack: 0.30, open: 0.42 }, sp.exhaust) + 0.06 * lope;
+      P.jit = 0.12 + 0.25 * lope;
+      P.popr = pick({ turbo: 0.006, sport: 0.035, glasspack: 0.06, open: 0.08 }, sp.exhaust) * (0.5 + lope);
+      P.popa = 1.5;
+      P.tick = sp.lifters === 'solid' ? 1.2 : 0.12;
+      P.intg = 0.35 * Math.sqrt(sp.carb_cfm / 600.0) * (sp.air_cleaner === 'open' ? 1.0 : 0.6);
+      P.intrev = 0.3 * lope;
+      P.mech = sp.lifters === 'solid' ? 0.0035 : 0.002;
+      if (sp.headers === 'tubular') { P.hfb = -0.55; P.hdamp = 0.45; } else { P.hfb = -0.30; P.hdamp = 0.25; }
+      P.hdly = Math.max(8, pyRound(2 * sp.header_len_m / C_EXHAUST * fs));
+      if (sp.exhaust === 'open') { P.pdly = 16; P.pfb = 0.0; P.pdamp = 0.5; }
+      else {
+        P.pdly = pyRound(2 * sp.pipe_len_m / C_EXHAUST * fs);
+        P.pfb = pick({ turbo: -0.35, sport: -0.45, glasspack: -0.5 }, sp.exhaust);
+        P.pdamp = pick({ turbo: 0.18, sport: 0.3, glasspack: 0.35 }, sp.exhaust);
+      }
+      const rad_fc = pick({ turbo: 45.0, sport: 55.0, glasspack: 90.0, open: 130.0 }, sp.exhaust);
+      P.radc = 1.0 / (1.0 + 2 * Math.PI * rad_fc / fs);
+      P.panw = 0.78; P.hx = sp.hcross; P.revmix = 0.035; P.cfm = sp.carb_cfm; P.disp = sp.displacement_ci;
+      P.limit = sp.rev_limiter ? 1.0 : 0.0;
+      P.thrk = 1.0 - Math.exp(-1.0 / (0.045 * fs));
+      P.rich = sp.richness;
+      P.jet = pick({ turbo: 0.5, sport: 2.2, glasspack: 2.0, open: 4.0 }, sp.exhaust) * (1.0 + 0.3 * lope);
+      P.jetk = 1.0 - Math.exp(-1.0 / (0.0006 * fs));
+      P.exgain = 1.0;
+      this.P = P;
+
+      // firing order -> bank, bias, primary delay (numpy RandomState(seed))
+      const rs = new NpRandomState(sp.seed);
+      const fo = sp.firing_order.slice();
+      this.ev_bank = new Int32Array(8);
+      for (let k = 0; k < 8; k++) this.ev_bank[k] = sp.left_bank.indexOf(fo[k]) >= 0 ? 0 : 1;
+      const bias = []; for (let k = 0; k < 8; k++) bias.push(1.0 + sp.cyl_imbalance * rs.randn());
+      // numpy's pairwise sum for exactly 8 elements: ((r0+r1)+(r2+r3))+((r4+r5)+(r6+r7))
+      const m = (((bias[0] + bias[1]) + (bias[2] + bias[3])) + ((bias[4] + bias[5]) + (bias[6] + bias[7]))) / 8;
+      this.ev_bias = new Float64Array(bias.map((b) => b / m));
+      this.ev_dly = new Float64Array(8);
+      if (sp.headers === 'tubular') {
+        for (let k = 0; k < 8; k++) this.ev_dly[k] = 0.06e-3 * fs * rs.double();
+      } else {
+        const lb = sp.left_bank.slice().sort().join(',');
+        for (let k = 0; k < 8; k++) {
+          const c = fo[k];
+          const pos = lb === '5,6,7,8' ? ((c - 1) % 4) : Math.floor((c - 1) / 2);
+          this.ev_dly[k] = (0.15 + 0.22 * pos) / C_EXHAUST * fs;
+        }
+      }
+      const EX = {
+        turbo: [['lp', 300, 0.75, 0], ['lp', 650, 0.6, 0], ['peak', 75, 1.1, 5.0], ['peak', 160, 1.4, 2.0], ['highshelf', 1500, 0.7, -8]],
+        sport: [['lp', 2000, 0.8, 0], ['lowshelf', 110, 0.7, 5.0], ['peak', 420, 1.2, 3.0], ['peak', 1600, 2.0, 2.0], ['lp', 4500, 0.6, 0]],
+        glasspack: [['lp', 2200, 0.7, 0], ['peak', 170, 1.0, 4.0], ['peak', 800, 1.3, 4.0], ['peak', 2600, 2.0, 2.5], ['lp', 6500, 0.6, 0]],
+        open: [['lp', 7000, 0.6, 0], ['peak', 650, 1.0, 3.0], ['peak', 2200, 1.5, 3.0], ['highshelf', 4000, 0.7, -3]],
+      };
+      const ex = pick(EX, sp.exhaust);
+      this.ex_n = ex.length;
+      this.ex_co = new Float64Array(2 * NBQ * 5); this.ex_st = new Float64Array(2 * NBQ * 2);
+      for (let b = 0; b < 2; b++) ex.forEach(([k, f, q, g], j) => {
+        this.ex_co.set(bq(k, f * (1.0 + 0.04 * (b - 0.5)), q, fs, g), (b * NBQ + j) * 5);
+      });
+      const hz = 230.0 * Math.sqrt(sp.carb_cfm / 600.0);
+      const inn = [['bp', hz, 1.6, 0], ['peak', 2 * hz, 2.0, 3.0], ['lp', sp.air_cleaner === 'open' ? 3500 : 1400, 0.7, 0], ['hp', 60, 0.7, 0]];
+      this.in_n = inn.length; this.in_co = new Float64Array(NBQ * 5); this.in_st = new Float64Array(NBQ * 2);
+      inn.forEach(([k, f, q, g], j) => this.in_co.set(bq(k, f, q, fs, g), j * 5));
+      const mk = [['bp', 3300, 9.0, 0], ['bp', 5400, 12.0, 0], ['bp', 1600, 0.8, 0]];
+      this.mk_co = new Float64Array(3 * 5); this.mk_st = new Float64Array(3 * 2);
+      mk.forEach(([k, f, q, g], j) => this.mk_co.set(bq(k, f, q, fs, g), j * 5));
+      const JET = {
+        turbo: [['hp', 500, 0.7, 0], ['lp', 1800, 0.7, 0], ['peak', 900, 1.0, 0]],
+        sport: [['hp', 700, 0.7, 0], ['lp', 4200, 0.7, 0], ['peak', 1800, 1.2, 3.0]],
+        glasspack: [['hp', 600, 0.7, 0], ['lp', 5000, 0.7, 0], ['peak', 1500, 1.2, 4.0]],
+        open: [['hp', 450, 0.7, 0], ['lp', 7500, 0.7, 0], ['peak', 2500, 1.0, 3.0]],
+      };
+      const jet = pick(JET, sp.exhaust);
+      this.jt_n = jet.length; this.jt_co = new Float64Array(2 * 3 * 5); this.jt_st = new Float64Array(2 * 3 * 2);
+      for (let b = 0; b < 2; b++) jet.forEach(([k, f, q, g], j) => this.jt_co.set(bq(k, f * (1 + 0.05 * b), q, fs, g), (b * 3 + j) * 5));
+
+      // state
+      this.S = {
+        th: 0, thr: 0, lope: 0, hunt: 0, limtog: 0, unb: 0, rad0: 0, rad1: 0, rady0: 0, rady1: 0,
+        hlp0: 0, hlp1: 0, plp0: 0, plp1: 0, nz0: 0, nz1: 0, nz2: 0, rv0: 0, rv1: 0, rv2: 0, rv3: 0, ovf: 0, je0: 0, je1: 0,
+      };
+      // xorshift64 state as two uint32 halves: 0x9E3779B97F4A7C15 ^ (seed*7919)
+      const sx = sp.seed * 7919;
+      this.rhi = (0x9E3779B9 ^ Math.floor(sx / 4294967296)) >>> 0;
+      this.rlo = (0x7F4A7C15 ^ (sx >>> 0)) >>> 0;
+      this.slots = new Float64Array(NSLOT * 6);
+      for (let i = 0; i < NSLOT; i++) this.slots[i * 6] = -1;
+      this.dl = new Float64Array(NDL * DL_LEN); this.di = new Int32Array(NDL);
+      const sc = fs / 44100.0;
+      this.rv_d = RV_COMB.concat(RV_AP).map((d) => Math.trunc(d * sc));
+    }
+
+    _rand() {
+      let hi = this.rhi, lo = this.rlo, h, l;
+      h = hi ^ ((hi << 13) | (lo >>> 19)); l = lo ^ (lo << 13); hi = h >>> 0; lo = l >>> 0;
+      l = lo ^ ((lo >>> 7) | (hi << 25)); h = hi ^ (hi >>> 7); hi = h >>> 0; lo = l >>> 0;
+      h = hi ^ ((hi << 17) | (lo >>> 15)); l = lo ^ (lo << 17); hi = h >>> 0; lo = l >>> 0;
+      this.rhi = hi; this.rlo = lo;
+      return ((hi >>> 11) * 4294967296 + (((hi << 21) | (lo >>> 11)) >>> 0)) * (1.0 / 9007199254740992.0);
+    }
+    _gauss() { return (this._rand() + this._rand() + this._rand() + this._rand() - 2.0) * 1.732; }
+
+    _spawn(kind, start, width, att, amp, nz) {
+      const s = this.slots; let best = 0, bestpos = -1e30;
+      for (let i = 0; i < NSLOT; i++) {
+        const o = i * 6;
+        if (s[o] < 0) { best = i; break; }
+        if (s[o + 1] > bestpos) { bestpos = s[o + 1]; best = i; }
+      }
+      const o = best * 6;
+      s[o] = kind; s[o + 1] = start; s[o + 2] = width; s[o + 3] = att; s[o + 4] = amp; s[o + 5] = nz;
+    }
+
+    /** render n frames into outL/outR (offset off); rpm/throttle ramp linearly
+     *  from the previous call's targets to these (exactly like render()). */
+    render(n, rpm, throttle, outL, outR, off) {
+      off = off || 0;
+      const r0 = this._rpm, t0 = this._thr;
+      this._rpm = rpm; this._thr = throttle;
+      const P = this.P, S = this.S, slots = this.slots, dl = this.dl, di = this.di, rv_d = this.rv_d;
+      const ex_co = this.ex_co, ex_st = this.ex_st, in_co = this.in_co, in_st = this.in_st;
+      const mk_co = this.mk_co, mk_st = this.mk_st, jt_co = this.jt_co, jt_st = this.jt_st;
+      const fs = P.fs, idle = P.idle, red = P.red;
+      const hunt_inc = 2.0 * Math.PI * P.hunthz / fs;
+      const hdly = Math.trunc(P.hdly), pdly = Math.trunc(P.pdly);
+      for (let n_ = 0; n_ < n; n_++) {
+        const tt = (n_ + 1) / n;
+        const rpm_t = r0 + (rpm - r0) * tt;
+        const thr_in = t0 + (throttle - t0) * tt;
+        const thr = S.thr + (thr_in - S.thr) * P.thrk;
+        S.thr = thr;
+        let idle_w = 1.0 - (rpm_t - idle) / P.lopespan;
+        if (idle_w < 0.0) idle_w = 0.0; else if (idle_w > 1.0) idle_w = 1.0;
+        S.hunt += hunt_inc;
+        if (S.hunt > TWO_PI) S.hunt -= TWO_PI;
+        const hunt = P.huntd * idle_w * (1.0 - thr) * Math.sin(S.hunt);
+        const rpmv = rpm_t * (1.0 + S.lope + hunt);
+        S.lope *= 0.99985;
+        const dth = rpmv * 6.0 / fs;
+        let ov = 0.0;
+        if (thr < 0.06) {
+          ov = (rpmv - idle * 1.35) / (idle * 0.9);
+          if (ov < 0.0) ov = 0.0; else if (ov > 1.0) ov = 1.0;
+          ov *= (0.06 - thr) / 0.06;
+        }
+        S.ovf = ov;
+        const th0 = S.th;
+        let th1 = th0 + dth;
+        const k0 = Math.floor(th0 / 90.0), k1 = Math.floor(th1 / 90.0);
+        if (k1 !== k0) {
+          const k = ((k1 % 8) + 8) % 8;
+          const since = (th1 - k1 * 90.0) / dth;
+          const bank = this.ev_bank[k];
+          const flow = P.disp * rpmv / 3456.0 * 0.9;
+          let restr = 1.0;
+          if (flow > 1.0) { restr = P.cfm * 1.15 / flow; if (restr > 1.0) restr = 1.0; }
+          const mp_open = P.idlemap + (1.0 - P.idlemap) * thr * (0.75 + 0.25 * restr);
+          const load = mp_open * (1.0 - ov) + P.ovmap * ov;
+          const x = (rpmv - P.vepk) / P.vew;
+          const ve = 0.75 + 0.25 * Math.exp(-x * x);
+          const sig = P.sig0 + P.sigl * idle_w * (1.0 - thr) + 0.5 * ov;
+          let a = load * ve * this.ev_bias[k] * (1.0 + sig * this._gauss());
+          if (a < 0.02 * load) a = 0.02 * load;
+          if (this._rand() < P.misf * idle_w * (1.0 - thr) + 0.08 * ov) {
+            a *= 0.15 + 0.3 * this._rand();
+            S.unb += 1.0;
+          }
+          if (P.limit > 0.5 && rpm_t >= red) {
+            S.limtog = 1.0 - S.limtog;
+            if (S.limtog > 0.5) { a = 0.0; S.unb += 1.0; }
+          }
+          S.lope += P.kick * idle_w * (1.0 - thr) * (a / (load * ve * this.ev_bias[k] + 1e-6) - 1.0) * 0.25;
+          if (S.lope > 0.08) S.lope = 0.08; else if (S.lope < -0.08) S.lope = -0.08;
+          let w = P.blowdeg / dth;
+          if (w > P.wmax) w = P.wmax;
+          if (w < P.wmin) w = P.wmin;
+          let att = P.att * (1.3 - 0.85 * load);
+          if (att * w < 5.0) att = 5.0 / w;
+          const jit = P.jit * (0.3 + idle_w) * this._gauss();
+          const start = since - this.ev_dly[k] - jit * fs * 1e-3;
+          const nz = P.rasp * (0.35 + 0.65 * load);
+          this._spawn(bank, start, w, att, a * P.amp, nz);
+          let wi = 180.0 / dth;
+          if (wi > 0.02 * fs) wi = 0.02 * fs;
+          const ia = P.intg * (thr * (0.3 + 0.7 * rpmv / red) + P.intrev * idle_w * (1.0 - thr) * (0.6 + 0.8 * this._rand()) + 0.03);
+          this._spawn(2, since - 0.25 * wi, wi, 0.35, ia, 1.0);
+          const ta = P.tick * (0.4 + 0.6 * rpmv / red) * (0.7 + 0.6 * this._rand());
+          this._spawn(3, since - 0.3 * 90.0 / dth, 1.0, 0.0, ta, 0.0);
+          this._spawn(3, since - 0.7 * 90.0 / dth, 1.0, 0.0, ta * (0.6 + 0.5 * this._rand()), 0.0);
+          const pr = P.popr * P.rich * (ov * (0.4 + 0.6 * Math.min(1.0, (rpmv - idle) / 2500.0)) + 0.4 * Math.min(S.unb, 3.0) / 3.0 * ov);
+          if (this._rand() < pr) {
+            const pw = (0.6 + 0.8 * this._rand()) * 1e-3 * fs;
+            const pa = P.popa * P.amp * (0.4 + 0.9 * this._rand());
+            this._spawn(4 + bank, since - (1.0 + 25.0 * this._rand()) * 1e-3 * fs, pw, 0.12, pa, 1.8);
+            S.unb = 0.0;
+          }
+          S.unb *= 0.9;
+        }
+        th1 = th1 % 720.0;   // th1 >= 0 always, so JS % == Python %
+        S.th = th1;
+
+        // ---- active pulses ----
+        let exh0 = 0, exh1 = 0, pop0 = 0, pop1 = 0, intk = 0, tick = 0, je0 = 0, je1 = 0;
+        S.nz0 += 0.55 * ((this._rand() * 2.0 - 1.0) - S.nz0);
+        S.nz1 += 0.55 * ((this._rand() * 2.0 - 1.0) - S.nz1);
+        S.nz2 += 0.35 * ((this._rand() * 2.0 - 1.0) - S.nz2);
+        for (let i = 0; i < NSLOT; i++) {
+          const o = i * 6;
+          const kind = slots[o];
+          if (kind < 0) continue;
+          const pos = slots[o + 1];
+          slots[o + 1] = pos + 1.0;
+          if (pos < 0.0) continue;
+          const ik = kind | 0;
+          if (ik === 3) { tick += slots[o + 4]; slots[o] = -1.0; continue; }
+          const xw = pos / slots[o + 2];
+          if (xw >= 1.0) { slots[o] = -1.0; continue; }
+          const at = slots[o + 3];
+          let env;
+          if (xw < at) env = 0.5 - 0.5 * Math.cos(Math.PI * xw / at);
+          else { const u = (xw - at) / (1.0 - at); env = 0.5 + 0.5 * Math.cos(Math.PI * u); env *= env; }
+          const amp = slots[o + 4] * env, nzv = slots[o + 5];
+          if (ik === 0) { je0 += amp; exh0 += amp * (1.0 + nzv * S.nz0 * 3.0); }
+          else if (ik === 1) { je1 += amp; exh1 += amp * (1.0 + nzv * S.nz1 * 3.0); }
+          else if (ik === 2) intk += amp * (0.25 + nzv * S.nz2 * 2.5);
+          else if (ik === 4) pop0 += amp * (1.0 + nzv * S.nz0 * 2.0);
+          else pop1 += amp * (1.0 + nzv * S.nz1 * 2.0);
+        }
+        const hx = P.hx;
+        // header combs
+        let ys0 = 0, ys1 = 0;
+        for (let b = 0; b < 2; b++) {
+          const xin = b === 0 ? exh0 : exh1;
+          const hl = DL_H0 + b, base = hl * DL_LEN, idx = di[hl];
+          const fbv = dl[base + ((idx - hdly) & DL_MASK)];
+          const key = b === 0 ? 'hlp0' : 'hlp1';
+          S[key] += P.hdamp * (fbv - S[key]);
+          const yh = xin + P.hfb * S[key];
+          dl[base + idx] = yh; di[hl] = (idx + 1) & DL_MASK;
+          if (b === 0) ys0 = yh; else ys1 = yh;
+        }
+        for (let b = 0; b < 2; b++) {
+          // NB: as in v1 Python, ys0 is already overwritten by bank 0's tailpipe
+          // output when bank 1 reads its crossover input. Kept for parity.
+          const yh = b === 0 ? ys0 : ys1, yo = b === 0 ? ys1 : ys0;
+          const xp = (1.0 - hx) * yh + hx * yo + (b === 0 ? pop0 : pop1);
+          const pl = DL_P0 + b, base = pl * DL_LEN, idx = di[pl];
+          const fbv = dl[base + ((idx - pdly) & DL_MASK)];
+          const key = b === 0 ? 'plp0' : 'plp1';
+          S[key] += P.pdamp * (fbv - S[key]);
+          const yp = xp + P.pfb * S[key];
+          dl[base + idx] = yp; di[pl] = (idx + 1) & DL_MASK;
+          let v = yp;
+          for (let j = 0; j < this.ex_n; j++) {
+            const c = (b * NBQ + j) * 5, s = (b * NBQ + j) * 2;
+            const y = ex_co[c] * v + ex_st[s];
+            ex_st[s] = ex_co[c + 1] * v - ex_co[c + 3] * y + ex_st[s + 1];
+            ex_st[s + 1] = ex_co[c + 2] * v - ex_co[c + 4] * y;
+            v = y;
+          }
+          const r = P.radc;
+          const rk = b === 0 ? 'rad0' : 'rad1', ryk = b === 0 ? 'rady0' : 'rady1';
+          let yr = r * (S[ryk] + v - S[rk]);
+          S[rk] = v; S[ryk] = yr;
+          const je = b === 0 ? je0 : je1, jk = b === 0 ? 'je0' : 'je1';
+          S[jk] += P.jetk * (Math.abs(je) - S[jk]);
+          const ev = S[jk] / (P.amp + 1e-9);
+          let jn = (this._rand() * 2.0 - 1.0) * ev * ev * P.amp * P.jet * (0.45 + rpmv / red);
+          for (let j = 0; j < 3; j++) {
+            const c = (b * 3 + j) * 5, s = (b * 3 + j) * 2;
+            const y = jt_co[c] * jn + jt_st[s];
+            jt_st[s] = jt_co[c + 1] * jn - jt_co[c + 3] * y + jt_st[s + 1];
+            jt_st[s + 1] = jt_co[c + 2] * jn - jt_co[c + 4] * y;
+            jn = y;
+          }
+          yr += jn;
+          if (b === 0) ys0 = yr; else ys1 = yr;
+        }
+        const ex0 = ys0 * P.exgain, ex1 = ys1 * P.exgain;
+        let vi = intk;
+        for (let j = 0; j < this.in_n; j++) {
+          const c = j * 5, s = j * 2;
+          const y = in_co[c] * vi + in_st[s];
+          in_st[s] = in_co[c + 1] * vi - in_co[c + 3] * y + in_st[s + 1];
+          in_st[s + 1] = in_co[c + 2] * vi - in_co[c + 4] * y;
+          vi = y;
+        }
+        // mechanical
+        let vm = 0;
+        for (let j = 0; j < 2; j++) {
+          const c = j * 5, s = j * 2;
+          const y = mk_co[c] * tick + mk_st[s];
+          mk_st[s] = mk_co[c + 1] * tick - mk_co[c + 3] * y + mk_st[s + 1];
+          mk_st[s + 1] = mk_co[c + 2] * tick - mk_co[c + 4] * y;
+          vm += j === 0 ? y : 0.6 * y;
+        }
+        let mn;
+        {
+          const xin = this._rand() * 2.0 - 1.0;
+          const c = 10, s = 4;
+          const y = mk_co[c] * xin + mk_st[s];
+          mk_st[s] = mk_co[c + 1] * xin - mk_co[c + 3] * y + mk_st[s + 1];
+          mk_st[s + 1] = mk_co[c + 2] * xin - mk_co[c + 4] * y;
+          mn = y * P.mech * (0.2 + rpmv / red);
+        }
+        const mech = vm + mn;
+        const pw = P.panw;
+        const L = pw * ex1 + (1.0 - pw) * ex0 + 0.8 * vi + 0.7 * mech;
+        const R = pw * ex0 + (1.0 - pw) * ex1 + 0.8 * vi + 0.6 * mech;
+        // ambience
+        const mm = 0.5 * (L + R);
+        let acc = 0.0;
+        for (let c = 0; c < 4; c++) {
+          const line = DL_C0 + c, base = line * DL_LEN, idx = di[line];
+          const yv = dl[base + ((idx - rv_d[c]) & DL_MASK)];
+          const key = 'rv' + c;
+          S[key] += 0.6 * (yv - S[key]);
+          dl[base + idx] = mm + 0.62 * S[key]; di[line] = (idx + 1) & DL_MASK;
+          acc += yv;
+        }
+        let wl = acc, wr = acc;
+        for (let c = 0; c < 2; c++) {
+          let line = DL_A0 + c, base = line * DL_LEN, idx = di[line];
+          let bv = dl[base + ((idx - rv_d[4 + c]) & DL_MASK)];
+          dl[base + idx] = wl + 0.5 * bv; di[line] = (idx + 1) & DL_MASK;
+          wl = bv - 0.5 * wl;
+          line = DL_A2 + c; base = line * DL_LEN; idx = di[line];
+          bv = dl[base + ((idx - rv_d[6 + c]) & DL_MASK)];
+          dl[base + idx] = wr + 0.5 * bv; di[line] = (idx + 1) & DL_MASK;
+          wr = bv - 0.5 * wr;
+        }
+        const rm = P.revmix;
+        outL[off + n_] = L + rm * wl;
+        outR[off + n_] = R + rm * wr;
+      }
+    }
+  }
+
+  function pyRound(x) {   // Python round(): banker's rounding on exact .5
+    const f = Math.floor(x), d = x - f;
+    if (d > 0.5) return f + 1; if (d < 0.5) return f;
+    return (f % 2 === 0) ? f : f + 1;
+  }
+
+  // ---- extras for the game (not part of the v1 model) ---------------------
+  /** starter motor + cranking compression pulses */
+  class Starter {
+    constructor(fs) { this.fs = fs; this.ph = 0; this.ph2 = 0; this.lp = 0; this.bp = [0, 0]; this.seed = 12345; }
+    rnd() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return this.seed / 4294967296 * 2 - 1; }
+    sample(level, crankRpm) {
+      const fs = this.fs;
+      this.ph += 2 * Math.PI * (crankRpm / 60 * 4) / fs;        // 4 compressions per rev (V8)
+      if (this.ph > 2 * Math.PI) this.ph -= 2 * Math.PI;
+      this.ph2 += 2 * Math.PI * (crankRpm / 60 * 11) / fs;       // pinion whine
+      if (this.ph2 > 2 * Math.PI) this.ph2 -= 2 * Math.PI;
+      const comp = Math.pow(0.5 + 0.5 * Math.sin(this.ph), 6);
+      this.lp += 0.05 * (this.rnd() - this.lp);
+      const whine = 0.25 * Math.sin(this.ph2) + 0.12 * Math.sin(2 * this.ph2);
+      return level * (0.35 * comp * (0.6 + this.lp) + whine * (0.4 + 0.6 * comp) + 0.08 * this.lp);
+    }
+  }
+
+  /** tyre noise: road roar (speed) + skid screech (slip intensity) */
+  class TyreNoise {
+    constructor(fs) {
+      this.fs = fs; this.seed = 987654; this.r1 = [0, 0]; this.r2 = [0, 0]; this.s1 = [0, 0]; this.s2 = [0, 0];
+      this.road = bq('lp', 350, 0.7, fs); this.road2 = bq('peak', 120, 1.0, fs, 6);
+      this.sq1 = bq('bp', 900, 6, fs); this.sq2 = bq('bp', 1900, 4, fs); this.ph = 0; this.mod = 0;
+    }
+    rnd() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return this.seed / 4294967296 * 2 - 1; }
+    static bqs(x, co, st) { const y = co[0] * x + st[0]; st[0] = co[1] * x - co[3] * y + st[1]; st[1] = co[2] * x - co[4] * y; return y; }
+    sample(roadLvl, skidLvl) {
+      const n = this.rnd();
+      let r = TyreNoise.bqs(n, this.road, this.r1); r = TyreNoise.bqs(r, this.road2, this.r2);
+      this.mod += 0.0004 * (this.rnd() - this.mod * 0.02);
+      this.ph += 2 * Math.PI * (820 + 140 * Math.sin(this.mod * 50)) / this.fs;
+      if (this.ph > 2 * Math.PI) this.ph -= 2 * Math.PI;
+      const sq = TyreNoise.bqs(n, this.sq1, this.s1) * 2 + TyreNoise.bqs(n, this.sq2, this.s2) * 1.2 + 0.35 * Math.sin(this.ph) * (0.7 + 0.3 * n);
+      return roadLvl * r * 0.6 + skidLvl * sq;
+    }
+  }
+
+  /** look-ahead peak limiter (ceiling dBFS), stereo-linked */
+  class Limiter {
+    constructor(fs, ceilingDb, lookMs, releaseMs) {
+      this.fs = fs; this.ceil = Math.pow(10, (ceilingDb === undefined ? -1 : ceilingDb) / 20);
+      this.n = Math.max(1, Math.round((lookMs || 3) * 1e-3 * fs));
+      this.bufL = new Float32Array(this.n); this.bufR = new Float32Array(this.n); this.pk = new Float32Array(this.n);
+      this.i = 0; this.g = 1; this.rel = 1 - Math.exp(-1 / ((releaseMs || 180) * 1e-3 * fs));
+      this.att = 1 - Math.exp(-1 / (0.6 * this.n)); this.minG = 1;
+    }
+    process(L, R, oL, oR, n) {
+      for (let k = 0; k < n; k++) {
+        const x = Math.max(Math.abs(L[k]), Math.abs(R[k]));
+        const need = x > this.ceil ? this.ceil / x : 1;
+        const i = this.i;
+        const dL = this.bufL[i], dR = this.bufR[i];
+        this.bufL[i] = L[k]; this.bufR[i] = R[k]; this.pk[i] = need;
+        this.i = (i + 1) % this.n;
+        let target = 1;   // min gain needed over the look-ahead window
+        for (let j = 0; j < this.n; j++) if (this.pk[j] < target) target = this.pk[j];
+        if (target < this.g) this.g += (target - this.g) * this.att; else this.g += (target - this.g) * this.rel;
+        let yl = dL * this.g, yr = dR * this.g;
+        // final safety soft-clip (should rarely engage)
+        if (yl > this.ceil || yl < -this.ceil) yl = Math.tanh(yl / this.ceil) * this.ceil;
+        if (yr > this.ceil || yr < -this.ceil) yr = Math.tanh(yr / this.ceil) * this.ceil;
+        oL[k] = yl; oR[k] = yr;
+        this.minG = Math.min(this.minG, this.g);
+      }
+    }
+  }
+
+  const api = { EngineSynth, NpRandomState, Starter, TyreNoise, Limiter, bq, lopeOf, DEFAULT_SPEC };
+
+  // ---- AudioWorklet processor ---------------------------------------------
+  if (typeof registerProcessor === 'function') {
+    class EngineProcessor extends AudioWorkletProcessor {
+      constructor(options) {
+        super();
+        const o = (options && options.processorOptions) || {};
+        this.fs = sampleRate;
+        this.raw = !!o.raw;              // comparison mode: plain synth output, no extras
+        this.synth = null; this.next = null; this.xfade = 1;
+        this.target = { rpm: 800, thr: 0 }; this.sm = { rpm: 800, thr: 0 };
+        this.smK = 1 - Math.exp(-128 / (0.025 * sampleRate));   // ~25 ms control smoothing
+        this.engGain = 0; this.engGainTarget = 0; this.gainK = 1 - Math.exp(-1 / (0.03 * sampleRate));
+        this.outGain = o.outGain || 1; this.outGainS = this.outGain;
+        this.starter = new Starter(sampleRate); this.starterLvl = 0; this.starterTarget = 0; this.crank = 200;
+        this.tyre = new TyreNoise(sampleRate); this.road = 0; this.skid = 0; this.roadS = 0; this.skidS = 0;
+        this.limiter = new Limiter(sampleRate, -1.0, 3, 180);
+        this.script = null; this.scriptPos = 0;
+        // in-cabin approximation: mono, low-passed body/firewall transmission + boom
+        const fs_ = sampleRate;
+        this.cab = [bq('lowshelf', 90, 0.7, fs_, 5), bq('peak', 140, 1.2, fs_, 4), bq('lp', 700, 0.7, fs_), bq('lp', 1400, 0.6, fs_), bq('highshelf', 2500, 0.7, fs_, -10)];
+        this.cabSt = this.cab.map(() => [0, 0]);
+        this.listen = 0; this.listenS = 0;
+        this.tmpL = new Float32Array(128); this.tmpR = new Float32Array(128);
+        this.tmpL2 = new Float32Array(128); this.tmpR2 = new Float32Array(128);
+        this.blocks = 0;
+        if (o.spec) this.synth = new EngineSynth(o.spec, sampleRate);
+        if (o.script) { this.script = o.script; this.engGain = this.engGainTarget = 1; }
+        this.port.onmessage = (e) => this.onMsg(e.data);
+      }
+      onMsg(m) {
+        if (m.type === 'spec') {
+          const s = new EngineSynth(m.spec, this.fs);
+          if (m.outGain) this.outGain = m.outGain;
+          if (this.synth && this.engGain > 0.001) { this.next = s; this.xfade = 0; }  // crossfade
+          else { this.synth = s; this.sm.rpm = this.target.rpm = s.spec.idle_rpm; s._rpm = s.spec.idle_rpm; }
+        } else if (m.type === 'ctl') {
+          if (m.rpm !== undefined) this.target.rpm = m.rpm;
+          if (m.thr !== undefined) this.target.thr = m.thr;
+          if (m.running !== undefined) this.engGainTarget = m.running ? 1 : 0;
+          if (m.starter !== undefined) this.starterTarget = m.starter ? 1 : 0;
+          if (m.crank !== undefined) this.crank = m.crank;
+          if (m.road !== undefined) this.road = m.road;
+          if (m.skid !== undefined) this.skid = m.skid;
+          if (m.listen !== undefined) this.listen = m.listen;
+        } else if (m.type === 'script') { this.script = m.script; this.scriptPos = 0; }
+      }
+      process(inputs, outputs) {
+        const out = outputs[0]; const L = out[0], R = out[1] || out[0];
+        const n = L.length;
+        this.blocks++;
+        if (!this.synth) { L.fill(0); if (R !== L) R.fill(0); return true; }
+        let rpm, thr;
+        if (this.script) {          // offline comparison: exact per-block targets
+          const i = Math.min(this.scriptPos, this.script.length - 1);
+          rpm = this.script[i][0]; thr = this.script[i][1]; this.scriptPos++;
+        } else {
+          this.sm.rpm += (this.target.rpm - this.sm.rpm) * this.smK;
+          this.sm.thr += (this.target.thr - this.sm.thr) * this.smK;
+          rpm = Math.max(60, this.sm.rpm); thr = Math.min(1, Math.max(0, this.sm.thr));
+        }
+        const tL = this.tmpL, tR = this.tmpR;
+        this.synth.render(n, rpm, thr, tL, tR, 0);
+        if (this.raw) { for (let k = 0; k < n; k++) { L[k] = tL[k]; R[k] = tR[k]; } return true; }
+        if (this.next) {            // car change: 150 ms crossfade to the new synth
+          this.next.render(n, rpm, thr, this.tmpL2, this.tmpR2, 0);
+          for (let k = 0; k < n; k++) {
+            this.xfade = Math.min(1, this.xfade + 1 / (0.15 * this.fs));
+            const a = Math.cos(this.xfade * Math.PI / 2), b = Math.sin(this.xfade * Math.PI / 2);
+            tL[k] = a * tL[k] + b * this.tmpL2[k]; tR[k] = a * tR[k] + b * this.tmpR2[k];
+          }
+          if (this.xfade >= 1) { this.synth = this.next; this.next = null; }
+        }
+        for (let k = 0; k < n; k++) {
+          this.engGain += (this.engGainTarget - this.engGain) * this.gainK;
+          this.starterLvl += (this.starterTarget - this.starterLvl) * this.gainK;
+          this.roadS += (this.road - this.roadS) * 0.0005; this.skidS += (this.skid - this.skidS) * 0.002;
+          this.outGainS += (this.outGain - this.outGainS) * 0.0005;
+          const st = this.starterLvl > 1e-4 ? this.starter.sample(this.starterLvl * 0.35, this.crank) : 0;
+          const ty = (this.roadS > 1e-4 || this.skidS > 1e-4) ? this.tyre.sample(this.roadS, this.skidS) : 0;
+          this.listenS += (this.listen - this.listenS) * 0.0008;
+          let eL = tL[k] * this.engGain * this.outGainS, eR = tR[k] * this.engGain * this.outGainS;
+          if (this.listenS > 1e-3) {
+            let c = 0.5 * (eL + eR);
+            for (let j = 0; j < this.cab.length; j++) c = TyreNoise.bqs(c, this.cab[j], this.cabSt[j]);
+            c *= 0.75;
+            const w = this.listenS;
+            eL = (1 - w) * eL + w * c; eR = (1 - w) * eR + w * c;
+          }
+          const tyMix = 1 - 0.3 * this.listenS, stMix = 1 + 0.6 * this.listenS;
+          tL[k] = eL + st * stMix + ty * tyMix;
+          tR[k] = eR + st * stMix + ty * tyMix * 0.95;
+        }
+        this.limiter.process(tL, tR, L, R, n);
+        if ((this.blocks & 31) === 0) this.port.postMessage({ type: 'meter', gr: this.limiter.minG }), this.limiter.minG = 1;
+        return true;
+      }
+    }
+    registerProcessor('engine-processor', EngineProcessor);
+  }
+  return api;
+}
+
+// Source text for Blob-URL loading (works from file://, no fetch needed).
+var ENGINE_WORKLET_SOURCE = '(' + engineWorkletMain.toString() + ')();';
+if (typeof module !== 'undefined' && module.exports) module.exports = { engineWorkletMain, ENGINE_WORKLET_SOURCE };
+</script>
+<script>/* js/cars.js */
+/*
+ * cars.js: engine sound specs, mirroring engine-sound/cars.py field for field
+ * (EngineSpec in engine_synth.py). To drop in another model version, replace
+ * these objects (or load JSON exported with tools/export_cars.py).
+ */
+var EngineCars = (function () {
+  function tuned(spec, kw) { return Object.assign({}, spec, kw); }
+
+  // 1967 Shelby GT350: 289 K-code Hi-Po, 306 hp, 10.5:1, solid lifters,
+  // 715 cfm Holley, Tri-Y headers, low-restriction mufflers. Ford FO 1-5-4-2-6-3-7-8.
+  var GT350 = {
+    name: '1967 Shelby GT350 (289 Hi-Po)',
+    displacement_ci: 289, compression: 10.5, idle_rpm: 850, redline: 6800,
+    firing_order: [1, 5, 4, 2, 6, 3, 7, 8], left_bank: [5, 6, 7, 8],
+    cam_duration_050: 222, lsa: 114, lifters: 'solid',
+    carb_cfm: 715, air_cleaner: 'open', headers: 'tubular',
+    header_len_m: 0.9, pipe_len_m: 3.0, exhaust: 'sport',
+    richness: 1.1, cyl_imbalance: 0.07, rev_inertia: 0.85, hcross: 0.10, rev_limiter: false, seed: 67,
+  };
+  var GT350_BIGCAM = tuned(GT350, { name: 'GT350 + big solid cam', cam_duration_050: 252, lsa: 108, richness: 1.25 });
+  var GT350_OPEN = tuned(GT350_BIGCAM, { name: 'GT350 + big cam + open headers', exhaust: 'open', hcross: 0.0 });
+
+  // 1959 Cadillac Series 62 / DeVille: 390, 325 hp, 10.5:1, 4-bbl, hydraulic
+  // lifters, mild cam, cast-iron manifolds, heavy mufflers. FO 1-8-4-3-6-5-7-2.
+  var CADDY = {
+    name: '1959 Cadillac Series 62 (390)',
+    displacement_ci: 390, compression: 10.5, idle_rpm: 550, redline: 5000,
+    firing_order: [1, 8, 4, 3, 6, 5, 7, 2], left_bank: [1, 3, 5, 7],
+    cam_duration_050: 196, lsa: 114, lifters: 'hydraulic',
+    carb_cfm: 600, air_cleaner: 'oilbath', headers: 'log',
+    header_len_m: 0.35, pipe_len_m: 4.2, exhaust: 'turbo',
+    richness: 0.9, cyl_imbalance: 0.04, rev_inertia: 1.6, hcross: 0.25, rev_limiter: false, seed: 59,
+  };
+  var CADDY_HOT = tuned(CADDY, {
+    name: '1959 Cadillac hot-rodded (big cam + glasspacks)',
+    cam_duration_050: 238, lsa: 110, exhaust: 'glasspack', lifters: 'solid',
+    carb_cfm: 750, air_cleaner: 'open', idle_rpm: 750, redline: 5600,
+    richness: 1.2, rev_inertia: 1.3, hcross: 0.1,
+  });
+  return { tuned: tuned, GT350: GT350, GT350_BIGCAM: GT350_BIGCAM, GT350_OPEN: GT350_OPEN, CADDY: CADDY, CADDY_HOT: CADDY_HOT };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = EngineCars;
+</script>
+<script>/* js/vehicles.js */
+/*
+ * vehicles.js: drivetrain / chassis / brake data per car (sources in README.md).
+ * Torque curves are SAE *gross* period figures; `netFactor` converts to a
+ * realistic installed (net) output before driveline losses.
+ */
+var Vehicles = (function () {
+  var LBFT = 1.35582, LB = 0.453592, IN = 0.0254;
+  function curve(pts) { return pts.map(function (p) { return [p[0], p[1] * LBFT]; }); }
+
+  var GT350 = {
+    id: 'gt350', label: '1967 Shelby GT350', engineKey: 'GT350',
+    engineText: '289 Hi-Po V8, 306 hp @ 6000, 329 lb-ft @ 4200 (gross)',
+    // gross torque (lb-ft): 329 @ 4200 and 306 hp @ 6000 (= 268 lb-ft) are the factory points
+    torque: curve([[0, 120], [600, 200], [1000, 240], [2000, 285], [3000, 312], [4200, 329], [5000, 318], [6000, 268], [6500, 238], [7200, 190]]),
+    netFactor: 0.86, idleRpm: 850, limiterRpm: 6500, tachMax: 8000, tachRed: 6500,
+    engineInertia: 0.20,                        // kg m^2 incl. flywheel + clutch
+    friction: [18, 9.0, 0.8],                   // Nm: a + b*krpm + c*krpm^2 (closed-throttle friction + pumping)
+    trans: 'manual', transText: 'Ford Toploader 4-speed, close ratio',
+    gears: [2.32, 1.69, 1.29, 1.00], finalDrive: 3.89, drivelineEff: 0.88,
+    clutchMax: 560,                             // Nm, 10.6" single dry plate
+    massKg: 2723 * LB + 75,                     // fastback curb + driver
+    curbText: '2,723 lb (1,235 kg) fastback curb + 75 kg driver',
+    rearFrac: 0.47, cgHeight: 0.50, wheelbase: 108 * IN,
+    tyreText: 'Goodyear Speedway 350 E70-15 (bias ply)',
+    tyreRadius: 0.322,                          // E70-15 ~26.0" OD, loaded rolling radius
+    wheelInertiaRear: 2.4, wheelInertiaFront: 1.6,
+    muPeak: 0.95, muSlide: 0.75, crr: 0.015, cd: 0.45, area: 1.95,
+    brakes: {
+      text: 'Power-assisted Kelsey-Hayes 11.3" front discs, 10" x 2.5" rear drums',
+      capG: 1.05, frontBias: 0.62,
+      front: { type: 'disc', heatCap: 3000, coolBase: 0.010, coolSpeed: 0.0009 },
+      rear: { type: 'drum', heatCap: 1800, coolBase: 0.006, coolSpeed: 0.0005 },
+    },
+  };
+
+  var CADDY = {
+    id: 'caddy', label: '1959 Cadillac Series 62', engineKey: 'CADDY',
+    engineText: '390 V8, 325 hp @ 4800, 430 lb-ft @ 3100 (gross)',
+    // 430 lb-ft @ 3100, 325 hp @ 4800 (= 356 lb-ft)
+    torque: curve([[0, 180], [500, 300], [1000, 350], [2000, 405], [3100, 430], [4000, 400], [4800, 356], [5200, 318], [5800, 250]]),
+    netFactor: 0.80, idleRpm: 550, limiterRpm: 5000, tachMax: 6000, tachRed: 5000,
+    engineInertia: 0.45,                        // heavy flywheel + fluid-coupling impeller
+    friction: [24, 11.0, 1.0],
+    trans: 'auto', transText: 'Hydra-Matic 4-speed (controlled fluid coupling)',
+    gears: [3.97, 2.55, 1.55, 1.00], finalDrive: 2.94, drivelineEff: 0.86,
+    couplingK: 0.0105,                          // Nm/(rad/s)^2, stall ~1900 rpm at WOT
+    massKg: 4800 * LB + 75,                     // Series 62 sedan ~4,800 lb + driver
+    curbText: '~4,800 lb (2,180 kg) Series 62 sedan + 75 kg driver (range 4,690-5,080 lb)',
+    rearFrac: 0.47, cgHeight: 0.56, wheelbase: 130 * IN,
+    tyreText: '8.00 x 15 4-ply tubeless bias ply',
+    tyreRadius: 0.345,                          // 8.00-15 ~28" OD
+    wheelInertiaRear: 3.2, wheelInertiaFront: 2.4,
+    muPeak: 0.80, muSlide: 0.64, crr: 0.016, cd: 0.55, area: 2.39,
+    brakes: {
+      text: 'Power-assisted 12" drums on all four wheels',
+      capG: 0.95, frontBias: 0.56,
+      front: { type: 'drum', heatCap: 3200, coolBase: 0.006, coolSpeed: 0.0005 },
+      rear: { type: 'drum', heatCap: 2800, coolBase: 0.006, coolSpeed: 0.0005 },
+    },
+  };
+  return { GT350: GT350, CADDY: CADDY, list: [GT350, CADDY] };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Vehicles;
+</script>
+<script>/* js/physics.js */
+/*
+ * physics.js: longitudinal vehicle model (1 kHz fixed step).
+ * DOFs: engine speed we, rear-wheel speed ww, car speed v.
+ * Couplings: clutch (manual: lock/slip with capacity) or fluid coupling
+ * (Hydra-Matic), rear tyre (rolling or spinning/locked), front/rear brakes
+ * with grip-limited lock-up, weight transfer and brake temperature / fade.
+ */
+var Physics = (function () {
+  var G0 = 9.81, RHO = 1.2, AMB = 25;
+  function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+  function interp(tab, x) {
+    if (x <= tab[0][0]) return tab[0][1];
+    for (var i = 1; i < tab.length; i++) if (x <= tab[i][0]) {
+      var a = tab[i - 1], b = tab[i], u = (x - a[0]) / (b[0] - a[0]);
+      return a[1] + (b[1] - a[1]) * u;
+    }
+    return tab[tab.length - 1][1];
+  }
+  function fadeFactor(type, T) {
+    if (type === 'drum') return T < 200 ? 1 : Math.max(0.38, 1 - 0.6 * (T - 200) / 250);   // 50s drums: bad fade
+    return T < 350 ? 1 : Math.max(0.68, 1 - 0.3 * (T - 350) / 250);                        // disc: mild fade
+  }
+  var RPM = 60 / (2 * Math.PI);
+
+  function Vehicle(spec) {
+    this.c = spec;
+    this.reset();
+  }
+  Vehicle.prototype.reset = function () {
+    var c = this.c;
+    this.we = 0; this.ww = 0; this.v = 0; this.a = 0;
+    this.engine = 'off';            // off | cranking | running
+    this.crankT = 0; this.fastIdle = 0;
+    this.thrAct = 0;                // throttle actually applied (manifold lag)
+    this.idleI = 0; this.idleThr = 0;
+    this.gear = 0;                  // manual: 0 = N, 1..4 ; auto: current gear 1..4
+    this.range = 'N';               // auto selector: N D S L
+    this.clutchLocked = false; this.engage = 0;
+    this.tyre = 'roll';             // roll | spin | lock
+    this.frontLocked = false;
+    this.shift = null;              // {t, from, to}
+    this.autoTimer = 0; this.fill = 1;
+    this.limiterCut = false; this.cutT = 0;
+    this.Tf = AMB; this.Tr = AMB;   // brake temperatures (degC)
+    this.odo = 0; this.trip = 0;
+    this.skid = 0; this.time = 0;
+    this.lastShiftMsg = '';
+    this.brakeForce = 0;
+  };
+  Vehicle.prototype.rpm = function () { return this.we * RPM; };
+  Vehicle.prototype.ratio = function () { var c = this.c; return this.gear > 0 ? c.gears[this.gear - 1] * c.finalDrive : 0; };
+
+  Vehicle.prototype.ignition = function () {
+    if (this.engine === 'off') { this.engine = 'cranking'; this.crankT = 0; }
+    else { this.engine = 'off'; }
+  };
+
+  // ---- driver commands ----
+  Vehicle.prototype.shiftUp = function () {
+    var c = this.c;
+    if (c.trans === 'auto') { var R = ['N', 'D', 'S', 'L'], i = R.indexOf(this.range); if (i < 3) this.setRange(R[i + 1]); return; }
+    if (this.shift || this.gear >= c.gears.length) return;
+    this.shift = { t: 0, to: this.gear + 1, done: false };
+  };
+  Vehicle.prototype.shiftDown = function () {
+    var c = this.c;
+    if (c.trans === 'auto') { var R = ['N', 'D', 'S', 'L'], i = R.indexOf(this.range); if (i > 0) this.setRange(R[i - 1]); return; }
+    if (this.shift || this.gear <= 0) return;
+    var to = this.gear - 1;
+    if (to > 0) {
+      var rpmNew = this.ww * c.gears[to - 1] * c.finalDrive * RPM;
+      if (rpmNew > c.limiterRpm + 250) { this.lastShiftMsg = 'Downshift refused: ' + Math.round(rpmNew) + ' rpm would over-rev'; this.msgT = 2; return; }
+    }
+    this.shift = { t: 0, to: to, done: false };
+  };
+  Vehicle.prototype.setRange = function (r) {
+    var prev = this.range; this.range = r;
+    if (r === 'N') { this.gear = 1; }
+    else if (prev === 'N') { this.gear = 1; this.fill = 0.2; }
+    var maxG = r === 'L' ? 2 : r === 'S' ? 3 : 4;
+    if (this.gear > maxG) this.startAutoShift(maxG);
+  };
+  Vehicle.prototype.startAutoShift = function (to) {
+    this.gear = to; this.autoTimer = 0; this.shiftT = 0; this.shiftEvt = true;
+  };
+
+  Vehicle.prototype.engineTorque = function (rpm, thr) {
+    var c = this.c, k = rpm / 1000;
+    var fric = c.friction[0] + c.friction[1] * k + c.friction[2] * k * k;
+    if (rpm < 50) fric *= rpm / 50;
+    var wot = interp(c.torque, rpm) * c.netFactor;
+    if (rpm < 300) wot *= rpm / 300;
+    return thr * (wot + fric) - fric;
+  };
+
+  Vehicle.prototype.couplingTorque = function (we, wt) {
+    // fluid coupling: T = K we^2 (1 - SR^4) driving, symmetric when overrunning
+    var K = this.c.couplingK;
+    if (we >= wt) { var sr = we > 1e-3 ? clamp(wt / we, 0, 1) : 0; return K * we * we * (1 - sr * sr * sr * sr); }
+    var sr2 = wt > 1e-3 ? clamp(we / wt, 0, 1) : 0; return -K * wt * wt * (1 - sr2 * sr2 * sr2 * sr2);
+  };
+
+  /** advance by dt seconds; inp = {throttle 0..1, brake 0..1} */
+  Vehicle.prototype.update = function (dt, inp) {
+    var h = 0.001, n = Math.max(1, Math.round(dt / h));
+    for (var i = 0; i < n; i++) this.step(dt / n, inp);
+  };
+
+  Vehicle.prototype.step = function (dt, inp) {
+    var c = this.c, r = c.tyreRadius, m = c.massKg, Je = c.engineInertia;
+    var mEff = m + c.wheelInertiaFront / (r * r);
+    this.time += dt;
+    var rpm = this.we * RPM;
+    var pedal = clamp(inp.throttle, 0, 1), bpedal = clamp(inp.brake, 0, 1);
+    var auto = c.trans === 'auto';
+
+    // ---- manual shift sequence: declutch + lift, swap gear, re-engage ----
+    var driverThr = pedal;
+    if (this.shift) {
+      var s = this.shift; s.t += dt;
+      if (s.t < 0.14) { driverThr = 0; this.engageTarget = 0; }
+      else { if (!s.done) { this.gear = s.to; s.done = true; this.clutchLocked = false; this.engage = 0; } driverThr = s.t < 0.22 ? pedal * 0.4 : pedal; }
+      if (s.t > 0.55) this.shift = null;
+    }
+
+    // ---- engine state / idle control / limiter ----
+    var Tstarter = 0, ignitionOn = this.engine === 'running';
+    if (this.engine === 'cranking') {
+      this.crankT += dt; Tstarter = rpm < 220 ? 90 : 10;
+      if (this.crankT > 0.9) { this.engine = 'running'; this.fastIdle = 1; ignitionOn = true; }
+    }
+    this.fastIdle = Math.max(0, this.fastIdle - dt / 4);
+    var idleTarget = c.idleRpm * (1 + 0.35 * this.fastIdle);
+    if (ignitionOn) {
+      var err = (idleTarget - rpm) / c.idleRpm;
+      this.idleI = clamp(this.idleI + err * 0.6 * dt, -0.05, 0.12);
+      var base = this.engineBaseIdle();
+      this.idleThr = clamp(base + 0.5 * err + this.idleI, 0, 0.35);
+    } else { this.idleThr = 0; this.idleI = 0; }
+    // rpm limiter (ignition cut with hysteresis)
+    if (rpm > c.limiterRpm) this.limiterCut = true;
+    else if (rpm < c.limiterRpm - 150) this.limiterCut = false;
+    var cmd = Math.max(driverThr, this.idleThr);
+    var cut = this.limiterCut || !ignitionOn;
+    this.thrAct += (cmd - this.thrAct) * (1 - Math.exp(-dt / 0.06));
+    var Te = cut ? this.engineTorque(rpm, 0) : this.engineTorque(rpm, this.thrAct);
+    if (!ignitionOn) Te = Math.min(Te, 0) + Tstarter;
+    this.soundThr = cut ? 0 : driverThr;  // throttle as the synth hears it
+
+    // ---- normal loads (static + longitudinal weight transfer) ----
+    var Wt = m * G0, dN = m * this.a * c.cgHeight / c.wheelbase;
+    var Nr = clamp(Wt * c.rearFrac + dN, 0.15 * Wt, 0.85 * Wt), Nf = Wt - Nr;
+
+    // ---- brakes: demand, fade, lock-up (front axle on the body, rear on the tyre) ----
+    var B = c.brakes;
+    var fadeF = fadeFactor(B.front.type, this.Tf), fadeR = fadeFactor(B.rear.type, this.Tr);
+    var FbfDem = bpedal * B.capG * Wt * B.frontBias * fadeF;
+    var FbrDem = bpedal * B.capG * Wt * (1 - B.frontBias) * fadeR;
+    this.fadeF = fadeF; this.fadeR = fadeR;
+    if (!this.frontLocked && FbfDem > c.muPeak * Nf && this.v > 0.3) this.frontLocked = true;
+    else if (this.frontLocked && (FbfDem < c.muSlide * Nf * 0.98 || this.v < 0.05)) this.frontLocked = false;
+    var Fbf = this.frontLocked ? c.muSlide * Nf : FbfDem;
+    if (this.tyre !== 'lock' && FbrDem > c.muPeak * Nr && this.v > 0.3) this.tyre = 'lock';
+    else if (this.tyre === 'lock' && (FbrDem < c.muSlide * Nr * 0.98 || this.v < 0.05)) { this.tyre = 'roll'; this.ww = this.v / r; }
+
+    // ---- driveline coupling ----
+    var G = this.ratio(), eta = c.drivelineEff, Tc = 0, locked = false;
+    if (auto) {
+      if (this.range !== 'N' && G > 0) {
+        this.autoLogic(dt, pedal, rpm);
+        G = this.ratio();
+        this.fill = Math.min(1, this.fill + dt / 0.45);
+        Tc = this.couplingTorque(this.we, this.ww * G) * (0.3 + 0.7 * this.fill);
+      } else G = 0;
+    } else if (G > 0) {
+      // automated clutch ("stall-free"): bites progressively with engine speed + throttle
+      var wg = this.ww * G, dw = this.we - wg;
+      if (this.clutchLocked) {
+        if (rpm < c.idleRpm * 1.02 && driverThr < 0.05) this.clutchLocked = false;   // declutch, never stall
+        if (this.tyre === 'lock') this.clutchLocked = false;
+      }
+      if (!this.clutchLocked) {
+        var tgt;
+        if (this.shift && this.shift.t < 0.14) tgt = 0;
+        else if (this.tyre === 'lock') tgt = 0;
+        else if (this.shift && this.v > 2) tgt = 1;   // re-engage after the gear change
+        else {
+          var span = 500 + 2600 * driverThr;
+          tgt = driverThr > 0.02 ? clamp((rpm - c.idleRpm * 1.12) / span, 0, 1) : 0;   // no creep without throttle
+          if (this.tyre === 'spin' && (this.sr || 0) > 0.25 && rpm < 4500) tgt = Math.min(tgt, this.engage * 0.97);   // ease the clutch when the tyres light up
+          if (this.v > 3 && driverThr < 0.05 && rpm > c.idleRpm * 1.3) tgt = 1;   // rolling: engine braking
+        }
+        var rate = tgt > this.engage ? (this.shift ? 3.5 : 2.5) : 12;
+        this.engage += clamp(tgt - this.engage, -rate * dt, rate * dt);
+        var cap = this.engage * c.clutchMax;
+        Tc = cap * clamp(dw / 6, -1, 1);
+        if (Math.abs(dw) < (this.tyre === 'spin' ? 5.0 : 2.0) && this.engage > 0.5 && (this.tyre === 'roll' || (this.tyre === 'spin' && (this.sr || 0) < 0.15 && this.v > 5)) && rpm > c.idleRpm * 1.05) { this.clutchLocked = true; this.engage = 1; }
+      }
+      locked = this.clutchLocked;
+    } else { this.clutchLocked = false; this.engage = 0; }
+    if (G === 0) locked = false;
+
+    // ---- resistances on the body ----
+    var Faero = 0.5 * RHO * c.cd * c.area * this.v * this.v;
+    var Froll = c.crr * Wt;                      // static-capable (treated like friction)
+    var v = this.v, a, ae, aw;
+    var Jw = c.wheelInertiaRear;
+    var self = this;
+    // friction (brakes + rolling) that can hold the car at rest
+    function bodyAccel(Fdrive, Mass, Ffric) {
+      if (v > 1e-4) return (Fdrive - Faero - Ffric) / Mass;
+      if (Fdrive > Ffric) return (Fdrive - Ffric) / Mass;
+      return 0;
+    }
+
+    if (this.tyre === 'lock') {
+      // rear wheels locked by the brakes: sliding friction
+      var Fsl = (v > 1e-4 ? c.muSlide * Nr : 0);
+      a = bodyAccel(0, mEff, Fbf + Fsl + Froll * 0.5);
+      this.ww = 0;
+      ae = (Te - (G > 0 && !auto ? 0 : Tc)) / Je;
+      if (auto) ae = (Te - Tc) / Je;
+      this.we += ae * dt;
+      this.brakeForce = Fbf + Fsl;
+      this.heat(dt, this.frontLocked ? 0 : Fbf, 0);
+      this.skid = Math.min(1, (v / 8)) * (this.frontLocked ? 1 : 0.7);
+    } else if (this.tyre === 'roll') {
+      var weBefore = this.we;
+      var Fneed, MassTot;
+      if (locked) {
+        MassTot = mEff + (Jw + Je * G * G) / (r * r);
+        var Fd = Te * G * eta / r;
+        a = bodyAccel(Fd, MassTot, Fbf + FbrDem + Froll);
+        this.we = this.v / r * G;   // keep constraint exact
+        var Tclutch = Te - Je * G * a / r;
+        if (Math.abs(Tclutch) > c.clutchMax) this.clutchLocked = false;
+      } else {
+        MassTot = mEff + Jw / (r * r);
+        a = bodyAccel(Tc * G * eta / r, MassTot, Fbf + FbrDem + Froll);
+        ae = (Te - Tc) / Je;
+        this.we += ae * dt;
+      }
+      // rear tyre force needed vs grip
+      Fneed = mEff * a + Faero + Fbf + Froll - FbrDem; this.sr = 0;
+      this.brakeForce = Fbf + FbrDem;
+      this.skid = 0;
+      if (Fneed > c.muPeak * Nr) {
+        // grip exceeded: undo this step's rolling solution and solve it as spinning
+        this.tyre = 'spin'; this.we = weBefore; this.ww = (v + 0.10 * Math.max(v, 2.0)) / r;   // enter at ~peak slip
+      } else this.heat(dt, Fbf, FbrDem);
+    }
+    if (this.tyre === 'spin') { // spin: wheel and body integrate separately
+      var slipV = this.ww * r - v;
+      var sr = slipV / Math.max(v, 2.0);          // slip ratio (floored near standstill)
+      var Ft = Nr * this.tyreMu(sr); this.sr = sr;
+      var Tdrive;
+      if (locked) {
+        aw = (Te * G * eta - Ft * r) / (Jw + Je * G * G);
+        this.ww += aw * dt; this.we = this.ww * G;
+      } else {
+        if (!auto && G > 0) {
+          // implicit clutch coupling (stiff vs. the light wheel inertia)
+          var k = this.engage * c.clutchMax / 6, d = this.we - this.ww * G;
+          var dn = (d + dt * (Te / Je + G * Ft * r / Jw)) / (1 + dt * k * (1 / Je + G * G * eta / Jw));
+          Tc = clamp(k * dn, -this.engage * c.clutchMax, this.engage * c.clutchMax);
+        }
+        aw = (Tc * G * eta - Ft * r) / Jw;
+        this.ww += aw * dt;
+        this.we += (Te - Tc) / Je * dt;
+      }
+      a = bodyAccel(Ft, mEff, Fbf + FbrDem + Froll);
+      if ((this.ww * r - (v + a * dt)) / Math.max(v, 2.0) < 0.04) { this.tyre = 'roll'; }   // back inside the grip region
+      this.skid = clamp((Math.abs(sr) - 0.12) * 2, 0, 1) * clamp(Math.abs(slipV) / 3, 0, 1);
+      this.brakeForce = Fbf + FbrDem;
+      this.heat(dt, Fbf, FbrDem);
+    }
+    this.v = Math.max(0, this.v + a * dt);
+    if (this.v === 0 && a < 0) a = 0;
+    this.a = a;
+    if (this.tyre === 'roll') { this.ww = this.v / r; if (locked) this.we = this.ww * G; }
+    if (this.we < 0) this.we = 0;
+    // hard stall-free floor while running (idle control can't keep up with a dumped clutch)
+    if (ignitionOn && this.we * RPM < c.idleRpm * 0.7) this.we = c.idleRpm * 0.7 / RPM;
+    var ds = this.v * dt; this.odo += ds; this.trip += ds;
+    if (this.msgT > 0) this.msgT -= dt;
+  };
+
+  // longitudinal tyre curve: linear to muPeak at 12% slip, falling to muSlide by 60%
+  Vehicle.prototype.tyreMu = function (sr) {
+    var c = this.c, x = Math.abs(sr), mu;
+    if (x < 0.12) mu = c.muPeak * x / 0.12;
+    else mu = c.muSlide + (c.muPeak - c.muSlide) * Math.max(0, 1 - (x - 0.12) / 0.48);
+    return sr < 0 ? -mu : mu;
+  };
+
+  Vehicle.prototype.engineBaseIdle = function () {
+    var c = this.c, k = c.idleRpm / 1000;
+    var fric = c.friction[0] + c.friction[1] * k + c.friction[2] * k * k;
+    var wot = interp(c.torque, c.idleRpm) * c.netFactor;
+    return fric / (wot + fric);
+  };
+
+  Vehicle.prototype.heat = function (dt, Ff, Fr) {
+    var B = this.c.brakes, v = this.v;
+    this.Tf += (Ff * v / B.front.heatCap - (B.front.coolBase + B.front.coolSpeed * v) * (this.Tf - AMB)) * dt;
+    this.Tr += (Fr * v / B.rear.heatCap - (B.rear.coolBase + B.rear.coolSpeed * v) * (this.Tr - AMB)) * dt;
+  };
+
+  // ---- Hydra-Matic shift schedule (throttle-dependent, turbine speed based) ----
+  Vehicle.prototype.autoLogic = function (dt, thr, rpm) {
+    var c = this.c; this.autoTimer += dt;
+    if (thr < 0.3) this.kickArmed = true;
+    var maxG = this.range === 'L' ? 2 : this.range === 'S' ? 3 : 4;
+    var out = this.ww * c.finalDrive * RPM;            // driveshaft rpm
+    var tRpm = out * c.gears[this.gear - 1];            // turbine rpm in current gear
+    var up = 1300 + 3200 * Math.pow(thr, 1.2);          // WOT: shift ~4500 turbine rpm
+    if (this.gear < maxG && tRpm > up && this.autoTimer > 0.9) { this.gear++; this.autoTimer = 0; this.fill = 0.25; return; }
+    if (this.gear > 1 && this.autoTimer > 0.7) {
+      var lowerRpm = out * c.gears[this.gear - 2];
+      var down = 600 + 1100 * thr;
+      // kickdown: flooring the pedal (fresh press) drops a gear if the engine has room
+      var kick = this.kickArmed && thr > 0.9 && lowerRpm < 0.8 * up;
+      if ((tRpm < down && lowerRpm < up * 0.7) || kick) { this.gear--; this.autoTimer = 0; this.fill = 0.35; this.kickArmed = false; }
+    }
+  };
+
+  Vehicle.prototype.gearLabel = function () {
+    if (this.c.trans === 'auto') return this.range === 'N' ? 'N' : this.range + this.gear;
+    return this.gear === 0 ? 'N' : String(this.gear);
+  };
+  return { Vehicle: Vehicle, interp: interp, fadeFactor: fadeFactor };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Physics;
+</script>
+<script>/* js/audio.js */
+/* audio.js: AudioContext + engine worklet (loaded from a Blob URL so it also works from file://) */
+var EngineAudio = (function () {
+  // The worklet source is inlined (no fetch). Chrome refuses blob: worklets on a
+  // file:// page (opaque "null" origin) but accepts data: URLs, so try data: first,
+  // then fall back to a Blob URL (other browsers / http hosting).
+  async function loadWorklet(ctx) {
+    var src = ENGINE_WORKLET_SOURCE, errs = [];
+    try { await ctx.audioWorklet.addModule('data:text/javascript;charset=utf-8,' + encodeURIComponent(src)); return 'data'; }
+    catch (e) { errs.push(e.message); }
+    var url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
+    try { await ctx.audioWorklet.addModule(url); return 'blob'; }
+    catch (e) { errs.push(e.message); throw new Error('Could not load the audio worklet: ' + errs.join(' | ')); }
+    finally { URL.revokeObjectURL(url); }
+  }
+  EngineAudio.loadWorklet = loadWorklet;
+  function EngineAudio() { this.ctx = null; this.node = null; this.master = null; this.muted = false; this.ready = false; this.gr = 1; }
+  EngineAudio.prototype.init = async function () {
+    if (this.ctx) { if (this.ctx.state !== 'running') await this.ctx.resume(); return; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AC({ latencyHint: 'interactive' });
+    if (!this.ctx.audioWorklet) throw new Error('This browser has no AudioWorklet support');
+    await loadWorklet(this.ctx);
+    this.node = new AudioWorkletNode(this.ctx, 'engine-processor', { numberOfInputs: 0, outputChannelCount: [2] });
+    this.master = this.ctx.createGain(); this.master.gain.value = this.muted ? 0 : 1;
+    this.node.connect(this.master).connect(this.ctx.destination);
+    var self = this;
+    this.node.port.onmessage = function (e) { if (e.data.type === 'meter') self.gr = e.data.gr; };
+    if (this.ctx.state !== 'running') await this.ctx.resume();
+    this.ready = true;
+  };
+  EngineAudio.prototype.setCar = function (spec, outGain) { if (this.node) this.node.port.postMessage({ type: 'spec', spec: spec, outGain: outGain }); };
+  EngineAudio.prototype.control = function (m) { if (this.node) { m.type = 'ctl'; this.node.port.postMessage(m); } };
+  EngineAudio.prototype.setMuted = function (mu) {
+    this.muted = mu;
+    if (this.master) this.master.gain.setTargetAtTime(mu ? 0 : 1, this.ctx.currentTime, 0.03);   // click-free
+  };
+  return EngineAudio;
+})();
+</script>
+<script>/* js/ui.js */
+/* ui.js: canvas rendering, period-style gauges and a scrolling road */
+var UI = (function () {
+  var W = 1280, H = 720;
+  function Dash(canvas) { this.cv = canvas; this.g = canvas.getContext('2d'); this.resize(); }
+  Dash.prototype.resize = function () {
+    var dpr = window.devicePixelRatio || 1, r = this.cv.getBoundingClientRect();
+    var w = Math.max(320, r.width), h = w * H / W;
+    this.cv.style.height = h + 'px';
+    this.cv.width = Math.round(w * dpr); this.cv.height = Math.round(h * dpr);
+    this.scale = this.cv.width / W;
+  };
+
+  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+  Dash.prototype.draw = function (s) {
+    var g = this.g; g.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+    this.road(g, s);
+    this.panel(g, s);
+  };
+
+  // ---------------- road ----------------
+  Dash.prototype.road = function (g, s) {
+    var horizon = 170, bottom = 430, cx = W / 2;
+    var sky = g.createLinearGradient(0, 0, 0, horizon);
+    sky.addColorStop(0, '#2b4a7a'); sky.addColorStop(0.7, '#e59a5a'); sky.addColorStop(1, '#f6c77b');
+    g.fillStyle = sky; g.fillRect(0, 0, W, horizon);
+    // distant mesas, parallax with distance
+    g.fillStyle = '#8a5a44';
+    var off = (s.dist * 0.02) % 400;
+    g.beginPath(); g.moveTo(0, horizon);
+    for (var x = -400; x <= W + 400; x += 40) {
+      var xx = x - off, k = Math.floor((x + 4000) / 40);
+      var hgt = 18 + 26 * Math.abs(Math.sin(k * 1.7)) * (k % 5 < 2 ? 1.6 : 0.6);
+      g.lineTo(xx, horizon - hgt);
+    }
+    g.lineTo(W, horizon); g.closePath(); g.fill();
+    // sun
+    g.fillStyle = 'rgba(255,230,160,0.9)'; g.beginPath(); g.arc(980, horizon - 30, 26, 0, Math.PI * 2); g.fill();
+    // ground
+    var gr = g.createLinearGradient(0, horizon, 0, bottom);
+    gr.addColorStop(0, '#b99a62'); gr.addColorStop(1, '#8e7444');
+    g.fillStyle = gr; g.fillRect(0, horizon, W, bottom - horizon);
+    // perspective: screen y for distance z (m) ahead; camera height 1.2 m
+    var camH = 1.25, f = 260;
+    function yOf(z) { return horizon + f * camH / z; }
+    function half(z) { return f * 4.2 / z; }   // road half-width 4.2 m
+    var zNear = camH * f / (bottom - horizon);
+    // asphalt
+    g.fillStyle = '#3d3b39';
+    g.beginPath(); g.moveTo(cx - half(400), yOf(400)); g.lineTo(cx + half(400), yOf(400));
+    g.lineTo(cx + half(zNear), bottom); g.lineTo(cx - half(zNear), bottom); g.closePath(); g.fill();
+    // ground stripes for motion (alternating bands every 10 m)
+    var d = s.dist;
+    for (var z = 200; z >= zNear; z -= 1) { }  // (kept cheap: bands below)
+    for (var i = 0; i < 40; i++) {
+      var z0 = 10 * (i + 1) - (d % 20), z1 = z0 + 10;
+      if (z0 < zNear) z0 = zNear; if (z1 <= zNear) continue;
+      if (Math.floor((d + 10 * (i + 1)) / 10) % 2) continue;
+      var y0 = yOf(z0), y1 = yOf(z1);
+      g.fillStyle = 'rgba(0,0,0,0.05)';
+      g.fillRect(0, y1, cx - half(z0), y0 - y1); g.fillRect(cx + half(z0), y1, W, y0 - y1);
+    }
+    // edge lines
+    g.strokeStyle = '#d8d3c4'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(cx - half(400) * 0.93, yOf(400)); g.lineTo(cx - half(zNear) * 0.93, bottom);
+    g.moveTo(cx + half(400) * 0.93, yOf(400)); g.lineTo(cx + half(zNear) * 0.93, bottom); g.stroke();
+    // centre dashes: 3 m dash, 9 m gap (US practice), yellow as on period two-lane roads
+    var period = 12, ph = d % period;
+    g.fillStyle = '#e8c547';
+    for (var zz = -ph; zz < 300; zz += period) {
+      var a = Math.max(zNear, zz), b = zz + 3;
+      if (b <= zNear) continue;
+      var ya = yOf(a), yb = yOf(b), wa = Math.max(1, half(a) * 0.035), wb = Math.max(0.5, half(b) * 0.035);
+      g.beginPath(); g.moveTo(cx - wa, ya); g.lineTo(cx + wa, ya); g.lineTo(cx + wb, yb); g.lineTo(cx - wb, yb); g.closePath(); g.fill();
+    }
+    // roadside posts every 25 m, telegraph poles every 50 m
+    var pp = d % 25;
+    for (var zp = 300 - ((d + 300) % 25); zp >= 2; zp -= 25) {
+      if (zp < zNear * 0.6) continue;
+      var y = yOf(zp), hw = half(zp), ph2 = f * 0.9 / zp, pw = Math.max(1, f * 0.12 / zp);
+      g.fillStyle = '#eee'; g.fillRect(cx - hw * 1.12 - pw / 2, y - ph2, pw, ph2); g.fillRect(cx + hw * 1.12 - pw / 2, y - ph2, pw, ph2);
+      g.fillStyle = '#c33'; g.fillRect(cx - hw * 1.12 - pw / 2, y - ph2, pw, ph2 * 0.18); g.fillRect(cx + hw * 1.12 - pw / 2, y - ph2, pw, ph2 * 0.18);
+      var idx = Math.round((d + zp) / 25);
+      if (idx % 2 === 0) {
+        var th = f * 8 / zp, tw = Math.max(1, f * 0.25 / zp), tx = cx + hw * 2.2;
+        g.fillStyle = '#5a4030'; g.fillRect(tx, y - th, tw, th); g.fillRect(tx - th * 0.15, y - th * 0.94, th * 0.3 + tw, Math.max(1, tw * 0.6));
+      }
+    }
+    // wires
+    g.strokeStyle = 'rgba(40,30,20,0.5)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx + half(400) * 2.2, yOf(400) - f * 7.5 / 400); g.lineTo(W, yOf(zNear * 1.3) - f * 7.5 / (zNear * 1.3)); g.stroke();
+    // hood of the car
+    g.fillStyle = s.carId === 'gt350' ? '#1d3f8f' : '#e9e2d0';
+    g.beginPath(); g.moveTo(250, bottom); g.quadraticCurveTo(cx, bottom - 58, W - 250, bottom); g.closePath(); g.fill();
+    if (s.carId === 'gt350') { g.fillStyle = '#f3f3f3'; g.beginPath(); g.moveTo(cx - 60, bottom); g.lineTo(cx - 40, bottom - 30); g.lineTo(cx - 12, bottom - 30); g.lineTo(cx - 20, bottom); g.moveTo(cx + 20, bottom); g.lineTo(cx + 12, bottom - 30); g.lineTo(cx + 40, bottom - 30); g.lineTo(cx + 60, bottom); g.fill(); }
+    else { g.fillStyle = '#c9c9c9'; g.fillRect(cx - 3, bottom - 40, 6, 40); }
+    // slight shake with rpm / road
+    // HUD messages
+    g.font = 'bold 22px Georgia, serif'; g.textAlign = 'left';
+    g.fillStyle = 'rgba(0,0,0,0.55)'; roundRect(g, 18, 16, 430, 40, 8); g.fill();
+    g.fillStyle = '#f4ead2'; g.fillText(s.title, 30, 44);
+    if (s.msg) {
+      g.textAlign = 'center'; g.font = 'bold 26px Georgia, serif';
+      g.fillStyle = 'rgba(0,0,0,0.6)'; var mw = g.measureText(s.msg).width + 40; roundRect(g, cx - mw / 2, 80, mw, 44, 10); g.fill();
+      g.fillStyle = '#ffe9a8'; g.fillText(s.msg, cx, 111);
+    }
+    var tags = [];
+    if (s.tyre === 'spin' && s.sr > 0.15) tags.push(['WHEELSPIN', '#ff9b3d']);
+    if (s.lockF || s.lockR) tags.push(['BRAKES LOCKED' + (s.lockF && s.lockR ? '' : s.lockF ? ' (front)' : ' (rear)'), '#ff5a4a']);
+    if (s.limiter) tags.push(['REV LIMIT', '#ff5a4a']);
+    if (s.fade < 0.9) tags.push(['BRAKE FADE ' + Math.round((1 - s.fade) * 100) + '%', '#ffb347']);
+    g.textAlign = 'right'; g.font = 'bold 20px Georgia, serif';
+    for (var t = 0; t < tags.length; t++) {
+      var tw2 = g.measureText(tags[t][0]).width + 24;
+      g.fillStyle = 'rgba(0,0,0,0.6)'; roundRect(g, W - 20 - tw2, 16 + t * 44, tw2, 36, 8); g.fill();
+      g.fillStyle = tags[t][1]; g.fillText(tags[t][0], W - 32, 41 + t * 44);
+    }
+  };
+
+  // ---------------- dashboard ----------------
+  Dash.prototype.panel = function (g, s) {
+    var top = 430;
+    var grd = g.createLinearGradient(0, top, 0, H);
+    grd.addColorStop(0, '#2a1a10'); grd.addColorStop(0.05, '#5b3a22'); grd.addColorStop(1, '#3a2414');
+    g.fillStyle = grd; g.fillRect(0, top, W, H - top);
+    // wood grain
+    g.strokeStyle = 'rgba(0,0,0,0.12)'; g.lineWidth = 1;
+    for (var i = 0; i < 18; i++) { g.beginPath(); var y = top + 10 + i * 16; g.moveTo(0, y); g.bezierCurveTo(300, y + 6 * Math.sin(i), 900, y - 6 * Math.cos(i * 1.3), W, y + 3); g.stroke(); }
+    g.fillStyle = '#c9c4b8'; g.fillRect(0, top, W, 4);
+    var tachMax = s.tachMax, kmh = s.kmh, mph = s.units === 'mph';
+    // tachometer
+    this.gauge(g, 300, 578, 122, {
+      max: tachMax / 1000, value: s.rpm / 1000, major: 1, minor: 0.5, red: s.tachRed / 1000,
+      label: 'RPM', sub: 'x1000', fmt: function (v) { return String(v); },
+    });
+    // speedometer
+    var smax = mph ? (s.carId === 'gt350' ? 140 : 120) : (s.carId === 'gt350' ? 240 : 200);
+    this.gauge(g, 980, 578, 122, {
+      max: smax, value: mph ? kmh / 1.609344 : kmh, major: mph ? 20 : 20, minor: mph ? 5 : 10,
+      label: mph ? 'MPH' : 'KM/H', fmt: function (v) { return String(v); }, odo: s,
+    });
+    // centre cluster: gear, pedals, brake temps
+    var cx = W / 2, bx = cx - 175, bw = 350, by = 450, bh = 248;
+    g.fillStyle = '#16100b'; roundRect(g, bx, by, bw, bh, 14); g.fill();
+    g.strokeStyle = '#b8b2a4'; g.lineWidth = 3; roundRect(g, bx, by, bw, bh, 14); g.stroke();
+    g.fillStyle = '#d9cfb8'; g.textAlign = 'center'; g.font = '14px Georgia, serif';
+    g.fillText(s.transText, cx, by + 22);
+    if (s.auto) {
+      var R = ['N', 'D', 'S', 'L'];
+      g.font = 'bold 34px Georgia, serif';
+      for (var k = 0; k < R.length; k++) { g.fillStyle = s.range === R[k] ? '#ffcf4a' : '#5f584c'; g.fillText(R[k], cx - 84 + k * 56, by + 64); }
+      g.font = '14px Georgia, serif'; g.fillStyle = '#d9cfb8';
+      g.fillText(s.range === 'N' ? 'neutral' : 'in gear ' + s.gear + ' of 4' + (s.range === 'S' ? ' (holds max 3)' : s.range === 'L' ? ' (holds max 2)' : ''), cx, by + 86);
+    } else {
+      g.font = 'bold 50px Georgia, serif'; g.fillStyle = '#ffcf4a';
+      g.fillText(s.gearLabel, cx, by + 70);
+      g.font = '13px Georgia, serif'; g.fillStyle = '#d9cfb8';
+      g.fillText(s.clutch, cx, by + 88);
+    }
+    var top2 = by + 116, bh2 = 80;
+    function bar(x, label, v, col, valTxt) {
+      g.fillStyle = '#2d241b'; g.fillRect(x, top2, 26, bh2);
+      g.fillStyle = col; g.fillRect(x, top2 + bh2 - bh2 * v, 26, bh2 * v);
+      g.strokeStyle = '#8f887a'; g.lineWidth = 1.5; g.strokeRect(x, top2, 26, bh2);
+      g.fillStyle = '#d9cfb8'; g.font = '11px Georgia, serif'; g.textAlign = 'center'; g.fillText(label, x + 13, top2 + bh2 + 14);
+      if (valTxt) g.fillText(valTxt, x + 13, top2 + bh2 + 27);
+    }
+    g.font = '12px Georgia, serif'; g.fillStyle = '#d9cfb8'; g.fillText('PEDALS', bx + 75, by + 104);
+    bar(bx + 30, 'THROTTLE', s.thr, '#57c25b');
+    bar(bx + 94, 'BRAKE', s.brake, '#e0483c');
+    function tcol(T) { return T < 200 ? '#4aa3e0' : T < 300 ? '#e6c440' : T < 400 ? '#f08a2c' : '#e5402f'; }
+    g.font = '12px Georgia, serif'; g.fillStyle = '#d9cfb8'; g.fillText('BRAKE TEMP', bx + bw - 90, by + 104);
+    bar(bx + bw - 140, 'FRONT', Math.min(1, Math.max(0, (s.Tf - 20) / 480)), tcol(s.Tf), Math.round(s.Tf) + '\u00b0C');
+    bar(bx + bw - 66, 'REAR', Math.min(1, Math.max(0, (s.Tr - 20) / 480)), tcol(s.Tr), Math.round(s.Tr) + '\u00b0C');
+    g.font = '12px Georgia, serif'; g.fillStyle = s.fade < 0.9 ? '#ffb347' : '#9b927f'; g.textAlign = 'center';
+    g.fillText('fade ' + Math.round((1 - s.fade) * 100) + '%', bx + bw - 90, by + bh - 6);
+    g.fillStyle = '#9b927f'; g.fillText(s.brakeType, bx + 75, by + bh - 6);
+    // status line
+    g.textAlign = 'left'; g.font = '14px Georgia, serif'; g.fillStyle = '#e6dcc3';
+    g.fillText('Engine: ' + s.engine, 16, 452);
+    g.fillText('Listening: ' + s.listen + (s.muted ? '  [MUTED]' : ''), 16, 470);
+    g.textAlign = 'right';
+    g.fillText('accel ' + (s.extra || ''), W - 16, 452);
+  };
+
+  Dash.prototype.gauge = function (g, x, y, r, o) {
+    // chrome bezel
+    var bz = g.createLinearGradient(x - r, y - r, x + r, y + r);
+    bz.addColorStop(0, '#f2f2f2'); bz.addColorStop(0.5, '#8a8a8a'); bz.addColorStop(1, '#e8e8e8');
+    g.fillStyle = bz; g.beginPath(); g.arc(x, y, r + 10, 0, Math.PI * 2); g.fill();
+    // cream face
+    var face = g.createRadialGradient(x - 20, y - 30, 10, x, y, r);
+    face.addColorStop(0, '#fbf5e4'); face.addColorStop(1, '#e3d7b8');
+    g.fillStyle = face; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    var a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
+    function ang(v) { return a0 + (a1 - a0) * Math.min(1.02, Math.max(0, v / o.max)); }
+    if (o.red !== undefined) {
+      g.strokeStyle = '#c4271c'; g.lineWidth = 10;
+      g.beginPath(); g.arc(x, y, r - 12, ang(o.red), ang(o.max)); g.stroke();
+    }
+    g.strokeStyle = '#1b1712'; g.fillStyle = '#1b1712';
+    for (var v = 0; v <= o.max + 1e-9; v += o.minor) {
+      var a = ang(v), maj = Math.abs(v / o.major - Math.round(v / o.major)) < 1e-6;
+      g.lineWidth = maj ? 3 : 1.5;
+      var r0 = maj ? r - 22 : r - 14;
+      g.beginPath(); g.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); g.lineTo(x + Math.cos(a) * (r - 5), y + Math.sin(a) * (r - 5)); g.stroke();
+      if (maj) {
+        g.font = 'bold ' + (o.max > 100 ? 15 : 19) + 'px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(o.fmt(Math.round(v)), x + Math.cos(a) * (r - 38), y + Math.sin(a) * (r - 38));
+      }
+    }
+    g.textBaseline = 'alphabetic';
+    g.font = 'italic bold 16px Georgia, serif'; g.textAlign = 'center';
+    g.fillText(o.label, x, y - 38);
+    if (o.sub) { g.font = '12px Georgia, serif'; g.fillText(o.sub, x, y - 22); }
+    if (o.odo) this.odometer(g, x, y + 42, o.odo);
+    // needle
+    var an = ang(o.value);
+    g.save(); g.translate(x, y); g.rotate(an);
+    g.fillStyle = '#d6301f'; g.beginPath(); g.moveTo(-14, -4); g.lineTo(r - 16, -1.2); g.lineTo(r - 16, 1.2); g.lineTo(-14, 4); g.closePath(); g.fill();
+    g.restore();
+    g.fillStyle = '#222'; g.beginPath(); g.arc(x, y, 10, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#777'; g.beginPath(); g.arc(x - 2, y - 2, 4, 0, Math.PI * 2); g.fill();
+  };
+
+  // drum odometer: 5 whole digits + tenths, rolling digits; trip below
+  Dash.prototype.odometer = function (g, x, y, s) {
+    var miles = s.units === 'mph';
+    var odo = (miles ? s.odoKm / 1.609344 : s.odoKm), trip = (miles ? s.tripKm / 1.609344 : s.tripKm);
+    this.drum(g, x, y, odo, 5, 15);
+    g.font = '10px Georgia, serif'; g.fillStyle = '#3b3328'; g.textAlign = 'center';
+    g.fillText(miles ? 'MILES' : 'KM', x, y + 26);
+    this.drum(g, x, y + 44, trip, 3, 12);
+    g.fillText('TRIP', x, y + 66);
+  };
+  Dash.prototype.drum = function (g, x, y, value, nInt, cw) {
+    var n = nInt + 1, w = n * cw, h = cw * 1.45, x0 = x - w / 2;
+    g.fillStyle = '#111'; g.fillRect(x0 - 2, y - h / 2 - 2, w + 4, h + 4);
+    var v10 = value * 10;           // in tenths
+    g.save(); g.beginPath(); g.rect(x0, y - h / 2, w, h); g.clip();
+    g.font = 'bold ' + Math.round(cw * 1.05) + 'px Courier New, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (var i = 0; i < n; i++) {
+      var place = Math.pow(10, n - 1 - i);          // tenths place for the last drum
+      var dv = (v10 / place) % 10, digit = Math.floor(dv), frac = 0;
+      if (i === n - 1) frac = dv - digit;           // the tenths drum rolls continuously
+      else { var lower = (v10 % place) / place; if (lower > 0.9) frac = (lower - 0.9) * 10; }   // carry roll
+      var cx = x0 + i * cw + cw / 2;
+      g.fillStyle = i === n - 1 ? '#f2efe6' : '#1c1c1c'; g.fillRect(x0 + i * cw, y - h / 2, cw - 1, h);
+      g.fillStyle = i === n - 1 ? '#a3221a' : '#f2efe6';
+      g.fillText(String(digit), cx, y - frac * h);
+      g.fillText(String((digit + 1) % 10), cx, y + h - frac * h);
+    }
+    g.restore(); g.textBaseline = 'alphabetic';
+  };
+  return { Dash: Dash };
+})();
+</script>
+<script>/* js/main.js */
+/* main.js: input, game loop, wiring physics -> audio + UI */
+(function () {
+  var OUT_GAIN = { GT350: 0.8, CADDY: 0.85 };
+  var ODO_START = { gt350: 38412.0, caddy: 61905.3 };   // km already on the clocks
+  var cars = {};
+  Vehicles.list.forEach(function (v) {
+    var car = new Physics.Vehicle(v);
+    car.odo = ODO_START[v.id] * 1000;
+    try { var saved = localStorage.getItem('streetrod.odo.' + v.id); if (saved) car.odo = +saved; } catch (e) {}
+    cars[v.id] = car;
+  });
+  var state = { carId: 'gt350', units: 'kmh', listen: 0, muted: false, keys: {}, throttle: 0, brake: 0, msg: '', msgT: 0, started: false, dist: 0 };
+  var audio = new EngineAudio();
+  var dash = new UI.Dash(document.getElementById('dash'));
+  window.addEventListener('resize', function () { dash.resize(); });
+
+  function car() { return cars[state.carId]; }
+  function spec() { return car().c; }
+  function flash(m, t) { state.msg = m; state.msgT = t || 2; }
+
+  async function ensureAudio() {
+    if (audio.ready) { await audio.init(); return; }
+    try {
+      await audio.init();
+      audio.setCar(EngineCars[spec().engineKey], OUT_GAIN[spec().engineKey]);
+      document.getElementById('start').textContent = 'Engine on/off (S)';
+    } catch (e) { console.error(e); flash('Audio failed: ' + e.message, 5); }
+  }
+  async function ignition() {
+    await ensureAudio();
+    car().ignition();
+    state.started = true;
+  }
+  async function selectCar(id) {
+    if (state.carId === id) return;
+    var wasRunning = car().engine !== 'off';
+    state.carId = id;
+    await ensureAudio();
+    audio.setCar(EngineCars[spec().engineKey], OUT_GAIN[spec().engineKey]);
+    if (wasRunning && car().engine === 'off') car().ignition();
+    flash(spec().label, 1.5);
+    updatePanel();
+  }
+
+  // ---- keyboard ----
+  var HANDLED = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+  window.addEventListener('keydown', function (e) {
+    if (HANDLED.indexOf(e.key) >= 0) e.preventDefault();
+    if (e.repeat) return;
+    state.keys[e.key] = true;
+    var c = car();
+    switch (e.key) {
+      case 'ArrowRight': c.shiftUp(); break;
+      case 'ArrowLeft': c.shiftDown(); if (c.lastShiftMsg && c.msgT > 1.9) flash(c.lastShiftMsg, 1.5); break;
+      case '1': selectCar('gt350'); break;
+      case '2': selectCar('caddy'); break;
+      case 's': case 'S': case 'i': case 'I': ignition(); break;
+      case 'm': case 'M': toggleMute(); break;
+      case 'v': case 'V': toggleListen(); break;
+      case 'u': case 'U': toggleUnits(); break;
+      case 't': case 'T': c.trip = 0; flash('Trip reset', 1); break;
+    }
+    if (e.key === 'ArrowUp' && !audio.ready) ensureAudio();
+  });
+  window.addEventListener('keyup', function (e) { state.keys[e.key] = false; });
+  window.addEventListener('blur', function () { state.keys = {}; });
+
+  function toggleMute() { state.muted = !state.muted; audio.setMuted(state.muted); updatePanel(); }
+  function toggleListen() { state.listen = state.listen ? 0 : 1; updatePanel(); }
+  function toggleUnits() { state.units = state.units === 'kmh' ? 'mph' : 'kmh'; updatePanel(); }
+
+  // ---- buttons ----
+  document.getElementById('start').onclick = function () { ignition(); this.blur(); };
+  document.getElementById('car1').onclick = function () { selectCar('gt350'); this.blur(); };
+  document.getElementById('car2').onclick = function () { selectCar('caddy'); this.blur(); };
+  document.getElementById('mute').onclick = function () { toggleMute(); this.blur(); };
+  document.getElementById('listen').onclick = function () { toggleListen(); this.blur(); };
+  document.getElementById('units').onclick = function () { toggleUnits(); this.blur(); };
+
+  function updatePanel() {
+    var v = spec();
+    document.getElementById('car1').classList.toggle('on', state.carId === 'gt350');
+    document.getElementById('car2').classList.toggle('on', state.carId === 'caddy');
+    document.getElementById('mute').textContent = state.muted ? 'Unmute (M)' : 'Mute (M)';
+    document.getElementById('listen').textContent = state.listen ? 'Listening: in-cabin (approx.) (V)' : 'Listening: outside rear (V)';
+    document.getElementById('units').textContent = state.units === 'kmh' ? 'Units: km/h (U)' : 'Units: mph (U)';
+    var b = v.brakes;
+    document.getElementById('specs').innerHTML =
+      '<b>' + v.label + '</b><br>' + v.engineText + '<br>' + v.transText + ': ' + v.gears.join(' / ') + ', final drive ' + v.finalDrive.toFixed(2) +
+      '<br>Mass ' + v.curbText + '<br>Tyres ' + v.tyreText + '<br>Brakes: ' + b.text +
+      '<br><span class="dim">Sound: ' + EngineCars[v.engineKey].name + ' (engine-sound v1 synth)</span>';
+  }
+  updatePanel();
+
+  // ---- loop ----
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    tick(dt);
+    render();
+    requestAnimationFrame(frame);
+  }
+  function tick(dt) {
+    var k = state.keys, c = car();
+    // pedals ramp (keyboard is on/off): throttle ~0.7 s to full, brake ~0.6 s
+    state.throttle = k.ArrowUp ? Math.min(1, state.throttle + dt / 0.7) : Math.max(0, state.throttle - dt / 0.12);
+    state.brake = k.ArrowDown ? Math.min(1, state.brake + dt / 0.6) : Math.max(0, state.brake - dt / 0.15);
+    c.update(dt, { throttle: state.throttle, brake: state.brake });
+    // other cars cool their brakes while parked
+    for (var id in cars) if (id !== state.carId) cars[id].update(dt, { throttle: 0, brake: 0 });
+    state.dist += c.v * dt;
+    if (state.msgT > 0) state.msgT -= dt; else state.msg = '';
+    if (audio.ready) {
+      var running = c.engine === 'running';
+      audio.control({
+        rpm: Math.max(60, c.rpm()), thr: running ? c.soundThr : 0, running: running,
+        starter: c.engine === 'cranking', crank: Math.max(150, c.rpm()),
+        road: Math.min(0.06, 0.06 * Math.pow(c.v / 40, 2)), skid: 0.35 * c.skid, listen: state.listen,
+      });
+    }
+    saveT += dt; if (saveT > 2) { saveT = 0; try { for (var id2 in cars) localStorage.setItem('streetrod.odo.' + id2, String(cars[id2].odo)); } catch (e) {} }
+  }
+  var saveT = 0;
+  function render() {
+    var c = car(), v = c.c;
+    var fade = Math.min(c.fadeF || 1, c.fadeR || 1);
+    dash.draw({
+      carId: state.carId, title: v.label + (c.engine === 'off' ? '  (press S)' : ''),
+      rpm: c.rpm(), kmh: c.v * 3.6, units: state.units, tachMax: v.tachMax, tachRed: v.tachRed,
+      odoKm: c.odo / 1000, tripKm: c.trip / 1000, gear: c.gear, gearLabel: c.gearLabel(), range: c.range,
+      auto: v.trans === 'auto', transText: v.transText, thr: state.throttle, brake: state.brake,
+      Tf: c.Tf, Tr: c.Tr, fadeF: c.fadeF || 1, fadeR: c.fadeR || 1, fade: fade,
+      tyre: c.tyre, sr: c.sr || 0, brakeType: v.brakes.front.type === 'disc' ? 'disc F / drum R' : 'drums all round', lockF: c.frontLocked, lockR: c.tyre === 'lock', limiter: c.limiterCut && c.engine === 'running',
+      engine: c.engine, listen: state.listen ? 'in-cabin (approximation)' : 'outside rear', muted: state.muted,
+      msg: state.msg || (!state.started ? 'Click "Start engine" or press S' : ''), dist: state.dist,
+      clutch: v.trans === 'manual' ? (c.gear === 0 ? 'neutral' : c.clutchLocked ? 'clutch engaged' : c.shift ? 'shifting' : 'clutch slipping') : '',
+      extra: (c.a / 9.81).toFixed(2) + ' g',
+    });
+  }
+  requestAnimationFrame(frame);
+
+  // test hook (used by the Playwright tests)
+  window.__game = { cars: cars, state: state, audio: audio, car: car, ignition: ignition, selectCar: selectCar, tick: tick };
+})();
+</script>
+</body>
+</html>
