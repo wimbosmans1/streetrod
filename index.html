@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.7)</title>
+<title>Street Rod: engine sound + driving demo (v1.7.1)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -8446,12 +8446,25 @@ var PaintedVisuals = (function () {
       if (STY === 'flat') { g.save(); g.translate(r * 0.03, r * 0.04); g.fillStyle = 'rgba(0,0,0,0.35)'; g.fill(); g.restore(); }
       g.fillStyle = col; g.fill(); if (lw0) { g.strokeStyle = T.line; g.lineWidth = lw0; g.stroke(); } g.restore();
       g.fillStyle = T.cap; ell(g, x, y, c0, c0); g.fill(); if (lw0) { g.strokeStyle = T.line; g.lineWidth = lw0; g.stroke(); } return; }
+    // v1.7.1: the soft drop shadow is a pre-blurred sprite (shadowBlur on every needle every frame was a full blur pass each)
+    var shp = [[-r * 0.22, -r * 0.035], [r * 0.86, -r * 0.012], [r * 0.9, 0], [r * 0.86, r * 0.012], [-r * 0.22, r * 0.035]];
+    var SH = softShadow('needle/' + r.toFixed(1), -r * 0.22, -r * 0.035, r * 1.12, r * 0.07, r * 0.07, 'rgba(0,0,0,0.7)', function (x2) { poly(x2, shp); x2.fill(); });
+    g.save(); g.translate(x + r * 0.035, y + r * 0.05); g.rotate(a); g.drawImage(SH.cv, SH.x, SH.y, SH.w, SH.h); g.restore();
     g.save(); g.translate(x, y); g.rotate(a);
-    g.shadowColor = 'rgba(0,0,0,0.7)'; g.shadowBlur = r * 0.07; g.shadowOffsetX = r * 0.035; g.shadowOffsetY = r * 0.05;
     g.fillStyle = lin(g, 0, -r * 0.03, 0, r * 0.03, [[0, '#ffd7a8'], [0.5, col], [1, '#7a2a08']]);
     poly(g, [[-r * 0.22, -r * 0.035], [r * 0.86, -r * 0.012], [r * 0.9, 0], [r * 0.86, r * 0.012], [-r * 0.22, r * 0.035]]); g.fill();
     g.restore();
     var c = capR || r * 0.12; g.fillStyle = rad(g, x - c * 0.35, y - c * 0.4, 0, c * 1.1, [[0, '#f4f4f4'], [0.4, '#9ea3a8'], [1, '#202224']]); ell(g, x, y, c, c); g.fill();
+  }
+  // soft shadow sprite of a shape (local box x, y, w, h; blur in painting px), rendered once at 2x with the shadow-offset trick
+  var SSH = {};
+  function softShadow(key, x, y, w, h, blur, col, draw) {
+    if (SSH[key]) return SSH[key];
+    var S = 2, pad = Math.ceil(blur * 2) + 2, c = document.createElement('canvas'); c.width = Math.ceil((w + 2 * pad) * S); c.height = Math.ceil((h + 2 * pad) * S);
+    var g = c.getContext('2d'), off = 20000;
+    g.setTransform(S, 0, 0, S, (pad - x) * S - off, (pad - y) * S);
+    g.shadowColor = col; g.shadowBlur = blur * S; g.shadowOffsetX = off; g.fillStyle = '#000'; draw(g);
+    return (SSH[key] = { cv: c, x: x - pad, y: y - pad, w: w + 2 * pad, h: h + 2 * pad });
   }
   function glass(g, x, y, r) {
     if (T.glass === 'flat') { g.save(); ell(g, x, y, r, r); g.clip(); g.fillStyle = 'rgba(255,255,255,0.07)'; g.beginPath(); g.moveTo(x - r, y - r * 0.15); g.lineTo(x + r * 0.15, y - r); g.lineTo(x - r, y - r); g.closePath(); g.fill(); g.restore(); return; }
@@ -8563,7 +8576,7 @@ var PaintedVisuals = (function () {
       g.fillStyle = 'rgba(255,255,255,0.06)'; poly(g, [pr[0], pr[1], [pr[1][0] + 6, pr[1][1] + 14], [pr[0][0] + 6, pr[0][1] + 14]]); g.fill();
     }
     g.drawImage(A[car + '-cockpit'], 0, 0, PW, PH);
-    if (V16) { cacheV16(car, s, g, m, mph, out); caches[key] = out; return out; }
+    if (V16) { cacheV16(car, s, g, m, mph, out); caches[key] = glassOf(out); return out; }
     if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach;
       out.angS = face(g, sp[0], sp[1], sp[2], mph ? { max: 140, major: 20, minor: 5, mid: 10, label: 'MPH', numSize: 0.16 } : { max: 220, major: 40, minor: 10, mid: 20, label: 'KM/H', numSize: 0.16 });
@@ -8594,7 +8607,20 @@ var PaintedVisuals = (function () {
       face(g, ck[0], ck[1], ck[2], { max: 12, major: 3, minor: 1, a0: -Math.PI / 2, a1: Math.PI * 1.5, noNums: true, clock: true, face: ivory, ink: '#2a211a' });
       var pl = m.plate; g.save(); g.fillStyle = 'rgba(60,40,30,0.75)'; g.font = 'italic 17px "Brush Script MT", "Snell Roundhand", Georgia, serif'; g.textAlign = 'center'; g.fillText('Cadillac', pl[0] + pl[2] / 2, pl[1] + pl[3] / 2 + 6); g.restore();
     }
-    caches[key] = out; return out;
+    caches[key] = glassOf(out); return out;
+  }
+  // v1.7.1: lowest row (painting px) where the cockpit overlay is not opaque: the windshield / side glass. The scenery
+  // below it is hidden behind the dash, so the inside views skip it (it was ~2/3 of the ground fill).
+  function glassOf(out) {
+    out.glassY = PH;
+    try {
+      var w = 320, h = 180, c = document.createElement('canvas'); c.width = w; c.height = h;
+      var x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(out.cv, 0, 0, w, h);
+      var d = x.getImageData(0, 0, w, h).data, ym = -1;
+      for (var y = h - 1; y >= 0 && ym < 0; y--) for (var i = 0; i < w; i++) if (d[(y * w + i) * 4 + 3] < 250) { ym = y; break; }
+      if (ym >= 0) out.glassY = Math.min(PH, (ym + 2) * PH / h + 4);
+    } catch (e) {}
+    return out;
   }
   // ---------------------------------------------------------------- scenery (shared by the inside and the chase views)
   // P = { axisX, hz, f, dx: camera right of the centre line (m), camOff: camera to car front (m), clipTop }
@@ -8641,14 +8667,33 @@ var PaintedVisuals = (function () {
     if (STY === 'ink') { x.fillStyle = 'rgba(13,10,8,0.35)'; for (i = 0; i < 900; i++) x.fillRect(rnd() * S, rnd() * S, 1.3, 1.3); }
     if (STY === 'v2') { x.fillStyle = 'rgba(40,28,18,0.12)'; for (i = 0; i < 2500; i++) x.fillRect(rnd() * S, rnd() * S, 2, 2); }
     var c2 = document.createElement('canvas'); c2.width = c2.height = 128; c2.getContext('2d').drawImage(c, 0, 0, 128, 128);   // pre-filtered far level
-    GT = { near: c, far: c2, S: S, ppm: S / 16, dust: Math.round(base[0] * 0.45 + 124) + ',' + Math.round(base[1] * 0.45 + 118) + ',' + Math.round(base[2] * 0.45 + 110) };   // pale sand dust
+    GT = { near: c, far: c2, S: S, ppm: S / 16, base: base, dust: Math.round(base[0] * 0.45 + 124) + ',' + Math.round(base[1] * 0.45 + 118) + ',' + Math.round(base[2] * 0.45 + 110) };   // pale sand dust
     return GT;
   }
-  var GP = { near: null, far: null, ctx: null };
+  // patterns per 2D context (the ground layer and the main canvas each keep theirs) and one reused matrix (no per-band allocation)
+  function pats(g, T0) { var k = g.__gp; if (!k || k.T !== T0) { k = g.__gp = { T: T0, near: g.createPattern(T0.near, 'repeat'), far: g.createPattern(T0.far, 'repeat') }; } return k; }
+  var MX = null;
+  function mat(a, d, e, f) { if (!MX) MX = new DOMMatrix(); MX.a = a; MX.b = 0; MX.c = 0; MX.d = d; MX.e = e; MX.f = f; return MX; }
+  // v1.7.1: the moving ground is drawn into an offscreen layer at GQ x the canvas resolution and scaled up in one blit. Up close the
+  // tile is magnified 3-10x (soft anyway) and far away the backdrop fades in over it, so the look is the same at a fraction of the fill.
+  var GLY = null, GQ = 0.5;
+  function groundLayer(g, P, d, y0, y1) {
+    var m = g.getTransform ? g.getTransform() : null, OFF = window.__pvOff || {};
+    if (!m || m.b || m.c || OFF.lowres) { groundBands(g, P, d, y0, y1); return; }
+    var cvW = g.canvas.width, cvH = g.canvas.height, dy0 = Math.max(0, Math.floor(m.d * y0 + m.f)), dy1 = Math.min(cvH, Math.ceil(m.d * y1 + m.f));
+    if (dy1 <= dy0) return;
+    var q = GQ, lw = Math.ceil(cvW * q), lh = Math.ceil((dy1 - dy0) * q) + 1;
+    if (!GLY) { GLY = { cv: document.createElement('canvas') }; GLY.cv.width = 2; GLY.cv.height = 2; GLY.g = GLY.cv.getContext('2d'); }
+    if (GLY.cv.width < lw || GLY.cv.height < lh) { GLY.cv.width = Math.max(GLY.cv.width, lw); GLY.cv.height = Math.max(GLY.cv.height, lh); GLY.g = GLY.cv.getContext('2d'); }
+    var x = GLY.g; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, lw, lh);
+    x.setTransform(m.a * q, 0, 0, m.d * q, m.e * q, (m.f - dy0) * q);
+    groundBands(x, P, d, y0, y1);
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(GLY.cv, 0, 0, lw, lh, 0, dy0, lw / q, lh / q); g.restore();
+  }
   // ground bands for a camera P (same fields as scenery); y range [y0, y1] of the painting; d = distance driven
   function groundBands(g, P, d, y0, y1) {
     var T0 = groundTiles(), hz = P.hz, f = P.f, h = P.camH, cy = P.cy || 360, tp = (cy - hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp, ty = Math.tan(P.yaw || 0);
-    if (GP.ctx !== g) { GP.near = g.createPattern(T0.near, 'repeat'); GP.far = g.createPattern(T0.far, 'repeat'); GP.ctx = g; }
+    var GP = pats(g, T0);
     if (!GP.near || !GP.near.setTransform || typeof DOMMatrix === 'undefined') { g.fillStyle = RC.shoulder; g.fillRect(-900, y0, PW + 1800, y1 - y0); return; }
     function zAt(y) { var t = (cy - y) / f; return -h * (cp + t * sp) / (t * cp - sp); }
     var y = Math.max(y0, hz + 0.5);
@@ -8656,9 +8701,44 @@ var PaintedVisuals = (function () {
       var bh = Math.max(1, Math.min(8, (y - hz) * 0.05)), yb = Math.min(y1, y + bh), za = zAt(y), zb = zAt(yb), zm = (za + zb) / 2;
       var far = zm > 30, ppm = far ? T0.ppm / 4 : T0.ppm, zcm = zm * cp + h * sp, sx = f / (zcm * ppm), x0 = P.axisX + f * (-P.dx - zm * ty) / zcm;
       var syy = (yb - y) / Math.max(1e-3, (za - zb) * ppm), pat = far ? GP.far : GP.near;
-      pat.setTransform(new DOMMatrix([sx, 0, 0, syy, x0, y + syy * ((za + d) * ppm)]));
+      pat.setTransform(mat(sx, syy, x0, y + syy * ((za + d) * ppm)));
       g.fillStyle = pat; g.fillRect(-900, y, PW + 1800, yb - y + 0.6);
       y = yb;
+    }
+  }
+  // far layer cache (sky + fading painted terrain), one per renderer, in canvas pixels with a side margin for the heading
+  var FLS = {};
+  function farLayer(g, far, ox0, dxP, hz, yFade, key) {
+    var FL = FLS[hz];   // one per camera (inside / chase), so a view cross-fade does not thrash it
+    var m = g.getTransform ? g.getTransform() : null;
+    if (!m || m.b || m.c) { far(g, ox0 + dxP); return; }
+    var cvW = g.canvas.width, cvH = g.canvas.height, mg = Math.ceil(160 * m.a), y1 = Math.min(cvH, Math.ceil(m.d * (yFade + 2) + m.f));
+    if (y1 <= 0) return;
+    var W = cvW + 2 * mg, H = y1, k2 = key + '/' + [m.a, m.d, Math.round(m.e), Math.round(m.f), cvW, cvH].join('/');
+    if (!FL) { FL = FLS[hz] = { cv: document.createElement('canvas'), key: '' }; FL.g = FL.cv.getContext('2d'); }
+    if (FL.key !== k2) {
+      if (FL.cv.width !== W || FL.cv.height !== H) { FL.cv.width = W; FL.cv.height = H; FL.g = FL.cv.getContext('2d'); }
+      var x = FL.g; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H);
+      x.setTransform(m.a, 0, 0, m.d, Math.round(m.e) + mg, Math.round(m.f)); far(x, ox0);
+      FL.key = k2; FL.e = Math.round(m.e); FL.f = Math.round(m.f); FL.n = (FL.n || 0) + 1;
+    }
+    var sh = Math.round(dxP * m.a + (m.e - FL.e));   // heading slide in whole canvas pixels (no resampling)
+    if (Math.abs(sh) > mg) { far(g, ox0 + dxP); return; }
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(FL.cv, mg - sh, 0, cvW, H, 0, 0, cvW, H); g.restore();
+  }
+  // v1.7.1 simplified roadside ground: flat sand plus soft cross stripes every 8 m on the ground plane, scrolled with the distance
+  // (true perspective, so the sense of speed stays), about 25 solid fills instead of ~160 perspective-mapped texture bands
+  var STRIPE = { period: 8, w: 4, zMax: 220 };
+  function sand(m, a) { var b = groundTiles().base; return 'rgba(' + Math.round(Math.min(255, b[0] * m)) + ',' + Math.round(Math.min(255, b[1] * m)) + ',' + Math.round(Math.min(255, b[2] * m)) + ',' + (a === undefined ? 1 : a) + ')'; }
+  var SANDC = null;
+  function sandCols() { if (!SANDC) { SANDC = { base: sand(1), dark: [] }; for (var i = 0; i <= 10; i++) SANDC.dark.push(sand(STY === 'v2' ? 0.82 : 0.86, (0.55 * i / 10).toFixed(3))); } return SANDC; }
+  function groundStripes(g, d, y0, y1, yOf) {
+    var C = sandCols(); g.fillStyle = C.base; g.fillRect(-900, y0, PW + 1800, y1 - y0);
+    var ph = d % STRIPE.period;
+    for (var z = -ph; z < STRIPE.zMax; z += STRIPE.period) {
+      var za = Math.max(0.3, z), zb = z + STRIPE.w; if (zb <= 0.3) continue;
+      var ya = Math.min(y1, yOf(za)), yb = yOf(zb); if (ya - yb < 0.4) continue;
+      g.fillStyle = C.dark[Math.max(0, Math.min(10, Math.round(10 * (1 - z / STRIPE.zMax))))]; g.fillRect(-900, yb, PW + 1800, ya - yb);
     }
   }
   function scenery(g, P, s) {
@@ -8668,23 +8748,34 @@ var PaintedVisuals = (function () {
     function yOf(z, up) { var y = -h + (up || 0); return cy - f * (y * cp + z * sp) / (z * cp - y * sp); }
     function xOf(z, lx, up) { var y = -h + (up || 0); return P.axisX + f * ((lx - dx) - z * Math.tan(yaw)) / (z * cp - y * sp); }
     // painted sky + terrain: horizon on hz, vanishing point straight ahead of the eye (vpX); ground sheared with the lane offset
-    var hb = camHB(), k = Math.max((f * hb / 4.0) / B.bottomPx, P.minK || 0), w = B.w * k, hh = B.h * k, ox = vpX - B.vx * k, oy = hz - B.hz * k, shear = -dx * cp / h;
-    function tile() { g.drawImage(img, ox, oy, w, hh); [ox, ox + 2 * w].forEach(function (mx) { g.save(); g.translate(mx, 0); g.scale(-1, 1); g.drawImage(img, 0, oy, w, hh); g.restore(); }); }
-    g.save(); g.beginPath(); g.rect(-900, -400, PW + 1800, hz + 401); g.clip(); tile(); g.restore();
-    // v1.7: moving ground (top-down tile in perspective, scrolled with the distance) up close; the painted terrain only far away, fading out
-    groundBands(g, P, s.dist || 0, hz, PH + 400);
+    var hb = camHB(), k = Math.max((f * hb / 4.0) / B.bottomPx, P.minK || 0), w = B.w * k, hh = B.h * k, ox = vpX - B.vx * k, oy = hz - B.hz * k, shear = -dx * cp / h, shearQ = Math.round(shear * 25) / 25;   // far layer: lateral position quantised to ~5 cm (< 0.6 px at the fade edge)
+    var OFF = window.__pvOff || {};
+    var yBot = P.yMax || PH + 400;
+    if (P.yMax) { g.save(); g.beginPath(); g.rect(-900, -400, PW + 1800, P.yMax + 400); g.clip(); }
+    // v1.7.1: moving ground first (half-resolution layer), then the static far layer over it: painted sky + the painted terrain fading
+    // out towards the camera (sky and fade bands do not overlap the ground except where the first fade band is opaque, so the order swap
+    // is invisible). The far layer is cached at canvas resolution and only shifted sideways with the heading.
+    if (OFF.texGround) groundLayer(g, P, s.dist || 0, hz, yBot);           // debug: the v1.7 scrolling texture
+    else if (!OFF.ground) groundStripes(g, s.dist || 0, hz, yBot, yOf);
     var zFade = P.zFade || 90, yFade = Math.max(hz + 4, yOf(zFade)), NB = 8;
-    for (var bi = 0; bi < NB; bi++) {
-      var ya = hz + (yFade - hz) * bi / NB, yb2 = hz + (yFade - hz) * (bi + 1) / NB;
-      g.save(); g.globalAlpha = 1 - bi / NB; g.beginPath(); g.rect(-900, ya - (bi ? 0 : 1), PW + 1800, yb2 - ya + (bi ? 0 : 1)); g.clip(); g.transform(1, 0, shear, 1, -shear * hz, 0); tile(); g.restore();
+    function far(g, ox, sh) {
+      g.save(); g.beginPath(); g.rect(-900, -400, PW + 1800, hz + 401); g.clip(); tileAt(g, ox); g.restore();
+      for (var bi = 0; bi < NB; bi++) {
+        var ya = hz + (yFade - hz) * bi / NB, yb2 = hz + (yFade - hz) * (bi + 1) / NB;
+        g.save(); g.globalAlpha = 1 - bi / NB; g.beginPath(); g.rect(-900, ya - (bi ? 0 : 1), PW + 1800, yb2 - ya + (bi ? 0 : 1)); g.clip(); g.transform(1, 0, sh, 1, -sh * hz, 0); tileAt(g, ox); g.restore();
+      }
     }
+    function tileAt(g, ox2) { g.drawImage(img, ox2, oy, w, hh); [ox2, ox2 + 2 * w].forEach(function (mx) { g.save(); g.translate(mx, 0); g.scale(-1, 1); g.drawImage(img, 0, oy, w, hh); g.restore(); }); }
+    var ox0 = P.axisX - B.vx * k;   // tile origin at zero heading; the heading only slides the far layer sideways
+    if (OFF.farOld) far(g, ox, shear);      // debug: the v1.7 path, drawn every frame
+    else if (!OFF.sky) farLayer(g, function (x, o) { far(x, o, shearQ); }, ox0, ox - ox0, hz, yFade, [k, oy, hz, f, shearQ, w, P.axisX].join('/'));
     // live road surface (covers the painted road of the backdrop, which was drawn for a much higher camera)
     var zN = 0.6, zF = 4000;
     function quad(u0, u1, z0, z1) { poly(g, [[xOf(z0, u0), yOf(z0)], [xOf(z0, u1), yOf(z0)], [xOf(z1, u1), yOf(z1)], [xOf(z1, u0), yOf(z1)]]); }
     g.fillStyle = RC.shoulder; quad(-ROAD.shoulder, ROAD.shoulder, zN, zF); g.fill();
     g.fillStyle = lin(g, 0, hz, 0, PH, [[0, RC.asph[0]], [0.35, RC.asph[1]], [1, RC.asph[1]]]); quad(-ROAD.lane, ROAD.lane, zN, zF); g.fill();
     if (RC.line) { g.strokeStyle = RC.line; g.lineWidth = 2.2; quad(-ROAD.lane, ROAD.lane, zN, zF); g.stroke(); }
-    else if (STY === 'v2') { g.save(); quad(-ROAD.lane, ROAD.lane, zN, zF); g.clip(); g.globalAlpha = 0.5; g.fillStyle = grainPat(g); g.fillRect(-900, hz, PW + 1800, PH - hz + 400); g.restore(); }
+    else if (STY === 'v2' && !OFF.grain) { g.save(); quad(-ROAD.lane, ROAD.lane, zN, zF); g.clip(); g.globalAlpha = 0.5; g.fillStyle = grainPat(g); g.fillRect(-900, hz, PW + 1800, PH - hz + 400); g.restore(); }
     g.fillStyle = RC.edge; [-1, 1].forEach(function (sd) { quad(sd * ROAD.edge, sd * (ROAD.edge + ROAD.edgeW), zN, zF); g.fill(); });
     // haze: the far road melts into the horizon
     g.fillStyle = lin(g, 0, hz - 1, 0, hz + Math.max(6, (yOf(60) - hz)), [[0, 'rgba(214,178,140,0.55)'], [1, 'rgba(214,178,140,0)']]); if (STY !== 'ink') g.fillRect(-900, hz - 1, PW + 1800, Math.max(6, yOf(60) - hz) + 1);
@@ -8701,22 +8792,22 @@ var PaintedVisuals = (function () {
     });
     // roadside props streaming past (sprites; positions repeat, sizes from real heights): delineator posts every 45 m on both sides
     // v1.7: denser: a bush or two every 5 m on alternating sides 5.5-30 m out, delineators every 45 m, a fence 8.5 m right of the centre line
-    var S = A['desert-props'], PR = M.props, list = [], seg = 5;
-    for (var j = Math.floor(d / seg); j < Math.floor(d / seg) + 34; j++) {
+    // v1.7.1 (simplified): one bush every 10 m on alternating sides, delineator posts every 50 m, no fence
+    var S = A['desert-props'], PR = M.props, list = [], seg = 10;
+    for (var j = Math.floor(d / seg); j < Math.floor(d / seg) + 16; j++) {
       var zr = j * seg - d + 1.5; if (zr < 1.2) continue;
-      var r1 = hash(j), r2 = hash(j + 1000), r3 = hash(j + 2000), side = r1 < 0.5 ? -1 : 1;
-      if (j % 9 === 0) { list.push({ z: zr, x: -ROAD.post, p: PR[5] }); list.push({ z: zr, x: ROAD.post, p: PR[5] }); }
-      if (j % 3 === 0) list.push({ z: zr + 0.5, x: 8.5, p: PR[4] });
-      var kind = r2 < 0.38 ? 0 : r2 < 0.66 ? 1 : r2 < 0.86 ? 2 : r2 < 0.95 ? 3 : 2;
-      list.push({ z: zr + 2, x: side * (5.5 + r3 * 18), p: PR[kind] });
-      if (r3 > 0.3) list.push({ z: zr + 3.5, x: -side * (6 + r1 * 22), p: PR[r3 > 0.75 ? 2 : r3 > 0.5 ? 0 : 1] });
+      var r2 = hash(j + 1000), r3 = hash(j + 2000), side = j % 2 ? -1 : 1;
+      if (j % 5 === 0) { list.push({ z: zr, x: -ROAD.post, p: PR[5] }); list.push({ z: zr, x: ROAD.post, p: PR[5] }); }
+      list.push({ z: zr + 4, x: side * (5.8 + r3 * 14), p: PR[r2 < 0.4 ? 0 : r2 < 0.7 ? 1 : r2 < 0.9 ? 2 : 3] });
     }
     list.sort(function (a, b) { return b.z - a.z; });
-    for (var q2 = 0; q2 < list.length; q2++) {
+    for (var q2 = 0; q2 < (OFF.props ? 0 : list.length); q2++) {
       var it = list[q2], r = it.p.r, yb2 = yOf(it.z), hp = yb2 - yOf(it.z, it.p.h), wp = hp * r[2] / r[3], xb = xOf(it.z, it.x);
       if (hp < 1.5 || xb + wp < -60 || xb - wp > PW + 60 || yb2 < (P.clipTop || -1e9)) continue;
+      if (yb2 - hp > yBot) continue;
       g.globalAlpha = Math.min(1, (160 - it.z) / 40); g.drawImage(S, r[0], r[1], r[2], r[3], xb - wp / 2, yb2 - hp, wp, hp); g.globalAlpha = 1;
     }
+    if (P.yMax) g.restore();
     return { yOf: yOf, xOf: xOf };
   }
   // heading from the steering input (main.js moves the car sideways at steer * min(v, 25) * 0.09 m/s): yaw = atan(lateral speed / speed)
@@ -8729,32 +8820,43 @@ var PaintedVisuals = (function () {
   function sideGround(g, v, d, side) {
     var T0 = groundTiles(), h = v.camH || 1.1, f = v.f, ppm = T0.ppm, ys = side.map(function (q) { return q[1]; }), xs = side.map(function (q) { return q[0]; });
     var yMax = Math.max.apply(null, ys), xMax = Math.max.apply(null, xs) + 10, hz = v.hz;
-    if (GP.ctx !== g) { GP.near = g.createPattern(T0.near, 'repeat'); GP.far = g.createPattern(T0.far, 'repeat'); GP.ctx = g; }
+    if (!(window.__pvOff || {}).texGround) {   // v1.7.1: flat sand + stripes streaming past, a few rows (near rows faster)
+      var C = sandCols(); g.fillStyle = C.base; g.fillRect(-10, hz, xMax + 10, yMax - hz);
+      var yr = hz + 0.5;
+      while (yr < yMax) {
+        var bh2 = Math.max(2, (yr - hz) * 0.35), yb3 = Math.min(yMax, yr + bh2), pm = ((yr + yb3) / 2 - hz) / h, sp = STRIPE.period * pm, sw = STRIPE.w * pm;
+        var L2 = f * h / Math.max(1, (yr + yb3) / 2 - hz); g.fillStyle = C.dark[Math.max(0, Math.min(10, Math.round(10 * (1 - L2 / STRIPE.zMax))))];
+        if (sp > 3) for (var xs0 = -((d * pm) % sp); xs0 < xMax; xs0 += sp) g.fillRect(xs0, yr, sw, yb3 - yr + 0.5);
+        yr = yb3;
+      }
+      return;
+    }
+    var GP = pats(g, T0);
     if (!GP.near || !GP.near.setTransform || typeof DOMMatrix === 'undefined') { g.fillStyle = RC.shoulder; g.fillRect(-10, hz, xMax + 10, yMax - hz); return; }
     var y = hz + 0.5;
     while (y < yMax) {
       var bh = Math.max(1, Math.min(6, (y - hz) * 0.06)), yb = Math.min(yMax, y + bh), La = f * h / (y - hz), Lb = f * h / (yb - hz), pxm = (y + yb - 2 * hz) / 2 / h;
       var far = La > 30, pp = far ? ppm / 4 : ppm, sx = pxm / pp, syy = (yb - y) / Math.max(1e-3, (La - Lb) * pp), pat = far ? GP.far : GP.near;
-      pat.setTransform(new DOMMatrix([sx, 0, 0, syy, -d * pxm, y + syy * La * pp + 0]));
+      pat.setTransform(mat(sx, syy, -d * pxm, y + syy * La * pp + 0));
       g.fillStyle = pat; g.fillRect(-10, y, xMax + 10, yb - y + 0.6); y = yb;
     }
   }
-  function backdrop(g, car, s) {
+  function backdrop(g, car, s, yMax) {
     var m = M[car], v = m.view, B = M.backdrop, img = A['desert-backdrop'], d = s.dist || 0;
     var off = v.off !== undefined ? v.off : (car === 'gt350' ? 0.37 : 0.42);
     // v1.6: one painted tile spans the whole windshield (no repeated sun): scale at least so the tile reaches 160 px past both edges
-    scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, cy: v.cy || 360, camH: v.camH || 1.1, dx: 1.8 + (s.lat || 0) - off, yaw: yawOf(s), camOff: 2.2, minK: Math.max((m.axisX + 160) / B.vx, (PW + 160 - m.axisX) / (B.w - B.vx)) }, s);
+    scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, cy: v.cy || 360, camH: v.camH || 1.1, dx: 1.8 + (s.lat || 0) - off, yaw: yawOf(s), camOff: 2.2, yMax: yMax, minK: Math.max((m.axisX + 160) / B.vx, (PW + 160 - m.axisX) / (B.w - B.vx)) }, s);
     // side window (v1.7): parallax. Distant mesas (painting above the horizon) drift slowly; the ground below the horizon is the moving ground
     // tile seen sideways: a band at height y - hz shows ground at L = f h / (y - hz) metres and streams backwards at (y - hz) / h px per metre.
-    g.save(); poly(g, m.side); g.clip();
+    if (!(window.__pvOff || {}).side) { g.save(); poly(g, m.side); g.clip();
     var sw = img.naturalWidth, sh = img.naturalHeight, tw = 1100, th = tw * (B.hz / B.h * sh) / (sw * 0.5), offM = ((d * 1.2) % tw + tw) % tw;
     g.fillStyle = '#c9a77a'; g.fillRect(-10, -10, 420, PH + 20);
     for (var i = -1; i < 2; i++) g.drawImage(img, 0, 0, sw * 0.5, B.hz / B.h * sh, -offM + i * tw, v.hz - th, tw, th);
-    sideGround(g, v, d, m.side);
-    g.fillStyle = STY === 'ink' ? 'rgba(13,10,8,0.06)' : 'rgba(30,25,20,0.12)'; g.fillRect(-10, -10, 420, PH + 20); g.restore();
+    if (!(window.__pvOff || {}).sideg) sideGround(g, v, d, m.side);
+    g.fillStyle = STY === 'ink' ? 'rgba(13,10,8,0.06)' : 'rgba(30,25,20,0.12)'; g.fillRect(-10, -10, 420, PH + 20); g.restore(); }
     // rear-view mirror: the road behind (painting mirrored)
-    var mr = m.mirror; g.save(); rr(g, mr[0] - 4, mr[1] - 4, mr[2] + 8, mr[3] + 8, 18); g.clip(); g.translate(mr[0] + mr[2] + 4, mr[1] - 4); g.scale(-1, 1);
-    var cw = sw * 0.42, chh = cw * (mr[3] + 8) / (mr[2] + 8); g.drawImage(img, sw * 0.5 - cw / 2, sh * (B.hz / B.h) - chh * 0.42, cw, chh, 0, 0, mr[2] + 8, mr[3] + 8); g.restore();
+    var mr = m.mirror; if (!(window.__pvOff || {}).mirror) { g.save(); rr(g, mr[0] - 4, mr[1] - 4, mr[2] + 8, mr[3] + 8, 18); g.clip(); g.translate(mr[0] + mr[2] + 4, mr[1] - 4); g.scale(-1, 1);
+    var cw = sw * 0.42, chh = cw * (mr[3] + 8) / (mr[2] + 8); g.drawImage(img, sw * 0.5 - cw / 2, sh * (B.hz / B.h) - chh * 0.42, cw, chh, 0, 0, mr[2] + 8, mr[3] + 8); g.restore(); }
   }
   // ---------------------------------------------------------------- gear levers
   var anim = { t: 0, gt: { x: 0, y: 0, path: [], gear: null }, cad: { a: null } };
@@ -8779,14 +8881,18 @@ var PaintedVisuals = (function () {
     var tgt = QA[s.range || 'N'] !== undefined ? QA[s.range || 'N'] : -0.1, st = anim.cad;
     if (st.a === null) st.a = tgt; st.a += (tgt - st.a) * (LV.gtDt ? Math.min(1, LV.gtDt / 0.06) : 0.35);
     var r = lv.rect, pv = lv.pivot;
-    g.save(); g.translate(pv[0], pv[1]); g.rotate(st.a); if (!T.flat) { g.shadowColor = 'rgba(40,10,10,0.45)'; g.shadowBlur = 6; g.shadowOffsetY = 5; }
+    if (!T.flat) {   // v1.7.1: pre-blurred shadow sprite instead of shadowBlur per frame
+      var SH = softShadow('lever', r[0] - pv[0], r[1] - pv[1], r[2], r[3], 6, 'rgba(40,10,10,0.45)', function (x2) { x2.drawImage(A['caddy-lever'], r[0] - pv[0], r[1] - pv[1], r[2], r[3]); });
+      g.save(); g.translate(pv[0], pv[1] + 5); g.rotate(st.a); g.drawImage(SH.cv, SH.x, SH.y, SH.w, SH.h); g.restore();
+    }
+    g.save(); g.translate(pv[0], pv[1]); g.rotate(st.a);
     g.drawImage(A['caddy-lever'], r[0] - pv[0], r[1] - pv[1], r[2], r[3]); g.restore();
   }
   // ---------------------------------------------------------------- inside frame
   function drawInside(g, s) {
     var car = s.carId === 'gt350' ? 'gt350' : 'caddy', m = M[car], C = cache(car, s), mph = s.kmh / 1.609344;
-    backdrop(g, car, s);
-    g.drawImage(C.cv, 0, 0, PW, PH);
+    if (!(window.__pvOff || {}).backdrop) backdrop(g, car, s, C.glassY);
+    if (!(window.__pvOff || {}).cockpit) blit(g, C.cv, 'cockpit/' + car, 0, 0, PW, PH, 0, 1);
     var running = s.engine === 'running';
     if (V16) insideV16(g, s, car, m, C, mph, running);
     else if (car === 'gt350') {
@@ -8821,8 +8927,50 @@ var PaintedVisuals = (function () {
     }
     // steering wheel (+ soft shadow) rotating about the hub
     var hub = m.hub, wl = m.wheel.logical, rot = (s.steer || 0) * 2.1;
-    g.save(); g.translate(hub[0] + 10, hub[1] + 16); g.rotate(rot); g.globalAlpha = 0.5; g.drawImage(A[car + '-wheel-shadow'], -wl / 2, -wl / 2, wl, wl); g.restore();
-    g.save(); g.translate(hub[0], hub[1]); g.rotate(rot); g.drawImage(A[car + '-wheel'], -wl / 2, -wl / 2, wl, wl); g.restore();
+    if (!(window.__pvOff || {}).wheel) {
+      wheelDraw(g, car, hub, wl, rot);
+    }
+  }
+  // v1.7.1: big sprites (cockpit 2560x1440, wheel ~1200 px) are resampled once to the canvas scale and then blitted 1:1 at whole pixels
+  // (rotated about their centre for the wheel), instead of being minified from the full-size bitmap every frame.
+  var SCL = {};
+  function blit(g, src, key, x, y, w, h, rot, alpha) {
+    var m = g.getTransform ? g.getTransform() : null;
+    if (!m || m.b || m.c || (window.__pvOff || {}).blitOld) { g.save(); g.globalAlpha = alpha; g.translate(x + w / 2, y + h / 2); if (rot) g.rotate(rot); g.drawImage(src, -w / 2, -h / 2, w, h); g.restore(); return; }
+    var cw = Math.max(1, Math.round(w * m.a)), ch = Math.max(1, Math.round(h * m.d)), c = SCL[key];
+    if (!c || c.width !== cw || c.height !== ch || c.src !== src) {
+      c = SCL[key] = document.createElement('canvas'); c.width = cw; c.height = ch; c.src = src;
+      var x2 = c.getContext('2d'); x2.imageSmoothingQuality = 'high'; x2.drawImage(src, 0, 0, cw, ch);
+    }
+    g.save(); g.globalAlpha = alpha;
+    var cx = m.a * (x + w / 2) + m.e, cy = m.d * (y + h / 2) + m.f;
+    if (!rot) { g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(c, Math.round(cx - cw / 2), Math.round(cy - ch / 2)); }
+    else { var co = Math.cos(rot), si = Math.sin(rot); g.setTransform(co, si, -si, co, cx, cy); g.drawImage(c, -cw / 2, -ch / 2); }
+    g.restore();
+  }
+  // steering wheel + its shadow: while the angle holds still (most of the time) both are kept as one composite at canvas resolution and
+  // drawn with a single axis-aligned blit; while steering they are drawn rotated (pre-scaled sprites)
+  var WC = {};
+  function wheelDraw(g, car, hub, wl, rot) {
+    var m = g.getTransform ? g.getTransform() : null, W = WC[car] || (WC[car] = { rot: null, still: 0 });
+    if (Math.abs(rot - (W.last === undefined ? rot : W.last)) < 1e-5) W.still++; else W.still = 0; W.last = rot;
+    if (!m || m.b || m.c || W.still < 2 || (window.__pvOff || {}).wheelOld) {
+      blit(g, A[car + '-wheel-shadow'], 'wsh/' + car, hub[0] + 10 - wl / 2, hub[1] + 16 - wl / 2, wl, wl, rot, 0.5);
+      blit(g, A[car + '-wheel'], 'wh/' + car, hub[0] - wl / 2, hub[1] - wl / 2, wl, wl, rot, 1); return;
+    }
+    var key = [rot, m.a, m.d, m.e % 1, m.f % 1].join('/');
+    if (W.key !== key) {   // painting box of wheel + shadow (rotated square bound), rendered in canvas pixels
+      var R = wl * 0.7072 + 20, x0 = hub[0] - R, y0 = hub[1] - R, S2 = 2 * R + 16, cw = Math.ceil(S2 * m.a) + 2, ch = Math.ceil(S2 * m.d) + 2;
+      if (!W.cv) W.cv = document.createElement('canvas');
+      if (W.cv.width !== cw || W.cv.height !== ch) { W.cv.width = cw; W.cv.height = ch; }
+      var x = W.cv.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cw, ch);
+      var dx = Math.floor(m.a * x0 + m.e), dy = Math.floor(m.d * y0 + m.f);
+      x.setTransform(m.a, 0, 0, m.d, m.e - dx, m.f - dy);
+      blit(x, A[car + '-wheel-shadow'], 'wsh/' + car, hub[0] + 10 - wl / 2, hub[1] + 16 - wl / 2, wl, wl, rot, 0.5);
+      blit(x, A[car + '-wheel'], 'wh/' + car, hub[0] - wl / 2, hub[1] - wl / 2, wl, wl, rot, 1);
+      W.key = key; W.dx = dx; W.dy = dy; W.ox = m.e; W.oy = m.f;
+    }
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(W.cv, W.dx + Math.round(m.e - W.ox), W.dy + Math.round(m.f - W.oy)); g.restore();
   }
   // ---------------------------------------------------------------- outside: rear chase camera
   var smoke = [], dust = [];
@@ -8857,6 +9005,23 @@ var PaintedVisuals = (function () {
     CG[car] = { img: out, sil: sil };
     return CG[car];
   }
+  // ink: silhouette outline (8 offsets of 1.6 painting px at the chase scale sc) + graded sprite in one padded canvas
+  function outlined(GR, sc) {
+    if (GR.ol && Math.abs(GR.ol.sc - sc) < 1e-6) return GR.ol;
+    var W = GR.img.width, H = GR.img.height, o = 1.6 / sc, pd = Math.ceil(o) + 2, c = document.createElement('canvas'); c.width = W + 2 * pd; c.height = H + 2 * pd;
+    var x = c.getContext('2d');
+    [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(function (q) { x.drawImage(GR.sil, pd + q[0] * o, pd + q[1] * o); });
+    x.drawImage(GR.img, pd, pd);
+    GR.ol = { cv: c, W: W, H: H, pad: pd, sc: sc }; return GR.ol;
+  }
+  // v2 dust puff: radial falloff in an ellipse (r x 0.6 r), drawn once and blitted with globalAlpha (was a gradient per puff per frame)
+  var PUFF = null;
+  function puff(dc) {
+    if (PUFF && PUFF.dc === dc) return PUFF.cv;
+    var c = document.createElement('canvas'); c.width = 64; c.height = 40; var x = c.getContext('2d');
+    x.fillStyle = rad(x, 32, 20, 0, 32, [[0, 'rgba(' + dc + ',1)'], [1, 'rgba(' + dc + ',0)']]); ell(x, 32, 20, 32, 19.2); x.fill();
+    PUFF = { cv: c, dc: dc }; return c;
+  }
   // ground shadows under the chase car (painting px), on the ground plane of the scenery camera SC; u = metres right of the car centre
   function carShadows(g, SC, c, car, cx, dxCar) {
     var W2 = c.realW / 2, z0 = c.dist, z1 = c.dist + c.len, track = car === 'gt350' ? 1.47 : 1.55, tw = car === 'gt350' ? 0.24 : 0.22, axle = c.dist + (car === 'gt350' ? 0.9 : 1.35);
@@ -8887,12 +9052,18 @@ var PaintedVisuals = (function () {
     var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + '-rear'];
     var run = s.engine === 'running', shake = run ? Math.sin(s.time * 70) * Math.min(1.2, 0.4 + s.rpm / 5000) : 0;
     var pitch = Math.max(-7, Math.min(7, (s.accel || 0) * 14)), roll = -steer * Math.min(1, s.kmh / 60) * 0.035;  // squat (+) / dive (-), body roll in turns
-    carShadows(g, SC, c, car, cx, 1.8 + (s.lat || 0));
+    if (!(window.__pvOff || {}).shadow) carShadows(g, SC, c, car, cx, 1.8 + (s.lat || 0));
     var GR = gradedRear(car), gimg = GR.img;
     var sy = c.splitY;   // tyres below splitY stay planted; the body above moves
     g.save(); g.translate(cx, yc); g.rotate(roll * 0.4); g.translate(-cx, -yc);
     // ink: the same outline weight as the scenery's ink lines (about 1.6 painting px), drawn from the silhouette around each part
-    function part(src, sy0, sh0, dy0) { if (GR.sil) [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(function (o) { g.drawImage(GR.sil, 0, sy0, c.px[0], sh0, x0 + o[0] * 1.6, dy0 + o[1] * 1.6, c.px[0] * sc, sh0 * sc); });
+    var OL = GR.sil && !(window.__pvOff || {}).olOld ? outlined(GR, sc) : null;
+    function part(src, sy0, sh0, dy0) {
+      if (OL) {   // v1.7.1: outline + sprite pre-composited once (was 8 silhouette blits per part per frame)
+        var pd = OL.pad, H0 = OL.H, top = sy0 === 0 ? 0 : sy0 + pd, bot = sy0 + sh0 >= H0 ? H0 + 2 * pd : sy0 + sh0 + pd;
+        g.drawImage(OL.cv, 0, top, OL.W + 2 * pd, bot - top, x0 - pd * sc, dy0 + (top - pd - sy0) * sc, (OL.W + 2 * pd) * sc, (bot - top) * sc); return;
+      }
+      if (GR.sil && !(window.__pvOff || {}).sil) [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(function (o) { g.drawImage(GR.sil, 0, sy0, c.px[0], sh0, x0 + o[0] * 1.6, dy0 + o[1] * 1.6, c.px[0] * sc, sh0 * sc); });
       g.drawImage(src, 0, sy0, c.px[0], sh0, x0, dy0, c.px[0] * sc, sh0 * sc); }
     part(gimg, sy, c.px[1] - sy, y0 + sy * sc);
     g.translate(cx, y0 + sy * sc); g.rotate(roll); g.translate(-cx, -(y0 + sy * sc)); g.translate(0, pitch + shake * 0.5);
@@ -8913,6 +9084,7 @@ var PaintedVisuals = (function () {
     var tips = c.tips.map(function (t) { return [x0 + t[0] * sc, y0 + t[1] * sc + pitch, t[2] * sc]; });
     g.restore();
     // exhaust smoke: puffs leave the tips, grow, drift back towards the camera and fade (more under throttle and at idle when cold)
+    if ((window.__pvOff || {}).smoke) smoke.length = 0;
     if (run) { var rate = (6 + 26 * (s.thr || 0) + s.rpm / 600) * dt;
       tips.forEach(function (t, i) { for (var n = rate + Math.random(); n > 1; n--) smoke.push({ x: t[0], y: t[1], r: t[2] * 0.5, vx: (i ? 1 : -1) * (4 + Math.random() * 10), vy: 8 + Math.random() * 10, a: 0.07 + 0.16 * (s.thr || 0), t: 0, life: 0.9 + Math.random() * 0.8 }); }); }
     for (var q = smoke.length - 1; q >= 0; q--) { var p = smoke[q]; p.t += dt; if (p.t > p.life) { smoke.splice(q, 1); continue; }
@@ -8926,10 +9098,10 @@ var PaintedVisuals = (function () {
     var tr = car === 'gt350' ? 1.47 : 1.55, axZ = c.dist + (car === 'gt350' ? 0.9 : 1.35), dr = Math.max(0, s.kmh - 25) / 90 * dt * 45;
     [-1, 1].forEach(function (sd) { var px = cx + SC.xOf(axZ, 1.8 + (s.lat || 0) + sd * tr / 2) - SC.xOf(axZ, 1.8 + (s.lat || 0));
       for (var n = dr + Math.random(); n > 1; n--) dust.push({ x: px + sd * Math.random() * 6, y: yc - 2, r: 3 + Math.random() * 4, vx: sd * (6 + Math.random() * 14), vy: 14 + Math.random() * 16, a: Math.min(0.55, 0.18 + s.kmh / 300), t: 0, life: 0.5 + Math.random() * 0.5 }); });
-    var dc = groundTiles().dust;
+    var dc = groundTiles().dust; if ((window.__pvOff || {}).dust) dust.length = 0;
     for (var q3 = dust.length - 1; q3 >= 0; q3--) { var u = dust[q3]; u.t += dt; if (u.t > u.life) { dust.splice(q3, 1); continue; }
       u.x += u.vx * dt; u.y += u.vy * dt; u.r += (14 + s.kmh * 0.3) * dt; var al2 = u.a * (1 - u.t / u.life);
-      if (STY === 'v2') { g.fillStyle = rad(g, u.x, u.y, 0, u.r, [[0, 'rgba(' + dc + ',' + al2.toFixed(3) + ')'], [1, 'rgba(' + dc + ',0)']]); ell(g, u.x, u.y, u.r, u.r * 0.6); g.fill(); }
+      if (STY === 'v2') { g.globalAlpha = Math.max(0, Math.min(1, al2)); g.drawImage(puff(dc), u.x - u.r, u.y - u.r * 0.6, 2 * u.r, 1.2 * u.r); g.globalAlpha = 1; }
       else { g.globalAlpha = Math.min(0.45, al2 * 1.1); g.fillStyle = 'rgb(' + dc + ')'; ell(g, u.x, u.y, u.r * 1.1, u.r * 0.45); g.fill(); if (STY === 'ink' && u.r > 4) { g.strokeStyle = '#0d0a08'; g.lineWidth = 1.2; g.stroke(); } g.globalAlpha = 1; } }
     if (dust.length > 160) dust.splice(0, dust.length - 160);
   }
@@ -8969,13 +9141,21 @@ var PaintedVisuals = (function () {
     if (PH * k >= L.ch) oy = Math.max(L.ch - PH * k, Math.min(0, oy)); else oy = Math.max(0, Math.min(L.ch - PH * k, oy));
     return { k: k, ox: ox, oy: oy };
   }
+  var BC = {};
   function paint(g, p, fn, s, open) {
     g.save(); g.setTransform(p.k, 0, 0, p.k, p.ox, p.oy); if (!open) { g.beginPath(); g.rect(0, 0, PW, PH); g.clip(); } fn(g, s); g.restore();
     if (open) return;
     // where the painting does not reach the canvas edge (it is fitted inside the uncovered area), mirror its edge band outwards, dimmed
     var cv = g.canvas, x0 = Math.ceil(p.ox), x1 = Math.floor(p.ox + PW * p.k), y0 = Math.ceil(p.oy), y1 = Math.floor(p.oy + PH * p.k);
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
-    function band(sx, sy, sw, sh, dx, dy, flipX, flipY) { if (sw <= 0 || sh <= 0) return; g.save(); g.translate(dx + (flipX ? sw : 0), dy + (flipY ? sh : 0)); g.scale(flipX ? -1 : 1, flipY ? -1 : 1); g.drawImage(cv, sx, sy, sw, sh, 0, 0, sw, sh); g.restore(); g.fillStyle = 'rgba(8,5,3,0.45)'; g.fillRect(dx, dy, sw, sh); }
+    // v1.7.1: reading the canvas into itself forces a full copy of it; the dimmed mirror bands (under the pedals) are refreshed from a
+    // band cache every 4th frame instead
+    BC.n = (BC.n || 0) + 1; var bi = 0, fresh = BC.n % 4 === 1 || (window.__pvOff || {}).bandOld;
+    function band(sx, sy, sw, sh, dx, dy, flipX, flipY) { if (sw <= 0 || sh <= 0) return;
+      var c = BC[bi] || (BC[bi] = document.createElement('canvas')); bi++;
+      if (c.width !== sw || c.height !== sh) { c.width = sw; c.height = sh; fresh = true; }
+      if (fresh || c.key !== [sx, sy, dx, dy].join()) { var x = c.getContext('2d'); x.clearRect(0, 0, sw, sh); x.drawImage(cv, sx, sy, sw, sh, 0, 0, sw, sh); c.key = [sx, sy, dx, dy].join(); }
+      g.save(); g.translate(dx + (flipX ? sw : 0), dy + (flipY ? sh : 0)); g.scale(flipX ? -1 : 1, flipY ? -1 : 1); g.drawImage(c, 0, 0); g.restore(); g.fillStyle = 'rgba(8,5,3,0.45)'; g.fillRect(dx, dy, sw, sh); }
     if (x0 > 0) band(x0, 0, Math.min(x0, x1 - x0), cv.height, 0, 0, true, false);
     if (x1 < cv.width) { var w2 = Math.min(cv.width - x1, x1 - x0); band(x1 - w2, 0, w2, cv.height, x1, 0, true, false); }
     if (y0 > 0) band(0, y0, cv.width, Math.min(y0, y1 - y0), 0, 0, false, true);
@@ -9105,7 +9285,8 @@ var ProjectHistory = {
       { v: 'v1.4.1', date: '2026-11-11', status: 'done', text: 'GT350 painted cockpit redone with the full cabin width: the dash, wood-grain band, radio, under-dash gauges, glovebox with Shelby plate and console continue across to the passenger side, the right A-pillar sits at the far edge of the windshield (it looked too narrow on the right before).' },
       { v: 'v1.5', date: '2026-11-11', status: 'done', text: 'Visuals v2 (painted): steering wheel and dashboard in real proportion (driver camera from real dimensions: 65\u00b0 view, eye 74 cm behind the rim and 30 cm above the hub, 15 in GT350 wheel, 17.5 in Cadillac wheel; the horizon sits higher, so the road shows through the windshield again). Separate phone layouts: in portrait the controls sit below the scene, in landscape the top bar is compact (menu button) and the shift buttons sit above the gas pedal; every view is framed so no button covers the dash. New painted chase view for both cars (cut-out painted car over the painted road, live brake and tail lights, exhaust smoke, roadside scenery streaming past, squat, dive and sway, drag-strip lines). Gear levers move: the GT350 Hurst T-handle travels through the 4-speed H gate on every shift, the Cadillac column lever swings through P N D S L R with the quadrant.' },
       { v: 'v1.6', date: '2026-11-11', status: 'done', text: 'Two new Visuals options: v4 \u2013 flat (clean vector look) and v5 \u2013 ink (1950s/60s ligne-claire poster look), with the buttons, pedals and panels restyled to match; v1 drawn stays the default, v2 painted and v3 3D stay. Both cockpits were redrawn from a driver camera built from real dimensions (eye point left of the centre line, left-hand drive; 1967 GT350 15.75 in wood wheel and 5 in gauges, 1959 Cadillac 17.5 in wheel and 14 in ribbon speedometer), with overlay proofs per car. Landscape shows the whole interior pillar to pillar; portrait is a crop of the driver side (wheel, gauges, a strip of road), same scale. Road inside the car fixed in all visuals: eye height 1.07 / 1.12 m (was about 2.3 m), car in the right 3.6 m lane with the driver left of the lane centre, vanishing point straight ahead of the driver, edge lines, 3 m dashes with 9 m gaps at true speed, posts 1 m tall, and the road swings with steering.' },
-      { v: 'v1.7', date: '2026-11-11', status: 'done', text: 'Visuals v4 flat and v5 ink use the v2 painted interior again (same camera, wheel size and position, dash, pillars, hood, windshield, portrait and landscape framing), now drawn in the flat and ink styles. The land beside the road moves in v2, v4 and v5, inside and outside: the ground streams past at true speed in perspective (slow far away, fast near the edges), with more bushes, fence posts and roadside posts, distant mesas almost still, and the side-window view scrolling backwards with speed. Chase view: the car now sits in the picture: lit like the scene (the low sun is ahead, so its rear is in shade with a warm rim light on the sun side and a warm bounce from the road), a contact shadow under each tyre, a soft shadow under the car and a long shadow falling towards the camera, no cut-out fringe, ink outlines as thick as the scenery in v5, pale dust behind the tyres at speed, correct size on the road, and the car framed above the speed panel so the tyres are visible. The engine bay view is gone (button, B key and listening position); the sound has the inside and outside positions.' }
+      { v: 'v1.7', date: '2026-11-11', status: 'done', text: 'Visuals v4 flat and v5 ink use the v2 painted interior again (same camera, wheel size and position, dash, pillars, hood, windshield, portrait and landscape framing), now drawn in the flat and ink styles. The land beside the road moves in v2, v4 and v5, inside and outside: the ground streams past at true speed in perspective (slow far away, fast near the edges), with more bushes, fence posts and roadside posts, distant mesas almost still, and the side-window view scrolling backwards with speed. Chase view: the car now sits in the picture: lit like the scene (the low sun is ahead, so its rear is in shade with a warm rim light on the sun side and a warm bounce from the road), a contact shadow under each tyre, a soft shadow under the car and a long shadow falling towards the camera, no cut-out fringe, ink outlines as thick as the scenery in v5, pale dust behind the tyres at speed, correct size on the road, and the car framed above the speed panel so the tyres are visible. The engine bay view is gone (button, B key and listening position); the sound has the inside and outside positions.' },
+      { v: 'v1.7.1', date: '2026-11-11', status: 'done', text: 'Speed fix for visuals v2, v4 and v5 (Wim: \u201cV2/4/5 are all very slow\u201d). The roadside is simpler so phones can keep up: plain sand with darker stripes streaming past, fewer bushes, posts every 50 m and no fence; the sense of speed stays. The sky and distant hills, the cockpit, the wheel, the mirror, needle and lever shadows and the dust are now drawn once and reused instead of being repainted every frame, nothing is drawn behind the dashboard, and the picture resolution adapts automatically when a device cannot keep 60 frames per second. Measured: desktop 8\u201331 fps before, about 60 now; iPhone (emulated, CPU slowed 4x) 4\u20138 fps before, 43\u201360 now.' }
     ] }
   ]
 };
@@ -9136,7 +9317,30 @@ var ProjectHistory = {
   state.viewBlend = state.view === 1 ? 1 : 0;
   var audio = new EngineAudio({ forceScriptProcessor: params.get('audio') === 'sp' });
   var canvas = document.getElementById('dash');
-  if (isTouch) canvas.dataset.maxdpr = '2';
+  // v1.7.1 adaptive quality: the canvas resolution (device pixels per CSS px, at most 2) steps down while frames stay over budget
+  // (median > 21 ms over ~1.5 s) and retries one step up after 15 s of smooth running; a step that fails again becomes the ceiling.
+  // ?q=2 (or 1.5, 1) pins it (tests / comparisons).
+  var QL = [2, 1.5, 1.25, 1], qPin = params.get('q');
+  var quality = { i: 0, ceil: 0, buf: [], t: 0, changed: 0, ups: 0, pinned: !!qPin, level: function () { return QL[this.i]; } };
+  if (qPin) { quality.i = Math.max(0, QL.indexOf(+qPin)); if (QL.indexOf(+qPin) < 0) QL[0] = +qPin; }
+  canvas.dataset.maxdpr = String(QL[quality.i]);
+  function adaptQuality(dtMs, now, workMs) {
+    var q = quality; if (q.pinned || document.hidden || dtMs > 250) return;
+    q.buf.push(dtMs); q.wk = q.wk || []; q.wk.push(workMs || 0); q.t += dtMs;
+    if (q.buf.length < 90 && (q.t < 1500 || q.buf.length < 10)) return;
+    var a = q.buf.slice().sort(function (x, y) { return x - y; }), med = a[a.length >> 1], w = q.wk.slice().sort(function (x, y) { return x - y; })[q.wk.length >> 1];
+    var capped = a.filter(function (x) { return x > 31.5 && x < 35.5; }).length > 0.8 * a.length && w < 8;   // a 30 Hz display / low-power cap, not overload
+    q.buf.length = 0; q.wk.length = 0; q.t = 0; q.med = med; q.work = w;
+    if (capped) return;
+    var dpr = window.devicePixelRatio || 1, eff = function (i) { return Math.min(dpr, QL[i]); };
+    if (med > 21) {
+      var j = q.i + 1; while (j < QL.length && eff(j) >= eff(q.i)) j++;   // next step that lowers the resolution on this screen
+      if (j >= QL.length) return;
+      if (q.lastUp && now - q.changed < 6000) q.ceil = j;                 // the last step up did not hold: stay below it
+      q.i = j; q.changed = now; q.lastUp = false; apply();
+    } else if (med < 17.8 && q.i > q.ceil && now - q.changed > 15000) { q.i--; q.changed = now; q.lastUp = true; q.ups++; apply(); }
+    function apply() { canvas.dataset.maxdpr = String(QL[q.i]); dash.resize(); }
+  }
   var dash = new UI.Dash(canvas);
   function relayout() { dash.resize(); }
   window.addEventListener('resize', relayout); window.addEventListener('orientationchange', function () { setTimeout(relayout, 250); });
@@ -9362,8 +9566,10 @@ var ProjectHistory = {
   // ---- loop ----
   var last = performance.now(), saveT = 0, statusT = 0;
   function frame(now) {
-    var dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    var dtMs = now - last, dt = Math.min(0.05, Math.max(0, dtMs / 1000)); last = now;
+    var w0 = performance.now();
     try { tick(dt); render(); } catch (e) { if (!frame.err) { frame.err = 1; console.error(e); } }
+    adaptQuality(dtMs, now, performance.now() - w0);
     requestAnimationFrame(frame);
   }
   function tick(dt) {
@@ -9413,7 +9619,7 @@ var ProjectHistory = {
     });
   }
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash };
+  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash, quality: quality };
 })();
 </script>
 </body>
