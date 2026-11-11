@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.4.1)</title>
+<title>Street Rod: engine sound + driving demo (v1.5)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -64,11 +64,26 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 .touch #stage { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
 .touch aside { display: none; }
 .touch .tb { font-size: 13px; padding: 8px 10px; }
+/* v1.5: phones get separate layouts. Landscape: compact top bar (extra controls behind the menu button), pedals in the
+   side columns, shift buttons above the gas pedal, so the painted scene's middle stays clear. Portrait: top bar, then the
+   scene, then the controls below it (nothing over the scene). The painted visuals frame each layout separately. */
+#bMenu { display: none; min-width: 40px; font-size: 17px; }
+.touch #bMenu { display: inline-block; }
+.touch #topbar:not(.open) .more { display: none !important; }
+.touch #topbar.open #bMenu { background: #ffcf4a; }
+@media (orientation: landscape) {
+  .touch .shifts { right: max(10px, env(safe-area-inset-right)); bottom: calc(50% + 14px); width: max(11%, 78px); align-items: center; gap: 8px; }
+  .touch .tb.big { height: 52px; width: 100%; }
+}
 @media (orientation: portrait) {
-  .touch #rotate:not(.dismissed) { display: flex; position: absolute; inset: 0; z-index: 10; background: rgba(10,6,3,.88); align-items: center; justify-content: center; text-align: center; font-size: 18px; }
-  .touch #rotate .tb { margin-top: 14px; font-size: 15px; }
-  .touch .pedal { height: 25%; }
-  .touch .tb.big { height: 54px; }
+  .touch #stage { display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); background: #1a120c; }
+  .touch #topbar { position: relative; top: auto; left: auto; right: auto; flex: 0 0 auto; padding: 8px max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left)); background: #1a120c; }
+  .touch canvas#dash { position: relative; inset: auto; flex: 1 1 0px; min-height: 0; height: 0; width: 100%; }
+  .touch #touch { position: relative; inset: auto; flex: 0 0 30%; display: block; background: #1a120c; border-top: 1px solid #3a2a1c; }
+  .touch .pedal { top: 10px; height: auto; bottom: max(10px, env(safe-area-inset-bottom)); width: 30%; }
+  .touch #pBrake { width: 32%; }
+  .touch .shifts { left: 50%; right: auto; top: 10px; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: 26%; justify-content: center; }
+  .touch .tb.big { width: 100%; height: 46%; }
   .touch #topbar { gap: 4px; }
 }
 @media (max-width: 1100px) { #app { flex-wrap: wrap; } aside { flex: 1 1 100%; } }
@@ -127,14 +142,15 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <div class="seg" id="segCar"><button class="tb" data-act="car" data-v="gt350">GT350</button><button class="tb" data-act="car" data-v="caddy">Cadillac</button></div>
       <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside car</button><button class="tb" data-act="view" data-v="0">Outside (rear)</button><button class="tb" id="bBay" data-act="view" data-v="2">Engine bay</button></div>
-      <label class="sel"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
-      <label class="sel"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
-      <button class="tb" id="bDrag" data-act="drag">Drag &frac14; mile</button>
-      <button class="tb hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
-      <button class="tb" id="bUnits" data-act="units">km/h</button>
-      <button class="tb" id="bMute" data-act="mute">Mute</button>
-      <button class="tb" id="bAbout" data-act="about" aria-label="About and history" title="About / History">i</button>
-      <div id="astatus" class="astatus">Sound: tap to enable</div>
+      <label class="sel more"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
+      <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
+      <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
+      <button class="tb more hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
+      <button class="tb more" id="bUnits" data-act="units">km/h</button>
+      <button class="tb more" id="bMute" data-act="mute">Mute</button>
+      <button class="tb more" id="bAbout" data-act="about" aria-label="About and history" title="About / History">i</button>
+      <button class="tb" id="bMenu" data-act="menu" aria-label="More controls" title="More controls">&#9776;</button>
+      <div id="astatus" class="astatus more">Sound: tap to enable</div>
     </div>
     <div id="touch">
       <div class="pedal" id="pBrake" data-pedal="brake"><div class="fill"></div><span>BRAKE</span></div>
@@ -144,7 +160,6 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
     <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
     <div id="dragCard" class="hidden"></div>
     <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
-    <div id="rotate"><div><b>&#8635; Rotate your phone</b><br>Landscape is the driving mode.<br><button class="tb" data-act="dismissRotate">Continue in portrait</button></div></div>
   </div>
   <aside>
     <h3>Controls (keyboard)</h3>
@@ -8316,7 +8331,7 @@ var GLView = (function () {
 </script>
 <script>/* js/painted-assets.js */
 /* painted-assets.js: generated by proposals/visuals-v2/interior-r3/build-assets-v2.py (Visuals v2 painted). The single-file build inlines these as data URIs. */
-var PAINTED_ASSETS = {"meta": {"upscale": "edsr-x2", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 300, "view": {"hz": 196, "f": 900, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1224, "logical": 612.0}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 330, "view": {"hz": 186, "f": 900, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "wheel": {"px": 1346, "logical": 673.0}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}}, "files": {"caddy-cockpit": "assets/painted/caddy-cockpit.webp", "caddy-wheel-shadow": "assets/painted/caddy-wheel-shadow.webp", "caddy-wheel": "assets/painted/caddy-wheel.webp", "desert-backdrop": "assets/painted/desert-backdrop.jpg", "gt350-cockpit": "assets/painted/gt350-cockpit.webp", "gt350-shifter": "assets/painted/gt350-shifter.webp", "gt350-wheel-shadow": "assets/painted/gt350-wheel-shadow.webp", "gt350-wheel": "assets/painted/gt350-wheel.webp"}};
+var PAINTED_ASSETS = {"meta": {"upscale": "edsr-x2", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [924, 658], "bodyX": [6, 917], "contactY": 651, "splitY": 521, "realW": 1.73, "lamps": [[75, 366, 55, 55], [142, 366, 53, 55], [207, 366, 54, 55], [664, 368, 55, 53], [731, 369, 52, 53], [796, 369, 52, 53]], "tips": [[198, 573, 20], [724, 574, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [991, 630], "bodyX": [6, 984], "contactY": 623, "splitY": 527, "realW": 2.03, "lamps": [[72, 165, 36, 91], [883, 165, 37, 93], [32, 321, 30, 26], [85, 322, 26, 26], [876, 321, 32, 27], [930, 321, 30, 28]], "tips": [[69, 477, 24], [923, 478, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 101, 273, 205], "h": 0.9}, {"k": "creosote", "r": [277, 110, 272, 196], "h": 1.1}, {"k": "grass", "r": [553, 220, 88, 86], "h": 0.35}, {"k": "yucca", "r": [645, 15, 163, 291], "h": 1.6}, {"k": "fencepost", "r": [812, 1, 61, 305], "h": 1.2}, {"k": "delineator", "r": [877, 0, 52, 306], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/painted/caddy-cockpit.webp", "caddy-lever": "assets/painted/caddy-lever.webp", "caddy-rear": "assets/painted/caddy-rear.webp", "caddy-wheel-shadow": "assets/painted/caddy-wheel-shadow.webp", "caddy-wheel": "assets/painted/caddy-wheel.webp", "desert-backdrop": "assets/painted/desert-backdrop.jpg", "desert-props": "assets/painted/desert-props.webp", "gt350-cockpit": "assets/painted/gt350-cockpit.webp", "gt350-rear": "assets/painted/gt350-rear.webp", "gt350-shifter": "assets/painted/gt350-shifter.webp", "gt350-wheel-shadow": "assets/painted/gt350-wheel-shadow.webp", "gt350-wheel": "assets/painted/gt350-wheel.webp"}};
 </script>
 <script>/* js/visuals-painted.js */
 /*
@@ -8328,7 +8343,9 @@ var PAINTED_ASSETS = {"meta": {"upscale": "edsr-x2", "gt350": {"axisX": 555, "hu
  *   3 rear-view mirror view   4 cached cockpit (painting + static gauge faces, scales, plates)
  *   5 live: needles, odometer drum, ribbon speedometer, PRNDSL, lamps, radio pointer, shifter sprite
  *   6 steering-wheel sprite (+ soft shadow sprite) rotated about the hub.
- * Outside and engine-bay views keep the v1 drawing. Assets: PAINTED_ASSETS (js/painted-assets.js).
+ * v1.5: real-dimension driver camera (proposals/visuals-v2/r5/camera.py), painted rear chase view, moving gear levers, and separate
+ *   portrait / landscape / desktop framing (focus box per car + view fitted into the canvas area no control covers).
+ * The engine-bay view keeps the v1 drawing. Assets: PAINTED_ASSETS (js/painted-assets.js).
  */
 var PaintedCockpit = (function () {
   'use strict';
@@ -8450,39 +8467,91 @@ var PaintedCockpit = (function () {
     }
     caches[key] = out; return out;
   }
-  // ---------------------------------------------------------------- scenery
-  function backdrop(g, car, s) {
-    var m = M[car], v = m.view, B = M.backdrop, img = A['desert-backdrop'];
-    var camH = B.bottomPx / B.roadHalfPx * 3.6, /* painting bottom row 4 m ahead */ k = (v.f * camH / 4.0) / B.bottomPx; // scale so painted road (half 3.6 m) matches the live geometry
-    var w = B.w * k, h = B.h * k, ox = m.axisX - B.vx * k, oy = v.hz - B.hz * k, hz = v.hz;
-    var dx = 1.85 + (s.lat || 0); // camera right of the road's centre line (right-hand lane); shear the ground so the road meets the vanishing point
-    var shear = -dx / camH;
-    g.save(); g.beginPath(); g.rect(0, 0, PW, hz + 1); g.clip(); g.drawImage(img, ox, oy, w, h); g.restore();
-    g.save(); g.beginPath(); g.rect(0, hz, PW, PH - hz); g.clip(); g.transform(1, 0, shear, 1, -shear * hz, 0); g.drawImage(img, ox, oy, w, h); g.restore();
-    function yOf(z) { return hz + v.f * camH / z; }
-    function xOf(z, lx) { return m.axisX + v.f * (lx - dx) / z; }
+  // ---------------------------------------------------------------- scenery (shared by the inside and the chase views)
+  // P = { axisX, hz, f, dx: camera right of the centre line (m), camOff: camera to car front (m), clipTop }
+  function camHB() { var B = M.backdrop; return B.bottomPx / B.roadHalfPx * 3.6; }
+  function scenery(g, P, s) {
+    var B = M.backdrop, img = A['desert-backdrop'], camH = camHB(), hz = P.hz, f = P.f;
+    var k = (f * camH / 4.0) / B.bottomPx;   // painting bottom row = 4 m ahead; scaled so the painted road (half 3.6 m) matches the live geometry
+    var w = B.w * k, h = B.h * k, ox = P.axisX - B.vx * k, oy = hz - B.hz * k, dx = P.dx, shear = -dx / camH;
+    function tile() { g.drawImage(img, ox, oy, w, h); [ox, ox + 2 * w].forEach(function (mx) { g.save(); g.translate(mx, 0); g.scale(-1, 1); g.drawImage(img, 0, oy, w, h); g.restore(); }); }  // mirrored copies either side
+    g.save(); g.beginPath(); g.rect(-900, -400, PW + 1800, hz + 401); g.clip(); tile(); g.restore();
+    g.save(); g.beginPath(); g.rect(-900, hz, PW + 1800, PH - hz + 400); g.clip(); g.transform(1, 0, shear, 1, -shear * hz, 0); tile();
+    if (oy + h < PH + 10) { g.fillStyle = '#3b3632'; g.fillRect(ox - w, oy + h - 1, 3 * w, PH - oy - h + 400); }
+    g.restore();
+    function yOf(z) { return hz + f * camH / z; }
+    function xOf(z, lx) { return P.axisX + f * (lx - dx) / z; }
     var d = s.dist || 0, period = 12, ph = d % period; g.fillStyle = 'rgba(226,190,90,0.85)';
     for (var zz = -ph; zz < 260; zz += period) {
-      var a = Math.max(3, zz), b = zz + 3; if (b <= 3) continue;
-      var ya = yOf(a), yb = yOf(b), wa = v.f * 0.06 / a, wb = v.f * 0.06 / b;
-      poly(g, [[xOf(a, 0) - wa, ya], [xOf(a, 0) + wa, ya], [xOf(b, 0) + wb, yb], [xOf(b, 0) - wb, yb]]); g.fill();
+      var za = Math.max(1.5, zz), zb = zz + 3; if (zb <= 1.5) continue;
+      var ya = yOf(za), yb = yOf(zb), wa = f * 0.06 / za, wb = f * 0.06 / zb;
+      poly(g, [[xOf(za, 0) - wa, ya], [xOf(za, 0) + wa, ya], [xOf(zb, 0) + wb, yb], [xOf(zb, 0) - wb, yb]]); g.fill();
     }
     if (s.drag) [[s.drag.start, 0.3, false], [s.drag.finish, 0.9, true]].forEach(function (L) {
-      var za = L[0] + 2.2, zb = za + L[1]; if (zb <= 3 || za > 500) return; za = Math.max(za, 3);
+      var za = L[0] + P.camOff, zb = za + L[1]; if (zb <= 1.5 || za > 500) return; za = Math.max(za, 1.5);
       var n = L[2] ? 16 : 1; for (var q = 0; q < n; q++) { if (L[2] && q % 2) continue; var u0 = -3.6 + 7.2 * q / n, u1 = -3.6 + 7.2 * (q + 1) / n;
-        g.fillStyle = 'rgba(244,242,234,0.9)'; poly(g, [[xOf(za, u0), yOf(za)], [xOf(za, u1), yOf(za)], [xOf(zb, u1), yOf(zb)], [xOf(zb, u0), yOf(zb)]]); g.fill(); }
+        g.fillStyle = 'rgba(244,242,234,0.92)'; poly(g, [[xOf(za, u0), yOf(za)], [xOf(za, u1), yOf(za)], [xOf(zb, u1), yOf(zb)], [xOf(zb, u0), yOf(zb)]]); g.fill(); }
     });
-    // side window: the desert streams past (band of the painting scrolled with distance)
+    // roadside props streaming past (painted sprites; positions repeat every 400 m, sizes from real heights)
+    var S = A['desert-props'], PR = M.props, list = [], seg = 9;
+    for (var j = Math.floor(d / seg); j < Math.floor(d / seg) + 26; j++) {
+      var zr = j * seg - d + 1.5; if (zr < 1.2) continue;
+      var r1 = hash(j), r2 = hash(j + 1000), r3 = hash(j + 2000), side = r1 < 0.5 ? -1 : 1;
+      if (j % 3 === 0) list.push({ z: zr, x: side * 4.4, p: PR[5] });   // delineator posts, both sides
+      var kind = r2 < 0.38 ? 0 : r2 < 0.66 ? 1 : r2 < 0.86 ? 2 : r2 < 0.95 ? 3 : 4;
+      list.push({ z: zr + 3, x: side * (6 + r3 * 16), p: PR[kind] });
+      if (r3 > 0.55) list.push({ z: zr + 5.5, x: -side * (7 + r1 * 12), p: PR[r3 > 0.8 ? 2 : 0] });
+    }
+    list.sort(function (a, b) { return b.z - a.z; });
+    for (var q2 = 0; q2 < list.length; q2++) {
+      var it = list[q2], r = it.p.r, hp = f * it.p.h / it.z, wp = hp * r[2] / r[3], xb = xOf(it.z, it.x), yb2 = yOf(it.z);
+      if (hp < 1.5 || xb + wp < -60 || xb - wp > PW + 60 || yb2 < (P.clipTop || -1e9)) continue;
+      g.globalAlpha = Math.min(1, (160 - it.z) / 40); g.drawImage(S, r[0], r[1], r[2], r[3], xb - wp / 2, yb2 - hp, wp, hp); g.globalAlpha = 1;
+    }
+    return { yOf: yOf, xOf: xOf };
+  }
+  function hash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  function backdrop(g, car, s) {
+    var m = M[car], v = m.view, B = M.backdrop, img = A['desert-backdrop'], d = s.dist || 0;
+    scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, dx: 1.85 + (s.lat || 0), camOff: 2.2 }, s);
+    // side window: the desert streams past (band of the painting scrolled with distance), horizon at the same height as ahead
     g.save(); poly(g, m.side); g.clip();
-    var bandY = B.hz - 40, bandH = 260, sw = img.naturalWidth, sh = img.naturalHeight, sy = bandY / B.h * sh, shh = bandH / B.h * sh, tw = 900, th = tw * shh / (sw * 0.5);
-    var off = ((d * 9) % tw + tw) % tw, top = m.side[0][1] + 10;
-    for (var i = -1; i < 2; i++) g.drawImage(img, 0, sy, sw * 0.5, shh, -off + i * tw + 0, top - th * 0.12, tw, th);
+    var bandY = B.hz - 150, bandH = 370, sw = img.naturalWidth, sh = img.naturalHeight, sy = bandY / B.h * sh, shh = bandH / B.h * sh, tw = 900, th = tw * shh / (sw * 0.5);
+    var off = ((d * 9) % tw + tw) % tw, top = v.hz - th * 150 / bandH;
+    g.fillStyle = '#c9a77a'; g.fillRect(0, 0, 300, PH);
+    for (var i = -1; i < 2; i++) g.drawImage(img, 0, sy, sw * 0.5, shh, -off + i * tw, top, tw, th);
     g.fillStyle = 'rgba(30,25,20,0.12)'; g.fillRect(0, 0, 300, PH); g.restore();
     // rear-view mirror: the road behind (painting mirrored)
     var mr = m.mirror; g.save(); rr(g, mr[0] - 4, mr[1] - 4, mr[2] + 8, mr[3] + 8, 18); g.clip(); g.translate(mr[0] + mr[2] + 4, mr[1] - 4); g.scale(-1, 1);
     var cw = sw * 0.42, chh = cw * (mr[3] + 8) / (mr[2] + 8); g.drawImage(img, sw * 0.5 - cw / 2, sh * (B.hz / B.h) - chh * 0.42, cw, chh, 0, 0, mr[2] + 8, mr[3] + 8); g.restore();
   }
-  // ---------------------------------------------------------------- frame
+  // ---------------------------------------------------------------- gear levers
+  var anim = { t: 0, gt: { x: 0, y: 0, path: [], gear: null }, cad: { a: null } };
+  function stepT(s) { var dt = anim.t ? Math.max(0, Math.min(0.05, s.time - anim.t)) : 0; anim.t = s.time; return dt; }
+  // GT350 Hurst 4-speed H: 1 = left-forward, 2 = left-back, 3 = right-forward, 4 = right-back (forward = up the screen).
+  // A shift runs through the gate: out of gear to neutral, across, then into gear, each leg an eased ~0.07 s throw.
+  var HP = { 0: [0, 0], 1: [-1, -1], 2: [-1, 1], 3: [1, -1], 4: [1, 1], 5: [1, 1] }, LV = { gtDt: 0 };
+  function hurst(g, m, s) {
+    var st = anim.gt, gear = s.gear | 0, dt = LV.gtDt;
+    if (st.gear === null) { st.gear = gear; var p0 = HP[gear] || [0, 0]; st.x = p0[0]; st.y = p0[1]; }
+    if (gear !== st.gear) { var tp = HP[gear] || [0, 0]; st.path = [[st.x, 0], [tp[0], 0], [tp[0], tp[1]]]; st.gear = gear; }
+    if (st.path.length) { var w = st.path[0], sp = dt / 0.07, ddx = w[0] - st.x, ddy = w[1] - st.y, dd = Math.hypot(ddx, ddy);
+      if (dd <= sp || dd < 1e-3) { st.x = w[0]; st.y = w[1]; st.path.shift(); } else { var e = Math.max(sp, dd * 0.45); e = Math.min(e, dd); st.x += ddx / dd * e; st.y += ddy / dd * e; } }
+    var k = m.shifter, px = k[0] + k[2] * 0.45, py = k[1] + k[3];  // pivot where the stick enters the boot
+    g.save(); g.translate(px, py); g.rotate(st.x * 0.13); g.scale(1, 1 - st.y * 0.1); g.translate(0, st.y * 2);
+    g.drawImage(A['gt350-shifter'], k[0] - px, k[1] - py, k[2], k[3]); g.restore();
+  }
+  // Cadillac column lever: rotates about the column through the Hydra-Matic quadrant P N D S L R (eased)
+  var QA = { P: -0.23, N: -0.17, D: -0.115, S: -0.08, L: -0.045, R: 0.0 };
+  function columnLever(g, m, s) {
+    var lv = m.lever; if (!lv || !A['caddy-lever']) return;
+    var tgt = QA[s.range || 'N'] !== undefined ? QA[s.range || 'N'] : -0.1, st = anim.cad;
+    if (st.a === null) st.a = tgt; st.a += (tgt - st.a) * (LV.gtDt ? Math.min(1, LV.gtDt / 0.06) : 0.35);
+    var r = lv.rect, pv = lv.pivot;
+    g.save(); g.translate(pv[0], pv[1]); g.rotate(st.a); g.shadowColor = 'rgba(40,10,10,0.45)'; g.shadowBlur = 6; g.shadowOffsetY = 5;
+    g.drawImage(A['caddy-lever'], r[0] - pv[0], r[1] - pv[1], r[2], r[3]); g.restore();
+  }
+  // ---------------------------------------------------------------- inside frame
   function drawInside(g, s) {
     var car = s.carId === 'gt350' ? 'gt350' : 'caddy', m = M[car], C = cache(car, s), mph = s.kmh / 1.609344;
     backdrop(g, car, s);
@@ -8498,14 +8567,14 @@ var PaintedCockpit = (function () {
       if (m.under) { var U = m.under, oilP = running ? Math.min(70, 18 + s.rpm / 100) : 0, amp = running ? 30 + Math.max(-12, Math.min(14, (s.rpm - 1500) / 300)) : 22;
         needle(g, U.oil[0], U.oil[1] + 2, U.oil[2], C.angOil(oilP), '#ff6a1e', 2.2); needle(g, U.amps[0], U.amps[1] + 2, U.amps[2], C.angAmp(amp), '#ff6a1e', 2.2); glass(g, U.oil[0], U.oil[1], U.oil[2]); glass(g, U.amps[0], U.amps[1], U.amps[2]); }
       // Hurst T-handle: painted sprite, nudged through the H pattern (1-2 left, 3-4 right; odd forward, even back)
-      var k = m.shifter, gear = s.gear | 0, dxs = { 0: 0, 1: -8, 2: -8, 3: 6, 4: 6 }[gear] || 0, dys = gear ? (gear % 2 ? -6 : 6) : 0;
-      g.drawImage(A['gt350-shifter'], k[0] + dxs, k[1] + dys, k[2], k[3]);
+      hurst(g, m, s);
     } else {
       var rb = C.rib, x0 = rb[0], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : s.kmh) / rb[2] * (rb[1] - rb[0]), y0 = rb[3];
       g.fillStyle = lin(g, 0, y0 + 46, 0, y0 + 56, [[0, '#ffc07a'], [0.5, '#ff5a14'], [1, '#a82a08']]); g.fillRect(x0, y0 + 46, x1 - x0, 9);
       g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, x1, y0 + 50, 0, 30, [[0, 'rgba(255,120,40,0.85)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(x1 - 30, y0 + 20, 60, 60); g.restore();
       var R = m.ribbon; g.save(); rr(g, R[0], R[1], R[2], R[3], 22); g.clip(); g.fillStyle = lin(g, R[0], R[1], R[0] + R[2] * 0.5, R[1] + R[3], [[0, 'rgba(255,255,255,0.18)'], [0.45, 'rgba(255,255,255,0.03)'], [0.5, 'rgba(255,255,255,0)']]); g.fillRect(R[0], R[1], R[2], R[3]); g.restore();
       lamp(g, R[0] + 16, R[1] + 51, 3.6, '#ff3a2a', s.brake > 0.05); lamp(g, R[0] + R[2] - 16, R[1] + 51, 3.6, '#ff3a2a', !running);
+      columnLever(g, m, s);
       var P = m.prndsl, L = ['P', 'N', 'D', 'S', 'L', 'R'], qi = Math.max(0, L.indexOf(s.range || 'N'));
       g.font = 'bold 11px Georgia, serif'; g.textAlign = 'center';
       L.forEach(function (c, i) { g.fillStyle = i === qi ? '#ffb070' : 'rgba(236,227,207,0.7)'; g.fillText(c, P[0] + (i + 0.5) * P[2] / 6, P[1] + P[3] * 0.72); });
@@ -8521,33 +8590,106 @@ var PaintedCockpit = (function () {
     g.save(); g.translate(hub[0] + 10, hub[1] + 16); g.rotate(rot); g.globalAlpha = 0.5; g.drawImage(A[car + '-wheel-shadow'], -wl / 2, -wl / 2, wl, wl); g.restore();
     g.save(); g.translate(hub[0], hub[1]); g.rotate(rot); g.drawImage(A[car + '-wheel'], -wl / 2, -wl / 2, wl, wl); g.restore();
   }
-  // map painting space onto the Dash (logical 720 high, W wide): cover-fit, keep the driver's axis/cluster in view
-  function place(W, car) {
-    var k = Math.max(1, W / PW), ox, oy = -(PH * k - PH) * 0.12;  // wide phones: crop mostly at the bottom so the road stays clear of the button bar
-    if (W >= PW) ox = (W - PW * k) / 2; else ox = Math.max(W - PW, Math.min(0, W / 2 - M[car].axisX - 60));
+  // ---------------------------------------------------------------- outside: rear chase camera
+  var smoke = [];
+  function drawOutside(g, s) {
+    var car = s.carId === 'gt350' ? 'gt350' : 'caddy', E = M.exterior, c = E[car], V = E.view, f = V.f, camH = camHB(), dt = LV.gtDt;
+    var steer = s.steer || 0, sway = steer * 10;
+    scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, dx: 1.85 + (s.lat || 0), camOff: c.dist + c.len }, s);
+    var wpx = f * c.realW / c.dist, sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : 1.35), yc = V.hz + f * camH / zc;
+    var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + '-rear'];
+    var run = s.engine === 'running', shake = run ? Math.sin(s.time * 70) * Math.min(1.2, 0.4 + s.rpm / 5000) : 0;
+    var pitch = Math.max(-7, Math.min(7, (s.accel || 0) * 14)), roll = -steer * Math.min(1, s.kmh / 60) * 0.035;  // squat (+) / dive (-), body roll in turns
+    // contact shadow
+    g.save(); g.globalAlpha = 0.55; g.fillStyle = rad(g, cx, yc, 0, wpx * 0.62, [[0, 'rgba(0,0,0,0.85)'], [0.7, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]);
+    g.translate(cx, yc); g.scale(1, 0.09); ell(g, 0, 0, wpx * 0.62, wpx * 0.62); g.fill(); g.restore();
+    var sy = c.splitY;   // tyres below splitY stay planted; the body above moves
+    g.save(); g.translate(cx, yc); g.rotate(roll * 0.4); g.translate(-cx, -yc);
+    g.drawImage(img, 0, sy, c.px[0], c.px[1] - sy, x0, y0 + sy * sc, c.px[0] * sc, (c.px[1] - sy) * sc);
+    g.translate(cx, y0 + sy * sc); g.rotate(roll); g.translate(-cx, -(y0 + sy * sc)); g.translate(0, pitch + shake * 0.5);
+    g.drawImage(img, 0, 0, c.px[0], sy + 2, x0, y0, c.px[0] * sc, (sy + 2) * sc);
+    // tail / brake lamps
+    var br = s.brake > 0.05 ? Math.min(1, 0.55 + s.brake) : 0, tail = run ? 0.22 : 0;
+    if (br + tail > 0) { g.globalCompositeOperation = 'lighter';
+      c.lamps.forEach(function (L) { var lx = x0 + (L[0] + L[2] / 2) * sc, ly = y0 + (L[1] + L[3] / 2) * sc, lr = Math.max(L[2], L[3]) * sc;
+        g.globalAlpha = (tail + br) * 0.8; g.fillStyle = rad(g, lx, ly, 0, lr * 0.6, [[0, 'rgba(255,200,170,0.95)'], [1, 'rgba(255,40,20,0)']]); g.fillRect(lx - lr, ly - lr, 2 * lr, 2 * lr);
+        if (br) { g.globalAlpha = br * 0.55; g.fillStyle = rad(g, lx, ly, 0, lr * 2.4, [[0, 'rgba(255,50,30,0.8)'], [1, 'rgba(255,0,0,0)']]); g.fillRect(lx - lr * 2.4, ly - lr * 2.4, lr * 4.8, lr * 4.8); } });
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
+    var tips = c.tips.map(function (t) { return [x0 + t[0] * sc, y0 + t[1] * sc + pitch, t[2] * sc]; });
+    g.restore();
+    // exhaust smoke: puffs leave the tips, grow, drift back towards the camera and fade (more under throttle and at idle when cold)
+    if (run) { var rate = (6 + 26 * (s.thr || 0) + s.rpm / 600) * dt;
+      tips.forEach(function (t, i) { for (var n = rate + Math.random(); n > 1; n--) smoke.push({ x: t[0], y: t[1], r: t[2] * 0.5, vx: (i ? 1 : -1) * (4 + Math.random() * 10), vy: 8 + Math.random() * 10, a: 0.07 + 0.16 * (s.thr || 0), t: 0, life: 0.9 + Math.random() * 0.8 }); }); }
+    for (var q = smoke.length - 1; q >= 0; q--) { var p = smoke[q]; p.t += dt; if (p.t > p.life) { smoke.splice(q, 1); continue; }
+      p.x += (p.vx - sway * 0.0) * dt; p.y += p.vy * dt; p.r += (10 + s.kmh * 0.22) * dt; p.y += s.kmh * 0.08 * dt;
+      var al = p.a * (1 - p.t / p.life); g.fillStyle = rad(g, p.x, p.y, 0, p.r, [[0, 'rgba(215,212,205,' + al.toFixed(3) + ')'], [1, 'rgba(215,212,205,0)']]); ell(g, p.x, p.y, p.r, p.r * 0.8); g.fill(); }
+    if (smoke.length > 220) smoke.splice(0, smoke.length - 220);
+  }
+  // ---------------------------------------------------------------- framing: separate portrait / landscape / desktop compositions
+  // Focus box (painting px) per car, view and orientation, fitted into the part of the canvas no control covers.
+  var FOCUS = {
+    gt350: { in: { land: [150, 175, 1165, 645], port: [292, 30, 870, 720] }, out: { land: [360, 140, 920, 700], port: [370, 60, 910, 720] } },
+    caddy: { in: { land: [80, 150, 1140, 650], port: [205, 30, 830, 720] }, out: { land: [360, 140, 920, 700], port: [370, 60, 910, 720] } } };
+  var LY = null, LYt = 0;
+  function layout(dash) {
+    var now = performance.now(), cv = dash.cv;
+    if (LY && now - LYt < 400 && LY.cw === cv.width && LY.ch === cv.height) return LY;
+    var cr = cv.getBoundingClientRect(), px = cv.width / Math.max(1, cr.width), sx0 = 0, sx1 = cr.width, sy0 = 0, sy1 = cr.height, touch = document.documentElement.classList.contains('touch');
+    function vis(el) { return el && el.offsetParent !== null && el.getClientRects().length; }
+    var tb = document.getElementById('topbar'), items = tb ? tb.querySelectorAll(touch ? '#bIgn, #segCar, #segView, #bMenu' : '#topbar > *') : [];
+    for (var i = 0; i < items.length; i++) { if (!vis(items[i])) continue; var r = items[i].getBoundingClientRect(); if (r.bottom > cr.top && r.top < cr.top + cr.height * 0.5) sy0 = Math.max(sy0, r.bottom - cr.top + 6); }
+    ['pBrake', 'pGas', 'bUp', 'bDown'].forEach(function (id) {
+      var el = document.getElementById(id); if (!vis(el)) return; var r = el.getBoundingClientRect();
+      if (r.top > cr.bottom - 4 || r.bottom < cr.top + 4) return;   // below the scene (portrait layout)
+      if (r.left + r.width / 2 < cr.left + cr.width / 2) sx0 = Math.max(sx0, r.right - cr.left + 6); else sx1 = Math.min(sx1, r.left - cr.left - 6);
+    });
+    LY = { cw: cv.width, ch: cv.height, px: px, css: [cr.width, cr.height], safe: [sx0 * px, sy0 * px, sx1 * px, sy1 * px], port: cr.width / cr.height < 1.15 };
+    LYt = now; return LY;
+  }
+  function frameFor(L, car, view) {
+    var F = FOCUS[car][view][L.port ? 'port' : 'land'], S = L.safe, sw = S[2] - S[0], sh = S[3] - S[1];
+    var kf = Math.min(sw / (F[2] - F[0]), sh / (F[3] - F[1])), kc = Math.max(L.cw / PW, L.ch / PH), k = Math.min(kf, kc);
+    var ox = (S[0] + S[2]) / 2 - (F[0] + F[2]) / 2 * k, oy = (S[1] + S[3]) / 2 - (F[1] + F[3]) / 2 * k;
+    if (PW * k >= L.cw) ox = Math.max(L.cw - PW * k, Math.min(0, ox)); else ox = Math.max(0, Math.min(L.cw - PW * k, ox));
+    if (PH * k >= L.ch) oy = Math.max(L.ch - PH * k, Math.min(0, oy)); else oy = Math.max(0, Math.min(L.ch - PH * k, oy));
     return { k: k, ox: ox, oy: oy };
   }
-  function draw(dash, s) {
-    load();
-    if (status !== 'ready' || s.view === 2 || s.viewBlend < 0.001) { dash.draw(s); return; }
-    var b = s.viewBlend, g = dash.g, W = dash.W, car = s.carId === 'gt350' ? 'gt350' : 'caddy';
-    if (b < 0.999) dash.draw(Object.assign({}, s, { viewBlend: 0 }));
-    g.setTransform(dash.scale, 0, 0, dash.scale, 0, 0);
-    var oy = (dash.cv.height / dash.scale - PH) / 2; if (oy > 0) g.translate(0, oy);
-    var p = place(W, car);
-    g.save(); g.beginPath(); g.rect(0, 0, W, PH); g.clip(); g.globalAlpha = b; g.translate(p.ox, p.oy); g.scale(p.k, p.k);
-    if (b < 0.999) { // fade: draw to the canvas with alpha via a layer
-      g.globalAlpha = 1; var L = layer(dash); L.g.setTransform(1, 0, 0, 1, 0, 0); L.g.clearRect(0, 0, L.cv.width, L.cv.height);
-      L.g.setTransform(dash.scale * p.k, 0, 0, dash.scale * p.k, dash.scale * p.ox, dash.scale * p.oy); drawInside(L.g, s);
-      g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = b; g.drawImage(L.cv, 0, Math.max(0, oy) * dash.scale); g.globalAlpha = 1;
-    } else drawInside(g, s);
+  function paint(g, p, fn, s, open) {
+    g.save(); g.setTransform(p.k, 0, 0, p.k, p.ox, p.oy); if (!open) { g.beginPath(); g.rect(0, 0, PW, PH); g.clip(); } fn(g, s); g.restore();
+    if (open) return;
+    // where the painting does not reach the canvas edge (it is fitted inside the uncovered area), mirror its edge band outwards, dimmed
+    var cv = g.canvas, x0 = Math.ceil(p.ox), x1 = Math.floor(p.ox + PW * p.k), y0 = Math.ceil(p.oy), y1 = Math.floor(p.oy + PH * p.k);
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+    function band(sx, sy, sw, sh, dx, dy, flipX, flipY) { if (sw <= 0 || sh <= 0) return; g.save(); g.translate(dx + (flipX ? sw : 0), dy + (flipY ? sh : 0)); g.scale(flipX ? -1 : 1, flipY ? -1 : 1); g.drawImage(cv, sx, sy, sw, sh, 0, 0, sw, sh); g.restore(); g.fillStyle = 'rgba(8,5,3,0.45)'; g.fillRect(dx, dy, sw, sh); }
+    if (x0 > 0) band(x0, 0, Math.min(x0, x1 - x0), cv.height, 0, 0, true, false);
+    if (x1 < cv.width) { var w2 = Math.min(cv.width - x1, x1 - x0); band(x1 - w2, 0, w2, cv.height, x1, 0, true, false); }
+    if (y0 > 0) band(0, y0, cv.width, Math.min(y0, y1 - y0), 0, 0, false, true);
+    if (y1 < cv.height) { var h2 = Math.min(cv.height - y1, y1 - y0); band(0, y1 - h2, cv.width, h2, 0, y1, false, true); }
     g.restore();
-    g.setTransform(dash.scale, 0, 0, dash.scale, 0, 0); if (oy > 0) g.translate(0, oy);
-    dash.insideInfo(g, s, W); dash.hudTags(g, s, W);
   }
   var lay = null;
-  function layer(dash) { if (!lay) { lay = { cv: document.createElement('canvas') }; lay.g = lay.cv.getContext('2d'); } if (lay.cv.width !== dash.cv.width || lay.cv.height !== Math.round(PH * dash.scale)) { lay.cv.width = dash.cv.width; lay.cv.height = Math.round(PH * dash.scale); } return lay; }
-  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, _drawInside: drawInside };
+  function layer(cv) { if (!lay) { lay = { cv: document.createElement('canvas') }; lay.g = lay.cv.getContext('2d'); } if (lay.cv.width !== cv.width || lay.cv.height !== cv.height) { lay.cv.width = cv.width; lay.cv.height = cv.height; } return lay; }
+  function draw(dash, s) {
+    load();
+    if (status !== 'ready' || s.view === 2) { dash.draw(s); return; }
+    LV.gtDt = stepT(s);
+    var g = dash.g, cv = dash.cv, L = layout(dash), car = s.carId === 'gt350' ? 'gt350' : 'caddy', b = s.viewBlend;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.fillStyle = '#0d0906'; g.fillRect(0, 0, cv.width, cv.height);
+    if (b < 0.999) paint(g, frameFor(L, car, 'out'), drawOutside, s, true);
+    if (b > 0.001) {
+      var p = frameFor(L, car, 'in');
+      if (b < 0.999) { var Ly = layer(cv); Ly.g.setTransform(1, 0, 0, 1, 0, 0); Ly.g.clearRect(0, 0, cv.width, cv.height); paint(Ly.g, p, drawInside, s); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = b; g.drawImage(Ly.cv, 0, 0); g.globalAlpha = 1; }
+      else paint(g, p, drawInside, s);
+    }
+    // HUD in the uncovered area, in CSS-pixel based units so it reads the same on every screen
+    var S = L.safe, u = L.px * Math.max(0.55, Math.min(1, (S[2] - S[0]) / L.px / 900)), Wl = (S[2] - S[0]) / u;
+    g.setTransform(u, 0, 0, u, S[0], S[1]);
+    if (b > 0.5) dash.insideInfo(g, s, Wl);
+    else { g.setTransform(u, 0, 0, u, S[0], L.port ? S[1] + 6 * L.px - 646 * u : S[3] - 720 * u - 4 * L.px); dash.hudStrip(g, s, Wl, true); g.setTransform(u, 0, 0, u, S[0], S[1] + (L.port ? 70 * u : 0)); }  // portrait: HUD in the sky, clear of the car
+    dash.hudTags(g, s, Wl);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, layout: function () { return LY; }, _drawInside: drawInside, _drawOutside: drawOutside, _focus: FOCUS };
 })();
 </script>
 <script>/* js/visuals.js */
@@ -8561,7 +8703,7 @@ var VisualModels = (function () {
   var list = [];
   function register(m) { list.push(m); }
   register({ id: 'v1', label: 'v1 \u2013 drawn', note: 'canvas art (v1.1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); dash.draw(s); } });
-  if (typeof PaintedCockpit !== 'undefined') register({ id: 'v2', label: 'v2 \u2013 painted', note: 'painted cockpit art + live gauges (inside view; outside and engine bay use v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); PaintedCockpit.draw(dash, s); } });
+  if (typeof PaintedCockpit !== 'undefined') register({ id: 'v2', label: 'v2 \u2013 painted', note: 'painted cockpit + painted chase view, live gauges and levers (engine bay uses v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); PaintedCockpit.draw(dash, s); } });
   if (typeof GLView !== 'undefined') register({ id: 'v3', label: 'v3 \u2013 3D preview (WebGL)', note: 'real-time three.js renderer; falls back to v1 without WebGL', available: GLView.available, draw: function (dash, s) { GLView.draw(dash, s); } });
   return { list: list, register: register, get: function (id) { if (id === 'v2' && !list.some(function (m) { return m.id === 'v2'; })) id = 'v3'; // v1.3 called the 3D renderer v2
       for (var i = 0; i < list.length; i++) if (list[i].id === id && (!list[i].available || list[i].available())) return list[i]; return list[0]; } };
@@ -8595,7 +8737,8 @@ var ProjectHistory = {
       { v: 'v1.3', date: '2026-11-11', status: 'done', text: 'Realistic real-time 3D visuals (WebGL): car models seen from behind, period cockpits with live gauges, moving road and scenery, smoke, steering.' },
       { v: 'v1.3.1', date: '2026-11-11', status: 'done', text: 'Quarter-mile drag strip with a Christmas tree, reaction time, splits, trap speeds and best times per car; Cadillac radio playing an original 1950s-style rockabilly tune through a 1959 AM tube-radio sound. The 3D visuals are renamed v3 (v2 is reserved for the detailed drawn style).' },
       { v: 'v1.4', date: '2026-11-11', status: 'done', text: 'Visuals v2 \u2013 painted: new near-photographic painted cockpits for both cars, seen straight ahead from the driver\u2019s seat, with live needles, odometer, ribbon speedometer, gear indicator, lamps, radio dial, moving shifter, turning steering wheel, painted desert road and moving side-window view. Selectable under Visuals; the default stays v1 (drawn), v3 is the 3D preview.' },
-      { v: 'v1.4.1', date: '2026-11-11', status: 'done', text: 'GT350 painted cockpit redone with the full cabin width: the dash, wood-grain band, radio, under-dash gauges, glovebox with Shelby plate and console continue across to the passenger side, the right A-pillar sits at the far edge of the windshield (it looked too narrow on the right before).' }
+      { v: 'v1.4.1', date: '2026-11-11', status: 'done', text: 'GT350 painted cockpit redone with the full cabin width: the dash, wood-grain band, radio, under-dash gauges, glovebox with Shelby plate and console continue across to the passenger side, the right A-pillar sits at the far edge of the windshield (it looked too narrow on the right before).' },
+      { v: 'v1.5', date: '2026-11-11', status: 'done', text: 'Visuals v2 (painted): steering wheel and dashboard in real proportion (driver camera from real dimensions: 65\u00b0 view, eye 74 cm behind the rim and 30 cm above the hub, 15 in GT350 wheel, 17.5 in Cadillac wheel; the horizon sits higher, so the road shows through the windshield again). Separate phone layouts: in portrait the controls sit below the scene, in landscape the top bar is compact (menu button) and the shift buttons sit above the gas pedal; every view is framed so no button covers the dash. New painted chase view for both cars (cut-out painted car over the painted road, live brake and tail lights, exhaust smoke, roadside scenery streaming past, squat, dive and sway, drag-strip lines). Gear levers move: the GT350 Hurst T-handle travels through the 4-speed H gate on every shift, the Cadillac column lever swings through P N D S L R with the quadrant.' }
     ] }
   ]
 };
@@ -8631,7 +8774,7 @@ var ProjectHistory = {
   var dash = new UI.Dash(canvas);
   function relayout() { dash.resize(); }
   window.addEventListener('resize', relayout); window.addEventListener('orientationchange', function () { setTimeout(relayout, 250); });
-  if (window.ResizeObserver) new ResizeObserver(relayout).observe(document.getElementById('stage'));
+  if (window.ResizeObserver) { var ro = new ResizeObserver(relayout); ro.observe(document.getElementById('stage')); ro.observe(canvas); }
 
   function car() { return cars[state.carId]; }
   function spec() { return car().c; }
@@ -8782,7 +8925,7 @@ var ProjectHistory = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); },
     units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown,
     about: function () { openAbout(true); }, aboutClose: function () { openAbout(false); },
-    dismissRotate: function () { document.getElementById('rotate').classList.add('dismissed'); },
+    menu: function () { document.getElementById('topbar').classList.toggle('open'); },
   };
   document.querySelectorAll('[data-act]').forEach(function (b) {
     var downId = null, lastFire = 0;
