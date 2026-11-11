@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.8)</title>
+<title>Street Rod: engine sound + driving demo (v1.8.1)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -175,6 +175,40 @@ html.vis-ink .astatus span { background: #f6eedb; color: #1c1a17; border: 2px so
 html.vis-ink.touch #stage { border: 0; box-shadow: none; } @media (orientation: portrait) { html.vis-ink.touch #touch { border-top: 3px solid #1c1a17; } }
 html.vis-ink .aboutBox, html.vis-ink #dragCard { background: #f6eedb; border: 3px solid #1c1a17; border-radius: 6px; box-shadow: 6px 6px 0 #1c1a17; font-family: 'Trebuchet MS', sans-serif; }
 html.vis-ink #about .aboutBox h3, html.vis-ink #dragCard h3 { color: #c8321f !important; }
+
+/* v1.8.1 tablets (iPad): the layout is chosen by aspect ratio and size, not by phone breakpoints.
+   Landscape screens narrower than 16:10 (iPad 4:3, 10:7) would leave bands above and below the full-width 16:9 interior, so the scene
+   is shown full width at its own 16:9 ratio and the pedals and shift buttons move to a control deck below it (bottom corners =
+   thumb reach); phones (about 19.5:9) keep the overlay layout. Portrait tablets keep the dashboard crop, with a deck capped in size. */
+html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+.touch body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.touch .aboutBox, .touch .aboutBox * { -webkit-user-select: text; user-select: text; }
+@media (orientation: landscape) and (max-aspect-ratio: 8/5) {
+  .touch #stage { display: flex; flex-direction: column; background: #1a120c; }
+  .touch canvas#dash { position: relative; inset: auto; flex: 1 1 0px; min-height: 0; height: 0; width: 100%; }
+  .touch #touch { position: relative; inset: auto; display: block; flex: 0 0 max(150px, calc(100% - 56.25vw)); background: #1a120c; border-top: 1px solid #3a2a1c; }
+  .touch .pedal { top: 10px; height: auto; bottom: max(10px, env(safe-area-inset-bottom)); width: clamp(110px, 15%, 210px); min-width: 0; }
+  .touch #pBrake { width: clamp(120px, 17%, 230px); }
+  .touch .shifts { top: 10px; bottom: max(10px, env(safe-area-inset-bottom)); right: calc(max(10px, env(safe-area-inset-right)) + clamp(110px, 15%, 210px) + 14px);
+    width: clamp(96px, 10%, 150px); gap: 8px; justify-content: stretch; }
+  .touch .tb.big { width: 100%; height: auto; flex: 1 1 0px; min-height: 0; }
+  html.vis-flat.touch #stage, html.vis-flat.touch #touch { background: #14171c; } html.vis-flat.touch #touch { border-top-color: #2d333d; }
+  html.vis-ink.touch #stage, html.vis-ink.touch #touch { background: #e9dfc8; } html.vis-ink.touch #touch { border-top: 3px solid #1c1a17; }
+}
+@media (orientation: portrait) and (min-width: 600px) {
+  .touch #touch { flex: 0 0 clamp(220px, 24%, 300px); }
+  .touch .pedal { width: min(30%, 240px); } .touch #pBrake { width: min(32%, 260px); }
+  .touch .shifts { width: min(26%, 220px); }
+}
+/* tablet-size touch targets (both sides at least 600 CSS px, so not phones in landscape) */
+@media (min-width: 600px) and (min-height: 600px) {
+  .touch .tb { font-size: 15px; padding: 9px 13px; min-height: 40px; }
+  .touch #bMenu, .touch #bAbout { min-width: 44px; }
+  .touch .sel select { font-size: 15px; padding: 7px 4px; max-width: 220px; }
+  .touch .tb.big { font-size: 30px; } .touch .tb.big small { font-size: 12px; }
+  .touch .pedal span { font-size: 17px; }
+  .touch .astatus { font-size: 12px; }
+}
 </style>
 </head>
 <body>
@@ -5122,11 +5156,13 @@ var UI = (function () {
   Dash.prototype.resize = function () {
     var r = this.cv.getBoundingClientRect();
     var dpr = Math.min(window.devicePixelRatio || 1, this.cv.dataset.maxdpr ? +this.cv.dataset.maxdpr : 2);
-    var w = Math.max(200, r.width), h = Math.max(120, r.height);
-    this.cv.width = Math.round(w * dpr); this.cv.height = Math.round(h * dpr);
+    var w = Math.max(200, r.width), h = Math.max(120, r.height), cw = Math.round(w * dpr), ch = Math.round(h * dpr);
+    if (cw === this.cv.width && ch === this.cv.height && this.scale) return false;   // unchanged: do not clear the canvas
+    this.cv.width = cw; this.cv.height = ch;
     this.scale = this.cv.height / H;
     this.W = Math.max(860, this.cv.width / this.scale);
     if (this.cv.width / this.scale < 860) { this.scale = this.cv.width / 860; this.W = 860; }
+    return true;
   };
   function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function lin(g, x0, y0, x1, y1, stops) { var gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach(function (s) { gr.addColorStop(s[0], s[1]); }); return gr; }
@@ -10326,7 +10362,7 @@ var GLView = (function () {
     banner.visible = false; scene.add(banner);
     var cam = new T.PerspectiveCamera(55, 16 / 9, 0.05, 4000);
     st = { scene: scene, cam: cam, sun: sun, cars: cars, cockpits: cockpits, roadT: roadT, sandT: sandT, shT: shT, props: props, PERIOD: PERIOD, blob: blob, glows: glows, puffs: puffs, lines: lines, banner: banner,
-      pitch: 0, pitchV: 0, roll: 0, lastT: 0, camX: 1.85, w: 0, h: 0, pr: Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2), prMin: 0.75, fpsT: 0, fpsN: 0, fps: 60, unitsKey: '', carId: '', puffAcc: 0, frames: 0, M: M, env: env, cv: cv };
+      pitch: 0, pitchV: 0, roll: 0, lastT: 0, camX: 1.85, w: 0, h: 0, pr: Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2), prMin: 0.75, fpsT: 0, fpsN: 0, fps: 60, unitsKey: '', carId: '', puffAcc: 0, frames: 0, M: M, env: env, cv: cv, dash: dash };
   }
 
   function setUnitsFaces(s) {
@@ -10358,7 +10394,11 @@ var GLView = (function () {
   }
 
   function resize() {
-    var c = st.cv, w = c.clientWidth | 0, h = c.clientHeight | 0;
+    // v1.8.1: cover exactly the 2D canvas (in the portrait and tablet-landscape layouts it is one flex item, not the whole stage)
+    var d = st.dash && st.dash.cv, c = st.cv;
+    if (d) { var t = d.offsetTop + 'px', l = d.offsetLeft + 'px', ww = d.offsetWidth + 'px', hh = d.offsetHeight + 'px';
+      if (c.style.top !== t || c.style.left !== l || c.style.width !== ww || c.style.height !== hh) { c.style.inset = 'auto'; c.style.top = t; c.style.left = l; c.style.width = ww; c.style.height = hh; } }
+    var w = c.clientWidth | 0, h = c.clientHeight | 0;
     if (w < 2 || h < 2) return;
     if (w !== st.w || h !== st.h || st.prApplied !== st.pr) { st.w = w; st.h = h; st.prApplied = st.pr; R.setPixelRatio(st.pr); R.setSize(w, h, false); st.cam.aspect = w / h; st.cam.updateProjectionMatrix(); }
   }
@@ -11396,7 +11436,8 @@ var ProjectHistory = {
       { v: 'v1.6', date: '2026-11-11', status: 'done', text: 'Two new Visuals options: v4 \u2013 flat (clean vector look) and v5 \u2013 ink (1950s/60s ligne-claire poster look), with the buttons, pedals and panels restyled to match; v1 drawn stays the default, v2 painted and v3 3D stay. Both cockpits were redrawn from a driver camera built from real dimensions (eye point left of the centre line, left-hand drive; 1967 GT350 15.75 in wood wheel and 5 in gauges, 1959 Cadillac 17.5 in wheel and 14 in ribbon speedometer), with overlay proofs per car. Landscape shows the whole interior pillar to pillar; portrait is a crop of the driver side (wheel, gauges, a strip of road), same scale. Road inside the car fixed in all visuals: eye height 1.07 / 1.12 m (was about 2.3 m), car in the right 3.6 m lane with the driver left of the lane centre, vanishing point straight ahead of the driver, edge lines, 3 m dashes with 9 m gaps at true speed, posts 1 m tall, and the road swings with steering.' },
       { v: 'v1.7', date: '2026-11-11', status: 'done', text: 'Visuals v4 flat and v5 ink use the v2 painted interior again (same camera, wheel size and position, dash, pillars, hood, windshield, portrait and landscape framing), now drawn in the flat and ink styles. The land beside the road moves in v2, v4 and v5, inside and outside: the ground streams past at true speed in perspective (slow far away, fast near the edges), with more bushes, fence posts and roadside posts, distant mesas almost still, and the side-window view scrolling backwards with speed. Chase view: the car now sits in the picture: lit like the scene (the low sun is ahead, so its rear is in shade with a warm rim light on the sun side and a warm bounce from the road), a contact shadow under each tyre, a soft shadow under the car and a long shadow falling towards the camera, no cut-out fringe, ink outlines as thick as the scenery in v5, pale dust behind the tyres at speed, correct size on the road, and the car framed above the speed panel so the tyres are visible. The engine bay view is gone (button, B key and listening position); the sound has the inside and outside positions.' },
       { v: 'v1.7.1', date: '2026-11-11', status: 'done', text: 'Speed fix for visuals v2, v4 and v5 (Wim: \u201cV2/4/5 are all very slow\u201d). The roadside is simpler so phones can keep up: plain sand with darker stripes streaming past, fewer bushes, posts every 50 m and no fence; the sense of speed stays. The sky and distant hills, the cockpit, the wheel, the mirror, needle and lever shadows and the dust are now drawn once and reused instead of being repainted every frame, nothing is drawn behind the dashboard, and the picture resolution adapts automatically when a device cannot keep 60 frames per second. Measured: desktop 8\u201331 fps before, about 60 now; iPhone (emulated, CPU slowed 4x) 4\u20138 fps before, 43\u201360 now.' },
-      { v: 'v1.8', date: '2026-11-11', status: 'done', text: 'Sound models v3 (start-up) and v4 (pop fix and off-throttle sound) in the Sound picker. With v3 or v4 the engine really starts: the starter cranks (longer when cold), the engine catches, the rev counter follows the sound until it settles at idle, and turning the key off gives a short run-on. The default sound model is unchanged; v1 and v2 sound as before.' }
+      { v: 'v1.8', date: '2026-11-11', status: 'done', text: 'Sound models v3 (start-up) and v4 (pop fix and off-throttle sound) in the Sound picker. With v3 or v4 the engine really starts: the starter cranks (longer when cold), the engine catches, the rev counter follows the sound until it settles at idle, and turning the key off gives a short run-on. The default sound model is unchanged; v1 and v2 sound as before.' },
+      { v: 'v1.8.1', date: '2026-11-11', status: 'done', text: 'iPad friendly. iPads are recognised even in Safari\u2019s desktop mode. In landscape the full-width interior fills the screen at its true shape and the pedals and shift buttons sit on a deck below it, in thumb reach at the bottom corners; in portrait the dashboard crop stays with a smaller control deck. Bigger buttons, no zooming, scrolling or text selection, smooth turning, Split View and Slide Over, several fingers at once, and the keyboard works when one is attached. On big screens the picture resolution can drop further to keep the frame rate up. The 3D view (v3) now fits the picture area in portrait.' }
     ] }
   ]
 };
@@ -11407,7 +11448,11 @@ var ProjectHistory = {
   var OUT_GAIN = { GT350: 0.8, CADDY: 0.85 };
   var ODO_START = { gt350: 38412.0, caddy: 61905.3 };
   var params = new URLSearchParams(location.search);
-  var isTouch = params.has('touch') || (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && matchMedia('(pointer: coarse)').matches;
+  // touch UI: phones and tablets. v1.8.1: iPadOS Safari (desktop mode is its default) reports itself as a Mac; it is recognised by
+  // maxTouchPoints > 1 (Macs report 0), not by the user agent, and stays a touch device when a trackpad / keyboard is attached.
+  var mq = function (q) { return !!(window.matchMedia && matchMedia(q).matches); }, mtp = navigator.maxTouchPoints || 0;
+  var iPadLike = mtp > 1 && /Mac|iPad/.test(navigator.platform || '') || /iPad/.test(navigator.userAgent);
+  var isTouch = params.has('touch') || iPadLike || (('ontouchstart' in window) || mtp > 0) && (mq('(pointer: coarse)') || mq('(any-pointer: coarse)') && !mq('(any-pointer: fine)'));
   if (params.get('touch') === '0') isTouch = false;
   if (isTouch) document.documentElement.classList.add('touch');
 
@@ -11430,7 +11475,9 @@ var ProjectHistory = {
   // v1.7.1 adaptive quality: the canvas resolution (device pixels per CSS px, at most 2) steps down while frames stay over budget
   // (median > 21 ms over ~1.5 s) and retries one step up after 15 s of smooth running; a step that fails again becomes the ceiling.
   // ?q=2 (or 1.5, 1) pins it (tests / comparisons).
-  var QL = [2, 1.5, 1.25, 1], qPin = params.get('q');
+  // v1.8.1: below 1 device px per CSS px only on big screens (tablets), and only while the canvas keeps at least ~350k pixels (about
+  // an iPhone's), so a large iPad can trade sharpness for frame rate the way a phone does; phones stop at 1 as before
+  var QL = [2, 1.5, 1.25, 1, 0.85, 0.7, 0.6], qPin = params.get('q'), Q_MINPX = 350000;
   var quality = { i: 0, ceil: 0, buf: [], t: 0, changed: 0, ups: 0, pinned: !!qPin, level: function () { return QL[this.i]; } };
   if (qPin) { quality.i = Math.max(0, QL.indexOf(+qPin)); if (QL.indexOf(+qPin) < 0) QL[0] = +qPin; }
   canvas.dataset.maxdpr = String(QL[quality.i]);
@@ -11444,15 +11491,19 @@ var ProjectHistory = {
     if (capped) return;
     var dpr = window.devicePixelRatio || 1, eff = function (i) { return Math.min(dpr, QL[i]); };
     if (med > 21) {
+      var cr = canvas.getBoundingClientRect(), ok = function (i) { return QL[i] >= 1 || cr.width * cr.height * QL[i] * QL[i] >= Q_MINPX; };
       var j = q.i + 1; while (j < QL.length && eff(j) >= eff(q.i)) j++;   // next step that lowers the resolution on this screen
-      if (j >= QL.length) return;
+      if (j >= QL.length || !ok(j)) return;
+      if (med > 42) { var j2 = j + 1; while (j2 < QL.length && eff(j2) >= eff(j)) j2++; if (j2 < QL.length && ok(j2)) j = j2; }   // far over budget: two steps
       if (q.lastUp && now - q.changed < 6000) q.ceil = j;                 // the last step up did not hold: stay below it
       q.i = j; q.changed = now; q.lastUp = false; apply();
     } else if (med < 17.8 && q.i > q.ceil && now - q.changed > 15000) { q.i--; q.changed = now; q.lastUp = true; q.ups++; apply(); }
-    function apply() { canvas.dataset.maxdpr = String(QL[q.i]); dash.resize(); }
+    function apply() { canvas.dataset.maxdpr = String(QL[q.i]); relayout(); }
   }
   var dash = new UI.Dash(canvas);
-  function relayout() { dash.resize(); }
+  // resizing clears the canvas: repaint at once so an orientation change, Split View / Slide Over resize or a quality step never shows
+  // an empty frame
+  function relayout() { if (dash.resize()) { try { render(); } catch (e) {} } }
   window.addEventListener('resize', relayout); window.addEventListener('orientationchange', function () { setTimeout(relayout, 250); });
   if (window.ResizeObserver) { var ro = new ResizeObserver(relayout); ro.observe(document.getElementById('stage')); ro.observe(canvas); }
 
