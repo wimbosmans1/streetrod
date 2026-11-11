@@ -77,6 +77,22 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 .sel select { font: bold 14px Georgia, serif; color: #1a120c; background: #e8dcc0; border: 0; border-radius: 6px; padding: 6px 4px; margin: 3px 0; touch-action: manipulation; }
 .touch .sel select { font-size: 13px; padding: 5px 2px; }
 #bBay.hidden { display: none; }
+
+/* About / History overlay */
+#bAbout { font: italic bold 17px Georgia, serif; min-width: 40px; }
+#about { position: absolute; inset: 0; z-index: 30; background: rgba(8,5,3,.72); display: flex; align-items: center; justify-content: center; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); touch-action: pan-y; }
+#about.hidden { display: none; }
+.aboutBox { position: relative; background: #f3e9d2; color: #2a2016; border-radius: 12px; max-width: 640px; width: 100%; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 20px 18px; font: 15px/1.4 Georgia, serif; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
+.aboutBox h2 { margin: 0 40px 8px 0; font-size: 20px; }
+#about .aboutBox h3 { margin: 14px 0 6px; font-size: 16px; color: #8a3b12 !important; }
+.aboutBox p { margin: 0 0 6px; }
+.aboutBox ul { list-style: none; margin: 0; padding: 0; }
+.aboutBox li { margin: 0 0 7px; padding-left: 0; }
+.aboutBox .ver { font-weight: bold; }
+.aboutBox .date { color: #7a6a52; font-size: 13px; }
+.aboutBox .st { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; vertical-align: 1px; color: #fff; }
+.aboutBox .st.prog { background: #c27a12; } .aboutBox .st.plan { background: #5b6f8a; }
+.aboutX { position: absolute; top: 8px; right: 8px; min-width: 40px; min-height: 40px; font: bold 26px/1 Georgia, serif !important; color: #2a2016; }
 </style>
 </head>
 <body>
@@ -91,6 +107,7 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
       <label class="sel"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb" id="bUnits" data-act="units">km/h</button>
       <button class="tb" id="bMute" data-act="mute">Mute</button>
+      <button class="tb" id="bAbout" data-act="about" aria-label="About and history" title="About / History">i</button>
       <div id="astatus" class="astatus">Sound: tap to enable</div>
     </div>
     <div id="touch">
@@ -98,6 +115,7 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
       <div class="shifts"><button class="tb big" id="bUp" data-act="up">&#9650;<small>shift up</small></button><button class="tb big" id="bDown" data-act="down">&#9660;<small>shift down</small></button></div>
       <div class="pedal" id="pGas" data-pedal="gas"><div class="fill"></div><span>GAS</span></div>
     </div>
+    <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
     <div id="rotate"><div><b>&#8635; Rotate your phone</b><br>Landscape is the driving mode.<br><button class="tb" data-act="dismissRotate">Continue in portrait</button></div></div>
   </div>
   <aside>
@@ -111,10 +129,11 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
       <tr><td>V</td><td>Inside car / Outside (rear)</td></tr>
       <tr><td>B</td><td>Engine bay listening position (sound model v2)</td></tr>
       <tr><td>X</td><td>Next sound model (v1, v2, ...)</td></tr>
-      <tr><td>Z</td><td>Next visuals (drawn, photo-realistic)</td></tr>
+      <tr><td>Z</td><td>Next visuals</td></tr>
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
       <tr><td>T</td><td>Reset trip meter</td></tr>
       <tr><td>M</td><td>Mute</td></tr>
+      <tr><td>H</td><td>About / History</td></tr>
     </table>
     <h3>Touch</h3>
     <p class="note">Brake pedal left, gas right: press higher up the pedal for more. Shift buttons next to the gas. Works with several fingers at once.</p>
@@ -2698,6 +2717,19 @@ var UI = (function () {
     this.hudTags(g, s, W);
   };
 
+  // overlay used by the WebGL visuals: transparent canvas, HUD only, plus a dip-to-black while the camera cuts
+  Dash.prototype.drawOverlay = function (s) {
+    var g = this.g, W = this.W;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, this.cv.width, this.cv.height);
+    g.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+    var oy = (this.cv.height / this.scale - H) / 2; if (oy > 0) g.translate(0, oy);
+    var b = s.viewBlend;
+    if (b < 0.5) this.hud(g, s, W); else this.insideInfo(g, s, W);
+    this.hudTags(g, s, W);
+    var dip = Math.sin(Math.PI * Math.max(0, Math.min(1, b)));
+    if (dip > 0.01) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(0,0,0,' + (0.92 * dip).toFixed(3) + ')'; g.fillRect(0, 0, this.cv.width, this.cv.height); }
+  };
+
   // ------------------------------------------------------------------ road
   // draws sky/ground/road into the current clip; horizon y, camera height, focal
   Dash.prototype.road = function (g, s, W, horizon, bottom, f, camH, cx) {
@@ -2914,6 +2946,7 @@ var UI = (function () {
     if (o.label) { g.font = 'italic bold ' + Math.round(r * 0.13) + 'px Georgia, serif'; g.fillText(o.label, x, y - r * 0.3); }
     if (o.sub) { g.font = Math.round(r * 0.095) + 'px Georgia, serif'; g.fillText(o.sub, x, y - r * 0.17); }
     if (o.after) o.after(x, y, r);
+    if (o.noNeedle) return;
     var an = ang(o.value);
     g.save(); g.translate(x, y); g.rotate(an);
     g.fillStyle = o.needle || '#d6301f'; g.beginPath(); g.moveTo(-r * 0.12, -r * 0.03); g.lineTo(r * 0.86, -r * 0.01); g.lineTo(r * 0.86, r * 0.01); g.lineTo(-r * 0.12, r * 0.03); g.closePath(); g.fill();
@@ -3141,6 +3174,33 @@ var VisualModels = (function () {
   return { list: list, register: register, get: function (id) { for (var i = 0; i < list.length; i++) if (list[i].id === id && (!list[i].available || list[i].available())) return list[i]; return list[0]; } };
 })();
 </script>
+<script>/* js/history.js */
+/*
+ * history.js: data for the About / History panel. Add a version by appending one entry.
+ * status: 'done' | 'in progress' | 'planned'. Dates are YYYY-MM-DD (Europe/Brussels).
+ */
+var ProjectHistory = {
+  about: [
+    'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350 and a 1959 Cadillac.',
+    'The V8 sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, exhaust pipes and muffler.',
+    'Physics (gearbox, weight, tyres, brakes) uses the cars\u2019 real specs.'
+  ],
+  tracks: [
+    { title: 'Sound models', items: [
+      { v: 'v1', date: '2026-11-11', status: 'done', text: 'First procedural V8 synth: firing pulses, headers, H-pipe crossover, mufflers and tailpipes.' },
+      { v: 'v2', date: '2026-11-11', status: 'done', text: 'Tuned against real recordings of both cars; physical exhaust and muffler models; listening positions (behind the car, engine bay, inside); fixed a crossover bug from v1.' },
+      { v: 'v3', date: '2026-11-11', status: 'in progress', text: 'Engine start-up and shut-down: starter, cranking, catch, choke, generator / alternator.' },
+      { v: 'v4', date: '', status: 'planned', text: 'Fixes the over-eager pops, more accurate off-throttle sound, reference recordings filtered by quality.' }
+    ] },
+    { title: 'Web game and visuals', items: [
+      { v: 'v1', date: '2026-11-11', status: 'done', text: 'Driving demo: gearbox and Hydra-Matic, weight, brakes with lock-up and fade, rev counter and odometer.' },
+      { v: 'v1.1', date: '2026-11-11', status: 'done', text: 'Sound on iPhone fixed; inside / outside view; period interiors for both cars; touch controls.' },
+      { v: 'v1.2', date: '2026-11-11', status: 'done', text: 'Sound model selector (v1 / v2, switches live), engine-bay listening position, this history panel.' },
+      { v: 'v1.3', date: '', status: 'planned', text: 'Realistic real-time 3D visuals (WebGL): car models, cockpits, road and scenery.' }
+    ] }
+  ]
+};
+</script>
 <script>/* js/main.js */
 /* main.js: input (keyboard + multitouch), game loop, physics -> audio + UI */
 (function () {
@@ -3211,6 +3271,26 @@ var VisualModels = (function () {
   function shiftUp() { car().shiftUp(); }
   function shiftDown() { var c = car(); c.shiftDown(); if (c.lastShiftMsg && c.msgT > 1.9) flash(c.lastShiftMsg, 1.5); }
 
+  // ---- About / History overlay (content from js/history.js) ----
+  function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function openAbout(on) {
+    var el = document.getElementById('about');
+    if (on && !el.dataset.built && typeof ProjectHistory !== 'undefined') {
+      var h = ProjectHistory.about.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
+      ProjectHistory.tracks.forEach(function (t) {
+        h += '<h3>' + esc(t.title) + '</h3><ul>';
+        t.items.forEach(function (it) {
+          var st = it.status === 'in progress' ? '<span class="st prog">in progress</span>' : it.status === 'planned' ? '<span class="st plan">planned</span>' : '';
+          h += '<li><span class="ver">' + esc(it.v) + '</span> ' + (it.date ? '<span class="date">' + esc(it.date) + '</span>' : '') + st + '<br>' + esc(it.text) + '</li>';
+        });
+        h += '</ul>';
+      });
+      document.getElementById('aboutBody').innerHTML = h; el.dataset.built = '1';
+    }
+    el.classList.toggle('hidden', !on);
+  }
+  document.getElementById('about').addEventListener('pointerup', function (e) { if (e.target.id === 'about') openAbout(false); });
+
   // ---- keyboard ----
   var HANDLED = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
   window.addEventListener('keydown', function (e) {
@@ -3229,6 +3309,8 @@ var VisualModels = (function () {
       case 'x': case 'X': setModel(cycle(SoundModels.list, state.model)); break;
       case 'z': case 'Z': setVisual(cycle(VisualModels.list, state.visual)); break;
       case 'u': case 'U': toggleUnits(); break;
+      case 'h': case 'H': openAbout(document.getElementById('about').classList.contains('hidden')); break;
+      case 'Escape': openAbout(false); break;
       case 't': case 'T': car().trip = 0; flash('Trip reset', 1); break;
     }
   });
@@ -3239,6 +3321,7 @@ var VisualModels = (function () {
   var ACTIONS = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); },
     units: toggleUnits, mute: toggleMute, up: shiftUp, down: shiftDown,
+    about: function () { openAbout(true); }, aboutClose: function () { openAbout(false); },
     dismissRotate: function () { document.getElementById('rotate').classList.add('dismissed'); },
   };
   document.querySelectorAll('[data-act]').forEach(function (b) {
@@ -3268,7 +3351,7 @@ var VisualModels = (function () {
   });
   // no scrolling / pinch / double-tap zoom on the stage
   ['gesturestart', 'gesturechange', 'dblclick'].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
-  document.getElementById('stage').addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
+  document.getElementById('stage').addEventListener('touchmove', function (e) { if (!(e.target.closest && e.target.closest('.aboutBox'))) e.preventDefault(); }, { passive: false });
 
   // model / visuals selectors (built from the registries)
   var selS = document.getElementById('selSound'), selV = document.getElementById('selVisual');
@@ -3345,7 +3428,7 @@ var VisualModels = (function () {
     });
   }
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, state: state, audio: audio, car: car, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash };
+  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash };
 })();
 </script>
 </body>
