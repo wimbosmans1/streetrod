@@ -557,7 +557,7 @@
    *  clones the synth (same state, same RNG) at the new position and crossfades. */
   class ListenerSource {
     constructor(model, spec, listeners, views, fs, opts) {
-      this.model = model; this.fs = fs; this.listeners = listeners; this.views = views || ['rear', 'in_cabin', 'engine_bay'];
+      this.model = model; this.fs = fs; this.listeners = listeners; this.views = views || ['rear', 'in_cabin'];
       this.pos = this.views[0];
       this.cur = new model.Synth(spec, listeners[this.pos], fs, opts); this.spec = this.cur.spec;
       this.g = this.gainOf(this.pos); this.next = null; this.ng = 1; this.xf = 1;
@@ -638,7 +638,7 @@
         if (m.crank !== undefined) this.crank = m.crank;
         if (m.speed !== undefined) this.speed = m.speed;
         if (m.skid !== undefined) this.skid = m.skid;
-        if (m.listen !== undefined) {   // view: 0 outside rear, 1 inside, 2 engine bay
+        if (m.listen !== undefined) {   // view: 0 outside rear, 1 inside
           this.view = m.listen | 0; this.listen = this.view === 1 ? 1 : 0;
           if (this.src) this.src.setView(this.view); if (this.nsrc) this.nsrc.setView(this.view);
         }

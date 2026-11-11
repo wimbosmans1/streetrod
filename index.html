@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.6)</title>
+<title>Street Rod: engine sound + driving demo (v1.7)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -91,7 +91,6 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 .sel { display: inline-flex; align-items: center; gap: 4px; background: rgba(120,105,80,.85); border-radius: 8px; padding: 0 4px 0 8px; font: bold 12px Georgia, serif; color: #f3ead2; }
 .sel select { font: bold 14px Georgia, serif; color: #1a120c; background: #e8dcc0; border: 0; border-radius: 6px; padding: 6px 4px; margin: 3px 0; touch-action: manipulation; }
 .touch .sel select { font-size: 13px; padding: 5px 2px; }
-#bBay.hidden { display: none; }
 
 /* About / History overlay */
 #bAbout { font: italic bold 17px Georgia, serif; min-width: 40px; }
@@ -185,7 +184,7 @@ html.vis-ink #about .aboutBox h3, html.vis-ink #dragCard h3 { color: #c8321f !im
     <div id="topbar">
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <div class="seg" id="segCar"><button class="tb" data-act="car" data-v="gt350">GT350</button><button class="tb" data-act="car" data-v="caddy">Cadillac</button></div>
-      <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside car</button><button class="tb" data-act="view" data-v="0">Outside (rear)</button><button class="tb" id="bBay" data-act="view" data-v="2">Engine bay</button></div>
+      <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside car</button><button class="tb" data-act="view" data-v="0">Outside (rear)</button></div>
       <label class="sel more"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
@@ -214,7 +213,6 @@ html.vis-ink #about .aboutBox h3, html.vis-ink #dragCard h3 { color: #c8321f !im
       <tr><td>S or I</td><td>Ignition: start / stop engine</td></tr>
       <tr><td>1 / 2</td><td>Select car</td></tr>
       <tr><td>V</td><td>Inside car / Outside (rear)</td></tr>
-      <tr><td>B</td><td>Engine bay listening position (sound model v2)</td></tr>
       <tr><td>X</td><td>Next sound model (v1, v2, ...)</td></tr>
       <tr><td>Z</td><td>Next visuals</td></tr>
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
@@ -229,7 +227,7 @@ html.vis-ink #about .aboutBox h3, html.vis-ink #dragCard h3 { color: #c8321f !im
     <p class="note">Brake pedal left, gas right: press higher up the pedal for more. Shift buttons next to the gas. Works with several fingers at once.</p>
     <h3>Car</h3>
     <div id="specs"></div>
-    <p class="note">Engine sound is synthesised live in the browser (no recordings). The inside sound is a model (exhaust through the body, engine bay through the firewall, cabin boom, road and wind noise), not a measured cabin.</p>
+    <p class="note">Engine sound is synthesised live in the browser (no recordings). The inside sound is a model (exhaust through the body, intake and mechanical noise through the firewall, cabin boom, road and wind noise), not a measured cabin.</p>
   </aside>
 </div>
 <script>/* js/engine-dsp.js */
@@ -804,7 +802,7 @@ function engineWorkletMain(modules) {
    *  clones the synth (same state, same RNG) at the new position and crossfades. */
   class ListenerSource {
     constructor(model, spec, listeners, views, fs, opts) {
-      this.model = model; this.fs = fs; this.listeners = listeners; this.views = views || ['rear', 'in_cabin', 'engine_bay'];
+      this.model = model; this.fs = fs; this.listeners = listeners; this.views = views || ['rear', 'in_cabin'];
       this.pos = this.views[0];
       this.cur = new model.Synth(spec, listeners[this.pos], fs, opts); this.spec = this.cur.spec;
       this.g = this.gainOf(this.pos); this.next = null; this.ng = 1; this.xf = 1;
@@ -885,7 +883,7 @@ function engineWorkletMain(modules) {
         if (m.crank !== undefined) this.crank = m.crank;
         if (m.speed !== undefined) this.speed = m.speed;
         if (m.skid !== undefined) this.skid = m.skid;
-        if (m.listen !== undefined) {   // view: 0 outside rear, 1 inside, 2 engine bay
+        if (m.listen !== undefined) {   // view: 0 outside rear, 1 inside
           this.view = m.listen | 0; this.listen = this.view === 1 ? 1 : 0;
           if (this.src) this.src.setView(this.view); if (this.nsrc) this.nsrc.setView(this.view);
         }
@@ -2169,7 +2167,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = { EngineCa
  * models.js: sound-model registry (main thread). The DSP for each version lives in
  * an engine module (v1: engine-dsp.js, v2: engine-v2.js), its car data in cars*.js.
  * To add v3/v4: drop in js/engine-vN.js + js/cars-vN.js and register() here.
- *  views: listener position per game view [outside rear, inside, engine bay] (null = v1 approximation)
+ *  views: listener position per game view [outside rear, inside] (null = v1 approximation)
  *  gainDb: level match per car + position, so switching models keeps a similar loudness
  *          (measured on the same scripted rev trajectory as v1; see test/node_compare_v2.js)
  */
@@ -2179,13 +2177,13 @@ var SoundModels = (function () {
   register({
     id: 'v1', label: 'v1 (procedural)', note: 'engine-sound v1: bit-exact port, cabin = approximation',
     cars: { GT350: EngineCars.GT350, CADDY: EngineCars.CADDY }, outGain: { GT350: 0.8, CADDY: 0.85 },
-    views: null, hasBay: false,
+    views: null,
   });
   if (typeof EngineCarsV2 !== 'undefined') register({
     id: 'v2', label: 'v2 (physical exhaust)', note: 'engine-sound v2: waveguides, TL muffler FIRs, carb Helmholtz, fitted listeners',
     cars: { GT350: EngineCarsV2.GT350, CADDY: EngineCarsV2.CADDY }, outGain: { GT350: 0.8, CADDY: 0.85 },
-    listeners: EngineListenersV2, views: ['rear', 'in_cabin', 'engine_bay'], hasBay: true,
-    gainDb: { GT350: { rear: 4.9, in_cabin: 5.8, engine_bay: -1.3 }, CADDY: { rear: 18.5, in_cabin: 18.2, engine_bay: 18.0 } },
+    listeners: EngineListenersV2, views: ['rear', 'in_cabin'],
+    gainDb: { GT350: { rear: 4.9, in_cabin: 5.8 }, CADDY: { rear: 18.5, in_cabin: 18.2 } },
   });
   function get(id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return list[0]; }
   /** the 'spec' message for the audio engine */
@@ -2815,7 +2813,7 @@ var CarRadio = (function () {
     this.on = false;
   };
   CarRadio.prototype.toggle = function () { if (this.on) this.stop(); else this.start(); return this.on; };
-  // view: 0 outside, 1 inside, 2 engine bay; rpm for a gentle duck so the engine dominates at high revs
+  // view: 0 outside, 1 inside; rpm for a gentle duck so the engine dominates at high revs
   CarRadio.prototype.update = function (o) {
     if (!this.built) return;
     var inside = o.view === 1, duck = 1 - 0.45 * Math.min(1, Math.max(0, (o.rpm - 1500) / 3500));
@@ -3243,10 +3241,6 @@ var UI = (function () {
       var tw = g.measureText(tags[t][0]).width + 24;
       g.fillStyle = 'rgba(0,0,0,0.6)'; rr(g, W - 16 - tw, 70 + t * 42, tw, 34, 8); g.fill();
       g.fillStyle = tags[t][1]; g.fillText(tags[t][0], W - 28, 94 + t * 42);
-    }
-    if (s.view === 2) {
-      g.font = 'bold 17px Georgia, serif'; g.textAlign = 'left'; var bt = 'Mic: engine bay, hood open (sound model v2)'; var btw = g.measureText(bt).width + 24;
-      g.fillStyle = 'rgba(0,0,0,0.6)'; rr(g, W - 16 - btw, H - 250, btw, 32, 8); g.fill(); g.fillStyle = '#9fe0ff'; g.fillText(bt, W - 4 - btw, H - 228);
     }
     if (s.msg) {
       g.textAlign = 'center'; g.font = 'bold 26px Georgia, serif';
@@ -8379,12 +8373,12 @@ var GLView = (function () {
 var PAINTED_ASSETS = {"meta": {"upscale": "edsr-x2", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [924, 658], "bodyX": [6, 917], "contactY": 651, "splitY": 521, "realW": 1.73, "lamps": [[75, 366, 55, 55], [142, 366, 53, 55], [207, 366, 54, 55], [664, 368, 55, 53], [731, 369, 52, 53], [796, 369, 52, 53]], "tips": [[198, 573, 20], [724, 574, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [991, 630], "bodyX": [6, 984], "contactY": 623, "splitY": 527, "realW": 2.03, "lamps": [[72, 165, 36, 91], [883, 165, 37, 93], [32, 321, 30, 26], [85, 322, 26, 26], [876, 321, 32, 27], [930, 321, 30, 28]], "tips": [[69, 477, 24], [923, 478, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 101, 273, 205], "h": 0.9}, {"k": "creosote", "r": [277, 110, 272, 196], "h": 1.1}, {"k": "grass", "r": [553, 220, 88, 86], "h": 0.35}, {"k": "yucca", "r": [645, 15, 163, 291], "h": 1.6}, {"k": "fencepost", "r": [812, 1, 61, 305], "h": 1.2}, {"k": "delineator", "r": [877, 0, 52, 306], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/painted/caddy-cockpit.webp", "caddy-lever": "assets/painted/caddy-lever.webp", "caddy-rear": "assets/painted/caddy-rear.webp", "caddy-wheel-shadow": "assets/painted/caddy-wheel-shadow.webp", "caddy-wheel": "assets/painted/caddy-wheel.webp", "desert-backdrop": "assets/painted/desert-backdrop.jpg", "desert-props": "assets/painted/desert-props.webp", "gt350-cockpit": "assets/painted/gt350-cockpit.webp", "gt350-rear": "assets/painted/gt350-rear.webp", "gt350-shifter": "assets/painted/gt350-shifter.webp", "gt350-wheel-shadow": "assets/painted/gt350-wheel-shadow.webp", "gt350-wheel": "assets/painted/gt350-wheel.webp"}};
 </script>
 <script>/* js/flat-assets.js */
-/* flat-assets.js: generated by proposals/visuals-v4/build-v16.py (Visuals v4 flat). The single-file build inlines these as data URIs. */
-var FLAT_ASSETS = {"meta": {"style": "flat", "layout": "v16", "gt350": {"axisX": 470, "hub": [462, 453], "wheelR": 156.2, "view": {"hz": 176.6, "f": 600, "cy": 360, "camH": 1.07, "off": 0.37}, "mirror": [827, 35, 266, 58], "side": [[329, 261], [209, 293], [3, 334], [0, 334], [0, 0], [92, 0], [329, 257]], "shifter": [812, 686, 150, 34], "pods": {"speedo": [416.8, 350.7, 46.0, 39.0], "tach": [510.4, 350.7, 46.0, 39.0]}, "housing": [348.8, 288.7, 229.59999999999997, 124.0], "pillarR": [[1075.9, 270.7], [2050.2, -66.9], [2067.2, -17.8], [1092.9, 319.8]], "radioDial": [678, 382, 80, 18], "under": {"oil": [706, 510, 23], "amps": [751, 510, 23]}, "wheel": {"px": 828, "logical": 318.46153846153845}}, "caddy": {"axisX": 440, "hub": [438, 461], "wheelR": 179.7, "view": {"hz": 188.0, "f": 600, "cy": 360, "camH": 1.12, "off": 0.42}, "mirror": [795, 26, 303, 73], "side": [[233, 266], [221, 269], [183, 276], [174, 277], [8, 289], [0, 289], [0, 91], [3, 91], [233, 262]], "ribbon": [302, 318, 280, 54], "ribbonSpan": [326.4, 553.6], "prndsl": [401, 381, 78, 17], "radioDial": [680, 370, 97, 18], "gauges": {"fuel": [258, 453, 21], "clock": [669, 454, 22]}, "lever": {"rect": [500, 456, 272, 50], "pivot": [468, 491]}, "wheel": {"px": 953, "logical": 366.53846153846155}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp"}};
+/* flat-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v4 flat; interior = v2 composition). The single-file build inlines these as data URIs. */
+var FLAT_ASSETS = {"meta": {"style": "flat", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp"}};
 </script>
 <script>/* js/ink-assets.js */
-/* ink-assets.js: generated by proposals/visuals-v4/build-v16.py (Visuals v5 ink). The single-file build inlines these as data URIs. */
-var INK_ASSETS = {"meta": {"style": "ink", "layout": "v16", "gt350": {"axisX": 470, "hub": [460, 459], "wheelR": 156.2, "view": {"hz": 176.6, "f": 600, "cy": 360, "camH": 1.07, "off": 0.37}, "mirror": [828, 35, 266, 58], "side": [[67, 94], [51, 348], [50, 359], [46, 361], [20, 371], [4, 377], [0, 377], [0, 14], [2, 14], [9, 17], [21, 23], [30, 28], [40, 34], [44, 37], [52, 45], [55, 49], [59, 55], [61, 59], [63, 64], [65, 70], [66, 74], [67, 79]], "shifter": [814, 686, 150, 34], "pods": {"speedo": [416.8, 357.7, 46.0, 39.0], "tach": [510.4, 357.7, 46.0, 39.0]}, "housing": [348.8, 295.7, 229.59999999999997, 124.0], "pillarR": [[1075.9, 270.7], [2050.2, -66.9], [2067.2, -17.8], [1092.9, 319.8]], "radioDial": [679, 389, 80, 18], "under": {"oil": [707, 514, 23], "amps": [752, 514, 23]}, "wheel": {"px": 828, "logical": 318.46153846153845}}, "caddy": {"axisX": 440, "hub": [439, 462], "wheelR": 179.7, "view": {"hz": 188.0, "f": 600, "cy": 360, "camH": 1.12, "off": 0.42}, "mirror": [795, 25, 303, 73], "side": [[224, 267], [222, 268], [205, 274], [10, 289], [0, 289], [0, 90], [3, 90], [43, 121], [142, 198], [165, 216], [221, 260], [224, 263]], "ribbon": [303, 318, 280, 54], "ribbonSpan": [326.4, 553.6], "prndsl": [402, 381, 78, 17], "radioDial": [681, 370, 97, 18], "gauges": {"fuel": [258, 454, 21], "clock": [670, 454, 22]}, "lever": {"rect": [501, 457, 272, 50], "pivot": [469, 492]}, "wheel": {"px": 953, "logical": 366.53846153846155}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp"}};
+/* ink-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v5 ink; interior = v2 composition). The single-file build inlines these as data URIs. */
+var INK_ASSETS = {"meta": {"style": "ink", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp"}};
 </script>
 <script>/* js/visuals-painted.js */
 /*
@@ -8395,7 +8389,7 @@ var INK_ASSETS = {"meta": {"style": "ink", "layout": "v16", "gt350": {"axisX": 4
  *   2 side-window scenery  3 rear-view mirror view  4 cached cockpit (painting + static faces)  5 live needles, lamps, levers  6 wheel sprite.
  * v1.6 art (flat / ink) was drawn from layouts projected with the real-dimension camera proposals/visuals-v4/camera/camera6.py; gauges and the
  * wheel take their size from that camera. Landscape = full-width interior, portrait = crop of the driver's side, uniform scale only.
- * The engine-bay view keeps the v1 drawing. Assets: PAINTED_ASSETS / FLAT_ASSETS / INK_ASSETS.
+ * Assets: PAINTED_ASSETS / FLAT_ASSETS / INK_ASSETS.
  */
 var PaintedVisuals = (function () {
   'use strict';
@@ -8613,6 +8607,60 @@ var PaintedVisuals = (function () {
   var RC = ({ v2: { asph: ['#5d5750', '#3f3b37'], shoulder: '#8f7656', edge: 'rgba(236,232,220,0.9)', line: null },
               flat: { asph: ['#5b5a60', '#4a494f'], shoulder: '#b48a5e', edge: '#ecebe4', line: null },
               ink: { asph: ['#4d4f5a', '#3e404a'], shoulder: '#c39058', edge: '#f6ead0', line: '#0d0a08' } })[STY];
+  // ---------------------------------------------------------------- v1.7 moving ground: the terrain beside the road is a top-down tile
+  // (16 m x 16 m) mapped onto the ground plane in thin horizontal bands, scrolled by the distance driven, so it streams past at true speed with
+  // true perspective (slow near the horizon, fast at the edges). Far away the painted backdrop terrain fades in (distant ground hardly moves).
+  var GT = null;
+  function groundTiles() {
+    if (GT) return GT;
+    var base = { v2: [150, 116, 80], flat: [200, 146, 92], ink: [210, 154, 94] }[STY] || [190, 140, 90];
+    try {   // take the sand colour from the backdrop itself (bottom corners, away from the road)
+      var img = A['desert-backdrop'], c0 = document.createElement('canvas'); c0.width = 64; c0.height = 36; var x0 = c0.getContext('2d', { willReadFrequently: true }); x0.drawImage(img, 0, 0, 64, 36);
+      var px = x0.getImageData(1, 28, 6, 6).data, px2 = x0.getImageData(57, 28, 6, 6).data, r = 0, gg = 0, b = 0, n = 0;
+      [px, px2].forEach(function (p) { for (var i = 0; i < p.length; i += 4) { r += p[i]; gg += p[i + 1]; b += p[i + 2]; n++; } });
+      if (n) base = [r / n * 1.06, gg / n * 1.06, b / n * 1.06];
+    } catch (e) {}
+    var S = 512, c = document.createElement('canvas'); c.width = c.height = S; var x = c.getContext('2d');
+    function col(m, a) { return 'rgba(' + Math.round(Math.min(255, base[0] * m)) + ',' + Math.round(Math.min(255, base[1] * m)) + ',' + Math.round(Math.min(255, base[2] * m)) + ',' + (a === undefined ? 1 : a) + ')'; }
+    var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+    function wrap(fn) { for (var ix = -1; ix <= 1; ix++) for (var iy = -1; iy <= 1; iy++) { x.save(); x.translate(ix * S, iy * S); fn(); x.restore(); } }
+    function blob(cx, cy, r, sides) { x.beginPath(); for (var i = 0; i < sides; i++) { var a = i / sides * Math.PI * 2, rr2 = r * (0.65 + 0.5 * rnd()); x.lineTo(cx + Math.cos(a) * rr2, cy + Math.sin(a) * rr2 * 0.8); } x.closePath(); }
+    x.fillStyle = col(1); x.fillRect(0, 0, S, S);
+    var i, L = [];
+    for (i = 0; i < 80; i++) L.push({ t: 'patch', x: rnd() * S, y: rnd() * S, r: 18 + rnd() * 46, m: 0.86 + rnd() * 0.28, s: 7 + (rnd() * 4 | 0) });
+    for (i = 0; i < 170; i++) L.push({ t: 'tuft', x: rnd() * S, y: rnd() * S, r: 4 + rnd() * 11 });
+    for (i = 0; i < 140; i++) L.push({ t: 'rock', x: rnd() * S, y: rnd() * S, r: 1.5 + rnd() * 5, m: rnd() < 0.5 ? 0.62 : 1.18 });
+    L.forEach(function (o) {
+      wrap(function () {
+        if (o.t === 'patch') { x.fillStyle = col(o.m, STY === 'v2' ? 0.55 : 1); blob(o.x, o.y, o.r, o.s); x.fill(); }
+        else if (o.t === 'tuft') { x.fillStyle = STY === 'ink' ? 'rgb(112,124,70)' : STY === 'flat' ? 'rgb(128,134,82)' : 'rgba(96,100,62,0.85)'; blob(o.x, o.y, o.r, 6); x.fill(); x.fillStyle = col(0.55, 0.6); blob(o.x + o.r * 0.5, o.y + o.r * 0.6, o.r * 0.7, 6); x.fill();
+          if (STY === 'ink') { x.strokeStyle = 'rgba(13,10,8,0.85)'; x.lineWidth = 1.4; blob(o.x, o.y, o.r, 6); x.stroke(); } }
+        else { x.fillStyle = col(o.m); blob(o.x, o.y, o.r, 5); x.fill(); if (STY === 'ink' && o.r > 3) { x.strokeStyle = 'rgba(13,10,8,0.8)'; x.lineWidth = 1; x.stroke(); } }
+      });
+    });
+    if (STY === 'ink') { x.fillStyle = 'rgba(13,10,8,0.35)'; for (i = 0; i < 900; i++) x.fillRect(rnd() * S, rnd() * S, 1.3, 1.3); }
+    if (STY === 'v2') { x.fillStyle = 'rgba(40,28,18,0.12)'; for (i = 0; i < 2500; i++) x.fillRect(rnd() * S, rnd() * S, 2, 2); }
+    var c2 = document.createElement('canvas'); c2.width = c2.height = 128; c2.getContext('2d').drawImage(c, 0, 0, 128, 128);   // pre-filtered far level
+    GT = { near: c, far: c2, S: S, ppm: S / 16, dust: Math.round(base[0] * 0.45 + 124) + ',' + Math.round(base[1] * 0.45 + 118) + ',' + Math.round(base[2] * 0.45 + 110) };   // pale sand dust
+    return GT;
+  }
+  var GP = { near: null, far: null, ctx: null };
+  // ground bands for a camera P (same fields as scenery); y range [y0, y1] of the painting; d = distance driven
+  function groundBands(g, P, d, y0, y1) {
+    var T0 = groundTiles(), hz = P.hz, f = P.f, h = P.camH, cy = P.cy || 360, tp = (cy - hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp, ty = Math.tan(P.yaw || 0);
+    if (GP.ctx !== g) { GP.near = g.createPattern(T0.near, 'repeat'); GP.far = g.createPattern(T0.far, 'repeat'); GP.ctx = g; }
+    if (!GP.near || !GP.near.setTransform || typeof DOMMatrix === 'undefined') { g.fillStyle = RC.shoulder; g.fillRect(-900, y0, PW + 1800, y1 - y0); return; }
+    function zAt(y) { var t = (cy - y) / f; return -h * (cp + t * sp) / (t * cp - sp); }
+    var y = Math.max(y0, hz + 0.5);
+    while (y < y1) {
+      var bh = Math.max(1, Math.min(8, (y - hz) * 0.05)), yb = Math.min(y1, y + bh), za = zAt(y), zb = zAt(yb), zm = (za + zb) / 2;
+      var far = zm > 30, ppm = far ? T0.ppm / 4 : T0.ppm, zcm = zm * cp + h * sp, sx = f / (zcm * ppm), x0 = P.axisX + f * (-P.dx - zm * ty) / zcm;
+      var syy = (yb - y) / Math.max(1e-3, (za - zb) * ppm), pat = far ? GP.far : GP.near;
+      pat.setTransform(new DOMMatrix([sx, 0, 0, syy, x0, y + syy * ((za + d) * ppm)]));
+      g.fillStyle = pat; g.fillRect(-900, y, PW + 1800, yb - y + 0.6);
+      y = yb;
+    }
+  }
   function scenery(g, P, s) {
     var B = M.backdrop, img = A['desert-backdrop'], hz = P.hz, f = P.f, h = P.camH, cy = P.cy || 360, tp = (cy - hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp;
     var dx = P.dx, yaw = P.yaw || 0, vpX = P.axisX - f * Math.tan(yaw) / cp;
@@ -8623,9 +8671,13 @@ var PaintedVisuals = (function () {
     var hb = camHB(), k = Math.max((f * hb / 4.0) / B.bottomPx, P.minK || 0), w = B.w * k, hh = B.h * k, ox = vpX - B.vx * k, oy = hz - B.hz * k, shear = -dx * cp / h;
     function tile() { g.drawImage(img, ox, oy, w, hh); [ox, ox + 2 * w].forEach(function (mx) { g.save(); g.translate(mx, 0); g.scale(-1, 1); g.drawImage(img, 0, oy, w, hh); g.restore(); }); }
     g.save(); g.beginPath(); g.rect(-900, -400, PW + 1800, hz + 401); g.clip(); tile(); g.restore();
-    g.save(); g.beginPath(); g.rect(-900, hz, PW + 1800, PH - hz + 400); g.clip(); g.transform(1, 0, shear, 1, -shear * hz, 0); tile();
-    if (oy + hh < PH + 10) { g.fillStyle = RC.shoulder; g.fillRect(ox - w, oy + hh - 1, 3 * w, PH - oy - hh + 400); }
-    g.restore();
+    // v1.7: moving ground (top-down tile in perspective, scrolled with the distance) up close; the painted terrain only far away, fading out
+    groundBands(g, P, s.dist || 0, hz, PH + 400);
+    var zFade = P.zFade || 90, yFade = Math.max(hz + 4, yOf(zFade)), NB = 8;
+    for (var bi = 0; bi < NB; bi++) {
+      var ya = hz + (yFade - hz) * bi / NB, yb2 = hz + (yFade - hz) * (bi + 1) / NB;
+      g.save(); g.globalAlpha = 1 - bi / NB; g.beginPath(); g.rect(-900, ya - (bi ? 0 : 1), PW + 1800, yb2 - ya + (bi ? 0 : 1)); g.clip(); g.transform(1, 0, shear, 1, -shear * hz, 0); tile(); g.restore();
+    }
     // live road surface (covers the painted road of the backdrop, which was drawn for a much higher camera)
     var zN = 0.6, zF = 4000;
     function quad(u0, u1, z0, z1) { poly(g, [[xOf(z0, u0), yOf(z0)], [xOf(z0, u1), yOf(z0)], [xOf(z1, u1), yOf(z1)], [xOf(z1, u0), yOf(z1)]]); }
@@ -8648,14 +8700,16 @@ var PaintedVisuals = (function () {
         g.fillStyle = T.drag || 'rgba(244,242,234,0.92)'; quad(u0, u1, za, zb); g.fill(); }
     });
     // roadside props streaming past (sprites; positions repeat, sizes from real heights): delineator posts every 45 m on both sides
-    var S = A['desert-props'], PR = M.props, list = [], seg = 9;
-    for (var j = Math.floor(d / seg); j < Math.floor(d / seg) + 26; j++) {
+    // v1.7: denser: a bush or two every 5 m on alternating sides 5.5-30 m out, delineators every 45 m, a fence 8.5 m right of the centre line
+    var S = A['desert-props'], PR = M.props, list = [], seg = 5;
+    for (var j = Math.floor(d / seg); j < Math.floor(d / seg) + 34; j++) {
       var zr = j * seg - d + 1.5; if (zr < 1.2) continue;
       var r1 = hash(j), r2 = hash(j + 1000), r3 = hash(j + 2000), side = r1 < 0.5 ? -1 : 1;
-      if (j % 5 === 0) { list.push({ z: zr, x: -ROAD.post, p: PR[5] }); list.push({ z: zr, x: ROAD.post, p: PR[5] }); }
-      var kind = r2 < 0.38 ? 0 : r2 < 0.66 ? 1 : r2 < 0.86 ? 2 : r2 < 0.95 ? 3 : 4;
-      list.push({ z: zr + 3, x: side * (6.5 + r3 * 16), p: PR[kind] });
-      if (r3 > 0.55) list.push({ z: zr + 5.5, x: -side * (7.5 + r1 * 12), p: PR[r3 > 0.8 ? 2 : 0] });
+      if (j % 9 === 0) { list.push({ z: zr, x: -ROAD.post, p: PR[5] }); list.push({ z: zr, x: ROAD.post, p: PR[5] }); }
+      if (j % 3 === 0) list.push({ z: zr + 0.5, x: 8.5, p: PR[4] });
+      var kind = r2 < 0.38 ? 0 : r2 < 0.66 ? 1 : r2 < 0.86 ? 2 : r2 < 0.95 ? 3 : 2;
+      list.push({ z: zr + 2, x: side * (5.5 + r3 * 18), p: PR[kind] });
+      if (r3 > 0.3) list.push({ z: zr + 3.5, x: -side * (6 + r1 * 22), p: PR[r3 > 0.75 ? 2 : r3 > 0.5 ? 0 : 1] });
     }
     list.sort(function (a, b) { return b.z - a.z; });
     for (var q2 = 0; q2 < list.length; q2++) {
@@ -8672,18 +8726,32 @@ var PaintedVisuals = (function () {
     return Math.atan(st * 0.09 * Math.min(v, 25) / Math.max(v, 2));
   }
   function hash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  function sideGround(g, v, d, side) {
+    var T0 = groundTiles(), h = v.camH || 1.1, f = v.f, ppm = T0.ppm, ys = side.map(function (q) { return q[1]; }), xs = side.map(function (q) { return q[0]; });
+    var yMax = Math.max.apply(null, ys), xMax = Math.max.apply(null, xs) + 10, hz = v.hz;
+    if (GP.ctx !== g) { GP.near = g.createPattern(T0.near, 'repeat'); GP.far = g.createPattern(T0.far, 'repeat'); GP.ctx = g; }
+    if (!GP.near || !GP.near.setTransform || typeof DOMMatrix === 'undefined') { g.fillStyle = RC.shoulder; g.fillRect(-10, hz, xMax + 10, yMax - hz); return; }
+    var y = hz + 0.5;
+    while (y < yMax) {
+      var bh = Math.max(1, Math.min(6, (y - hz) * 0.06)), yb = Math.min(yMax, y + bh), La = f * h / (y - hz), Lb = f * h / (yb - hz), pxm = (y + yb - 2 * hz) / 2 / h;
+      var far = La > 30, pp = far ? ppm / 4 : ppm, sx = pxm / pp, syy = (yb - y) / Math.max(1e-3, (La - Lb) * pp), pat = far ? GP.far : GP.near;
+      pat.setTransform(new DOMMatrix([sx, 0, 0, syy, -d * pxm, y + syy * La * pp + 0]));
+      g.fillStyle = pat; g.fillRect(-10, y, xMax + 10, yb - y + 0.6); y = yb;
+    }
+  }
   function backdrop(g, car, s) {
     var m = M[car], v = m.view, B = M.backdrop, img = A['desert-backdrop'], d = s.dist || 0;
     var off = v.off !== undefined ? v.off : (car === 'gt350' ? 0.37 : 0.42);
     // v1.6: one painted tile spans the whole windshield (no repeated sun): scale at least so the tile reaches 160 px past both edges
     scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, cy: v.cy || 360, camH: v.camH || 1.1, dx: 1.8 + (s.lat || 0) - off, yaw: yawOf(s), camOff: 2.2, minK: Math.max((m.axisX + 160) / B.vx, (PW + 160 - m.axisX) / (B.w - B.vx)) }, s);
-    // side window: the desert streams past (band of the painting scrolled with distance), horizon at the same height as ahead
+    // side window (v1.7): parallax. Distant mesas (painting above the horizon) drift slowly; the ground below the horizon is the moving ground
+    // tile seen sideways: a band at height y - hz shows ground at L = f h / (y - hz) metres and streams backwards at (y - hz) / h px per metre.
     g.save(); poly(g, m.side); g.clip();
-    var bandY = B.hz - 150, bandH = 370, sw = img.naturalWidth, sh = img.naturalHeight, sy = bandY / B.h * sh, shh = bandH / B.h * sh, tw = 900, th = tw * shh / (sw * 0.5);
-    var off = ((d * 9) % tw + tw) % tw, top = v.hz - th * 150 / bandH;
-    g.fillStyle = '#c9a77a'; g.fillRect(0, 0, 300, PH);
-    for (var i = -1; i < 2; i++) g.drawImage(img, 0, sy, sw * 0.5, shh, -off + i * tw, top, tw, th);
-    g.fillStyle = STY === 'ink' ? 'rgba(13,10,8,0.06)' : 'rgba(30,25,20,0.12)'; g.fillRect(0, 0, 300, PH); g.restore();
+    var sw = img.naturalWidth, sh = img.naturalHeight, tw = 1100, th = tw * (B.hz / B.h * sh) / (sw * 0.5), offM = ((d * 1.2) % tw + tw) % tw;
+    g.fillStyle = '#c9a77a'; g.fillRect(-10, -10, 420, PH + 20);
+    for (var i = -1; i < 2; i++) g.drawImage(img, 0, 0, sw * 0.5, B.hz / B.h * sh, -offM + i * tw, v.hz - th, tw, th);
+    sideGround(g, v, d, m.side);
+    g.fillStyle = STY === 'ink' ? 'rgba(13,10,8,0.06)' : 'rgba(30,25,20,0.12)'; g.fillRect(-10, -10, 420, PH + 20); g.restore();
     // rear-view mirror: the road behind (painting mirrored)
     var mr = m.mirror; g.save(); rr(g, mr[0] - 4, mr[1] - 4, mr[2] + 8, mr[3] + 8, 18); g.clip(); g.translate(mr[0] + mr[2] + 4, mr[1] - 4); g.scale(-1, 1);
     var cw = sw * 0.42, chh = cw * (mr[3] + 8) / (mr[2] + 8); g.drawImage(img, sw * 0.5 - cw / 2, sh * (B.hz / B.h) - chh * 0.42, cw, chh, 0, 0, mr[2] + 8, mr[3] + 8); g.restore();
@@ -8757,23 +8825,78 @@ var PaintedVisuals = (function () {
     g.save(); g.translate(hub[0], hub[1]); g.rotate(rot); g.drawImage(A[car + '-wheel'], -wl / 2, -wl / 2, wl, wl); g.restore();
   }
   // ---------------------------------------------------------------- outside: rear chase camera
-  var smoke = [];
+  var smoke = [], dust = [];
+  // ---------------------------------------------------------------- v1.7 chase car lighting: the backdrop sun is low, ahead and to the right,
+  // so the car's rear face is in shade with a warm rim light on its upper-right edges, a warm bounce from the road at the bottom and a long
+  // shadow falling towards the camera and to the left. Graded once per car into an offscreen copy of the sprite (same pixel size as the art).
+  var CG = {};
+  function gradedRear(car) {
+    if (CG[car]) return CG[car];
+    var img = A[car + '-rear'], W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+    function cv() { var c = document.createElement('canvas'); c.width = W; c.height = H; return c; }
+    var shade = { v2: 'rgb(198,188,190)', flat: 'rgb(208,198,196)', ink: 'rgb(216,206,202)' }[STY], rimC = { v2: 'rgba(255,196,128,1)', flat: 'rgb(255,206,140)', ink: 'rgb(255,214,150)' }[STY];
+    var out = cv(), x = out.getContext('2d');
+    x.drawImage(img, 0, 0);
+    x.globalCompositeOperation = 'multiply'; x.fillStyle = shade; x.fillRect(0, 0, W, H);           // backlit: the rear face is in shade
+    x.globalCompositeOperation = 'destination-in'; x.drawImage(img, 0, 0);                          // keep the sprite's own alpha
+    x.globalCompositeOperation = 'source-atop';
+    if (STY === 'v2') { x.fillStyle = lin(x, 0, H * 0.62, 0, H, [[0, 'rgba(255,160,90,0)'], [1, 'rgba(255,160,90,0.16)']]); x.fillRect(0, H * 0.62, W, H * 0.38);   // road bounce
+      x.fillStyle = lin(x, 0, 0, 0, H * 0.5, [[0, 'rgba(120,140,190,0.10)'], [1, 'rgba(120,140,190,0)']]); x.fillRect(0, 0, W, H * 0.5); }                          // sky fill on the roof
+    else { x.fillStyle = 'rgba(255,160,90,0.09)'; x.fillRect(0, H * 0.8, W, H * 0.2); }                                                                    // flat styles: one hard bounce band
+    x.fillStyle = 'rgba(240,186,130,0.05)'; x.fillRect(0, 0, W, H);                                 // atmosphere (same warm haze as the horizon)
+    // rim light: the silhouette minus itself shifted down-left leaves a band on the upper-right edges (towards the sun)
+    var rim = cv(), r = rim.getContext('2d'), e = Math.max(4, W * 0.011);
+    r.drawImage(img, 0, 0); r.globalCompositeOperation = 'source-in'; r.fillStyle = rimC; r.fillRect(0, 0, W, H);
+    r.globalCompositeOperation = 'destination-out'; r.drawImage(img, -e, e * 0.8); r.drawImage(img, -e * 0.5, e * 1.6);
+    x.globalCompositeOperation = 'source-atop'; x.globalAlpha = STY === 'v2' ? 0.7 : 0.8; x.drawImage(rim, 0, 0); x.globalAlpha = 1;
+    // edges: erode the alpha by one pixel so no keyed fringe or halo is left around the cut-out
+    x.globalCompositeOperation = 'destination-in'; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (o) { x.drawImage(img, o[0], o[1]); });
+    x.globalCompositeOperation = 'source-over';
+    var sil = null;
+    if (STY === 'ink') { sil = cv(); var sx = sil.getContext('2d'); sx.drawImage(img, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#0d0a08'; sx.fillRect(0, 0, W, H); }
+    CG[car] = { img: out, sil: sil };
+    return CG[car];
+  }
+  // ground shadows under the chase car (painting px), on the ground plane of the scenery camera SC; u = metres right of the car centre
+  function carShadows(g, SC, c, car, cx, dxCar) {
+    var W2 = c.realW / 2, z0 = c.dist, z1 = c.dist + c.len, track = car === 'gt350' ? 1.47 : 1.55, tw = car === 'gt350' ? 0.24 : 0.22, axle = c.dist + (car === 'gt350' ? 0.9 : 1.35);
+    var base = SC.xOf(z0, dxCar);
+    function P(u, z) { return [cx + SC.xOf(z, dxCar + u) - SC.xOf(z, dxCar), SC.yOf(z)]; }
+    function quad(u0, u1, za, zb, skew) { var a = P(u0 + skew, za), b = P(u1 + skew, za), cc = P(u1, zb), d = P(u0, zb); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(cc[0], cc[1]); g.lineTo(d[0], d[1]); g.closePath(); }
+    var soft = STY === 'v2', col = STY === 'ink' ? '13,10,8' : STY === 'flat' ? '22,16,14' : '18,12,10';
+    // long shadow towards the camera (sun low ahead-right): from the rear of the car 1.8 m back and 0.6 m to the left
+    var yN = SC.yOf(z0 - 1.8), yF = SC.yOf(z0 + 0.4);
+    if (soft) [[0.25, 0.5], [0, 1]].forEach(function (L) {   // fades out towards the camera (penumbra grows with distance from the car)
+      g.fillStyle = lin(g, 0, yF, 0, yN, [[0, 'rgba(' + col + ',' + (0.30 * L[1]).toFixed(3) + ')'], [0.55, 'rgba(' + col + ',' + (0.14 * L[1]).toFixed(3) + ')'], [1, 'rgba(' + col + ',0)']]);
+      quad(-W2 - L[0] - 0.1, W2 + L[0] - 0.25, z0 - 1.8 - L[0], z0 + 0.4, -0.6); g.fill(); });
+    else { g.fillStyle = 'rgba(' + col + ',0.26)'; quad(-W2 - 0.1, W2 - 0.25, z0 - 1.3, z0 + 0.4, -0.45); g.fill(); }   // v4 / v5: one hard shadow shape, like the scenery's
+    // ambient occlusion: the footprint, darkest in the middle (hard two-level in v4 / v5)
+    var ao = soft ? [[0.25, 0.16], [0.12, 0.2], [0, 0.26], [-0.18, 0.3]] : [[0.06, 0.32], [-0.2, 0.32]];
+    ao.forEach(function (L) { g.fillStyle = 'rgba(' + col + ',' + L[1] + ')'; quad(-W2 - L[0], W2 + L[0], z0 - L[0] * 0.6, z1 + L[0], 0); g.fill(); });
+    // contact strips: the tyres press on the road
+    [-1, 1].forEach(function (sd) { var p = P(sd * track / 2, axle), q = P(sd * track / 2 + tw * 0.75, axle), w = Math.abs(q[0] - p[0]), hh = Math.max(2, w * 0.16);
+      g.fillStyle = 'rgba(' + col + ',' + (soft ? 0.75 : 0.85) + ')'; ell(g, p[0], p[1] + hh * 0.2, w, hh); g.fill();
+      if (soft) { g.fillStyle = 'rgba(' + col + ',0.3)'; ell(g, p[0], p[1] + hh * 0.3, w * 1.5, hh * 2.2); g.fill(); } });
+  }
   function drawOutside(g, s) {
     var car = s.carId === 'gt350' ? 'gt350' : 'caddy', E = M.exterior, c = E[car], V = E.view, f = V.f, camH = camHB(), dt = LV.gtDt;
     var steer = s.steer || 0, sway = steer * 10;
     var SC = scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len }, s);
-    var wpx = f * c.realW / c.dist, sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : 1.35), yc = SC.yOf(zc);
+    var tpc = (360 - V.hz) / f, cpc = 1 / Math.sqrt(1 + tpc * tpc), spc = tpc * cpc;   // pitched camera: depth of the rear face at mid height
+    var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : 1.35), yc = SC.yOf(zc);
     var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + '-rear'];
     var run = s.engine === 'running', shake = run ? Math.sin(s.time * 70) * Math.min(1.2, 0.4 + s.rpm / 5000) : 0;
     var pitch = Math.max(-7, Math.min(7, (s.accel || 0) * 14)), roll = -steer * Math.min(1, s.kmh / 60) * 0.035;  // squat (+) / dive (-), body roll in turns
-    // contact shadow
-    g.save(); g.globalAlpha = 0.55; g.fillStyle = T.flat ? (STY === 'ink' ? 'rgba(13,10,8,0.95)' : 'rgba(10,8,8,0.7)') : rad(g, cx, yc, 0, wpx * 0.62, [[0, 'rgba(0,0,0,0.85)'], [0.7, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]); if (T.flat) wpx *= 0.86;
-    g.translate(cx, yc); g.scale(1, 0.09); ell(g, 0, 0, wpx * 0.62, wpx * 0.62); g.fill(); g.restore();
+    carShadows(g, SC, c, car, cx, 1.8 + (s.lat || 0));
+    var GR = gradedRear(car), gimg = GR.img;
     var sy = c.splitY;   // tyres below splitY stay planted; the body above moves
     g.save(); g.translate(cx, yc); g.rotate(roll * 0.4); g.translate(-cx, -yc);
-    g.drawImage(img, 0, sy, c.px[0], c.px[1] - sy, x0, y0 + sy * sc, c.px[0] * sc, (c.px[1] - sy) * sc);
+    // ink: the same outline weight as the scenery's ink lines (about 1.6 painting px), drawn from the silhouette around each part
+    function part(src, sy0, sh0, dy0) { if (GR.sil) [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(function (o) { g.drawImage(GR.sil, 0, sy0, c.px[0], sh0, x0 + o[0] * 1.6, dy0 + o[1] * 1.6, c.px[0] * sc, sh0 * sc); });
+      g.drawImage(src, 0, sy0, c.px[0], sh0, x0, dy0, c.px[0] * sc, sh0 * sc); }
+    part(gimg, sy, c.px[1] - sy, y0 + sy * sc);
     g.translate(cx, y0 + sy * sc); g.rotate(roll); g.translate(-cx, -(y0 + sy * sc)); g.translate(0, pitch + shake * 0.5);
-    g.drawImage(img, 0, 0, c.px[0], sy + 2, x0, y0, c.px[0] * sc, (sy + 2) * sc);
+    part(gimg, 0, sy + 2, y0);
     // tail / brake lamps
     var br = s.brake > 0.05 ? Math.min(1, 0.55 + s.brake) : 0, tail = run ? 0.22 : 0;
     if (T.flat && br + tail > 0) { c.lamps.forEach(function (L) { var lx = x0 + L[0] * sc, ly = y0 + L[1] * sc, lw = L[2] * sc, lh = L[3] * sc;
@@ -8799,14 +8922,24 @@ var PaintedVisuals = (function () {
       else { g.globalAlpha = Math.min(1, al * (STY === 'ink' ? 4 : 2.6)); g.fillStyle = STY === 'ink' ? '#efe6d2' : '#d8d5cc'; ell(g, p.x, p.y, p.r * 0.7, p.r * 0.56); g.fill();
         if (STY === 'ink') { g.strokeStyle = '#0d0a08'; g.lineWidth = 1.6; g.stroke(); } g.globalAlpha = 1; } }
     if (smoke.length > 220) smoke.splice(0, smoke.length - 220);
+    // dust thrown up behind the tyres at speed (sand colour of the ground), drifting back towards the camera
+    var tr = car === 'gt350' ? 1.47 : 1.55, axZ = c.dist + (car === 'gt350' ? 0.9 : 1.35), dr = Math.max(0, s.kmh - 25) / 90 * dt * 45;
+    [-1, 1].forEach(function (sd) { var px = cx + SC.xOf(axZ, 1.8 + (s.lat || 0) + sd * tr / 2) - SC.xOf(axZ, 1.8 + (s.lat || 0));
+      for (var n = dr + Math.random(); n > 1; n--) dust.push({ x: px + sd * Math.random() * 6, y: yc - 2, r: 3 + Math.random() * 4, vx: sd * (6 + Math.random() * 14), vy: 14 + Math.random() * 16, a: Math.min(0.55, 0.18 + s.kmh / 300), t: 0, life: 0.5 + Math.random() * 0.5 }); });
+    var dc = groundTiles().dust;
+    for (var q3 = dust.length - 1; q3 >= 0; q3--) { var u = dust[q3]; u.t += dt; if (u.t > u.life) { dust.splice(q3, 1); continue; }
+      u.x += u.vx * dt; u.y += u.vy * dt; u.r += (14 + s.kmh * 0.3) * dt; var al2 = u.a * (1 - u.t / u.life);
+      if (STY === 'v2') { g.fillStyle = rad(g, u.x, u.y, 0, u.r, [[0, 'rgba(' + dc + ',' + al2.toFixed(3) + ')'], [1, 'rgba(' + dc + ',0)']]); ell(g, u.x, u.y, u.r, u.r * 0.6); g.fill(); }
+      else { g.globalAlpha = Math.min(0.45, al2 * 1.1); g.fillStyle = 'rgb(' + dc + ')'; ell(g, u.x, u.y, u.r * 1.1, u.r * 0.45); g.fill(); if (STY === 'ink' && u.r > 4) { g.strokeStyle = '#0d0a08'; g.lineWidth = 1.2; g.stroke(); } g.globalAlpha = 1; } }
+    if (dust.length > 160) dust.splice(0, dust.length - 160);
   }
   // ---------------------------------------------------------------- framing: separate portrait / landscape / desktop compositions
   // Focus box (painting px) per car, view and orientation, fitted into the part of the canvas no control covers.
   // v1.6: landscape shows the full-width interior (pillar to pillar), portrait a crop of the driver's side (wheel, cluster, a strip of road),
   // both from the same camera and always one uniform scale (a crop, never a squash).
   var FOCUS15 = {
-    gt350: { in: { land: [150, 175, 1165, 645], port: [292, 30, 870, 720] }, out: { land: [360, 140, 920, 700], port: [370, 60, 910, 720] } },
-    caddy: { in: { land: [80, 150, 1140, 650], port: [205, 30, 830, 720] }, out: { land: [360, 140, 920, 700], port: [370, 60, 910, 720] } } };
+    gt350: { in: { land: [150, 175, 1165, 645], port: [292, 30, 870, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
+    caddy: { in: { land: [80, 150, 1140, 650], port: [205, 30, 830, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } } };
   var FOCUS16 = {
     gt350: { in: { land: [0, 165, 1280, 720], port: [240, 150, 690, 720] }, out: FOCUS15.gt350.out },
     caddy: { in: { land: [0, 165, 1280, 720], port: [212, 140, 672, 720] }, out: FOCUS15.caddy.out } };
@@ -8827,6 +8960,7 @@ var PaintedVisuals = (function () {
     LY = { cw: cv.width, ch: cv.height, px: px, css: [cr.width, cr.height], safe: [sx0 * px, sy0 * px, sx1 * px, sy1 * px], port: cr.width / cr.height < 1.15 };
     LYt = now; return LY;
   }
+  var LF = {};   // last painting -> canvas frames (tests map painting points to the screen)
   function frameFor(L, car, view) {
     var F = focus()[car][view][L.port ? 'port' : 'land'], S = L.safe, sw = S[2] - S[0], sh = S[3] - S[1];
     var kf = Math.min(sw / (F[2] - F[0]), sh / (F[3] - F[1])), kc = Math.max(L.cw / PW, L.ch / PH), k = Math.min(kf, kc);
@@ -8892,9 +9026,9 @@ var PaintedVisuals = (function () {
   function scene(g, cv, L, car, s) {
     var b = s.viewBlend;
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.fillStyle = '#0d0906'; g.fillRect(0, 0, cv.width, cv.height);
-    if (b < 0.999) paint(g, frameFor(L, car, 'out'), drawOutside, s, true);
+    if (b < 0.999) { LF.out = frameFor(L, car, 'out'); paint(g, LF.out, drawOutside, s, true); }
     if (b > 0.001) {
-      var p = frameFor(L, car, 'in');
+      var p = frameFor(L, car, 'in'); LF.in = p;
       if (b < 0.999) { var Ly = layer(cv); Ly.g.setTransform(1, 0, 0, 1, 0, 0); Ly.g.clearRect(0, 0, cv.width, cv.height); paint(Ly.g, p, drawInside, s); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = b; g.drawImage(Ly.cv, 0, 0); g.globalAlpha = 1; }
       else paint(g, p, drawInside, s);
     }
@@ -8907,12 +9041,12 @@ var PaintedVisuals = (function () {
   }
   function draw(dash, s) {
     load();
-    if (status !== 'ready' || s.view === 2) { dash.draw(s); return; }
+    if (status !== 'ready') { dash.draw(s); return; }
     LV.gtDt = stepT(s);
     var g = dash.g, cv = dash.cv, L = layout(dash), car = s.carId === 'gt350' ? 'gt350' : 'caddy';
     scene.dash = dash; scene(g, cv, L, car, s);
   }
-  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, layout: function () { return LY; }, style: STY, _drawInside: drawInside, _drawOutside: drawOutside, _focus: function () { return focus(); } };
+  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, layout: function () { return LY; }, style: STY, _drawInside: drawInside, _drawOutside: drawOutside, _focus: function () { return focus(); }, _frames: function () { return LF; } };
   }
   return { make: make };
 })();
@@ -8932,9 +9066,9 @@ var VisualModels = (function () {
   var list = [];
   function register(m) { list.push(m); }
   register({ id: 'v1', label: 'v1 \u2013 drawn', note: 'canvas art (v1.1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); dash.draw(s); } });
-  if (typeof PaintedCockpit !== 'undefined') register({ id: 'v2', label: 'v2 \u2013 painted', note: 'painted cockpit + painted chase view, live gauges and levers (engine bay uses v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); PaintedCockpit.draw(dash, s); } });
-  if (typeof FlatCockpit !== 'undefined') register({ id: 'v4', label: 'v4 \u2013 flat', theme: 'flat', note: 'refined flat art from the real-size camera, live gauges and levers (engine bay uses v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); FlatCockpit.draw(dash, s); } });
-  if (typeof InkCockpit !== 'undefined') register({ id: 'v5', label: 'v5 \u2013 ink', theme: 'ink', note: 'ligne-claire ink art from the real-size camera, live gauges and levers (engine bay uses v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); InkCockpit.draw(dash, s); } });
+  if (typeof PaintedCockpit !== 'undefined') register({ id: 'v2', label: 'v2 \u2013 painted', note: 'painted cockpit + painted chase view, live gauges and levers', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); PaintedCockpit.draw(dash, s); } });
+  if (typeof FlatCockpit !== 'undefined') register({ id: 'v4', label: 'v4 \u2013 flat', theme: 'flat', note: 'flat restyling of the v2 cockpit and chase view, live gauges and levers', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); FlatCockpit.draw(dash, s); } });
+  if (typeof InkCockpit !== 'undefined') register({ id: 'v5', label: 'v5 \u2013 ink', theme: 'ink', note: 'ligne-claire ink restyling of the v2 cockpit and chase view, live gauges and levers', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); InkCockpit.draw(dash, s); } });
   if (typeof GLView !== 'undefined') register({ id: 'v3', label: 'v3 \u2013 3D preview (WebGL)', note: 'real-time three.js renderer; falls back to v1 without WebGL', available: GLView.available, draw: function (dash, s) { GLView.draw(dash, s); } });
   return { list: list, register: register, get: function (id) { if (id === 'v2' && !list.some(function (m) { return m.id === 'v2'; })) id = 'v3'; // v1.3 called the 3D renderer v2
       for (var i = 0; i < list.length; i++) if (list[i].id === id && (!list[i].available || list[i].available())) return list[i]; return list[0]; } };
@@ -8970,7 +9104,8 @@ var ProjectHistory = {
       { v: 'v1.4', date: '2026-11-11', status: 'done', text: 'Visuals v2 \u2013 painted: new near-photographic painted cockpits for both cars, seen straight ahead from the driver\u2019s seat, with live needles, odometer, ribbon speedometer, gear indicator, lamps, radio dial, moving shifter, turning steering wheel, painted desert road and moving side-window view. Selectable under Visuals; the default stays v1 (drawn), v3 is the 3D preview.' },
       { v: 'v1.4.1', date: '2026-11-11', status: 'done', text: 'GT350 painted cockpit redone with the full cabin width: the dash, wood-grain band, radio, under-dash gauges, glovebox with Shelby plate and console continue across to the passenger side, the right A-pillar sits at the far edge of the windshield (it looked too narrow on the right before).' },
       { v: 'v1.5', date: '2026-11-11', status: 'done', text: 'Visuals v2 (painted): steering wheel and dashboard in real proportion (driver camera from real dimensions: 65\u00b0 view, eye 74 cm behind the rim and 30 cm above the hub, 15 in GT350 wheel, 17.5 in Cadillac wheel; the horizon sits higher, so the road shows through the windshield again). Separate phone layouts: in portrait the controls sit below the scene, in landscape the top bar is compact (menu button) and the shift buttons sit above the gas pedal; every view is framed so no button covers the dash. New painted chase view for both cars (cut-out painted car over the painted road, live brake and tail lights, exhaust smoke, roadside scenery streaming past, squat, dive and sway, drag-strip lines). Gear levers move: the GT350 Hurst T-handle travels through the 4-speed H gate on every shift, the Cadillac column lever swings through P N D S L R with the quadrant.' },
-      { v: 'v1.6', date: '2026-11-11', status: 'done', text: 'Two new Visuals options: v4 \u2013 flat (clean vector look) and v5 \u2013 ink (1950s/60s ligne-claire poster look), with the buttons, pedals and panels restyled to match; v1 drawn stays the default, v2 painted and v3 3D stay. Both cockpits were redrawn from a driver camera built from real dimensions (eye point left of the centre line, left-hand drive; 1967 GT350 15.75 in wood wheel and 5 in gauges, 1959 Cadillac 17.5 in wheel and 14 in ribbon speedometer), with overlay proofs per car. Landscape shows the whole interior pillar to pillar; portrait is a crop of the driver side (wheel, gauges, a strip of road), same scale. Road inside the car fixed in all visuals: eye height 1.07 / 1.12 m (was about 2.3 m), car in the right 3.6 m lane with the driver left of the lane centre, vanishing point straight ahead of the driver, edge lines, 3 m dashes with 9 m gaps at true speed, posts 1 m tall, and the road swings with steering.' }
+      { v: 'v1.6', date: '2026-11-11', status: 'done', text: 'Two new Visuals options: v4 \u2013 flat (clean vector look) and v5 \u2013 ink (1950s/60s ligne-claire poster look), with the buttons, pedals and panels restyled to match; v1 drawn stays the default, v2 painted and v3 3D stay. Both cockpits were redrawn from a driver camera built from real dimensions (eye point left of the centre line, left-hand drive; 1967 GT350 15.75 in wood wheel and 5 in gauges, 1959 Cadillac 17.5 in wheel and 14 in ribbon speedometer), with overlay proofs per car. Landscape shows the whole interior pillar to pillar; portrait is a crop of the driver side (wheel, gauges, a strip of road), same scale. Road inside the car fixed in all visuals: eye height 1.07 / 1.12 m (was about 2.3 m), car in the right 3.6 m lane with the driver left of the lane centre, vanishing point straight ahead of the driver, edge lines, 3 m dashes with 9 m gaps at true speed, posts 1 m tall, and the road swings with steering.' },
+      { v: 'v1.7', date: '2026-11-11', status: 'done', text: 'Visuals v4 flat and v5 ink use the v2 painted interior again (same camera, wheel size and position, dash, pillars, hood, windshield, portrait and landscape framing), now drawn in the flat and ink styles. The land beside the road moves in v2, v4 and v5, inside and outside: the ground streams past at true speed in perspective (slow far away, fast near the edges), with more bushes, fence posts and roadside posts, distant mesas almost still, and the side-window view scrolling backwards with speed. Chase view: the car now sits in the picture: lit like the scene (the low sun is ahead, so its rear is in shade with a warm rim light on the sun side and a warm bounce from the road), a contact shadow under each tyre, a soft shadow under the car and a long shadow falling towards the camera, no cut-out fringe, ink outlines as thick as the scenery in v5, pale dust behind the tyres at speed, correct size on the road, and the car framed above the speed panel so the tyres are visible. The engine bay view is gone (button, B key and listening position); the sound has the inside and outside positions.' }
     ] }
   ]
 };
@@ -8994,11 +9129,10 @@ var ProjectHistory = {
   });
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  var state = { carId: 'gt350', units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'bay' ? 2 : 0,
+  var state = { carId: 'gt350', units: 'kmh', view: params.get('view') === 'inside' ? 1 : 0,
     model: SoundModels.get(params.get('sound') || lsGet('streetrod.sound', 'v2')).id,
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v1')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
-  if (state.view === 2 && !SoundModels.get(state.model).hasBay) state.view = 0;
   state.viewBlend = state.view === 1 ? 1 : 0;
   var audio = new EngineAudio({ forceScriptProcessor: params.get('audio') === 'sp' });
   var canvas = document.getElementById('dash');
@@ -9090,11 +9224,10 @@ var ProjectHistory = {
     if (!radio) radio = new CarRadio(audio.ctx);
     var on = radio.toggle(); flash(on ? 'Radio on: “Desert Highway Shuffle” (original, generated live)' : 'Radio off', 2); updatePanel();
   }
-  function setView(v) { v = +v || 0; if (v === 2 && !SoundModels.get(state.model).hasBay) v = 0; state.view = v; updatePanel(); }
+  function setView(v) { state.view = +v === 1 ? 1 : 0; updatePanel(); }   // 0 outside (rear), 1 inside
   function setModel(id) {
     state.model = SoundModels.get(id).id; lsSet('streetrod.sound', state.model);
-    if (state.view === 2 && !SoundModels.get(state.model).hasBay) state.view = 0;
-    if (audio.ctx) ensureAudio();   // live crossfade to the new model (no restart)
+      if (audio.ctx) ensureAudio();   // live crossfade to the new model (no restart)
     flash('Sound model ' + SoundModels.get(state.model).label, 1.5); updatePanel();
   }
   function setVisual(id) { state.visual = VisualModels.get(id).id; lsSet('streetrod.visuals', state.visual); applyTheme(); updatePanel(); }
@@ -9139,7 +9272,6 @@ var ProjectHistory = {
       case 's': case 'S': case 'i': case 'I': ignition(); break;
       case 'm': case 'M': toggleMute(); break;
       case 'v': case 'V': setView(state.view === 1 ? 0 : 1); break;
-      case 'b': case 'B': setView(state.view === 2 ? 0 : 2); break;
       case 'x': case 'X': setModel(cycle(SoundModels.list, state.model)); break;
       case 'z': case 'Z': setVisual(cycle(VisualModels.list, state.visual)); break;
       case 'u': case 'U': toggleUnits(); break;
@@ -9208,7 +9340,6 @@ var ProjectHistory = {
     var v = spec(), auto = v.trans === 'auto';
     document.querySelectorAll('#segCar .tb').forEach(function (b) { b.classList.toggle('on', b.dataset.v === state.carId); });
     document.querySelectorAll('#segView .tb').forEach(function (b) { b.classList.toggle('on', +b.dataset.v === state.view); });
-    document.getElementById('bBay').classList.toggle('hidden', !SoundModels.get(state.model).hasBay);
     selS.value = state.model; selV.value = state.visual;
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
     document.getElementById('bDrag').classList.toggle('on', !!drag);
