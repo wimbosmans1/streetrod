@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.3)</title>
+<title>Street Rod: engine sound + driving demo (v1.3.1)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -93,6 +93,30 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 .aboutBox .st { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; vertical-align: 1px; color: #fff; }
 .aboutBox .st.prog { background: #c27a12; } .aboutBox .st.plan { background: #5b6f8a; }
 .aboutX { position: absolute; top: 8px; right: 8px; min-width: 40px; min-height: 40px; font: bold 26px/1 Georgia, serif !important; color: #2a2016; }
+
+/* drag strip: Christmas tree + results card */
+#tree { position: absolute; z-index: 12; top: 50%; left: 25%; transform: translate(-50%, -40%); background: #1b1b1b; border: 2px solid #555; border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.6); }
+#tree.hidden, #dragCard.hidden { display: none; }
+#tree .lbl { color: #ddd; font: bold 9px Arial, sans-serif; letter-spacing: 1px; }
+#tree .pair { display: flex; gap: 12px; }
+#tree .b { width: 18px; height: 18px; border-radius: 50%; background: #3a3320; display: block; box-shadow: inset 0 0 4px #000; }
+#tree .pair:not(.am):not(.gr):not(.rd) .b { width: 12px; height: 12px; background: #3a3a2a; }
+#tree .pair:not(.am):not(.gr):not(.rd) .b.on { background: #fff6c8; box-shadow: 0 0 10px #fff2a0; }
+#tree .am .b.on { background: #ffb21e; box-shadow: 0 0 14px #ffae00; }
+#tree .gr .b { background: #13301a; } #tree .gr .b.on { background: #3dff6a; box-shadow: 0 0 16px #2dff5a; }
+#tree .rd .b { background: #3a1414; } #tree .rd .b.on { background: #ff3a2a; box-shadow: 0 0 16px #ff2a1a; }
+#dragCard { position: absolute; z-index: 25; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f3e9d2; color: #2a2016; border-radius: 12px; padding: 12px 16px; font: 15px/1.35 Georgia, serif; box-shadow: 0 8px 30px rgba(0,0,0,.6); min-width: 280px; max-height: 92%; overflow-y: auto; }
+#dragCard h3 { margin: 0 0 6px; color: #8a3b12 !important; font-size: 17px; }
+#dragCard .red { color: #c4271c; }
+#dragCard table { border-collapse: collapse; width: 100%; } #dragCard td { padding: 2px 6px; } #dragCard td:last-child { text-align: right; font-family: 'Courier New', monospace; font-weight: bold; }
+#dragCard tr.et td { font-size: 17px; border-top: 1px solid #c9b98f; }
+#dragCard .best { margin: 6px 0 2px; font-weight: bold; } #dragCard .note { margin: 2px 0 8px; font-size: 12px; color: #6a5a42; }
+#dragCard .row { display: flex; gap: 8px; justify-content: center; }
+#bRadio.hidden { display: none; }
+#dragCard td:first-child { color: #2a2016; font-family: Georgia, serif; }
+.touch .tb { padding: 7px 8px; }
+.touch .sel span { display: none; }
+.touch .sel select { font-size: 12px; max-width: 150px; }
 </style>
 </head>
 <body>
@@ -105,6 +129,8 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
       <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside car</button><button class="tb" data-act="view" data-v="0">Outside (rear)</button><button class="tb" id="bBay" data-act="view" data-v="2">Engine bay</button></div>
       <label class="sel"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
+      <button class="tb" id="bDrag" data-act="drag">Drag &frac14; mile</button>
+      <button class="tb hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
       <button class="tb" id="bUnits" data-act="units">km/h</button>
       <button class="tb" id="bMute" data-act="mute">Mute</button>
       <button class="tb" id="bAbout" data-act="about" aria-label="About and history" title="About / History">i</button>
@@ -115,6 +141,8 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
       <div class="shifts"><button class="tb big" id="bUp" data-act="up">&#9650;<small>shift up</small></button><button class="tb big" id="bDown" data-act="down">&#9660;<small>shift down</small></button></div>
       <div class="pedal" id="pGas" data-pedal="gas"><div class="fill"></div><span>GAS</span></div>
     </div>
+    <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
+    <div id="dragCard" class="hidden"></div>
     <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
     <div id="rotate"><div><b>&#8635; Rotate your phone</b><br>Landscape is the driving mode.<br><button class="tb" data-act="dismissRotate">Continue in portrait</button></div></div>
   </div>
@@ -132,6 +160,8 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
       <tr><td>Z</td><td>Next visuals</td></tr>
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
       <tr><td>A / D</td><td>Steer left / right (touch: drag sideways on the road)</td></tr>
+      <tr><td>Q</td><td>Drag strip (1/4 mile) on / off</td></tr>
+      <tr><td>R</td><td>Radio (Cadillac)</td></tr>
       <tr><td>T</td><td>Reset trip meter</td></tr>
       <tr><td>M</td><td>Mute</td></tr>
       <tr><td>H</td><td>About / History</td></tr>
@@ -2149,6 +2179,7 @@ var Vehicles = (function () {
   };
 
   var CADDY = {
+    radio: true,
     id: 'caddy', label: '1959 Cadillac Series 62', engineKey: 'CADDY',
     engineText: '390 V8, 325 hp @ 4800, 430 lb-ft @ 3100 (gross)',
     // 430 lb-ft @ 3100, 325 hp @ 4800 (= 356 lb-ft)
@@ -2512,6 +2543,234 @@ var Physics = (function () {
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Physics;
 </script>
+<script>/* js/drag.js */
+/*
+ * drag.js: quarter-mile drag strip logic (pure, no DOM; also used by test/drag_test.js).
+ * Sportsman ("full") tree: pre-stage + stage bulbs, three ambers 0.5 s apart, green 0.5 s after the
+ * last amber; moving before green = red light. Reaction time = green -> leaving the stage beam
+ * (11.5 in / 0.292 m roll-out), measured from the last amber like a real full tree (0.500 = perfect). ET starts when the stage beam is cleared. Speeds are trap speeds
+ * over the last 66 ft before the 1/8 and 1/4 mile marks, like real timing systems.
+ */
+var DragStrip = (function () {
+  var FT = 0.3048, ROLLOUT = 11.5 * 0.0254;
+  var MARKS = [['ft60', 60 * FT], ['ft330', 330 * FT], ['eighth', 660 * FT], ['ft1000', 1000 * FT], ['quarter', 1320 * FT]];
+  var TRAPS = [['eighthMph', 594 * FT, 660 * FT], ['quarterMph', 1254 * FT, 1320 * FT]];
+  function Run() { this.reset(); }
+  Run.prototype.reset = function () {
+    this.phase = 'staging'; // staging -> staged (tree running) -> racing -> done ; 'red' = foul
+    this.t = 0; this.x = 0; this.tree = { pre: false, stage: false, amber: 0, green: false, red: false };
+    this.greenAt = null; this.leftAt = null; this.res = {}; this.marks = {}; this.stagedT = 0; this.foul = false;
+  };
+  // dt: s, v: m/s of the car, ready: engine running + in gear. Returns the run state.
+  Run.prototype.update = function (dt, v, ready) {
+    var x0 = this.x, t0 = this.t; this.t += dt; this.x += v * dt;
+    var tr = this.tree;
+    if (this.phase === 'staging') {
+      this.x = 0; tr.pre = true; tr.stage = ready && v < 0.05;
+      if (tr.stage) { this.stagedT += dt; if (this.stagedT > 1.0) { this.phase = 'tree'; this.treeT = 0; this.treeAt = this.t; } } else this.stagedT = 0;
+      return this;
+    }
+    if (this.phase === 'tree') {
+      this.treeT += dt;
+      tr.amber = Math.min(3, Math.floor(this.treeT / 0.5) + (this.treeT >= 0 ? 1 : 0)); // amber 1 at 0, 2 at 0.5, 3 at 1.0
+      if (this.treeT >= 1.5 && !tr.green && !this.foul) { tr.green = true; this.greenAt = t0 + (1.5 - (this.treeT - dt)); }
+      if (this.x > ROLLOUT && this.leftAt === null) {
+        this.leftAt = interp(t0, this.t, x0, this.x, ROLLOUT);
+        if (!tr.green) { this.foul = true; tr.red = true; tr.green = false; }
+        this.phase = 'racing';
+      }
+      return this;
+    }
+    if (this.phase === 'racing') {
+      if (this.greenAt === null && this.t - this.leftAt >= 0) { /* foul: green never shown */ }
+      var ex = this.x - ROLLOUT; // ET distance is from the start line (beam)
+      var ex0 = x0 - ROLLOUT;
+      for (var i = 0; i < MARKS.length; i++) {
+        var k = MARKS[i][0], d = MARKS[i][1];
+        if (this.marks[k] === undefined && ex >= d) this.marks[k] = interp(t0, this.t, ex0, ex, d) - this.leftAt;
+      }
+      for (var j = 0; j < TRAPS.length; j++) {
+        var tk = TRAPS[j][0];
+        if (this.marks[tk + 'a'] === undefined && ex >= TRAPS[j][1]) this.marks[tk + 'a'] = interp(t0, this.t, ex0, ex, TRAPS[j][1]);
+        if (this.marks[tk] === undefined && ex >= TRAPS[j][2]) { var tb = interp(t0, this.t, ex0, ex, TRAPS[j][2]); this.marks[tk] = (66 * FT) / (tb - this.marks[tk + 'a']) * 2.236936; }
+      }
+      if (this.marks.quarter !== undefined) {
+        this.phase = 'done';
+        this.res = { rt: this.leftAt - (this.treeAt + 1.0), // from the last amber: 0.500 = perfect
+           foul: this.foul, ft60: this.marks.ft60, ft330: this.marks.ft330, eighth: this.marks.eighth, eighthMph: this.marks.eighthMph,
+          ft1000: this.marks.ft1000, quarter: this.marks.quarter, quarterMph: this.marks.quarterMph };
+      }
+      return this;
+    }
+    return this;
+  };
+  // distance of the car from the start line (m); negative while staged behind it
+  Run.prototype.fromLine = function () { return this.x - ROLLOUT; };
+  function interp(t0, t1, x0, x1, x) { return x1 === x0 ? t1 : t0 + (t1 - t0) * (x - x0) / (x1 - x0); }
+  return { Run: Run, QUARTER: 1320 * FT, ROLLOUT: ROLLOUT, FT: FT };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = DragStrip;
+</script>
+<script>/* js/radio.js */
+/*
+ * radio.js: reusable car radio. An ORIGINAL 1950s-style rockabilly instrumental composed in code
+ * ("Desert Highway Shuffle": 12-bar blues in E, 170 bpm shuffle, walking bass, slapback guitar
+ * boogie riff + lead, boogie piano, shuffle drums), rendered once into an AudioBuffer, then played
+ * through a live 1959 AM tube-radio chain (band-pass ~200-4000 Hz, tube drive, small speaker
+ * resonance), with faint static and a tuning whistle + noise when it is switched on.
+ * No recordings and no existing melodies are used.
+ * Usage: var r = new CarRadio(audioCtx); r.toggle(); every frame r.update({ view, rpm, muted }).
+ */
+var CarRadio = (function () {
+  'use strict';
+  var BPM = 170;
+  function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function rng(seed) { var s = seed >>> 0; return function () { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296 * 2 - 1; }; }
+
+  // ------------------------------------------------------------ instruments (write into a bus)
+  function pluck(bus, fs, t, f, dur, amp, bright, seed) { // Karplus-Strong string
+    var n0 = Math.round(t * fs), N = Math.round(dur * fs), L = Math.max(2, Math.round(fs / f)), d = new Float32Array(L), r = rng(seed || 1), i;
+    for (i = 0; i < L; i++) d[i] = r();
+    var p = 0, prev = 0, loss = 0.996, a = bright;
+    for (i = 0; i < N && n0 + i < bus.length; i++) {
+      var x = d[p], y = a * x + (1 - a) * prev; prev = x; d[p] = y * loss; p = (p + 1) % L;
+      var env = i < N - 400 ? 1 : (N - i) / 400; bus[n0 + i] += amp * x * env;
+    }
+  }
+  function piano(bus, fs, t, f, dur, amp) { // 6 slightly stretched partials, rotating phasors (cheap)
+    var n0 = Math.round(t * fs), N = Math.round(Math.min(dur + 0.25, 1.4) * fs), H = 6, re = [], im = [], cr = [], ci = [], h;
+    for (h = 1; h <= H; h++) { var w = 2 * Math.PI * f * h * Math.sqrt(1 + 0.0004 * h * h) / fs, dk = Math.exp(-(2.5 + h * 1.6) / fs); re.push(0); im.push(1 / h); cr.push(Math.cos(w) * dk); ci.push(Math.sin(w) * dk); }
+    var relK = Math.exp(-18 / fs), rel = 1, nd = Math.round(dur * fs);
+    for (var i = 0; i < N && n0 + i < bus.length; i++) {
+      var s = 0;
+      for (h = 0; h < H; h++) { var a = re[h] * cr[h] - im[h] * ci[h]; im[h] = re[h] * ci[h] + im[h] * cr[h]; re[h] = a; s += im[h]; }
+      if (i > nd) rel *= relK;
+      bus[n0 + i] += amp * s * rel * (i < 30 ? i / 30 : 1);
+    }
+  }
+  function kick(bus, fs, t, amp) {
+    var n0 = Math.round(t * fs), N = Math.round(0.22 * fs), ph = 0;
+    for (var i = 0; i < N && n0 + i < bus.length; i++) { var tt = i / fs; ph += 2 * Math.PI * (55 + 90 * Math.exp(-tt * 30)) / fs; bus[n0 + i] += amp * Math.sin(ph) * Math.exp(-tt * 14); }
+  }
+  function noiseHit(bus, fs, t, amp, decay, hp, tone, seed) {
+    var n0 = Math.round(t * fs), N = Math.round(5 / decay * fs), r = rng(seed), lp = 0, prev = 0;
+    for (var i = 0; i < N && n0 + i < bus.length; i++) {
+      var tt = i / fs, x = r(), y = hp ? x - prev : x; prev = x; lp += 0.5 * (y - lp);
+      var s = (hp ? y : lp) + (tone ? 0.6 * Math.sin(2 * Math.PI * tone * tt) * Math.exp(-tt * 30) : 0);
+      bus[n0 + i] += amp * s * Math.exp(-tt * decay);
+    }
+  }
+
+  // ------------------------------------------------------------ the tune (original composition)
+  var FORM = ['E', 'E', 'E', 'E', 'A', 'A', 'E', 'E', 'B', 'A', 'E', 'B'];
+  var ROOT = { E: 40, A: 45, B: 47 };
+  var CHORD = { E: [68, 71, 74, 76], A: [67, 69, 73, 76], B: [66, 69, 71, 75] };
+  // lead phrases (beat offset within 4 bars, midi, length in beats): E minor/major pentatonic, written for this demo
+  var LEAD = [
+    [[0, 71, 0.66], [0.66, 74, 0.34], [1, 76, 1], [2.66, 74, 0.34], [3, 71, 0.66], [3.66, 69, 0.34], [4, 67, 0.5], [4.66, 68, 1.34], [8, 76, 0.34], [8.33, 79, 0.33], [8.66, 76, 0.34], [9, 74, 0.66], [9.66, 71, 0.34], [10, 69, 0.66], [10.66, 71, 0.34], [11, 64, 2]],
+    [[0, 69, 0.66], [0.66, 72, 0.34], [1, 73, 1], [2.66, 72, 0.34], [3, 69, 1], [4.66, 67, 0.34], [5, 64, 0.66], [5.66, 67, 0.34], [6, 68, 1.5], [8, 71, 0.5], [8.66, 71, 0.34], [9, 74, 0.66], [9.66, 76, 0.34], [10, 74, 1], [11.66, 71, 0.34], [12, 68, 2]],
+    [[0, 78, 0.66], [0.66, 75, 0.34], [1, 71, 0.66], [1.66, 69, 0.34], [2, 66, 1], [4, 76, 0.66], [4.66, 74, 0.34], [5, 73, 0.66], [5.66, 69, 0.34], [6, 67, 0.66], [6.66, 68, 0.34], [7, 64, 1.5], [12, 71, 0.34], [12.33, 70, 0.33], [12.66, 69, 0.34], [13, 68, 0.66], [13.66, 66, 1]]
+  ];
+  function render(fs) {
+    var beat = 60 / BPM, bar = 4 * beat, choruses = 3, bars = 12 * choruses, len = Math.ceil(bars * bar * fs);
+    var gtr = new Float32Array(len), mix = new Float32Array(len), seed = 1;
+    function sw(b) { return Math.floor(b) + (b % 1 >= 0.5 ? 2 / 3 : 0) ; } // swing an eighth-grid beat position
+    for (var c = 0; c < choruses; c++) {
+      for (var b = 0; b < 12; b++) {
+        var ch = FORM[b], r = ROOT[ch], t0 = (c * 12 + b) * bar;
+        // walking bass (upright, slapped)
+        var walk = b % 2 === 0 ? [0, 4, 7, 9] : [10, 9, 7, 4];
+        if (b === 11) walk = [7, 5, 4, 2];
+        for (var k = 0; k < 4; k++) { pluck(mix, fs, t0 + k * beat, mtof(r + walk[k]), beat * 0.95, 0.55, 0.35, seed++); noiseHit(mix, fs, t0 + k * beat, 0.05, 90, true, 0, seed++); }
+        // drums: kick 1+3, snare 2+4, swung ride, ghost snare before beat 1 every 2 bars
+        kick(mix, fs, t0, 0.5); kick(mix, fs, t0 + 2 * beat, 0.42);
+        noiseHit(mix, fs, t0 + beat, 0.34, 22, false, 185, seed++); noiseHit(mix, fs, t0 + 3 * beat, 0.36, 22, false, 185, seed++);
+        for (var e = 0; e < 8; e++) noiseHit(mix, fs, t0 + sw(e / 2) * beat, e % 2 ? 0.05 : 0.08, 45, true, 0, seed++);
+        if (b % 2 === 1) noiseHit(mix, fs, t0 + (3 + 2 / 3) * beat, 0.12, 30, false, 185, seed++);
+        // guitar: boogie riff (root + 5th / 6th / b7th dyads), chorus 2 plays the lead instead (riff thinned)
+        var riff = [7, 7, 9, 9, 10, 9, 7, 9];
+        if (c !== 1) for (var q = 0; q < 8; q++) { var tq = t0 + sw(q / 2) * beat; pluck(gtr, fs, tq, mtof(r + 12), beat * 0.3, 0.32, 0.6, seed++); pluck(gtr, fs, tq, mtof(r + 12 + riff[q]), beat * 0.3, 0.26, 0.6, seed++); }
+        // piano: off-beat stabs, chorus 3 adds high triplet rolls
+        var cv = CHORD[ch];
+        for (var o = 0; o < 4; o++) { var to = t0 + (o + 2 / 3) * beat; for (var v = 0; v < cv.length; v++) piano(mix, fs, to, mtof(cv[v]), beat * 0.25, c === 2 ? 0.05 : 0.07); }
+        if (c === 2 && b % 4 < 2) for (var tr = 0; tr < 12; tr++) piano(mix, fs, t0 + tr * beat / 3, mtof(cv[(tr % 2) ? 3 : 2] + 12), beat / 3, 0.06);
+      }
+      // lead (chorus 2): one phrase per 4-bar line
+      if (c === 1) for (var line = 0; line < 3; line++) LEAD[line].forEach(function (n) {
+        pluck(gtr, fs, (c * 12 + line * 4) * bar + n[0] * beat, mtof(n[1]), n[2] * beat * 0.98, 0.5, 0.7, seed++);
+      });
+    }
+    // slapback echo + light overdrive on the guitar bus, then mix
+    var D = Math.round(0.105 * fs);
+    for (var i = 0; i < len; i++) { var g = gtr[i] + 0.42 * (i >= D ? gtr[i - D] : 0); mix[i] += Math.tanh(1.6 * g) * 0.75; }
+    var pk = 0; for (i = 0; i < len; i++) pk = Math.max(pk, Math.abs(mix[i]));
+    var sc = 0.9 / (pk || 1); for (i = 0; i < len; i++) mix[i] *= sc;
+    return mix;
+  }
+
+  function staticBuf(ctx) {
+    var fs = ctx.sampleRate, n = Math.round(fs * 3), b = ctx.createBuffer(1, n, fs), d = b.getChannelData(0), r = rng(77), lp = 0;
+    for (var i = 0; i < n; i++) { lp += 0.2 * (r() - lp); d[i] = lp * 0.6 + (Math.abs(r()) > 0.9995 ? r() * 2.5 : 0); }
+    return b;
+  }
+  function tubeCurve() { var c = new Float32Array(1024); for (var i = 0; i < 1024; i++) { var x = i / 511.5 - 1; c[i] = Math.tanh(2.2 * x + 0.15 * x * x) / Math.tanh(2.2); } return c; }
+
+  function CarRadio(ctx, opts) {
+    this.ctx = ctx; this.opts = opts || {}; this.on = false; this.built = false; this.buf = null; this.level = 1;
+  }
+  CarRadio.prototype.build = function () {
+    var ctx = this.ctx, fs = ctx.sampleRate;
+    if (!this.buf) { var data = render(fs), b = ctx.createBuffer(1, data.length, fs); b.getChannelData(0).set(data); this.buf = b; }
+    function bq(type, f, q, gain) { var n = ctx.createBiquadFilter(); n.type = type; n.frequency.value = f; n.Q.value = q || 0.707; if (gain) n.gain.value = gain; return n; }
+    this.music = ctx.createGain(); this.music.gain.value = 0;
+    this.stat = ctx.createGain(); this.stat.gain.value = 0;
+    this.whistle = ctx.createGain(); this.whistle.gain.value = 0;
+    var hp1 = bq('highpass', 200), hp2 = bq('highpass', 200), lp1 = bq('lowpass', 4000), lp2 = bq('lowpass', 4000), spk = bq('peaking', 950, 1.4, 4), box = bq('peaking', 320, 1.2, 2);
+    var drive = ctx.createWaveShaper(); drive.curve = tubeCurve(); drive.oversample = '2x';
+    this.view = bq('lowpass', 9000, 0.7);  // inside: open; outside: muffled through the body
+    this.out = ctx.createGain(); this.out.gain.value = 0;
+    this.music.connect(hp1); this.stat.connect(hp1); this.whistle.connect(hp1);
+    hp1.connect(hp2); hp2.connect(drive); drive.connect(lp1); lp1.connect(lp2); lp2.connect(spk); spk.connect(box); box.connect(this.view); this.view.connect(this.out);
+    this.out.connect(this.opts.destination || ctx.destination);
+    this.an = ctx.createAnalyser(); this.an.fftSize = 2048; this.out.connect(this.an); this.anBuf = new Float32Array(2048);
+    this.statBuf = staticBuf(ctx); this.built = true;
+  };
+  CarRadio.prototype.start = function () {
+    if (!this.ctx) return;
+    if (!this.built) this.build();
+    var ctx = this.ctx, t = ctx.currentTime;
+    this.src = ctx.createBufferSource(); this.src.buffer = this.buf; this.src.loop = true; this.src.connect(this.music);
+    this.src.start(t, (this.offset || 0) % this.buf.duration); this.startedAt = t - (this.offset || 0);
+    this.ns = ctx.createBufferSource(); this.ns.buffer = this.statBuf; this.ns.loop = true; this.ns.connect(this.stat); this.ns.start(t);
+    // tuning in: whistle sweeping down to zero beat + noise burst, then the music comes up
+    var osc = ctx.createOscillator(); osc.frequency.setValueAtTime(3200, t); osc.frequency.exponentialRampToValueAtTime(40, t + 0.9); osc.connect(this.whistle); osc.start(t); osc.stop(t + 1.0);
+    this.whistle.gain.cancelScheduledValues(t); this.whistle.gain.setValueAtTime(0.0, t); this.whistle.gain.linearRampToValueAtTime(0.10, t + 0.08); this.whistle.gain.linearRampToValueAtTime(0, t + 0.95);
+    this.stat.gain.cancelScheduledValues(t); this.stat.gain.setValueAtTime(0.5, t); this.stat.gain.linearRampToValueAtTime(0.045, t + 1.1);
+    this.music.gain.cancelScheduledValues(t); this.music.gain.setValueAtTime(0, t); this.music.gain.linearRampToValueAtTime(0.0, t + 0.45); this.music.gain.linearRampToValueAtTime(0.9, t + 1.3);
+    this.on = true;
+  };
+  CarRadio.prototype.stop = function () {
+    if (!this.on) return; var t = this.ctx.currentTime;
+    this.offset = (t - this.startedAt) % this.buf.duration;
+    try { this.src.stop(t + 0.05); this.ns.stop(t + 0.05); } catch (e) {}
+    this.on = false;
+  };
+  CarRadio.prototype.toggle = function () { if (this.on) this.stop(); else this.start(); return this.on; };
+  // view: 0 outside, 1 inside, 2 engine bay; rpm for a gentle duck so the engine dominates at high revs
+  CarRadio.prototype.update = function (o) {
+    if (!this.built) return;
+    var inside = o.view === 1, duck = 1 - 0.45 * Math.min(1, Math.max(0, (o.rpm - 1500) / 3500));
+    var g = this.on && !o.muted ? (inside ? 0.16 : 0.045) * duck * this.level : 0, t = this.ctx.currentTime;
+    this.out.gain.setTargetAtTime(g, t, 0.08);
+    this.view.frequency.setTargetAtTime(inside ? 9000 : 650, t, 0.1);
+  };
+  // output level in dBFS (for the status line and tests)
+  CarRadio.prototype.levelDb = function () { if (!this.an) return -120; this.an.getFloatTimeDomainData(this.anBuf); var e = 0; for (var i = 0; i < this.anBuf.length; i++) e += this.anBuf[i] * this.anBuf[i]; return 10 * Math.log10(e / this.anBuf.length + 1e-12); };
+  CarRadio.render = render; CarRadio.BPM = BPM;
+  return CarRadio;
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = CarRadio;
+</script>
 <script>/* js/audio.js */
 /*
  * audio.js: AudioContext + engine voice, built for iOS Safari as well as desktop.
@@ -2773,6 +3032,21 @@ var UI = (function () {
         var th = f * 8 / zp, tw = Math.max(1, f * 0.25 / zp), tx = cx + hw * 2.2;
         g.fillStyle = '#5a4030'; g.fillRect(tx, y - th, tw, th); g.fillRect(tx - th * 0.15, y - th * 0.94, th * 0.3 + tw, Math.max(1, tw * 0.6));
       }
+    }
+    if (s.drag) { // drag strip start / finish lines
+      var camOff = s.viewBlend > 0.5 ? 2.2 : 6.5;
+      [[s.drag.start, 0.3, false], [s.drag.finish, 0.9, true]].forEach(function (L) {
+        var za = L[0] + camOff, zb = za + L[1]; if (zb <= zNear || za > 500) return; za = Math.max(za, zNear);
+        var ya = yOf(za), yb = yOf(zb), n = L[2] ? 16 : 1;
+        for (var q = 0; q < n; q++) for (var r2 = 0; r2 < (L[2] ? 2 : 1); r2++) {
+          if (L[2] && (q + r2) % 2) continue;
+          var zA = za + (zb - za) * r2 / (L[2] ? 2 : 1), zB = za + (zb - za) * (r2 + 1) / (L[2] ? 2 : 1), yA = yOf(zA), yB = yOf(zB);
+          var u0 = -1 + 2 * q / n, u1 = -1 + 2 * (q + 1) / n;
+          g.fillStyle = L[2] ? '#111' : '#f4f2ea'; if (L[2]) { g.fillStyle = '#f4f2ea'; }
+          g.beginPath(); g.moveTo(cx + half(zA) * u0, yA); g.lineTo(cx + half(zA) * u1, yA); g.lineTo(cx + half(zB) * u1, yB); g.lineTo(cx + half(zB) * u0, yB); g.closePath(); g.fill();
+        }
+        if (L[2]) { g.fillStyle = 'rgba(17,17,17,0.9)'; } 
+      });
     }
     return { yOf: yOf, half: half };
   };
@@ -7400,7 +7674,7 @@ void main() {
 </script>
 <script>/* js/ui-gl.js */
 /*
- * ui-gl.js: Visuals v2, real-time WebGL renderer (three.js r187, vendored in js/vendor/three.min.js).
+ * ui-gl.js: Visuals v3 (shipped in v1.3 under the name v2), real-time WebGL renderer (three.js r187, vendored in js/vendor/three.min.js).
  * Exterior: procedural 3D models of the 1967 Shelby GT350 (Wimbledon White, Guardsman Blue Le Mans
  * stripes, sequential-style tail lamps, quad tips) and the 1959 Cadillac (Persian Sand, tail fins with twin
  * bullet lamps, chrome bumper with exhaust exits, wide body). Clearcoat paint and chrome lit by an
@@ -7879,8 +8153,16 @@ var GLView = (function () {
     for (var gi = 0; gi < 4; gi++) { var sp = new T.Sprite(new T.SpriteMaterial({ map: gTex, color: 0xff3018, blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0 })); scene.add(sp); glows.push(sp); }
     var pTex = puffTex(), puffs = [];
     for (var pi = 0; pi < (mobile ? 36 : 64); pi++) { var ps = new T.Sprite(new T.SpriteMaterial({ map: pTex, color: 0xcfc8be, transparent: true, depthWrite: false, opacity: 0 })); ps.visible = false; scene.add(ps); puffs.push({ s: ps, life: 0, max: 1, v: new T.Vector3() }); }
+    // drag strip start / finish lines (positioned from the drag run each frame)
+    var lines = [new T.Mesh(new T.PlaneGeometry(7.2, 0.25), new T.MeshStandardMaterial({ color: 0xf4f2ea, roughness: 0.7 })),
+      new T.Mesh(new T.PlaneGeometry(7.2, 0.9), new T.MeshStandardMaterial({ roughness: 0.7, map: textTex(512, 64, function (g) { for (var i = 0; i < 32; i++) for (var j = 0; j < 4; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#f4f2ea'; g.fillRect(i * 16, j * 16, 16, 16); } }) }))];
+    lines.forEach(function (l) { l.rotation.x = -Math.PI / 2; l.position.y = 0.006; l.visible = false; l.receiveShadow = true; scene.add(l); });
+    var banner = new T.Group(), bm = new T.MeshStandardMaterial({ color: 0x777777, metalness: 0.6, roughness: 0.4 });
+    [-1, 1].forEach(function (sd) { banner.add(at(cyl(0.08, 0.08, 6, bm, 8), sd * 4.6, 3, 0)); });
+    banner.add(at(new T.Mesh(new T.PlaneGeometry(9.2, 1.0), new T.MeshStandardMaterial({ side: T.DoubleSide, map: textTex(1024, 112, function (g) { g.fillStyle = '#b3231c'; g.fillRect(0, 0, 1024, 112); g.fillStyle = '#fff'; g.font = 'bold 72px Georgia'; g.textAlign = 'center'; g.fillText('FINISH  \u00bc MILE', 512, 82); }) })), 0, 5.6, 0));
+    banner.visible = false; scene.add(banner);
     var cam = new T.PerspectiveCamera(55, 16 / 9, 0.05, 4000);
-    st = { scene: scene, cam: cam, sun: sun, cars: cars, cockpits: cockpits, roadT: roadT, sandT: sandT, shT: shT, props: props, PERIOD: PERIOD, blob: blob, glows: glows, puffs: puffs,
+    st = { scene: scene, cam: cam, sun: sun, cars: cars, cockpits: cockpits, roadT: roadT, sandT: sandT, shT: shT, props: props, PERIOD: PERIOD, blob: blob, glows: glows, puffs: puffs, lines: lines, banner: banner,
       pitch: 0, pitchV: 0, roll: 0, lastT: 0, camX: 1.85, w: 0, h: 0, pr: Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2), prMin: 0.75, fpsT: 0, fpsN: 0, fps: 60, unitsKey: '', carId: '', puffAcc: 0, frames: 0, M: M, env: env, cv: cv };
   }
 
@@ -7970,6 +8252,13 @@ var GLView = (function () {
       var w = new T.Vector3(gp[i][0], gp[i][1], car.rear + 0.05); car.body.localToWorld(w); g.position.copy(w);
       g.scale.set(car.glowW * (1 + brk), 0.35 * (1 + brk), 1); g.material.opacity = 0.18 + 0.7 * brk;
     });
+    // drag strip lines: s.drag.start / finish = metres ahead of the front tyres
+    var fz = car.wheels[0].position.z - car.wheels[0].userData.r;
+    [['start', 0], ['finish', 1]].forEach(function (k) {
+      var l = st.lines[k[1]]; l.visible = !!s.drag && s.drag[k[0]] > -30 && s.drag[k[0]] < 1100;
+      if (l.visible) l.position.z = fz - s.drag[k[0]];
+    });
+    st.banner.visible = st.lines[1].visible; st.banner.position.z = st.lines[1].position.z;
     // blob shadow + shadow camera follow
     st.blob.position.x = lat; st.blob.scale.set(car.len > 5 ? 2.5 : 2.2, car.len * 1.08, 1);
     st.sun.target.position.set(lat, 0, 0); st.sun.position.set(lat, 0, 0).addScaledVector(st.sun.userData.dir || (st.sun.userData.dir = st.sun.position.clone().normalize()), 30);
@@ -8030,18 +8319,22 @@ var GLView = (function () {
  * visuals.js: visual-model registry (like the sound-model registry in models.js).
  * Add a version by registering { id, label, available(), draw(dash, s) } (an unavailable
  * version, e.g. WebGL missing, falls back to v1).
+ * Naming (Wim, 2026-11-11): v1 = drawn (v1.1 art), v2 = detailed drawn (proposal, pending approval), v3 = 3D realistic (WebGL).
  */
 var VisualModels = (function () {
   var list = [];
   function register(m) { list.push(m); }
   register({ id: 'v1', label: 'v1 \u2013 drawn', note: 'canvas art (v1.1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); dash.draw(s); } });
-  if (typeof GLView !== 'undefined') register({ id: 'v2', label: 'v2 \u2013 3D (WebGL)', note: 'real-time three.js renderer; falls back to v1 without WebGL', available: GLView.available, draw: function (dash, s) { GLView.draw(dash, s); } });
-  return { list: list, register: register, get: function (id) { for (var i = 0; i < list.length; i++) if (list[i].id === id && (!list[i].available || list[i].available())) return list[i]; return list[0]; } };
+  if (typeof GLView !== 'undefined') register({ id: 'v3', label: 'v3 \u2013 3D preview (WebGL)', note: 'real-time three.js renderer; falls back to v1 without WebGL', available: GLView.available, draw: function (dash, s) { GLView.draw(dash, s); } });
+  return { list: list, register: register, get: function (id) { if (id === 'v2' && !list.some(function (m) { return m.id === 'v2'; })) id = 'v3'; // v1.3 called the 3D renderer v2
+      for (var i = 0; i < list.length; i++) if (list[i].id === id && (!list[i].available || list[i].available())) return list[i]; return list[0]; } };
 })();
 </script>
 <script>/* js/history.js */
 /*
  * history.js: data for the About / History panel. Add a version by appending one entry.
+ * RULE: every deployed change gets an entry here (and in CHANGELOG.md); tools/build-single.mjs fails
+ * if the version in index.html's <title> has no entry.
  * status: 'done' | 'in progress' | 'planned'. Dates are YYYY-MM-DD (Europe/Brussels).
  */
 var ProjectHistory = {
@@ -8060,8 +8353,11 @@ var ProjectHistory = {
     { title: 'Web game and visuals', items: [
       { v: 'v1', date: '2026-11-11', status: 'done', text: 'Driving demo: gearbox and Hydra-Matic, weight, brakes with lock-up and fade, rev counter and odometer.' },
       { v: 'v1.1', date: '2026-11-11', status: 'done', text: 'Sound on iPhone fixed; inside / outside view; period interiors for both cars; touch controls.' },
-      { v: 'v1.2', date: '2026-11-11', status: 'done', text: 'Sound model selector (v1 / v2, switches live), engine-bay listening position, this history panel.' },
-      { v: 'v1.3', date: '2026-11-11', status: 'done', text: 'Realistic real-time 3D visuals (WebGL): car models seen from behind, period cockpits with live gauges, moving road and scenery, smoke, steering.' }
+      { v: 'v1.2', date: '2026-11-11', status: 'done', text: 'Sound model selector (v1 / v2, switches live), engine-bay listening position.' },
+      { v: 'v1.2.1', date: '2026-11-11', status: 'done', text: 'This About / History panel.' },
+      { v: 'v1.3', date: '2026-11-11', status: 'done', text: 'Realistic real-time 3D visuals (WebGL): car models seen from behind, period cockpits with live gauges, moving road and scenery, smoke, steering.' },
+      { v: 'v1.3.1', date: '2026-11-11', status: 'done', text: 'Quarter-mile drag strip with a Christmas tree, reaction time, splits, trap speeds and best times per car; Cadillac radio playing an original 1950s-style rockabilly tune through a 1959 AM tube-radio sound. The 3D visuals are renamed v3 (v2 is reserved for the detailed drawn style).' },
+      { v: 'Visuals v2', date: '', status: 'planned', text: 'Detailed drawn style closer to the real cars (proposal mock-ups, waiting for approval).' }
     ] }
   ]
 };
@@ -8087,7 +8383,7 @@ var ProjectHistory = {
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   var state = { carId: 'gt350', units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'bay' ? 2 : 0,
     model: SoundModels.get(params.get('sound') || lsGet('streetrod.sound', 'v2')).id,
-    steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v2')).id, viewBlend: 0, muted: false, keys: {},
+    steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v1')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   if (state.view === 2 && !SoundModels.get(state.model).hasBay) state.view = 0;
   state.viewBlend = state.view === 1 ? 1 : 0;
@@ -8120,7 +8416,66 @@ var ProjectHistory = {
     var wasRunning = car().engine !== 'off';
     state.carId = id; ensureAudio();
     if (wasRunning && car().engine === 'off') car().ignition();
+    if (radio && radio.on && !spec().radio) radio.stop();
     flash(spec().label, 1.5); updatePanel();
+  }
+  // ---- quarter-mile drag mode ----
+  var drag = null;
+  function bestKey() { return 'streetrod.drag.best.' + state.carId; }
+  function dragEnter() {
+    ensureAudio(); var c = car(); state.started = true;
+    if (c.engine === 'off') c.ignition();
+    c.v = 0; c.ww = 0; c.a = 0;
+    if (c.c.trans === 'auto') { if (c.range !== 'D') c.setRange('D'); } else if (c.gear !== 1) { c.gear = 1; c.shift = null; }
+    drag = { run: new DragStrip.Run(), car: state.carId, startDist: state.dist };
+    document.getElementById('dragCard').classList.add('hidden'); document.getElementById('tree').classList.remove('hidden');
+    flash('Drag strip: wait for the green, then gas!', 2.5); updatePanel();
+  }
+  function dragExit() { drag = null; document.getElementById('tree').classList.add('hidden'); document.getElementById('dragCard').classList.add('hidden'); updatePanel(); }
+  function fmt(x, d) { return x === undefined || x === null ? '–' : x.toFixed(d === undefined ? 3 : d); }
+  function dragDone(r) {
+    var best = null; try { best = JSON.parse(localStorage.getItem(bestKey()) || 'null'); } catch (e) {}
+    var isBest = !r.foul && (!best || r.quarter < best.quarter);
+    if (isBest) { best = { quarter: r.quarter, mph: r.quarterMph, rt: r.rt, date: new Date().toISOString().slice(0, 10) }; lsSet(bestKey(), JSON.stringify(best)); }
+    var mph = state.units === 'mph', sp = function (m) { return mph ? fmt(m, 1) + ' mph' : fmt(m * 1.609344, 1) + ' km/h'; };
+    var h = '<h3>' + spec().label + (r.foul ? ' <span class="red">RED LIGHT</span>' : '') + '</h3><table>' +
+      '<tr><td>Reaction</td><td>' + fmt(r.rt) + ' s</td></tr><tr><td>60 ft</td><td>' + fmt(r.ft60) + ' s</td></tr><tr><td>330 ft</td><td>' + fmt(r.ft330) + ' s</td></tr>' +
+      '<tr><td>1/8 mile</td><td>' + fmt(r.eighth) + ' s @ ' + sp(r.eighthMph) + '</td></tr><tr><td>1000 ft</td><td>' + fmt(r.ft1000) + ' s</td></tr>' +
+      '<tr class="et"><td>1/4 mile</td><td>' + fmt(r.quarter) + ' s @ ' + sp(r.quarterMph) + '</td></tr></table>' +
+      '<p class="best">' + (isBest ? 'New best for this car!' : best ? 'Best: ' + fmt(best.quarter) + ' s @ ' + sp(best.mph) + ' (' + best.date + ')' : 'Red light: no time recorded') + '</p>' +
+      '<p class="note">Reaction 0.500 = perfect on a full tree (measured from the last amber). Period road tests: GT350 \u2248 15 s, \u201959 Cadillac \u2248 17\u201318 s.</p>' +
+      '<div class="row"><button class="tb" data-act2="again">Run again</button><button class="tb" data-act2="exit">Exit drag strip</button></div>';
+    var el = document.getElementById('dragCard'); el.innerHTML = h; el.classList.remove('hidden');
+    window.__lastDrag = r;
+  }
+  document.getElementById('dragCard').addEventListener('pointerup', function (e) {
+    var b = e.target.closest && e.target.closest('[data-act2]'); if (!b) return;
+    if (b.dataset.act2 === 'again') dragEnter(); else dragExit();
+  });
+  function dragTick(dt, c) {
+    if (!drag) return;
+    if (drag.car !== state.carId) { dragExit(); return; }
+    var run = drag.run, prevPhase = run.phase;
+    run.update(dt, c.v, c.engine === 'running' && (c.c.trans === 'auto' ? c.range !== 'N' : c.gear > 0));
+    var t = run.tree, el = document.getElementById('tree');
+    if (el.dataset.k !== [t.pre, t.stage, t.amber, t.green, t.red].join()) {
+      el.dataset.k = [t.pre, t.stage, t.amber, t.green, t.red].join();
+      el.querySelectorAll('.b').forEach(function (b) {
+        var k = b.dataset.b, on = k === 'pre' ? t.pre : k === 'stage' ? t.stage : k === 'g' ? t.green : k === 'r' ? t.red : t.amber === +k.slice(1) && !t.green && !t.red && run.phase === 'tree';
+        b.classList.toggle('on', !!on);
+      });
+    }
+    if (prevPhase !== 'done' && run.phase === 'done') dragDone(run.res);
+    if (run.tree.red && prevPhase === 'tree') flash('RED LIGHT', 1.5);
+  }
+  function dragHold() { return drag && (drag.run.phase === 'staging' || drag.run.phase === 'tree') && state.throttle < 0.05 ? 0.5 : 0; }
+  // ---- radio (Cadillac only for now; CarRadio is reusable) ----
+  var radio = null;
+  function toggleRadio() {
+    if (!spec().radio) return;
+    ensureAudio(); if (!audio.ctx) return;
+    if (!radio) radio = new CarRadio(audio.ctx);
+    var on = radio.toggle(); flash(on ? 'Radio on: “Desert Highway Shuffle” (original, generated live)' : 'Radio off', 2); updatePanel();
   }
   function setView(v) { v = +v || 0; if (v === 2 && !SoundModels.get(state.model).hasBay) v = 0; state.view = v; updatePanel(); }
   function setModel(id) {
@@ -8174,6 +8529,8 @@ var ProjectHistory = {
       case 'x': case 'X': setModel(cycle(SoundModels.list, state.model)); break;
       case 'z': case 'Z': setVisual(cycle(VisualModels.list, state.visual)); break;
       case 'u': case 'U': toggleUnits(); break;
+      case 'q': case 'Q': if (drag) dragExit(); else dragEnter(); break;
+      case 'r': case 'R': toggleRadio(); break;
       case 'h': case 'H': openAbout(document.getElementById('about').classList.contains('hidden')); break;
       case 'Escape': openAbout(false); break;
       case 't': case 'T': car().trip = 0; flash('Trip reset', 1); break;
@@ -8185,7 +8542,7 @@ var ProjectHistory = {
   // ---- tap buttons: act on pointerup (reliable on iOS), ignore the follow-up click ----
   var ACTIONS = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); },
-    units: toggleUnits, mute: toggleMute, up: shiftUp, down: shiftDown,
+    units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown,
     about: function () { openAbout(true); }, aboutClose: function () { openAbout(false); },
     dismissRotate: function () { document.getElementById('rotate').classList.add('dismissed'); },
   };
@@ -8239,6 +8596,8 @@ var ProjectHistory = {
     document.querySelectorAll('#segView .tb').forEach(function (b) { b.classList.toggle('on', +b.dataset.v === state.view); });
     document.getElementById('bBay').classList.toggle('hidden', !SoundModels.get(state.model).hasBay);
     selS.value = state.model; selV.value = state.visual;
+    document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
+    document.getElementById('bDrag').classList.toggle('on', !!drag);
     document.getElementById('bMute').textContent = state.muted ? 'Unmute' : 'Mute';
     document.getElementById('bUnits').textContent = state.units === 'kmh' ? 'km/h' : 'mph';
     document.getElementById('bUp').innerHTML = auto ? '&#9654;<small>N\u2192D\u2192S\u2192L</small>' : '&#9650;<small>shift up</small>';
@@ -8275,7 +8634,8 @@ var ProjectHistory = {
     var tgtB = Math.max(kBrk ? Math.min(1, state.brake + dt / 0.6) : 0, state.touchBrake);
     state.throttle = tgtT >= state.throttle ? (kThr ? tgtT : Math.min(tgtT, state.throttle + dt / 0.15)) : Math.max(tgtT, state.throttle - dt / 0.12);
     state.brake = tgtB >= state.brake ? (kBrk ? tgtB : Math.min(tgtB, state.brake + dt / 0.2)) : Math.max(tgtB, state.brake - dt / 0.15);
-    c.update(dt, { throttle: state.throttle, brake: state.brake });
+    c.update(dt, { throttle: state.throttle, brake: Math.max(state.brake, dragHold()) });
+    dragTick(dt, c);
     for (var id in cars) if (id !== state.carId) cars[id].update(dt, { throttle: 0, brake: 0 });
     state.dist += c.v * dt;
     var vt = state.view === 1 ? 1 : 0;
@@ -8288,6 +8648,7 @@ var ProjectHistory = {
         crank: Math.max(150, c.rpm()), speed: c.v, skid: 0.35 * c.skid, listen: state.view });
     }
     updateIgn();
+    if (radio) radio.update({ view: state.view, rpm: c.rpm(), muted: state.muted });
     statusT += dt; if (statusT > 0.25) { statusT = 0; astatusEl.textContent = audio.statusText(); }
     saveT += dt; if (saveT > 2) { saveT = 0; try { for (var id2 in cars) localStorage.setItem('streetrod.odo.' + id2, String(cars[id2].odo)); } catch (e) {} }
   }
@@ -8299,13 +8660,14 @@ var ProjectHistory = {
       odoKm: c.odo / 1000, tripKm: c.trip / 1000, gear: c.gear, gearLabel: c.gearLabel(), range: c.range,
       thr: state.throttle, brake: state.brake, Tf: c.Tf, Tr: c.Tr, fade: Math.min(c.fadeF || 1, c.fadeR || 1),
       tyre: c.tyre, sr: c.sr || 0, lockF: c.frontLocked, lockR: c.tyre === 'lock', limiter: c.limiterCut && c.engine === 'running',
+      drag: drag ? { start: -drag.run.fromLine(), finish: DragStrip.QUARTER - drag.run.fromLine() } : null,
       engine: c.engine, viewBlend: state.viewBlend, steer: state.steer, lat: state.lat, dist: state.dist, time: state.time, accel: c.a / 9.81,
       clock: d.getHours() + d.getMinutes() / 60,
       msg: state.msg || (!state.started ? (isTouch ? 'Tap \u201cStart engine\u201d' : 'Click \u201cStart engine\u201d or press S') : ''),
     });
   }
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash };
+  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash };
 })();
 </script>
 </body>
