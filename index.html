@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.5)</title>
+<title>Street Rod: engine sound + driving demo (v1.6)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -132,6 +132,50 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 .touch .tb { padding: 7px 8px; }
 .touch .sel span { display: none; }
 .touch .sel select { font-size: 12px; max-width: 150px; }
+
+/* v1.6 control themes that follow the Visuals choice (html.vis-flat = v4 flat, html.vis-ink = v5 ink); v1/v2/v3 keep the look above. */
+html.vis-flat body { background: #14171c; color: #dfe3ea; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+html.vis-flat aside { background: #1c2027; border-color: #2d333d; }
+html.vis-flat h3 { color: #ffb23e; font-family: inherit; }
+html.vis-flat td:first-child { color: #ffd38a; }
+html.vis-flat .tb { font: 600 14px system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: #e9edf3; background: rgba(36,41,50,.92); border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+html.vis-flat .tb.on, html.vis-flat .seg .tb.on, html.vis-flat #bIgn, html.vis-flat.touch #topbar.open #bMenu, html.vis-flat #topbar.open #bMenu { background: #ffb23e; color: #15181d; box-shadow: none; }
+html.vis-flat #bIgn.running { background: #4cc38a; color: #0f1a14; }
+html.vis-flat .seg { border-radius: 6px; } html.vis-flat .seg .tb { background: rgba(52,58,69,.92); color: #cfd5de; }
+html.vis-flat .sel { background: rgba(36,41,50,.92); color: #aab2be; font-family: system-ui, sans-serif; border-radius: 6px; }
+html.vis-flat .sel select { font-family: system-ui, sans-serif; font-weight: 600; background: #2f3541; color: #e9edf3; }
+html.vis-flat .pedal { background: #2a2f38; border: 0; border-radius: 10px; box-shadow: inset 0 0 0 2px #3c4350; opacity: .9; }
+html.vis-flat .pedal span { font: 700 13px system-ui, sans-serif; letter-spacing: .08em; text-shadow: none; color: #cfd5de; }
+html.vis-flat #pGas .fill { background: #4cc38a; } html.vis-flat #pBrake .fill { background: #e5584a; }
+html.vis-flat .tb.big { border-radius: 10px; }
+@media (orientation: portrait) { html.vis-flat.touch #stage, html.vis-flat.touch #topbar, html.vis-flat.touch #touch { background: #14171c; } }
+@media (orientation: portrait) { html.vis-flat.touch #touch { border-top-color: #2d333d; } }
+html.vis-flat .aboutBox, html.vis-flat #dragCard { background: #1f242c; color: #dfe3ea; font-family: system-ui, sans-serif; border-radius: 10px; }
+html.vis-flat #about .aboutBox h3, html.vis-flat #dragCard h3 { color: #ffb23e !important; }
+html.vis-flat .aboutBox .date, html.vis-flat #dragCard .note { color: #8a93a0; } html.vis-flat .aboutX, html.vis-flat #dragCard td:first-child { color: #dfe3ea; font-family: system-ui, sans-serif; }
+
+html.vis-ink body { background: #e9dfc8; color: #1c1a17; font-family: 'Trebuchet MS', 'Gill Sans', Helvetica, Arial, sans-serif; }
+html.vis-ink #stage { box-shadow: 6px 6px 0 #1c1a17; border: 3px solid #1c1a17; }
+html.vis-ink aside { background: #f6eedb; border: 3px solid #1c1a17; box-shadow: 5px 5px 0 #1c1a17; color: #1c1a17; }
+html.vis-ink h3 { color: #c8321f; text-transform: uppercase; letter-spacing: .04em; }
+html.vis-ink td:first-child { color: #1d4f8a; } html.vis-ink .dim, html.vis-ink .note { color: #5d5444; }
+html.vis-ink .tb { font: bold 14px 'Trebuchet MS', Helvetica, Arial, sans-serif; color: #1c1a17; background: #f6eedb; border: 3px solid #1c1a17; border-radius: 4px; box-shadow: 3px 3px 0 #1c1a17; }
+html.vis-ink .tb:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #1c1a17; }
+html.vis-ink .tb.on, html.vis-ink .seg .tb.on, html.vis-ink #topbar.open #bMenu { background: #c8321f; color: #fff7e6; }
+html.vis-ink #bIgn { background: #f2c230; } html.vis-ink #bIgn.running { background: #5fae5a; color: #10200f; }
+html.vis-ink .seg { border: 3px solid #1c1a17; border-radius: 4px; box-shadow: 3px 3px 0 #1c1a17; }
+html.vis-ink .seg .tb { background: #f6eedb; color: #1c1a17; border: 0; border-right: 2px solid #1c1a17; box-shadow: none; }
+html.vis-ink .seg .tb:last-child { border-right: 0; }
+html.vis-ink .sel { background: #f6eedb; color: #1c1a17; border: 3px solid #1c1a17; border-radius: 4px; box-shadow: 3px 3px 0 #1c1a17; font-family: 'Trebuchet MS', sans-serif; }
+html.vis-ink .sel select { font-family: 'Trebuchet MS', sans-serif; background: #fff9ea; color: #1c1a17; }
+html.vis-ink .pedal { background: repeating-linear-gradient(0deg, #f6eedb 0 9px, #e3d6b8 9px 12px); border: 3px solid #1c1a17; border-radius: 6px; box-shadow: 4px 4px 0 #1c1a17; opacity: .92; }
+html.vis-ink .pedal span { font: bold 14px 'Trebuchet MS', sans-serif; color: #1c1a17; text-shadow: none; }
+html.vis-ink #pGas .fill { background: #5fae5a; } html.vis-ink #pBrake .fill { background: #c8321f; }
+html.vis-ink .astatus span { background: #f6eedb; color: #1c1a17; border: 2px solid #1c1a17; }
+@media (orientation: portrait) { html.vis-ink.touch #stage, html.vis-ink.touch #topbar, html.vis-ink.touch #touch { background: #e9dfc8; } }
+html.vis-ink.touch #stage { border: 0; box-shadow: none; } @media (orientation: portrait) { html.vis-ink.touch #touch { border-top: 3px solid #1c1a17; } }
+html.vis-ink .aboutBox, html.vis-ink #dragCard { background: #f6eedb; border: 3px solid #1c1a17; border-radius: 6px; box-shadow: 6px 6px 0 #1c1a17; font-family: 'Trebuchet MS', sans-serif; }
+html.vis-ink #about .aboutBox h3, html.vis-ink #dragCard h3 { color: #c8321f !important; }
 </style>
 </head>
 <body>
@@ -3007,44 +3051,45 @@ var UI = (function () {
 
   // ------------------------------------------------------------------ road
   // draws sky/ground/road into the current clip; horizon y, camera height, focal
-  Dash.prototype.road = function (g, s, W, horizon, bottom, f, camH, cx) {
-    cx = cx === undefined ? W / 2 : cx;
+  // v1.6: real road geometry (same model as the bitmap visuals): eye `o.dx` m right of the road centre line (right lane, driver left of the
+  // car centre), heading o.yaw, two 3.6 m lanes with edge lines and shoulders, 3 m dash / 9 m gap at true speed; vanishing point at cx,
+  // straight ahead of the eye. Scenery decoration (mountains, sun) keeps its own scale (fs).
+  function v1Yaw(s) { var v = (s.kmh || 0) / 3.6, st = s.steer || 0, lat = s.lat || 0; if ((lat <= -4.39 && st < 0) || (lat >= 0.79 && st > 0)) return 0; return Math.atan(st * 0.09 * Math.min(v, 25) / Math.max(v, 2)); }
+  Dash.prototype.road = function (g, s, W, horizon, bottom, f, camH, cx, o) {
+    cx = cx === undefined ? W / 2 : cx; o = o || {}; var dx = o.dx !== undefined ? o.dx : 1.8 + (s.lat || 0), ty = Math.tan(o.yaw || 0), fs = o.fs || f, vx = cx - f * ty;
     g.fillStyle = lin(g, 0, horizon - 260, 0, horizon, [[0, '#2b4a7a'], [0.7, '#e59a5a'], [1, '#f6c77b']]);
     g.fillRect(0, horizon - 400, W, 400);
     g.fillStyle = '#8a5a44';
-    var off = (s.dist * 0.02) % 400;
+    var off = (s.dist * 0.02) % 400 + (vx - cx) * 0.6;
     g.beginPath(); g.moveTo(0, horizon);
-    for (var x = -400; x <= W + 400; x += 40) { var k = Math.floor((x + 4000) / 40); g.lineTo(x - off, horizon - (18 + 26 * Math.abs(Math.sin(k * 1.7)) * (k % 5 < 2 ? 1.6 : 0.6)) * f / 260); }
+    for (var x = -400; x <= W + 400; x += 40) { var k = Math.floor((x + 4000) / 40); g.lineTo(x - off, horizon - (18 + 26 * Math.abs(Math.sin(k * 1.7)) * (k % 5 < 2 ? 1.6 : 0.6)) * fs / 260); }
     g.lineTo(W, horizon); g.closePath(); g.fill();
-    g.fillStyle = 'rgba(255,230,160,0.9)'; g.beginPath(); g.arc(W * 0.77, horizon - 30 * f / 260, 24 * f / 260, 0, 7); g.fill();
+    g.fillStyle = 'rgba(255,230,160,0.9)'; g.beginPath(); g.arc(W * 0.77 + (vx - cx), horizon - 30 * fs / 260, 24 * fs / 260, 0, 7); g.fill();
     g.fillStyle = lin(g, 0, horizon, 0, bottom, [[0, '#b99a62'], [1, '#8e7444']]); g.fillRect(0, horizon, W, bottom - horizon);
     function yOf(z) { return horizon + f * camH / z; }
-    function half(z) { return f * 4.2 / z; }
-    var zNear = camH * f / (bottom - horizon), d = s.dist;
-    g.fillStyle = '#3d3b39';
-    g.beginPath(); g.moveTo(cx - half(500), yOf(500)); g.lineTo(cx + half(500), yOf(500)); g.lineTo(cx + half(zNear), bottom); g.lineTo(cx - half(zNear), bottom); g.closePath(); g.fill();
-    for (var i = 0; i < 40; i++) {
+    function xOf(z, u) { return cx + f * (u - dx - z * ty) / z; }
+    function half(z) { return f * 3.6 / z; }
+    function quad(u0, u1, z0, z1) { g.beginPath(); g.moveTo(xOf(z0, u0), yOf(z0)); g.lineTo(xOf(z0, u1), yOf(z0)); g.lineTo(xOf(z1, u1), yOf(z1)); g.lineTo(xOf(z1, u0), yOf(z1)); g.closePath(); }
+    var zNear = camH * f / (bottom - horizon), d = s.dist, zF = 3000;
+    g.fillStyle = '#a3845a'; quad(-4.6, 4.6, zNear, zF); g.fill();
+    g.fillStyle = '#3d3b39'; quad(-3.6, 3.6, zNear, zF); g.fill();
+    for (var i = 0; i < 40; i++) {   // faint asphalt patches, 10 m long, for a sense of speed
       var z0 = 10 * (i + 1) - (d % 20), z1 = z0 + 10;
       if (z1 <= zNear || Math.floor((d + 10 * (i + 1)) / 10) % 2) continue;
-      if (z0 < zNear) z0 = zNear;
-      var y0 = yOf(z0), y1 = yOf(z1); g.fillStyle = 'rgba(0,0,0,0.05)';
-      g.fillRect(0, y1, cx - half(z0), y0 - y1); g.fillRect(cx + half(z0), y1, W, y0 - y1);
+      if (z0 < zNear) z0 = zNear; g.fillStyle = 'rgba(0,0,0,0.06)'; quad(-3.6, 3.6, z0, z1); g.fill();
     }
-    g.strokeStyle = '#d8d3c4'; g.lineWidth = 2 * f / 260;
-    g.beginPath(); g.moveTo(cx - half(500) * 0.93, yOf(500)); g.lineTo(cx - half(zNear) * 0.93, bottom); g.moveTo(cx + half(500) * 0.93, yOf(500)); g.lineTo(cx + half(zNear) * 0.93, bottom); g.stroke();
+    g.fillStyle = '#d8d3c4'; quad(-3.57, -3.45, zNear, zF); g.fill(); quad(3.45, 3.57, zNear, zF); g.fill();
     var period = 12, ph = d % period; g.fillStyle = '#e8c547';
     for (var zz = -ph; zz < 300; zz += period) {
       var a = Math.max(zNear, zz), b = zz + 3; if (b <= zNear) continue;
-      var ya = yOf(a), yb = yOf(b), wa = Math.max(1, half(a) * 0.035), wb = Math.max(0.5, half(b) * 0.035);
-      g.beginPath(); g.moveTo(cx - wa, ya); g.lineTo(cx + wa, ya); g.lineTo(cx + wb, yb); g.lineTo(cx - wb, yb); g.closePath(); g.fill();
+      quad(-0.06, 0.06, a, b); g.fill();
     }
-    for (var zp = 300 - ((d + 300) % 25); zp >= 2; zp -= 25) {
+    for (var zp = 300 - ((d + 300) % 45); zp >= 2; zp -= 45) {   // delineator posts every 45 m, 4.9 m from the centre line, 1 m tall
       if (zp < zNear * 0.6) continue;
-      var y = yOf(zp), hw = half(zp), ph2 = f * 0.9 / zp, pw = Math.max(1, f * 0.12 / zp);
-      g.fillStyle = '#eee'; g.fillRect(cx - hw * 1.12 - pw / 2, y - ph2, pw, ph2); g.fillRect(cx + hw * 1.12 - pw / 2, y - ph2, pw, ph2);
-      g.fillStyle = '#c33'; g.fillRect(cx - hw * 1.12 - pw / 2, y - ph2, pw, ph2 * 0.18); g.fillRect(cx + hw * 1.12 - pw / 2, y - ph2, pw, ph2 * 0.18);
-      if (Math.round((d + zp) / 25) % 2 === 0) {
-        var th = f * 8 / zp, tw = Math.max(1, f * 0.25 / zp), tx = cx + hw * 2.2;
+      var y = yOf(zp), ph2 = f * 1.0 / zp, pw = Math.max(1, f * 0.1 / zp);
+      [-4.9, 4.9].forEach(function (u) { var px = xOf(zp, u); g.fillStyle = '#eee'; g.fillRect(px - pw / 2, y - ph2, pw, ph2); g.fillStyle = '#c33'; g.fillRect(px - pw / 2, y - ph2, pw, ph2 * 0.18); });
+      if (Math.round((d + zp) / 45) % 2 === 0) {   // telegraph pole, 8 m tall, 9 m right of the centre line
+        var th = f * 8 / zp, tw = Math.max(1, f * 0.25 / zp), tx = xOf(zp, 9);
         g.fillStyle = '#5a4030'; g.fillRect(tx, y - th, tw, th); g.fillRect(tx - th * 0.15, y - th * 0.94, th * 0.3 + tw, Math.max(1, tw * 0.6));
       }
     }
@@ -3058,18 +3103,18 @@ var UI = (function () {
           var zA = za + (zb - za) * r2 / (L[2] ? 2 : 1), zB = za + (zb - za) * (r2 + 1) / (L[2] ? 2 : 1), yA = yOf(zA), yB = yOf(zB);
           var u0 = -1 + 2 * q / n, u1 = -1 + 2 * (q + 1) / n;
           g.fillStyle = L[2] ? '#111' : '#f4f2ea'; if (L[2]) { g.fillStyle = '#f4f2ea'; }
-          g.beginPath(); g.moveTo(cx + half(zA) * u0, yA); g.lineTo(cx + half(zA) * u1, yA); g.lineTo(cx + half(zB) * u1, yB); g.lineTo(cx + half(zB) * u0, yB); g.closePath(); g.fill();
+          quad(u0 * 3.6, u1 * 3.6, zA, zB); g.fill();
         }
         if (L[2]) { g.fillStyle = 'rgba(17,17,17,0.9)'; } 
       });
     }
-    return { yOf: yOf, half: half };
+    return { yOf: yOf, half: half, xOf: xOf };
   };
 
   // -------------------------------------------------------------- outside
   Dash.prototype.outside = function (g, s, W) {
     var horizon = 300, f = 330, camH = 2.3;
-    this.road(g, s, W, horizon, H, f, camH);
+    this.road(g, s, W, horizon, H, f, camH, W / 2, { dx: 1.8 + (s.lat || 0), yaw: v1Yaw(s) * 0.6 });
     var cx = W / 2, base = 640, sh = Math.sin(s.time * 60) * Math.min(1.5, s.rpm / 3000) * (s.engine === 'running' ? 1 : 0);
     g.save(); g.translate(0, sh * 0.6 - Math.max(-6, Math.min(6, s.accel * 9)));   // squat/dive hint
     if (s.carId === 'gt350') this.rearGT350(g, cx, base, s); else this.rearCaddy(g, cx, base, s);
@@ -3275,7 +3320,7 @@ var UI = (function () {
     var cx = W / 2, shake = s.engine === 'running' ? Math.sin(s.time * 70) * Math.min(1.2, s.rpm / 4000) : 0;
     g.save(); g.translate(0, shake);
     g.save(); g.beginPath(); g.rect(0, 0, W, 470); g.clip();
-    this.road(g, s, W, 250, 470, 300, 1.15, cx + 60);
+    this.road(g, s, W, 250, 470, 1700, 1.07, cx - 140, { dx: 1.8 + (s.lat || 0) - 0.37, yaw: v1Yaw(s), fs: 300 });   // eye straight behind the cluster / wheel (x = cx - 140)
     // short hood with Le Mans stripes, power-bulge scoop
     g.fillStyle = lin(g, 0, 400, 0, 470, [[0, '#2a56aa'], [1, '#183a80']]);
     g.beginPath(); g.moveTo(0, 470); g.lineTo(0, 445); g.quadraticCurveTo(cx, 395, W, 445); g.lineTo(W, 470); g.closePath(); g.fill();
@@ -3362,7 +3407,7 @@ var UI = (function () {
     var cx = W / 2, shake = s.engine === 'running' ? Math.sin(s.time * 45) * Math.min(0.6, s.rpm / 6000) : 0;
     g.save(); g.translate(0, shake);
     g.save(); g.beginPath(); g.rect(0, 0, W, 460); g.clip();
-    this.road(g, s, W, 215, 460, 300, 1.25, cx + 70);
+    this.road(g, s, W, 215, 460, 1900, 1.12, cx - 150, { dx: 1.8 + (s.lat || 0) - 0.42, yaw: v1Yaw(s), fs: 300 });   // eye straight behind the wheel
     // long white hood with the centre "V" crest and sculpted edges
     g.fillStyle = lin(g, 0, 330, 0, 460, [[0, '#f8f4ea'], [1, '#d9d1bf']]);
     g.beginPath(); g.moveTo(-20, 460); g.lineTo(cx - 330, 330); g.quadraticCurveTo(cx + 70, 300, cx + 470, 330); g.lineTo(W + 20, 460); g.closePath(); g.fill();
@@ -8333,27 +8378,38 @@ var GLView = (function () {
 /* painted-assets.js: generated by proposals/visuals-v2/interior-r3/build-assets-v2.py (Visuals v2 painted). The single-file build inlines these as data URIs. */
 var PAINTED_ASSETS = {"meta": {"upscale": "edsr-x2", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [924, 658], "bodyX": [6, 917], "contactY": 651, "splitY": 521, "realW": 1.73, "lamps": [[75, 366, 55, 55], [142, 366, 53, 55], [207, 366, 54, 55], [664, 368, 55, 53], [731, 369, 52, 53], [796, 369, 52, 53]], "tips": [[198, 573, 20], [724, 574, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [991, 630], "bodyX": [6, 984], "contactY": 623, "splitY": 527, "realW": 2.03, "lamps": [[72, 165, 36, 91], [883, 165, 37, 93], [32, 321, 30, 26], [85, 322, 26, 26], [876, 321, 32, 27], [930, 321, 30, 28]], "tips": [[69, 477, 24], [923, 478, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 101, 273, 205], "h": 0.9}, {"k": "creosote", "r": [277, 110, 272, 196], "h": 1.1}, {"k": "grass", "r": [553, 220, 88, 86], "h": 0.35}, {"k": "yucca", "r": [645, 15, 163, 291], "h": 1.6}, {"k": "fencepost", "r": [812, 1, 61, 305], "h": 1.2}, {"k": "delineator", "r": [877, 0, 52, 306], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/painted/caddy-cockpit.webp", "caddy-lever": "assets/painted/caddy-lever.webp", "caddy-rear": "assets/painted/caddy-rear.webp", "caddy-wheel-shadow": "assets/painted/caddy-wheel-shadow.webp", "caddy-wheel": "assets/painted/caddy-wheel.webp", "desert-backdrop": "assets/painted/desert-backdrop.jpg", "desert-props": "assets/painted/desert-props.webp", "gt350-cockpit": "assets/painted/gt350-cockpit.webp", "gt350-rear": "assets/painted/gt350-rear.webp", "gt350-shifter": "assets/painted/gt350-shifter.webp", "gt350-wheel-shadow": "assets/painted/gt350-wheel-shadow.webp", "gt350-wheel": "assets/painted/gt350-wheel.webp"}};
 </script>
+<script>/* js/flat-assets.js */
+/* flat-assets.js: generated by proposals/visuals-v4/build-v16.py (Visuals v4 flat). The single-file build inlines these as data URIs. */
+var FLAT_ASSETS = {"meta": {"style": "flat", "layout": "v16", "gt350": {"axisX": 470, "hub": [462, 453], "wheelR": 156.2, "view": {"hz": 176.6, "f": 600, "cy": 360, "camH": 1.07, "off": 0.37}, "mirror": [827, 35, 266, 58], "side": [[329, 261], [209, 293], [3, 334], [0, 334], [0, 0], [92, 0], [329, 257]], "shifter": [812, 686, 150, 34], "pods": {"speedo": [416.8, 350.7, 46.0, 39.0], "tach": [510.4, 350.7, 46.0, 39.0]}, "housing": [348.8, 288.7, 229.59999999999997, 124.0], "pillarR": [[1075.9, 270.7], [2050.2, -66.9], [2067.2, -17.8], [1092.9, 319.8]], "radioDial": [678, 382, 80, 18], "under": {"oil": [706, 510, 23], "amps": [751, 510, 23]}, "wheel": {"px": 828, "logical": 318.46153846153845}}, "caddy": {"axisX": 440, "hub": [438, 461], "wheelR": 179.7, "view": {"hz": 188.0, "f": 600, "cy": 360, "camH": 1.12, "off": 0.42}, "mirror": [795, 26, 303, 73], "side": [[233, 266], [221, 269], [183, 276], [174, 277], [8, 289], [0, 289], [0, 91], [3, 91], [233, 262]], "ribbon": [302, 318, 280, 54], "ribbonSpan": [326.4, 553.6], "prndsl": [401, 381, 78, 17], "radioDial": [680, 370, 97, 18], "gauges": {"fuel": [258, 453, 21], "clock": [669, 454, 22]}, "lever": {"rect": [500, 456, 272, 50], "pivot": [468, 491]}, "wheel": {"px": 953, "logical": 366.53846153846155}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp"}};
+</script>
+<script>/* js/ink-assets.js */
+/* ink-assets.js: generated by proposals/visuals-v4/build-v16.py (Visuals v5 ink). The single-file build inlines these as data URIs. */
+var INK_ASSETS = {"meta": {"style": "ink", "layout": "v16", "gt350": {"axisX": 470, "hub": [460, 459], "wheelR": 156.2, "view": {"hz": 176.6, "f": 600, "cy": 360, "camH": 1.07, "off": 0.37}, "mirror": [828, 35, 266, 58], "side": [[67, 94], [51, 348], [50, 359], [46, 361], [20, 371], [4, 377], [0, 377], [0, 14], [2, 14], [9, 17], [21, 23], [30, 28], [40, 34], [44, 37], [52, 45], [55, 49], [59, 55], [61, 59], [63, 64], [65, 70], [66, 74], [67, 79]], "shifter": [814, 686, 150, 34], "pods": {"speedo": [416.8, 357.7, 46.0, 39.0], "tach": [510.4, 357.7, 46.0, 39.0]}, "housing": [348.8, 295.7, 229.59999999999997, 124.0], "pillarR": [[1075.9, 270.7], [2050.2, -66.9], [2067.2, -17.8], [1092.9, 319.8]], "radioDial": [679, 389, 80, 18], "under": {"oil": [707, 514, 23], "amps": [752, 514, 23]}, "wheel": {"px": 828, "logical": 318.46153846153845}}, "caddy": {"axisX": 440, "hub": [439, 462], "wheelR": 179.7, "view": {"hz": 188.0, "f": 600, "cy": 360, "camH": 1.12, "off": 0.42}, "mirror": [795, 25, 303, 73], "side": [[224, 267], [222, 268], [205, 274], [10, 289], [0, 289], [0, 90], [3, 90], [43, 121], [142, 198], [165, 216], [221, 260], [224, 263]], "ribbon": [303, 318, 280, 54], "ribbonSpan": [326.4, 553.6], "prndsl": [402, 381, 78, 17], "radioDial": [681, 370, 97, 18], "gauges": {"fuel": [258, 454, 21], "clock": [670, 454, 22]}, "lever": {"rect": [501, 457, 272, 50], "pivot": [469, 492]}, "wheel": {"px": 953, "logical": 366.53846153846155}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}]}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp"}};
+</script>
 <script>/* js/visuals-painted.js */
 /*
- * visuals-painted.js: Visuals v2 – painted interiors (2026-11-11, style approved by Wim, round 3 + straight-ahead fix).
- * Painted base art (generated, guided by reference photos, EDSR x2 upscaled) in layered bitmaps + live code overlays.
- * Layers per frame, in a 1280x720 "painting space" mapped onto the Dash canvas (cover-fit, centred on the driver's axis):
- *   1 painted desert backdrop (ground sheared for the lane offset so the road meets the vanishing point straight ahead
- *     of the driver) + live centre dashes / drag lines in the same perspective   2 moving side-window scenery
- *   3 rear-view mirror view   4 cached cockpit (painting + static gauge faces, scales, plates)
- *   5 live: needles, odometer drum, ribbon speedometer, PRNDSL, lamps, radio pointer, shifter sprite
- *   6 steering-wheel sprite (+ soft shadow sprite) rotated about the hub.
- * v1.5: real-dimension driver camera (proposals/visuals-v2/r5/camera.py), painted rear chase view, moving gear levers, and separate
- *   portrait / landscape / desktop framing (focus box per car + view fitted into the canvas area no control covers).
- * The engine-bay view keeps the v1 drawing. Assets: PAINTED_ASSETS (js/painted-assets.js).
+ * visuals-painted.js: bitmap-art visual models (2026-11-11): v2 painted (approved round 3 art), v4 flat and v5 ink (v1.6, styles A and D
+ * from proposals/visuals-v3). One renderer, instantiated per style with its own asset set and theme (PaintedVisuals.make).
+ * Static art in layered bitmaps + live code overlays drawn in the style's language, in a 1280x720 "painting space" mapped onto the canvas:
+ *   1 painted sky/terrain backdrop + LIVE road (v1.6: exact pitched camera, eye height, driver offset, right lane, 3 m / 9 m dashes, heading)
+ *   2 side-window scenery  3 rear-view mirror view  4 cached cockpit (painting + static faces)  5 live needles, lamps, levers  6 wheel sprite.
+ * v1.6 art (flat / ink) was drawn from layouts projected with the real-dimension camera proposals/visuals-v4/camera/camera6.py; gauges and the
+ * wheel take their size from that camera. Landscape = full-width interior, portrait = crop of the driver's side, uniform scale only.
+ * The engine-bay view keeps the v1 drawing. Assets: PAINTED_ASSETS / FLAT_ASSETS / INK_ASSETS.
  */
-var PaintedCockpit = (function () {
+var PaintedVisuals = (function () {
   'use strict';
-  var PW = 1280, PH = 720, A = null, M = null, status = 'idle', caches = {};
+  function make(getAssets, STY) {
+  var PW = 1280, PH = 720, A = null, M = null, status = 'idle', caches = {}, V16 = false;
+    var T = ({
+    A: { flat: true, face: '#1c2026', ink: '#f2ede1', ivory: '#efe5cc', ivInk: '#2b2520', line: null, lw: 0, needle: '#ff7a1a', cap: '#3a3f46', glass: 'flat', dash: '#f2c14e', dashLine: null, drag: '#f6f3ea',
+         smoke: 'flat', lampOff: '#2a2e33', hud: { panel: 'rgba(22,26,32,0.88)', line: null, lw: 0, text: '#f4efe2', dim: '#9aa3ad', accent: '#ffb02e', bar: '#3a414a', thr: '#5cc46a', brk: '#ef5a48', font: '"Avenir Next", "Futura", "Century Gothic", "Trebuchet MS", Arial, sans-serif', r: 12, sh: 0, scale: 1 } },
+    D: { flat: true, face: '#15110e', ink: '#f6ead0', ivory: '#f3e3bb', ivInk: '#15110e', line: '#0d0a08', lw: 3.2, needle: '#e8452a', cap: '#f6ead0', glass: 'ink', dash: '#f5c63a', dashLine: '#0d0a08', drag: '#f6ead0',
+         smoke: 'ink', lampOff: '#3a2f28', hud: { panel: '#f3e6c6', line: '#0d0a08', lw: 3, text: '#0d0a08', dim: '#5a4a3c', accent: '#d63a24', bar: '#d9c79c', thr: '#2f8a5a', brk: '#d63a24', font: '"Futura", "Avenir Next Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif', r: 6, sh: 4, scale: 1 } } })[{ flat: 'A', ink: 'D' }[STY]] || {};
   function load() {
-    if (status !== 'idle' || typeof PAINTED_ASSETS === 'undefined') return; status = 'loading'; M = PAINTED_ASSETS.meta;
-    var names = Object.keys(PAINTED_ASSETS.files), left = names.length, imgs = {};
-    names.forEach(function (n) { var im = new Image(); im.onload = function () { if (--left === 0) { A = imgs; status = 'ready'; } }; im.onerror = function () { status = 'failed'; }; im.src = PAINTED_ASSETS.files[n]; imgs[n] = im; });
+    var PA = getAssets(); if (status !== 'idle' || !PA) return; status = 'loading'; M = PA.meta; V16 = M.layout === 'v16';
+    var names = Object.keys(PA.files), left = names.length, imgs = {};
+    names.forEach(function (n) { var im = new Image(); im.onload = function () { if (--left === 0) { A = imgs; status = 'ready'; } }; im.onerror = function () { status = 'failed'; }; im.src = PA.files[n]; imgs[n] = im; });
   }
   // ---------------------------------------------------------------- small drawing kit
   function lin(g, x0, y0, x1, y1, st) { var gr = g.createLinearGradient(x0, y0, x1, y1); st.forEach(function (s) { gr.addColorStop(s[0], s[1]); }); return gr; }
@@ -8368,8 +8424,9 @@ var PaintedCockpit = (function () {
   function face(g, x, y, r, o) {
     var a0 = o.a0 !== undefined ? o.a0 : Math.PI * 0.75, a1 = o.a1 !== undefined ? o.a1 : Math.PI * 2.25, ink = o.ink || '#ece3cf';
     g.save(); ell(g, x, y, r, r); g.clip();
-    g.fillStyle = rad(g, x - r * 0.2, y - r * 0.25, r * 0.05, r * 1.1, o.face || [[0, '#2a2622'], [0.65, '#12100e'], [1, '#050404']]); g.fillRect(x - r, y - r, 2 * r, 2 * r);
-    g.fillStyle = grainPat(g); g.fillRect(x - r, y - r, 2 * r, 2 * r);
+    if (T.flat) { var iv = !!o.face; ink = iv ? T.ivInk : T.ink; g.fillStyle = iv ? T.ivory : T.face; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+    else { g.fillStyle = rad(g, x - r * 0.2, y - r * 0.25, r * 0.05, r * 1.1, o.face || [[0, '#2a2622'], [0.65, '#12100e'], [1, '#050404']]); g.fillRect(x - r, y - r, 2 * r, 2 * r);
+      g.fillStyle = grainPat(g); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
     function ang(v) { return a0 + (a1 - a0) * Math.max(0, Math.min(1, v / o.max)); }
     if (o.red) { g.strokeStyle = '#c8281a'; g.lineWidth = r * 0.07; g.beginPath(); g.arc(x, y, r * 0.86, ang(o.red), ang(o.max)); g.stroke(); }
     g.strokeStyle = ink; g.fillStyle = ink; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -8384,11 +8441,17 @@ var PaintedCockpit = (function () {
     if (o.brand) { g.font = 'italic ' + Math.round(r * 0.1) + 'px Georgia, serif'; g.fillText(o.brand, x, y + r * 0.62); }
     if (o.clock) { g.font = 'bold ' + Math.round(r * 0.3) + 'px ' + FONT; [['12', 0, -1], ['3', 1, 0], ['6', 0, 1], ['9', -1, 0]].forEach(function (n) { g.fillText(n[0], x + n[1] * r * 0.6, y + n[2] * r * 0.6); }); }
     g.textBaseline = 'alphabetic';
-    g.fillStyle = rad(g, x, y, r * 0.7, r * 1.02, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.75)']]); g.fillRect(x - r, y - r, 2 * r, 2 * r);
+    if (!T.flat) { g.fillStyle = rad(g, x, y, r * 0.7, r * 1.02, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.75)']]); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
     g.restore();
+    if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw * Math.max(0.5, r / 47); ell(g, x, y, r, r); g.stroke(); }
     return ang;
   }
   function needle(g, x, y, r, a, col, capR) {
+    if (T.flat) { col = col === '#ff6a1e' ? T.needle : col; var c0 = capR || r * 0.12, lw0 = T.line ? T.lw * 0.45 * Math.max(0.5, r / 47) : 0;
+      g.save(); g.translate(x, y); g.rotate(a); poly(g, [[-r * 0.2, -r * 0.04], [r * 0.88, -r * 0.014], [r * 0.88, r * 0.014], [-r * 0.2, r * 0.04]]);
+      if (STY === 'flat') { g.save(); g.translate(r * 0.03, r * 0.04); g.fillStyle = 'rgba(0,0,0,0.35)'; g.fill(); g.restore(); }
+      g.fillStyle = col; g.fill(); if (lw0) { g.strokeStyle = T.line; g.lineWidth = lw0; g.stroke(); } g.restore();
+      g.fillStyle = T.cap; ell(g, x, y, c0, c0); g.fill(); if (lw0) { g.strokeStyle = T.line; g.lineWidth = lw0; g.stroke(); } return; }
     g.save(); g.translate(x, y); g.rotate(a);
     g.shadowColor = 'rgba(0,0,0,0.7)'; g.shadowBlur = r * 0.07; g.shadowOffsetX = r * 0.035; g.shadowOffsetY = r * 0.05;
     g.fillStyle = lin(g, 0, -r * 0.03, 0, r * 0.03, [[0, '#ffd7a8'], [0.5, col], [1, '#7a2a08']]);
@@ -8397,11 +8460,18 @@ var PaintedCockpit = (function () {
     var c = capR || r * 0.12; g.fillStyle = rad(g, x - c * 0.35, y - c * 0.4, 0, c * 1.1, [[0, '#f4f4f4'], [0.4, '#9ea3a8'], [1, '#202224']]); ell(g, x, y, c, c); g.fill();
   }
   function glass(g, x, y, r) {
+    if (T.glass === 'flat') { g.save(); ell(g, x, y, r, r); g.clip(); g.fillStyle = 'rgba(255,255,255,0.07)'; g.beginPath(); g.moveTo(x - r, y - r * 0.15); g.lineTo(x + r * 0.15, y - r); g.lineTo(x - r, y - r); g.closePath(); g.fill(); g.restore(); return; }
+    if (T.glass === 'ink' || T.glass === 'pixel') { g.save(); g.strokeStyle = T.glass === 'ink' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.5)'; g.lineCap = 'round'; g.lineWidth = Math.max(1.2, r * 0.05);
+      g.beginPath(); g.arc(x, y, r * 0.8, Math.PI * 1.12, Math.PI * 1.3); g.stroke(); g.beginPath(); g.arc(x, y, r * 0.8, Math.PI * 1.36, Math.PI * 1.42); g.stroke(); g.restore(); return; }
     g.save(); ell(g, x, y, r, r); g.clip();
     g.fillStyle = lin(g, x - r, y - r, x + r * 0.3, y + r * 0.3, [[0, 'rgba(255,255,255,0.26)'], [0.45, 'rgba(255,255,255,0.06)'], [0.5, 'rgba(255,255,255,0)'], [1, 'rgba(255,255,255,0)']]); g.fillRect(x - r, y - r, 2 * r, 2 * r);
     g.strokeStyle = 'rgba(255,255,255,0.3)'; g.lineWidth = r * 0.04; g.beginPath(); g.arc(x, y, r * 0.86, Math.PI * 1.08, Math.PI * 1.42); g.stroke(); g.restore();
   }
   function lamp(g, x, y, r, col, on) {
+    if (T.flat) { g.fillStyle = T.line || '#0b0b0b'; ell(g, x, y, r + 1.5, r + 1.5); g.fill(); g.fillStyle = on ? col : T.lampOff; ell(g, x, y, r, r); g.fill();
+      if (on && STY !== 'ink') { g.fillStyle = 'rgba(255,255,255,0.7)'; ell(g, x - r * 0.3, y - r * 0.3, r * 0.3, r * 0.3); g.fill(); }
+      if (on && STY === 'ink') { g.strokeStyle = col; g.lineWidth = 1.5; for (var q = 0; q < 8; q++) { var aa = q * Math.PI / 4; g.beginPath(); g.moveTo(x + Math.cos(aa) * r * 1.6, y + Math.sin(aa) * r * 1.6); g.lineTo(x + Math.cos(aa) * r * 2.4, y + Math.sin(aa) * r * 2.4); g.stroke(); } }
+      return; }
     g.fillStyle = '#0b0b0b'; ell(g, x, y, r + 1.5, r + 1.5); g.fill();
     g.fillStyle = on ? rad(g, x - r * 0.3, y - r * 0.3, 0, r, [[0, '#fff'], [0.3, col], [1, col]]) : rad(g, x, y, 0, r, [[0, 'rgba(255,255,255,0.1)'], [1, '#262626']]); ell(g, x, y, r, r); g.fill();
     if (on) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.45; g.fillStyle = rad(g, x, y, 0, r * 4, [[0, col], [1, 'rgba(0,0,0,0)']]); g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8); g.restore(); }
@@ -8416,31 +8486,96 @@ var PaintedCockpit = (function () {
       var cx = x - w / 2 + i * cw + cw / 2; g.fillStyle = i === digits - 1 ? '#eee8d8' : '#1c1c1c'; g.fillRect(cx - cw / 2 + 0.5, y - ch / 2, cw - 1, ch);
       g.fillStyle = i === digits - 1 ? '#a3221a' : '#eee8d8'; g.fillText(String(dg), cx, y - fr * ch); g.fillText(String((dg + 1) % 10), cx, y + ch - fr * ch);
     }
-    g.fillStyle = lin(g, 0, y - ch / 2, 0, y + ch / 2, [[0, 'rgba(0,0,0,0.7)'], [0.3, 'rgba(0,0,0,0)'], [0.7, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.7)']]); g.fillRect(x - w / 2, y - ch / 2, w, ch);
+    if (!T.flat) { g.fillStyle = lin(g, 0, y - ch / 2, 0, y + ch / 2, [[0, 'rgba(0,0,0,0.7)'], [0.3, 'rgba(0,0,0,0)'], [0.7, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.7)']]); g.fillRect(x - w / 2, y - ch / 2, w, ch); }
     g.restore(); g.textBaseline = 'alphabetic';
   }
   function dialGlass(g, d, freqs, lit) { // AM radio dial: ivory scale with legible frequencies
     g.save(); rr(g, d[0], d[1], d[2], d[3], 3); g.clip();
-    g.fillStyle = lin(g, 0, d[1], 0, d[1] + d[3], [[0, lit ? '#f7e6b6' : '#d9caa0'], [1, lit ? '#d9bf7f' : '#a8996f']]); g.fillRect(d[0], d[1], d[2], d[3]);
+    g.fillStyle = T.flat ? (lit ? '#f3dfa6' : (T.ivory || '#d9caa0')) : lin(g, 0, d[1], 0, d[1] + d[3], [[0, lit ? '#f7e6b6' : '#d9caa0'], [1, lit ? '#d9bf7f' : '#a8996f']]); g.fillRect(d[0], d[1], d[2], d[3]);
     g.fillStyle = '#2a211a'; g.textAlign = 'center'; g.font = Math.round(d[3] * 0.36) + 'px ' + FONT;
     freqs.forEach(function (f, i) { var x = d[0] + 8 + i * (d[2] - 16) / (freqs.length - 1); g.fillText(String(f), x, d[1] + d[3] * 0.45); g.fillRect(x - 0.5, d[1] + d[3] * 0.62, 1, d[3] * 0.22); });
     g.font = Math.round(d[3] * 0.24) + 'px ' + FONT; g.fillText('KILOCYCLES', d[0] + d[2] / 2, d[1] + d[3] * 0.97);
-    g.fillStyle = lin(g, d[0], d[1], d[0] + d[2] * 0.6, d[1] + d[3], [[0, 'rgba(255,255,255,0.35)'], [0.5, 'rgba(255,255,255,0)']]); g.fillRect(d[0], d[1], d[2], d[3]);
-    g.restore();
+    if (!T.flat) { g.fillStyle = lin(g, d[0], d[1], d[0] + d[2] * 0.6, d[1] + d[3], [[0, 'rgba(255,255,255,0.35)'], [0.5, 'rgba(255,255,255,0)']]); g.fillRect(d[0], d[1], d[2], d[3]); }
+    g.restore(); if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw * 0.6; rr(g, d[0], d[1], d[2], d[3], 3); g.stroke(); }
   }
   // ---------------------------------------------------------------- cached static layer (painting + static overlays), 2x
   function units(s) { return s.units === 'mph' ? 'mph' : 'kmh'; }
+  // ---------------------------------------------------------------- v1.6 layout (flat / ink): real-size gauges from the camera, measured art windows
+  function bezel(g, x, y, R, r) {   // chrome ring between the face (r) and the bezel (R), in the style's language
+    g.fillStyle = STY === 'ink' ? '#d9dadf' : '#c9ccd2'; ell(g, x, y, R, R); g.fill();
+    g.fillStyle = STY === 'ink' ? '#9fa3ab' : '#a9adb4'; g.beginPath(); g.arc(x, y, R, Math.PI * 0.05, Math.PI * 0.95); g.arc(x, y, (R + r) / 2, Math.PI * 0.95, Math.PI * 0.05, true); g.closePath(); g.fill();
+    if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw * 0.8; ell(g, x, y, R, R); g.stroke(); ell(g, x, y, r, r); g.stroke(); }
+  }
+  function cacheV16(car, s, g, m, mph, out) {
+    if (car === 'gt350') {
+      var P = m.pods, sp = P.speedo, t = P.tach, Hs = m.housing;
+      g.fillStyle = STY === 'ink' ? '#15192a' : '#16171b'; rr(g, Hs[0], Hs[1], Hs[2], Hs[3], Hs[3] / 2); g.fill();   // 'camera case' cluster housing
+      if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw; rr(g, Hs[0], Hs[1], Hs[2], Hs[3], Hs[3] / 2); g.stroke(); }
+      bezel(g, sp[0], sp[1], sp[2], sp[3]); bezel(g, t[0], t[1], t[2], t[3]);
+      out.angS = face(g, sp[0], sp[1], sp[3], mph ? { max: 140, major: 20, minor: 5, mid: 10, label: 'MPH', numSize: 0.17 } : { max: 220, major: 40, minor: 10, mid: 20, label: 'KM/H', numSize: 0.17 });
+      out.angT = face(g, t[0], t[1], t[3], { max: 8, major: 1, minor: 0.25, mid: 0.5, red: 6.5, label: 'RPM', sub: 'x 1000', numSize: 0.2 });
+      var U = m.under, iv = [[0, '#f3ead4'], [1, '#bfb08c']];
+      out.angOil = face(g, U.oil[0], U.oil[1], U.oil[2] - 3, { max: 80, major: 40, minor: 10, noNums: true, a0: Math.PI, a1: Math.PI * 2, label: 'OIL', face: iv, ink: '#2a211a' });
+      out.angAmp = face(g, U.amps[0], U.amps[1], U.amps[2] - 3, { max: 60, major: 30, minor: 10, noNums: true, a0: Math.PI, a1: Math.PI * 2, label: 'AMP', face: iv, ink: '#2a211a' });
+    } else {
+      var R = m.ribbon, x0 = R[0], y0 = R[1], w = R[2], h = R[3];
+      g.save(); rr(g, x0, y0, w, h, 10); g.clip(); g.fillStyle = T.face; g.fillRect(x0, y0, w, h);
+      var sx0 = m.ribbonSpan[0], sx1 = m.ribbonSpan[1], max = mph ? 120 : 200, step = mph ? 20 : 40, minor = mph ? 5 : 10; out.rib = [sx0, sx1, max, y0, h];
+      g.fillStyle = T.ink; g.textAlign = 'center'; g.font = 'bold ' + Math.round(h * 0.24) + 'px ' + FONT;
+      for (var q = 0; q <= max; q += minor) { var xx = sx0 + q / max * (sx1 - sx0); g.fillRect(xx - 0.7, y0 + h * 0.36, 1.4, q % step ? h * 0.1 : h * 0.18); if (q % step === 0) g.fillText(String(q), xx, y0 + h * 0.32); }
+      g.font = Math.round(h * 0.15) + 'px ' + FONT; g.fillStyle = T.ink; g.fillText(mph ? 'MILES PER HOUR' : 'KILOMETRES PER HOUR', (sx0 + sx1) / 2, y0 + h * 0.94);
+      g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(sx0, y0 + h * 0.6, sx1 - sx0, h * 0.16); g.restore();
+      var Pq = m.prndsl; g.fillStyle = '#0a0808'; rr(g, Pq[0], Pq[1], Pq[2], Pq[3], 3); g.fill();
+      var G2 = m.gauges, f = G2.fuel, ck = G2.clock, ivory = [[0, '#f3ead4'], [1, '#bfb08c']];
+      out.angF = face(g, f[0], f[1], f[2] - 2, { max: 1, major: 0.5, minor: 0.125, noNums: true, a0: Math.PI * 1.15, a1: Math.PI * 1.85, label: 'FUEL', face: ivory, ink: '#2a211a' });
+      g.fillStyle = '#2a211a'; g.font = 'bold 7px ' + FONT; g.textAlign = 'center'; g.fillText('E        F', f[0], f[1] + 4);
+      face(g, ck[0], ck[1], ck[2] - 2, { max: 12, major: 3, minor: 1, a0: -Math.PI / 2, a1: Math.PI * 1.5, noNums: true, clock: true, face: ivory, ink: '#2a211a' });
+    }
+  }
+  function insideV16(g, s, car, m, C, mph, running) {
+    if (car === 'gt350') {
+      var P = m.pods, sp = P.speedo, t = P.tach, isMph = units(s) === 'mph';
+      drum(g, sp[0], sp[1] + sp[3] * 0.45, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, sp[3] * 0.17, sp[3] * 0.25);
+      lamp(g, t[0] - t[3] * 0.3, t[1] + t[3] * 0.52, 3.4, '#ff3a2a', s.brake > 0.05); lamp(g, t[0] + t[3] * 0.3, t[1] + t[3] * 0.52, 3.4, '#ff3a2a', !running);
+      needle(g, sp[0], sp[1], sp[3], C.angS(isMph ? mph : s.kmh), '#ff6a1e'); needle(g, t[0], t[1], t[3], C.angT(s.rpm / 1000), '#ff6a1e');
+      glass(g, sp[0], sp[1], sp[3]); glass(g, t[0], t[1], t[3]);
+      dialGlass(g, m.radioDial, [55, 70, 100, 130, 160], false);
+      var U = m.under, oilP = running ? Math.min(70, 18 + s.rpm / 100) : 0, amp = running ? 30 + Math.max(-12, Math.min(14, (s.rpm - 1500) / 300)) : 22;
+      needle(g, U.oil[0], U.oil[1] + 2, U.oil[2] - 3, C.angOil(oilP), '#c4271c', 2.4); needle(g, U.amps[0], U.amps[1] + 2, U.amps[2] - 3, C.angAmp(amp), '#c4271c', 2.4);
+      hurst(g, m, s);
+    } else {
+      var rb = C.rib, x0 = rb[0], h = rb[4], y0 = rb[3], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : s.kmh) / rb[2] * (rb[1] - rb[0]);
+      g.fillStyle = T.needle; g.fillRect(x0, y0 + h * 0.6, x1 - x0, h * 0.16); if (T.line) { g.strokeStyle = T.line; g.lineWidth = 1.2; g.strokeRect(x0, y0 + h * 0.6, x1 - x0, h * 0.16); }
+      var R = m.ribbon; lamp(g, R[0] + 12, R[1] + h * 0.68, 3.2, '#ff3a2a', s.brake > 0.05); lamp(g, R[0] + R[2] - 12, R[1] + h * 0.68, 3.2, '#ff3a2a', !running);
+      columnLever(g, m, s);
+      var P = m.prndsl, Lt = ['P', 'N', 'D', 'S', 'L', 'R'], qi = Math.max(0, Lt.indexOf(s.range || 'N'));
+      g.font = 'bold ' + Math.round(P[3] * 0.62) + 'px ' + FONT; g.textAlign = 'center';
+      Lt.forEach(function (c, i) { g.fillStyle = i === qi ? '#ffb070' : 'rgba(236,227,207,0.6)'; g.fillText(c, P[0] + (i + 0.5) * P[2] / 6, P[1] + P[3] * 0.74); });
+      var px = P[0] + (qi + 0.5) * P[2] / 6; g.strokeStyle = T.needle; g.lineWidth = 1.6; g.strokeRect(px - P[2] / 12 + 1, P[1] + 1.5, P[2] / 6 - 2, P[3] - 3);
+      var G2 = m.gauges, f = G2.fuel, ck = G2.clock, tm = s.clock || 12;
+      needle(g, f[0], f[1] + 6, (f[2] - 2) * 0.95, C.angF(0.72), '#c4271c', 2.6); glass(g, f[0], f[1], f[2] - 2);
+      needle(g, ck[0], ck[1], (ck[2] - 2) * 0.6, -Math.PI / 2 + (tm % 12) / 12 * Math.PI * 2, '#2a211a', 2); needle(g, ck[0], ck[1], (ck[2] - 2) * 0.88, -Math.PI / 2 + (tm % 1) * Math.PI * 2, '#2a211a', 2); glass(g, ck[0], ck[1], ck[2] - 2);
+      dialGlass(g, m.radioDial, [55, 70, 90, 120, 160], !!s.radioOn);
+      if (s.radioOn) { var rd = m.radioDial; g.fillStyle = 'rgba(200,30,20,0.95)'; g.fillRect(rd[0] + 8 + 0.42 * (rd[2] - 16), rd[1] + 2, 1.6, rd[3] - 4); }
+    }
+  }
   function cache(car, s) {
     var key = car + '/' + units(s); if (caches[key]) return caches[key];
     var c = document.createElement('canvas'); c.width = PW * 2; c.height = PH * 2; var g = c.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0);
     var m = M[car], mph = units(s) === 'mph', out = { cv: c };
+    if (V16 && m.pillarR) {   // right A-pillar from the camera (cowl corner to header corner), under the art so the dash overlaps it
+      var pr = m.pillarR; g.fillStyle = STY === 'ink' ? '#22242b' : '#1d1f24'; poly(g, pr); g.fill();
+      if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw; poly(g, pr); g.stroke(); }
+      g.fillStyle = 'rgba(255,255,255,0.06)'; poly(g, [pr[0], pr[1], [pr[1][0] + 6, pr[1][1] + 14], [pr[0][0] + 6, pr[0][1] + 14]]); g.fill();
+    }
     g.drawImage(A[car + '-cockpit'], 0, 0, PW, PH);
+    if (V16) { cacheV16(car, s, g, m, mph, out); caches[key] = out; return out; }
     if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach;
       out.angS = face(g, sp[0], sp[1], sp[2], mph ? { max: 140, major: 20, minor: 5, mid: 10, label: 'MPH', numSize: 0.16 } : { max: 220, major: 40, minor: 10, mid: 20, label: 'KM/H', numSize: 0.16 });
       out.angT = face(g, t[0], t[1], t[2], { max: 8, major: 1, minor: 0.25, mid: 0.5, red: 6.5, label: 'RPM', sub: 'x 1000', numSize: 0.19, brand: 'Cobra' });
       // legible badge on the wood: "Shelby Cobra GT 350" plate
-      var bd = m.badge; g.save(); g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 3; g.shadowOffsetY = 1.5; rr(g, bd[0], bd[1], bd[2], bd[3], 3); g.fillStyle = lin(g, 0, bd[1], 0, bd[1] + bd[3], [[0, '#f1f1f1'], [0.5, '#9a9ea3'], [1, '#e6e6e6']]); g.fill(); g.restore();
+      var bd = m.badge; g.save(); g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 3; g.shadowOffsetY = 1.5; rr(g, bd[0], bd[1], bd[2], bd[3], 3); g.fillStyle = T.flat ? '#c9ccd0' : lin(g, 0, bd[1], 0, bd[1] + bd[3], [[0, '#f1f1f1'], [0.5, '#9a9ea3'], [1, '#e6e6e6']]); if (T.flat) g.shadowColor = 'rgba(0,0,0,0)'; g.fill(); if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw * 0.6; g.stroke(); } g.restore();
       g.save(); rr(g, bd[0] + 2, bd[1] + 2, bd[2] - 4, bd[3] - 4, 2); g.fillStyle = '#7d1410'; g.fill(); g.fillStyle = '#f3e7c8'; g.font = 'italic bold ' + (bd[3] * 0.55).toFixed(1) + 'px Georgia, serif'; g.textAlign = 'center'; g.fillText('Shelby Cobra GT 350', bd[0] + bd[2] / 2, bd[1] + bd[3] * 0.7); g.restore();
       if (m.under) { var U = m.under, ivory0 = [[0, '#1d1b19'], [1, '#050505']];
         out.angOil = face(g, U.oil[0], U.oil[1], U.oil[2], { max: 80, major: 40, minor: 10, noNums: true, a0: Math.PI, a1: Math.PI * 2, label: 'OIL', face: ivory0 });
@@ -8448,16 +8583,16 @@ var PaintedCockpit = (function () {
     } else {
       var R = m.ribbon, x0 = R[0], y0 = R[1], w = R[2], h = R[3];
       g.save(); rr(g, x0, y0, w, h, 22); g.clip();
-      g.fillStyle = lin(g, 0, y0, 0, y0 + h, [[0, '#0b0f10'], [0.5, '#161c1d'], [1, '#060808']]); g.fillRect(x0, y0, w, h);
-      g.fillStyle = grainPat(g); g.fillRect(x0, y0, w, h);
+      g.fillStyle = T.flat ? (T.face || '#111') : lin(g, 0, y0, 0, y0 + h, [[0, '#0b0f10'], [0.5, '#161c1d'], [1, '#060808']]); g.fillRect(x0, y0, w, h);
+      if (!T.flat) { g.fillStyle = grainPat(g); g.fillRect(x0, y0, w, h); }
       var sx0 = x0 + 34, sx1 = x0 + w - 40, max = mph ? 120 : 200, step = mph ? 20 : 40, minor = mph ? 5 : 10; out.rib = [sx0, sx1, max, y0];
       g.fillStyle = '#efe6d0'; g.textAlign = 'center'; g.font = '15px ' + FONT;
       for (var q = 0; q <= max; q += minor) { var xx = sx0 + q / max * (sx1 - sx0); g.fillRect(xx - 0.7, y0 + 34, 1.4, q % step ? 5 : 10); if (q % step === 0) g.fillText(String(q), xx, y0 + 28); }
       g.font = 'italic 9px Georgia, serif'; g.fillStyle = 'rgba(239,230,208,0.7)'; g.fillText(mph ? 'MILES  PER  HOUR' : 'KILOMETRES  PER  HOUR', x0 + w / 2, y0 + h - 8);
       g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(sx0, y0 + 46, sx1 - sx0, 9);
-      g.fillStyle = rad(g, x0 + w / 2, y0 + h / 2, w * 0.3, w * 0.62, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.7)']]); g.fillRect(x0, y0, w, h);
-      g.restore();
-      g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 2; rr(g, x0, y0, w, h, 22); g.stroke();
+      if (!T.flat) { g.fillStyle = rad(g, x0 + w / 2, y0 + h / 2, w * 0.3, w * 0.62, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.7)']]); g.fillRect(x0, y0, w, h); }
+      if (T.flat) g.fillStyle = T.ink; g.restore();
+      g.strokeStyle = T.line || 'rgba(0,0,0,0.6)'; g.lineWidth = T.line ? T.lw : 2; rr(g, x0, y0, w, h, 22); g.stroke();
       var P = m.prndsl; g.fillStyle = '#0a0808'; rr(g, P[0], P[1], P[2], P[3], 3); g.fill();
       var G2 = m.gauges, f = G2.fuel, ck = G2.clock, ivory = [[0, '#f3ead4'], [1, '#bfb08c']];
       out.angF = face(g, f[0], f[1], f[2], { max: 1, major: 0.5, minor: 0.125, noNums: true, a0: Math.PI * 1.15, a1: Math.PI * 1.85, label: 'FUEL', face: ivory, ink: '#2a211a' });
@@ -8470,57 +8605,85 @@ var PaintedCockpit = (function () {
   // ---------------------------------------------------------------- scenery (shared by the inside and the chase views)
   // P = { axisX, hz, f, dx: camera right of the centre line (m), camOff: camera to car front (m), clipTop }
   function camHB() { var B = M.backdrop; return B.bottomPx / B.roadHalfPx * 3.6; }
+  // ---------------------------------------------------------------- road + scenery (shared by every inside and chase view, v1.6)
+  // Real geometry: pitched pinhole camera (f px, principal row cy, horizon row hz => pitch), eye height camH (m) above the road,
+  // eye at dx (m) right of the road centre line (car centred in the right 3.6 m lane, driver left of the car centre), heading yaw (rad, + = right).
+  // Two 3.6 m lanes, 12 cm edge lines at 3.45 m, gravel shoulders to 4.6 m, centre line 3 m dash / 9 m gap, all at true speed (s.dist).
+  var ROAD = { lane: 3.6, edge: 3.45, edgeW: 0.12, shoulder: 4.6, dash: 3, period: 12, dashW: 0.12, post: 4.9, postEvery: 45 };
+  var RC = ({ v2: { asph: ['#5d5750', '#3f3b37'], shoulder: '#8f7656', edge: 'rgba(236,232,220,0.9)', line: null },
+              flat: { asph: ['#5b5a60', '#4a494f'], shoulder: '#b48a5e', edge: '#ecebe4', line: null },
+              ink: { asph: ['#4d4f5a', '#3e404a'], shoulder: '#c39058', edge: '#f6ead0', line: '#0d0a08' } })[STY];
   function scenery(g, P, s) {
-    var B = M.backdrop, img = A['desert-backdrop'], camH = camHB(), hz = P.hz, f = P.f;
-    var k = (f * camH / 4.0) / B.bottomPx;   // painting bottom row = 4 m ahead; scaled so the painted road (half 3.6 m) matches the live geometry
-    var w = B.w * k, h = B.h * k, ox = P.axisX - B.vx * k, oy = hz - B.hz * k, dx = P.dx, shear = -dx / camH;
-    function tile() { g.drawImage(img, ox, oy, w, h); [ox, ox + 2 * w].forEach(function (mx) { g.save(); g.translate(mx, 0); g.scale(-1, 1); g.drawImage(img, 0, oy, w, h); g.restore(); }); }  // mirrored copies either side
+    var B = M.backdrop, img = A['desert-backdrop'], hz = P.hz, f = P.f, h = P.camH, cy = P.cy || 360, tp = (cy - hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp;
+    var dx = P.dx, yaw = P.yaw || 0, vpX = P.axisX - f * Math.tan(yaw) / cp;
+    function zc(z) { return z * cp + h * sp; }
+    function yOf(z, up) { var y = -h + (up || 0); return cy - f * (y * cp + z * sp) / (z * cp - y * sp); }
+    function xOf(z, lx, up) { var y = -h + (up || 0); return P.axisX + f * ((lx - dx) - z * Math.tan(yaw)) / (z * cp - y * sp); }
+    // painted sky + terrain: horizon on hz, vanishing point straight ahead of the eye (vpX); ground sheared with the lane offset
+    var hb = camHB(), k = Math.max((f * hb / 4.0) / B.bottomPx, P.minK || 0), w = B.w * k, hh = B.h * k, ox = vpX - B.vx * k, oy = hz - B.hz * k, shear = -dx * cp / h;
+    function tile() { g.drawImage(img, ox, oy, w, hh); [ox, ox + 2 * w].forEach(function (mx) { g.save(); g.translate(mx, 0); g.scale(-1, 1); g.drawImage(img, 0, oy, w, hh); g.restore(); }); }
     g.save(); g.beginPath(); g.rect(-900, -400, PW + 1800, hz + 401); g.clip(); tile(); g.restore();
     g.save(); g.beginPath(); g.rect(-900, hz, PW + 1800, PH - hz + 400); g.clip(); g.transform(1, 0, shear, 1, -shear * hz, 0); tile();
-    if (oy + h < PH + 10) { g.fillStyle = '#3b3632'; g.fillRect(ox - w, oy + h - 1, 3 * w, PH - oy - h + 400); }
+    if (oy + hh < PH + 10) { g.fillStyle = RC.shoulder; g.fillRect(ox - w, oy + hh - 1, 3 * w, PH - oy - hh + 400); }
     g.restore();
-    function yOf(z) { return hz + f * camH / z; }
-    function xOf(z, lx) { return P.axisX + f * (lx - dx) / z; }
-    var d = s.dist || 0, period = 12, ph = d % period; g.fillStyle = 'rgba(226,190,90,0.85)';
-    for (var zz = -ph; zz < 260; zz += period) {
-      var za = Math.max(1.5, zz), zb = zz + 3; if (zb <= 1.5) continue;
-      var ya = yOf(za), yb = yOf(zb), wa = f * 0.06 / za, wb = f * 0.06 / zb;
-      poly(g, [[xOf(za, 0) - wa, ya], [xOf(za, 0) + wa, ya], [xOf(zb, 0) + wb, yb], [xOf(zb, 0) - wb, yb]]); g.fill();
+    // live road surface (covers the painted road of the backdrop, which was drawn for a much higher camera)
+    var zN = 0.6, zF = 4000;
+    function quad(u0, u1, z0, z1) { poly(g, [[xOf(z0, u0), yOf(z0)], [xOf(z0, u1), yOf(z0)], [xOf(z1, u1), yOf(z1)], [xOf(z1, u0), yOf(z1)]]); }
+    g.fillStyle = RC.shoulder; quad(-ROAD.shoulder, ROAD.shoulder, zN, zF); g.fill();
+    g.fillStyle = lin(g, 0, hz, 0, PH, [[0, RC.asph[0]], [0.35, RC.asph[1]], [1, RC.asph[1]]]); quad(-ROAD.lane, ROAD.lane, zN, zF); g.fill();
+    if (RC.line) { g.strokeStyle = RC.line; g.lineWidth = 2.2; quad(-ROAD.lane, ROAD.lane, zN, zF); g.stroke(); }
+    else if (STY === 'v2') { g.save(); quad(-ROAD.lane, ROAD.lane, zN, zF); g.clip(); g.globalAlpha = 0.5; g.fillStyle = grainPat(g); g.fillRect(-900, hz, PW + 1800, PH - hz + 400); g.restore(); }
+    g.fillStyle = RC.edge; [-1, 1].forEach(function (sd) { quad(sd * ROAD.edge, sd * (ROAD.edge + ROAD.edgeW), zN, zF); g.fill(); });
+    // haze: the far road melts into the horizon
+    g.fillStyle = lin(g, 0, hz - 1, 0, hz + Math.max(6, (yOf(60) - hz)), [[0, 'rgba(214,178,140,0.55)'], [1, 'rgba(214,178,140,0)']]); if (STY !== 'ink') g.fillRect(-900, hz - 1, PW + 1800, Math.max(6, yOf(60) - hz) + 1);
+    var d = s.dist || 0, ph = d % ROAD.period; g.fillStyle = T.dash || 'rgba(226,190,90,0.9)';
+    for (var zz = -ph; zz < 300; zz += ROAD.period) {
+      var za = Math.max(zN, zz), zb = zz + ROAD.dash; if (zb <= zN) continue;
+      quad(-ROAD.dashW / 2, ROAD.dashW / 2, za, zb); g.fill();
+      if (T.dashLine && yOf(za) - yOf(zb) > 2) { g.strokeStyle = T.dashLine; g.lineWidth = Math.min(3, 0.6 + (yOf(za) - yOf(zb)) * 0.04); g.lineJoin = 'round'; g.stroke(); }
     }
     if (s.drag) [[s.drag.start, 0.3, false], [s.drag.finish, 0.9, true]].forEach(function (L) {
-      var za = L[0] + P.camOff, zb = za + L[1]; if (zb <= 1.5 || za > 500) return; za = Math.max(za, 1.5);
-      var n = L[2] ? 16 : 1; for (var q = 0; q < n; q++) { if (L[2] && q % 2) continue; var u0 = -3.6 + 7.2 * q / n, u1 = -3.6 + 7.2 * (q + 1) / n;
-        g.fillStyle = 'rgba(244,242,234,0.92)'; poly(g, [[xOf(za, u0), yOf(za)], [xOf(za, u1), yOf(za)], [xOf(zb, u1), yOf(zb)], [xOf(zb, u0), yOf(zb)]]); g.fill(); }
+      var za = L[0] + P.camOff, zb = za + L[1]; if (zb <= zN || za > 500) return; za = Math.max(za, zN);
+      var n = L[2] ? 16 : 1; for (var q = 0; q < n; q++) { if (L[2] && q % 2) continue; var u0 = -ROAD.lane + 2 * ROAD.lane * q / n, u1 = -ROAD.lane + 2 * ROAD.lane * (q + 1) / n;
+        g.fillStyle = T.drag || 'rgba(244,242,234,0.92)'; quad(u0, u1, za, zb); g.fill(); }
     });
-    // roadside props streaming past (painted sprites; positions repeat every 400 m, sizes from real heights)
+    // roadside props streaming past (sprites; positions repeat, sizes from real heights): delineator posts every 45 m on both sides
     var S = A['desert-props'], PR = M.props, list = [], seg = 9;
     for (var j = Math.floor(d / seg); j < Math.floor(d / seg) + 26; j++) {
       var zr = j * seg - d + 1.5; if (zr < 1.2) continue;
       var r1 = hash(j), r2 = hash(j + 1000), r3 = hash(j + 2000), side = r1 < 0.5 ? -1 : 1;
-      if (j % 3 === 0) list.push({ z: zr, x: side * 4.4, p: PR[5] });   // delineator posts, both sides
+      if (j % 5 === 0) { list.push({ z: zr, x: -ROAD.post, p: PR[5] }); list.push({ z: zr, x: ROAD.post, p: PR[5] }); }
       var kind = r2 < 0.38 ? 0 : r2 < 0.66 ? 1 : r2 < 0.86 ? 2 : r2 < 0.95 ? 3 : 4;
-      list.push({ z: zr + 3, x: side * (6 + r3 * 16), p: PR[kind] });
-      if (r3 > 0.55) list.push({ z: zr + 5.5, x: -side * (7 + r1 * 12), p: PR[r3 > 0.8 ? 2 : 0] });
+      list.push({ z: zr + 3, x: side * (6.5 + r3 * 16), p: PR[kind] });
+      if (r3 > 0.55) list.push({ z: zr + 5.5, x: -side * (7.5 + r1 * 12), p: PR[r3 > 0.8 ? 2 : 0] });
     }
     list.sort(function (a, b) { return b.z - a.z; });
     for (var q2 = 0; q2 < list.length; q2++) {
-      var it = list[q2], r = it.p.r, hp = f * it.p.h / it.z, wp = hp * r[2] / r[3], xb = xOf(it.z, it.x), yb2 = yOf(it.z);
+      var it = list[q2], r = it.p.r, yb2 = yOf(it.z), hp = yb2 - yOf(it.z, it.p.h), wp = hp * r[2] / r[3], xb = xOf(it.z, it.x);
       if (hp < 1.5 || xb + wp < -60 || xb - wp > PW + 60 || yb2 < (P.clipTop || -1e9)) continue;
       g.globalAlpha = Math.min(1, (160 - it.z) / 40); g.drawImage(S, r[0], r[1], r[2], r[3], xb - wp / 2, yb2 - hp, wp, hp); g.globalAlpha = 1;
     }
     return { yOf: yOf, xOf: xOf };
   }
+  // heading from the steering input (main.js moves the car sideways at steer * min(v, 25) * 0.09 m/s): yaw = atan(lateral speed / speed)
+  function yawOf(s) {
+    var v = (s.kmh || 0) / 3.6, st = s.steer || 0, lat = s.lat || 0;
+    if ((lat <= -4.39 && st < 0) || (lat >= 0.79 && st > 0)) return 0;
+    return Math.atan(st * 0.09 * Math.min(v, 25) / Math.max(v, 2));
+  }
   function hash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
   function backdrop(g, car, s) {
     var m = M[car], v = m.view, B = M.backdrop, img = A['desert-backdrop'], d = s.dist || 0;
-    scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, dx: 1.85 + (s.lat || 0), camOff: 2.2 }, s);
+    var off = v.off !== undefined ? v.off : (car === 'gt350' ? 0.37 : 0.42);
+    // v1.6: one painted tile spans the whole windshield (no repeated sun): scale at least so the tile reaches 160 px past both edges
+    scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, cy: v.cy || 360, camH: v.camH || 1.1, dx: 1.8 + (s.lat || 0) - off, yaw: yawOf(s), camOff: 2.2, minK: Math.max((m.axisX + 160) / B.vx, (PW + 160 - m.axisX) / (B.w - B.vx)) }, s);
     // side window: the desert streams past (band of the painting scrolled with distance), horizon at the same height as ahead
     g.save(); poly(g, m.side); g.clip();
     var bandY = B.hz - 150, bandH = 370, sw = img.naturalWidth, sh = img.naturalHeight, sy = bandY / B.h * sh, shh = bandH / B.h * sh, tw = 900, th = tw * shh / (sw * 0.5);
     var off = ((d * 9) % tw + tw) % tw, top = v.hz - th * 150 / bandH;
     g.fillStyle = '#c9a77a'; g.fillRect(0, 0, 300, PH);
     for (var i = -1; i < 2; i++) g.drawImage(img, 0, sy, sw * 0.5, shh, -off + i * tw, top, tw, th);
-    g.fillStyle = 'rgba(30,25,20,0.12)'; g.fillRect(0, 0, 300, PH); g.restore();
+    g.fillStyle = STY === 'ink' ? 'rgba(13,10,8,0.06)' : 'rgba(30,25,20,0.12)'; g.fillRect(0, 0, 300, PH); g.restore();
     // rear-view mirror: the road behind (painting mirrored)
     var mr = m.mirror; g.save(); rr(g, mr[0] - 4, mr[1] - 4, mr[2] + 8, mr[3] + 8, 18); g.clip(); g.translate(mr[0] + mr[2] + 4, mr[1] - 4); g.scale(-1, 1);
     var cw = sw * 0.42, chh = cw * (mr[3] + 8) / (mr[2] + 8); g.drawImage(img, sw * 0.5 - cw / 2, sh * (B.hz / B.h) - chh * 0.42, cw, chh, 0, 0, mr[2] + 8, mr[3] + 8); g.restore();
@@ -8548,7 +8711,7 @@ var PaintedCockpit = (function () {
     var tgt = QA[s.range || 'N'] !== undefined ? QA[s.range || 'N'] : -0.1, st = anim.cad;
     if (st.a === null) st.a = tgt; st.a += (tgt - st.a) * (LV.gtDt ? Math.min(1, LV.gtDt / 0.06) : 0.35);
     var r = lv.rect, pv = lv.pivot;
-    g.save(); g.translate(pv[0], pv[1]); g.rotate(st.a); g.shadowColor = 'rgba(40,10,10,0.45)'; g.shadowBlur = 6; g.shadowOffsetY = 5;
+    g.save(); g.translate(pv[0], pv[1]); g.rotate(st.a); if (!T.flat) { g.shadowColor = 'rgba(40,10,10,0.45)'; g.shadowBlur = 6; g.shadowOffsetY = 5; }
     g.drawImage(A['caddy-lever'], r[0] - pv[0], r[1] - pv[1], r[2], r[3]); g.restore();
   }
   // ---------------------------------------------------------------- inside frame
@@ -8557,7 +8720,8 @@ var PaintedCockpit = (function () {
     backdrop(g, car, s);
     g.drawImage(C.cv, 0, 0, PW, PH);
     var running = s.engine === 'running';
-    if (car === 'gt350') {
+    if (V16) insideV16(g, s, car, m, C, mph, running);
+    else if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach, isMph = units(s) === 'mph';
       drum(g, sp[0], sp[1] + sp[2] * 0.42, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 8.5, 12);
       lamp(g, t[0] - 14, t[1] + t[2] * 0.5, 4.2, '#ff3a2a', s.brake > 0.05); lamp(g, t[0] + 14, t[1] + t[2] * 0.5, 4.2, '#ff3a2a', !running);
@@ -8570,15 +8734,17 @@ var PaintedCockpit = (function () {
       hurst(g, m, s);
     } else {
       var rb = C.rib, x0 = rb[0], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : s.kmh) / rb[2] * (rb[1] - rb[0]), y0 = rb[3];
-      g.fillStyle = lin(g, 0, y0 + 46, 0, y0 + 56, [[0, '#ffc07a'], [0.5, '#ff5a14'], [1, '#a82a08']]); g.fillRect(x0, y0 + 46, x1 - x0, 9);
-      g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, x1, y0 + 50, 0, 30, [[0, 'rgba(255,120,40,0.85)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(x1 - 30, y0 + 20, 60, 60); g.restore();
-      var R = m.ribbon; g.save(); rr(g, R[0], R[1], R[2], R[3], 22); g.clip(); g.fillStyle = lin(g, R[0], R[1], R[0] + R[2] * 0.5, R[1] + R[3], [[0, 'rgba(255,255,255,0.18)'], [0.45, 'rgba(255,255,255,0.03)'], [0.5, 'rgba(255,255,255,0)']]); g.fillRect(R[0], R[1], R[2], R[3]); g.restore();
+      g.fillStyle = T.flat ? T.needle : lin(g, 0, y0 + 46, 0, y0 + 56, [[0, '#ffc07a'], [0.5, '#ff5a14'], [1, '#a82a08']]); g.fillRect(x0, y0 + 46, x1 - x0, 9);
+      if (T.line) { g.strokeStyle = T.line; g.lineWidth = 1.5; g.strokeRect(x0, y0 + 46, x1 - x0, 9); }
+      if (!T.flat) { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, x1, y0 + 50, 0, 30, [[0, 'rgba(255,120,40,0.85)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(x1 - 30, y0 + 20, 60, 60); g.restore();
+      var R = m.ribbon; g.save(); rr(g, R[0], R[1], R[2], R[3], 22); g.clip(); g.fillStyle = lin(g, R[0], R[1], R[0] + R[2] * 0.5, R[1] + R[3], [[0, 'rgba(255,255,255,0.18)'], [0.45, 'rgba(255,255,255,0.03)'], [0.5, 'rgba(255,255,255,0)']]); g.fillRect(R[0], R[1], R[2], R[3]); g.restore(); }
+      var R = m.ribbon;
       lamp(g, R[0] + 16, R[1] + 51, 3.6, '#ff3a2a', s.brake > 0.05); lamp(g, R[0] + R[2] - 16, R[1] + 51, 3.6, '#ff3a2a', !running);
       columnLever(g, m, s);
       var P = m.prndsl, L = ['P', 'N', 'D', 'S', 'L', 'R'], qi = Math.max(0, L.indexOf(s.range || 'N'));
       g.font = 'bold 11px Georgia, serif'; g.textAlign = 'center';
       L.forEach(function (c, i) { g.fillStyle = i === qi ? '#ffb070' : 'rgba(236,227,207,0.7)'; g.fillText(c, P[0] + (i + 0.5) * P[2] / 6, P[1] + P[3] * 0.72); });
-      var px = P[0] + (qi + 0.5) * P[2] / 6; g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, px, P[1] + P[3] / 2, 0, 13, [[0, 'rgba(255,120,40,0.7)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(px - 13, P[1] - 4, 26, P[3] + 8); g.restore();
+      var px = P[0] + (qi + 0.5) * P[2] / 6; if (T.flat) { g.strokeStyle = T.needle; g.lineWidth = 2; g.strokeRect(px - P[2] / 12 + 1, P[1] + 2, P[2] / 6 - 2, P[3] - 4); } else { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, px, P[1] + P[3] / 2, 0, 13, [[0, 'rgba(255,120,40,0.7)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(px - 13, P[1] - 4, 26, P[3] + 8); g.restore(); }
       var G2 = m.gauges, f = G2.fuel, ck = G2.clock, tm = s.clock || 12;
       needle(g, f[0], f[1] + 8, f[2] * 0.95, C.angF(0.72), '#c4271c', 3.2); glass(g, f[0], f[1], f[2]);
       needle(g, ck[0], ck[1], ck[2] * 0.6, -Math.PI / 2 + (tm % 12) / 12 * Math.PI * 2, '#2a211a', 2.3); needle(g, ck[0], ck[1], ck[2] * 0.88, -Math.PI / 2 + (tm % 1) * Math.PI * 2, '#2a211a', 2.3); glass(g, ck[0], ck[1], ck[2]);
@@ -8595,13 +8761,13 @@ var PaintedCockpit = (function () {
   function drawOutside(g, s) {
     var car = s.carId === 'gt350' ? 'gt350' : 'caddy', E = M.exterior, c = E[car], V = E.view, f = V.f, camH = camHB(), dt = LV.gtDt;
     var steer = s.steer || 0, sway = steer * 10;
-    scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, dx: 1.85 + (s.lat || 0), camOff: c.dist + c.len }, s);
-    var wpx = f * c.realW / c.dist, sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : 1.35), yc = V.hz + f * camH / zc;
+    var SC = scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len }, s);
+    var wpx = f * c.realW / c.dist, sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : 1.35), yc = SC.yOf(zc);
     var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + '-rear'];
     var run = s.engine === 'running', shake = run ? Math.sin(s.time * 70) * Math.min(1.2, 0.4 + s.rpm / 5000) : 0;
     var pitch = Math.max(-7, Math.min(7, (s.accel || 0) * 14)), roll = -steer * Math.min(1, s.kmh / 60) * 0.035;  // squat (+) / dive (-), body roll in turns
     // contact shadow
-    g.save(); g.globalAlpha = 0.55; g.fillStyle = rad(g, cx, yc, 0, wpx * 0.62, [[0, 'rgba(0,0,0,0.85)'], [0.7, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]);
+    g.save(); g.globalAlpha = 0.55; g.fillStyle = T.flat ? (STY === 'ink' ? 'rgba(13,10,8,0.95)' : 'rgba(10,8,8,0.7)') : rad(g, cx, yc, 0, wpx * 0.62, [[0, 'rgba(0,0,0,0.85)'], [0.7, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]); if (T.flat) wpx *= 0.86;
     g.translate(cx, yc); g.scale(1, 0.09); ell(g, 0, 0, wpx * 0.62, wpx * 0.62); g.fill(); g.restore();
     var sy = c.splitY;   // tyres below splitY stay planted; the body above moves
     g.save(); g.translate(cx, yc); g.rotate(roll * 0.4); g.translate(-cx, -yc);
@@ -8610,7 +8776,13 @@ var PaintedCockpit = (function () {
     g.drawImage(img, 0, 0, c.px[0], sy + 2, x0, y0, c.px[0] * sc, (sy + 2) * sc);
     // tail / brake lamps
     var br = s.brake > 0.05 ? Math.min(1, 0.55 + s.brake) : 0, tail = run ? 0.22 : 0;
-    if (br + tail > 0) { g.globalCompositeOperation = 'lighter';
+    if (T.flat && br + tail > 0) { c.lamps.forEach(function (L) { var lx = x0 + L[0] * sc, ly = y0 + L[1] * sc, lw = L[2] * sc, lh = L[3] * sc;
+        g.fillStyle = br ? (STY === 'ink' ? '#ff3a1c' : '#ff4a2a') : 'rgba(255,90,60,0.55)'; g.globalAlpha = br ? 1 : 0.8; rr(g, lx + lw * 0.12, ly + lh * 0.15, lw * 0.76, lh * 0.7, Math.min(lw, lh) * 0.3); g.fill();
+        if (br && true) { g.fillStyle = 'rgba(255,240,220,0.85)'; rr(g, lx + lw * 0.3, ly + lh * 0.3, lw * 0.25, lh * 0.2, 2); g.fill(); }
+        if (br && STY === 'ink') { g.strokeStyle = '#0d0a08'; g.lineWidth = 2; rr(g, lx + lw * 0.12, ly + lh * 0.15, lw * 0.76, lh * 0.7, Math.min(lw, lh) * 0.3); g.stroke();
+          g.strokeStyle = '#ff3a1c'; g.lineWidth = 2.5; var mx = lx + lw / 2, my = ly + lh / 2; for (var q = 0; q < 5; q++) { var aa = Math.PI * (0.65 + q * 0.175); g.beginPath(); g.moveTo(mx + Math.cos(aa) * lw * 0.75, my - Math.abs(Math.sin(aa)) * lh * 1.1); g.lineTo(mx + Math.cos(aa) * lw * 1.05, my - Math.abs(Math.sin(aa)) * lh * 1.6); g.stroke(); } }
+        if (br && STY === 'flat') { g.fillStyle = 'rgba(255,60,40,0.16)'; ell(g, lx + lw / 2, ly + lh / 2, lw * 1.3, lh * 1.3); g.fill(); } }); g.globalAlpha = 1; }
+    else if (br + tail > 0) { g.globalCompositeOperation = 'lighter';
       c.lamps.forEach(function (L) { var lx = x0 + (L[0] + L[2] / 2) * sc, ly = y0 + (L[1] + L[3] / 2) * sc, lr = Math.max(L[2], L[3]) * sc;
         g.globalAlpha = (tail + br) * 0.8; g.fillStyle = rad(g, lx, ly, 0, lr * 0.6, [[0, 'rgba(255,200,170,0.95)'], [1, 'rgba(255,40,20,0)']]); g.fillRect(lx - lr, ly - lr, 2 * lr, 2 * lr);
         if (br) { g.globalAlpha = br * 0.55; g.fillStyle = rad(g, lx, ly, 0, lr * 2.4, [[0, 'rgba(255,50,30,0.8)'], [1, 'rgba(255,0,0,0)']]); g.fillRect(lx - lr * 2.4, ly - lr * 2.4, lr * 4.8, lr * 4.8); } });
@@ -8622,14 +8794,23 @@ var PaintedCockpit = (function () {
       tips.forEach(function (t, i) { for (var n = rate + Math.random(); n > 1; n--) smoke.push({ x: t[0], y: t[1], r: t[2] * 0.5, vx: (i ? 1 : -1) * (4 + Math.random() * 10), vy: 8 + Math.random() * 10, a: 0.07 + 0.16 * (s.thr || 0), t: 0, life: 0.9 + Math.random() * 0.8 }); }); }
     for (var q = smoke.length - 1; q >= 0; q--) { var p = smoke[q]; p.t += dt; if (p.t > p.life) { smoke.splice(q, 1); continue; }
       p.x += (p.vx - sway * 0.0) * dt; p.y += p.vy * dt; p.r += (10 + s.kmh * 0.22) * dt; p.y += s.kmh * 0.08 * dt;
-      var al = p.a * (1 - p.t / p.life); g.fillStyle = rad(g, p.x, p.y, 0, p.r, [[0, 'rgba(215,212,205,' + al.toFixed(3) + ')'], [1, 'rgba(215,212,205,0)']]); ell(g, p.x, p.y, p.r, p.r * 0.8); g.fill(); }
+      var al = p.a * (1 - p.t / p.life);
+      if (T.smoke === 'soft') { g.fillStyle = rad(g, p.x, p.y, 0, p.r, [[0, 'rgba(215,212,205,' + al.toFixed(3) + ')'], [1, 'rgba(215,212,205,0)']]); ell(g, p.x, p.y, p.r, p.r * 0.8); g.fill(); }
+      else { g.globalAlpha = Math.min(1, al * (STY === 'ink' ? 4 : 2.6)); g.fillStyle = STY === 'ink' ? '#efe6d2' : '#d8d5cc'; ell(g, p.x, p.y, p.r * 0.7, p.r * 0.56); g.fill();
+        if (STY === 'ink') { g.strokeStyle = '#0d0a08'; g.lineWidth = 1.6; g.stroke(); } g.globalAlpha = 1; } }
     if (smoke.length > 220) smoke.splice(0, smoke.length - 220);
   }
   // ---------------------------------------------------------------- framing: separate portrait / landscape / desktop compositions
   // Focus box (painting px) per car, view and orientation, fitted into the part of the canvas no control covers.
-  var FOCUS = {
+  // v1.6: landscape shows the full-width interior (pillar to pillar), portrait a crop of the driver's side (wheel, cluster, a strip of road),
+  // both from the same camera and always one uniform scale (a crop, never a squash).
+  var FOCUS15 = {
     gt350: { in: { land: [150, 175, 1165, 645], port: [292, 30, 870, 720] }, out: { land: [360, 140, 920, 700], port: [370, 60, 910, 720] } },
     caddy: { in: { land: [80, 150, 1140, 650], port: [205, 30, 830, 720] }, out: { land: [360, 140, 920, 700], port: [370, 60, 910, 720] } } };
+  var FOCUS16 = {
+    gt350: { in: { land: [0, 165, 1280, 720], port: [240, 150, 690, 720] }, out: FOCUS15.gt350.out },
+    caddy: { in: { land: [0, 165, 1280, 720], port: [212, 140, 672, 720] }, out: FOCUS15.caddy.out } };
+  function focus() { return V16 ? FOCUS16 : FOCUS15; }
   var LY = null, LYt = 0;
   function layout(dash) {
     var now = performance.now(), cv = dash.cv;
@@ -8647,7 +8828,7 @@ var PaintedCockpit = (function () {
     LYt = now; return LY;
   }
   function frameFor(L, car, view) {
-    var F = FOCUS[car][view][L.port ? 'port' : 'land'], S = L.safe, sw = S[2] - S[0], sh = S[3] - S[1];
+    var F = focus()[car][view][L.port ? 'port' : 'land'], S = L.safe, sw = S[2] - S[0], sh = S[3] - S[1];
     var kf = Math.min(sw / (F[2] - F[0]), sh / (F[3] - F[1])), kc = Math.max(L.cw / PW, L.ch / PH), k = Math.min(kf, kc);
     var ox = (S[0] + S[2]) / 2 - (F[0] + F[2]) / 2 * k, oy = (S[1] + S[3]) / 2 - (F[1] + F[3]) / 2 * k;
     if (PW * k >= L.cw) ox = Math.max(L.cw - PW * k, Math.min(0, ox)); else ox = Math.max(0, Math.min(L.cw - PW * k, ox));
@@ -8667,13 +8848,49 @@ var PaintedCockpit = (function () {
     if (y1 < cv.height) { var h2 = Math.min(cv.height - y1, y1 - y0); band(0, y1 - h2, cv.width, h2, 0, y1, false, true); }
     g.restore();
   }
+  // ---------------------------------------------------------------- themed HUD (same content as the v1 HUD, drawn in the style's language)
+  function hudPanel(g, x, y, w, h, H) {
+    if (H.sh) { g.fillStyle = H.line; rr(g, x + H.sh, y + H.sh, w, h, H.r); g.fill(); }
+    g.fillStyle = H.panel; rr(g, x, y, w, h, H.r); g.fill(); if (H.line) { g.strokeStyle = H.line; g.lineWidth = H.lw; rr(g, x, y, w, h, H.r); g.stroke(); }
+  }
+  function hudBar(g, x, y, w, h, v, col, H) { v = Math.max(0, Math.min(1, v)); g.fillStyle = H.bar; g.fillRect(x, y, w, h); g.fillStyle = col; g.fillRect(x, y + h - h * v, w, h * v); if (H.line && !H.pixel) { g.strokeStyle = H.line; g.lineWidth = H.lw * 0.6; g.strokeRect(x, y, w, h); } }
+  function hudFont(H, px, bold) { return (bold ? 'bold ' : '') + Math.round(px) + 'px ' + H.font; }
+  function themedHud(g, s, L, b, inside) {
+    var H = T.hud, S = L.safe, u = L.px * Math.max(0.55, Math.min(1, (S[2] - S[0]) / L.px / 900)) * (H.pixel ? 1.05 : 1), W = (S[2] - S[0]) / u;
+    g.setTransform(u, 0, 0, u, S[0], S[1]); g.textBaseline = 'alphabetic';
+    var mph = s.units === 'mph', sp = Math.round(mph ? s.kmh / 1.609344 : s.kmh), red = s.rpm > s.tachRed;
+    if (inside) {
+      var txt = s.gearLabel + '   ' + Math.round(s.rpm) + ' rpm'; g.font = hudFont(H, 17, STY === 'ink'); var w = g.measureText(txt).width + 26;
+      hudPanel(g, W - 16 - w, 16, w, 34, H); g.fillStyle = H.text; g.textAlign = 'left'; g.fillText(txt, W - 3 - w, 39);
+    } else {
+      var bw = 470, bh = 66, bx = W / 2 - bw / 2, by = L.port ? 8 : (S[3] - S[1]) / u - bh - 8;
+      if (L.port) by += 0;
+      hudPanel(g, bx, by, bw, bh, H);
+      g.fillStyle = H.text; g.textAlign = 'right'; g.font = hudFont(H, 36, true); g.fillText(String(sp), bx + 92, by + 44);
+      g.font = hudFont(H, 12, false); g.textAlign = 'left'; g.fillStyle = H.dim; g.fillText(mph ? 'mph' : 'km/h', bx + 96, by + 44);
+      g.fillStyle = H.bar; g.fillRect(bx + 16, by + 10, 128, 7); g.fillStyle = red ? H.brk : H.accent; g.fillRect(bx + 16, by + 10, 128 * Math.min(1, s.rpm / s.tachMax), 7);
+      if (H.line && !H.pixel) { g.strokeStyle = H.line; g.lineWidth = H.lw * 0.5; g.strokeRect(bx + 16, by + 10, 128, 7); }
+      g.fillStyle = H.dim; g.font = hudFont(H, 12, false); g.textAlign = 'center'; g.fillText(Math.round(s.rpm) + ' rpm', bx + 80, by + 60);
+      g.fillStyle = H.line && STY === 'ink' ? H.accent : H.accent; g.font = hudFont(H, 38, true); g.fillText(s.gearLabel, bx + 196, by + 47);
+      hudBar(g, bx + 236, by + 10, 14, 36, s.thr, H.thr, H); hudBar(g, bx + 258, by + 10, 14, 36, s.brake, H.brk, H);
+      g.fillStyle = H.dim; g.font = hudFont(H, 9, true); g.fillText('THR', bx + 243, by + 58); g.fillText('BRK', bx + 265, by + 58);
+      var odo = (mph ? s.odoKm / 1.609344 : s.odoKm), trip = (mph ? s.tripKm / 1.609344 : s.tripKm);
+      g.textAlign = 'left'; g.fillStyle = H.text; g.font = hudFont(H, 15, true); g.fillText(('00000' + Math.floor(odo)).slice(-5) + '.' + Math.floor((odo * 10) % 10), bx + 292, by + 28);
+      g.font = hudFont(H, 13, false); g.fillStyle = H.dim; g.fillText('trip ' + trip.toFixed(1) + (mph ? ' mi' : ' km'), bx + 292, by + 50);
+    }
+    var tags = [];
+    if (s.tyre === 'spin' && s.sr > 0.15) tags.push(['WHEELSPIN', H.accent]);
+    if (s.lockF || s.lockR) tags.push(['BRAKES LOCKED', H.brk]);
+    if (s.limiter) tags.push(['REV LIMIT', H.brk]);
+    g.textAlign = 'right'; g.font = hudFont(H, 18, true);
+    for (var t = 0; t < tags.length; t++) { var tw = g.measureText(tags[t][0]).width + 24; hudPanel(g, W - 16 - tw, 64 + t * 42 + (L.port && !inside ? 80 : 0), tw, 32, H); g.fillStyle = STY === 'ink' ? H.text : tags[t][1]; g.fillText(tags[t][0], W - 28, 86 + t * 42 + (L.port && !inside ? 80 : 0)); }
+    if (s.msg) { g.textAlign = 'center'; g.font = hudFont(H, 24, true); var mw = g.measureText(s.msg).width + 40; hudPanel(g, W / 2 - mw / 2, 150, mw, 42, H); g.fillStyle = H.text; g.fillText(s.msg, W / 2, 179); }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
   var lay = null;
   function layer(cv) { if (!lay) { lay = { cv: document.createElement('canvas') }; lay.g = lay.cv.getContext('2d'); } if (lay.cv.width !== cv.width || lay.cv.height !== cv.height) { lay.cv.width = cv.width; lay.cv.height = cv.height; } return lay; }
-  function draw(dash, s) {
-    load();
-    if (status !== 'ready' || s.view === 2) { dash.draw(s); return; }
-    LV.gtDt = stepT(s);
-    var g = dash.g, cv = dash.cv, L = layout(dash), car = s.carId === 'gt350' ? 'gt350' : 'caddy', b = s.viewBlend;
+  function scene(g, cv, L, car, s) {
+    var b = s.viewBlend;
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.fillStyle = '#0d0906'; g.fillRect(0, 0, cv.width, cv.height);
     if (b < 0.999) paint(g, frameFor(L, car, 'out'), drawOutside, s, true);
     if (b > 0.001) {
@@ -8681,29 +8898,43 @@ var PaintedCockpit = (function () {
       if (b < 0.999) { var Ly = layer(cv); Ly.g.setTransform(1, 0, 0, 1, 0, 0); Ly.g.clearRect(0, 0, cv.width, cv.height); paint(Ly.g, p, drawInside, s); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = b; g.drawImage(Ly.cv, 0, 0); g.globalAlpha = 1; }
       else paint(g, p, drawInside, s);
     }
-    // HUD in the uncovered area, in CSS-pixel based units so it reads the same on every screen
-    var S = L.safe, u = L.px * Math.max(0.55, Math.min(1, (S[2] - S[0]) / L.px / 900)), Wl = (S[2] - S[0]) / u;
+    if (T.hud) { themedHud(g, s, L, b, b > 0.5); return; }
+    var S = L.safe, u = L.px * Math.max(0.55, Math.min(1, (S[2] - S[0]) / L.px / 900)), Wl = (S[2] - S[0]) / u, dash = scene.dash;
     g.setTransform(u, 0, 0, u, S[0], S[1]);
     if (b > 0.5) dash.insideInfo(g, s, Wl);
     else { g.setTransform(u, 0, 0, u, S[0], L.port ? S[1] + 6 * L.px - 646 * u : S[3] - 720 * u - 4 * L.px); dash.hudStrip(g, s, Wl, true); g.setTransform(u, 0, 0, u, S[0], S[1] + (L.port ? 70 * u : 0)); }  // portrait: HUD in the sky, clear of the car
-    dash.hudTags(g, s, Wl);
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    dash.hudTags(g, s, Wl); g.setTransform(1, 0, 0, 1, 0, 0);
   }
-  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, layout: function () { return LY; }, _drawInside: drawInside, _drawOutside: drawOutside, _focus: FOCUS };
+  function draw(dash, s) {
+    load();
+    if (status !== 'ready' || s.view === 2) { dash.draw(s); return; }
+    LV.gtDt = stepT(s);
+    var g = dash.g, cv = dash.cv, L = layout(dash), car = s.carId === 'gt350' ? 'gt350' : 'caddy';
+    scene.dash = dash; scene(g, cv, L, car, s);
+  }
+  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, layout: function () { return LY; }, style: STY, _drawInside: drawInside, _drawOutside: drawOutside, _focus: function () { return focus(); } };
+  }
+  return { make: make };
 })();
+var PaintedCockpit = PaintedVisuals.make(function () { return typeof PAINTED_ASSETS !== 'undefined' ? PAINTED_ASSETS : null; }, 'v2');
+var FlatCockpit = PaintedVisuals.make(function () { return typeof FLAT_ASSETS !== 'undefined' ? FLAT_ASSETS : null; }, 'flat');
+var InkCockpit = PaintedVisuals.make(function () { return typeof INK_ASSETS !== 'undefined' ? INK_ASSETS : null; }, 'ink');
 </script>
 <script>/* js/visuals.js */
 /*
  * visuals.js: visual-model registry (like the sound-model registry in models.js).
  * Add a version by registering { id, label, available(), draw(dash, s) } (an unavailable
  * version, e.g. WebGL missing, falls back to v1).
- * Naming (Wim, 2026-11-11): v1 = drawn (v1.1 art), v2 = painted (approved round-3 style, v1.4), v3 = 3D realistic (WebGL preview).
+ * Naming (Wim, 2026-11-11): v1 = drawn (v1.1 art), v2 = painted (approved round-3 style, v1.4), v3 = 3D realistic (WebGL preview),
+ * v4 = flat (style A, v1.6), v5 = ink / ligne claire (style D, v1.6). v4/v5 also re-theme the controls (html.vis-flat / html.vis-ink).
  */
 var VisualModels = (function () {
   var list = [];
   function register(m) { list.push(m); }
   register({ id: 'v1', label: 'v1 \u2013 drawn', note: 'canvas art (v1.1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); dash.draw(s); } });
   if (typeof PaintedCockpit !== 'undefined') register({ id: 'v2', label: 'v2 \u2013 painted', note: 'painted cockpit + painted chase view, live gauges and levers (engine bay uses v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); PaintedCockpit.draw(dash, s); } });
+  if (typeof FlatCockpit !== 'undefined') register({ id: 'v4', label: 'v4 \u2013 flat', theme: 'flat', note: 'refined flat art from the real-size camera, live gauges and levers (engine bay uses v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); FlatCockpit.draw(dash, s); } });
+  if (typeof InkCockpit !== 'undefined') register({ id: 'v5', label: 'v5 \u2013 ink', theme: 'ink', note: 'ligne-claire ink art from the real-size camera, live gauges and levers (engine bay uses v1)', draw: function (dash, s) { if (typeof GLView !== 'undefined') GLView.hide(); InkCockpit.draw(dash, s); } });
   if (typeof GLView !== 'undefined') register({ id: 'v3', label: 'v3 \u2013 3D preview (WebGL)', note: 'real-time three.js renderer; falls back to v1 without WebGL', available: GLView.available, draw: function (dash, s) { GLView.draw(dash, s); } });
   return { list: list, register: register, get: function (id) { if (id === 'v2' && !list.some(function (m) { return m.id === 'v2'; })) id = 'v3'; // v1.3 called the 3D renderer v2
       for (var i = 0; i < list.length; i++) if (list[i].id === id && (!list[i].available || list[i].available())) return list[i]; return list[0]; } };
@@ -8738,7 +8969,8 @@ var ProjectHistory = {
       { v: 'v1.3.1', date: '2026-11-11', status: 'done', text: 'Quarter-mile drag strip with a Christmas tree, reaction time, splits, trap speeds and best times per car; Cadillac radio playing an original 1950s-style rockabilly tune through a 1959 AM tube-radio sound. The 3D visuals are renamed v3 (v2 is reserved for the detailed drawn style).' },
       { v: 'v1.4', date: '2026-11-11', status: 'done', text: 'Visuals v2 \u2013 painted: new near-photographic painted cockpits for both cars, seen straight ahead from the driver\u2019s seat, with live needles, odometer, ribbon speedometer, gear indicator, lamps, radio dial, moving shifter, turning steering wheel, painted desert road and moving side-window view. Selectable under Visuals; the default stays v1 (drawn), v3 is the 3D preview.' },
       { v: 'v1.4.1', date: '2026-11-11', status: 'done', text: 'GT350 painted cockpit redone with the full cabin width: the dash, wood-grain band, radio, under-dash gauges, glovebox with Shelby plate and console continue across to the passenger side, the right A-pillar sits at the far edge of the windshield (it looked too narrow on the right before).' },
-      { v: 'v1.5', date: '2026-11-11', status: 'done', text: 'Visuals v2 (painted): steering wheel and dashboard in real proportion (driver camera from real dimensions: 65\u00b0 view, eye 74 cm behind the rim and 30 cm above the hub, 15 in GT350 wheel, 17.5 in Cadillac wheel; the horizon sits higher, so the road shows through the windshield again). Separate phone layouts: in portrait the controls sit below the scene, in landscape the top bar is compact (menu button) and the shift buttons sit above the gas pedal; every view is framed so no button covers the dash. New painted chase view for both cars (cut-out painted car over the painted road, live brake and tail lights, exhaust smoke, roadside scenery streaming past, squat, dive and sway, drag-strip lines). Gear levers move: the GT350 Hurst T-handle travels through the 4-speed H gate on every shift, the Cadillac column lever swings through P N D S L R with the quadrant.' }
+      { v: 'v1.5', date: '2026-11-11', status: 'done', text: 'Visuals v2 (painted): steering wheel and dashboard in real proportion (driver camera from real dimensions: 65\u00b0 view, eye 74 cm behind the rim and 30 cm above the hub, 15 in GT350 wheel, 17.5 in Cadillac wheel; the horizon sits higher, so the road shows through the windshield again). Separate phone layouts: in portrait the controls sit below the scene, in landscape the top bar is compact (menu button) and the shift buttons sit above the gas pedal; every view is framed so no button covers the dash. New painted chase view for both cars (cut-out painted car over the painted road, live brake and tail lights, exhaust smoke, roadside scenery streaming past, squat, dive and sway, drag-strip lines). Gear levers move: the GT350 Hurst T-handle travels through the 4-speed H gate on every shift, the Cadillac column lever swings through P N D S L R with the quadrant.' },
+      { v: 'v1.6', date: '2026-11-11', status: 'done', text: 'Two new Visuals options: v4 \u2013 flat (clean vector look) and v5 \u2013 ink (1950s/60s ligne-claire poster look), with the buttons, pedals and panels restyled to match; v1 drawn stays the default, v2 painted and v3 3D stay. Both cockpits were redrawn from a driver camera built from real dimensions (eye point left of the centre line, left-hand drive; 1967 GT350 15.75 in wood wheel and 5 in gauges, 1959 Cadillac 17.5 in wheel and 14 in ribbon speedometer), with overlay proofs per car. Landscape shows the whole interior pillar to pillar; portrait is a crop of the driver side (wheel, gauges, a strip of road), same scale. Road inside the car fixed in all visuals: eye height 1.07 / 1.12 m (was about 2.3 m), car in the right 3.6 m lane with the driver left of the lane centre, vanishing point straight ahead of the driver, edge lines, 3 m dashes with 9 m gaps at true speed, posts 1 m tall, and the road swings with steering.' }
     ] }
   ]
 };
@@ -8865,7 +9097,8 @@ var ProjectHistory = {
     if (audio.ctx) ensureAudio();   // live crossfade to the new model (no restart)
     flash('Sound model ' + SoundModels.get(state.model).label, 1.5); updatePanel();
   }
-  function setVisual(id) { state.visual = VisualModels.get(id).id; lsSet('streetrod.visuals', state.visual); updatePanel(); }
+  function setVisual(id) { state.visual = VisualModels.get(id).id; lsSet('streetrod.visuals', state.visual); applyTheme(); updatePanel(); }
+  function applyTheme() { var t = VisualModels.get(state.visual).theme || '', h = document.documentElement; h.classList.toggle('vis-flat', t === 'flat'); h.classList.toggle('vis-ink', t === 'ink'); }
   function cycle(list, cur) { for (var i = 0; i < list.length; i++) if (list[i].id === cur) return list[(i + 1) % list.length].id; return list[0].id; }
   function toggleMute() { state.muted = !state.muted; audio.setMuted(state.muted); updatePanel(); }
   function toggleUnits() { state.units = state.units === 'kmh' ? 'mph' : 'kmh'; updatePanel(); }
@@ -8987,7 +9220,7 @@ var ProjectHistory = {
     document.getElementById('specs').innerHTML = '<b>' + v.label + '</b><br>' + v.engineText + '<br>' + v.transText + ': ' + v.gears.join(' / ') + ', final drive ' + v.finalDrive.toFixed(2) +
       '<br>Mass ' + v.curbText + '<br>Tyres ' + v.tyreText + '<br>Brakes: ' + b.text;
   }
-  updatePanel();
+  applyTheme(); updatePanel();
   var lastIgnLabel = '', astatusEl = document.createElement('span');
   document.getElementById('astatus').textContent = ''; document.getElementById('astatus').appendChild(astatusEl);
   function updateIgn() {
