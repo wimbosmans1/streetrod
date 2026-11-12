@@ -2861,4 +2861,500 @@ function engineModuleBrm8(core) {
     };
 
     return [{ id: 'v8', Synth: BrmSynthV8, synthOpts: {}, positions: ['rear', 'in_cabin'] }];
+  },
+function engineModuleBrm9(core) {
+    var P = {"phys":{"stub_len":0.5425000000000001,"stub_sig":0.04349732181520666,"k_evo":4.5,"k_mot":1.1,"t_fire":1250.0,"t_mot":520.0,"t_stub0":497.34445043449153,"t_stuba":350.0,"k_nl":1.5,"mod_max":0.45,"ro_loss":0.97,"weak":0.8243873591057389,"weak_cyl":1,"misfire":0.13460058068130187,"cov":0.017984912644741766,"cov_idle":0.0818881435523372,"misfire_idle":0.22775540189090837,"exit_pitch":0.075,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.258978425022592,"stub_c":0.04,"chg_c":-0.2,"wind_fc":514.2647991368509,"out_lp":2395.5068175045653,"out_mix":1.0,"onb_lp":3500.120168882837,"onb_mix":0.9996904268672767,"mech":0.010328302997279824,"mech_mod":0.6,"out_hp":30.0,"bank_dx":-0.03,"chg_lin":0.02,"onb_x":-1.075,"onb_y":0.2,"onb_z":0.88,"onb_ground":0.0,"far_dl":0.0,"sh_fc":1500,"sh_db":-3,"gnd_fc":0.0,"idle_map":0.21668471290867022,"ov_map":0.04093851072666962,"half_deg":0.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":300.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"b_mirror":1},"stub_z":[0.4601578514017764,0.3596506232513735,0.09710951191066246,-0.07351765578769823,-0.07233413778823487,0.5381187567527944,-1.6807549872233718,0.09340929735988178,0.7033247016822283,-1.008014400498587,-1.050341006284517,0.4752506204861838,-0.0916655439252554,0.7426428208118669,2.3733095299198372,-1.8663459820689405],"mays_rpm":[0.0,2000.0,3500.0,5000.0,6000.0,7000.0,8000.0,9000.0,10000.0,11000.0,12000.0,12600.0],"mays_bhp":[0.0,18.0,50.0,100.0,175.0,250.0,335.0,412.0,525.0,585.0,600.0,560.0],"fire_order":[1,10,6,13,2,16,5,11,8,15,3,12,7,9,4,14],"j_crank":0.15,"persp":{"rear":{"ears":[[-5.4,0.09,1.0],[-5.4,-0.09,1.0]],"ground":0.75,"shadow_far_db":-3.0,"wind":0.0,"outside":true,"ambience":0.0},"side":{"ears":[[0.09,4.7,1.2],[-0.09,4.7,1.2]],"ground":0.75,"shadow_far_db":-9.0,"wind":0.0,"outside":true,"ambience":0.02},"onboard":{"ears":[[-1.2,0.09,0.75],[-1.2,-0.09,0.75]],"ground":0.0,"shadow_far_db":-2.0,"wind":0.02,"outside":false,"ambience":0.0}}};
+    var PH = P.phys, GE = P.geom;
+    var C_AIR = 343.0, P_ATM = 101325.0, R_GAS = 290.0, GAMMA = 1.32;
+    var DL = 512, DLM = 511, RING = 2048, RINGM = 2047, SDL = 4096, SDLM = 4095;
+    var RAD_K = 1.2 / (4 * Math.PI);
+    var TWO_PI = 2 * Math.PI;
+
+    // ---------------------------------------------------------------- Butterworth (scipy.signal.butter, bilinear, prewarped) as biquads
+    function cmul(a, b) { return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
+    function cdiv(a, b) { var d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; }
+    function csqrt(a) { var r = Math.sqrt(Math.sqrt(a[0] * a[0] + a[1] * a[1])), t = Math.atan2(a[1], a[0]) / 2; return [r * Math.cos(t), r * Math.sin(t)]; }
+    /** returns an array of sections [b0,b1,b2,a1,a2] (a0 = 1), like sos rows */
+    function butter(N, f, type, fs) {
+      var k, i, p = [], z = [], gain = 1, fs2 = 2 * fs;
+      for (k = 1; k <= N; k++) { var th = Math.PI * (2 * k + N - 1) / (2 * N); p.push([Math.cos(th), Math.sin(th)]); }
+      if (type === 'bandpass') {
+        var w1 = fs2 * Math.tan(Math.PI * f[0] / fs), w2 = fs2 * Math.tan(Math.PI * f[1] / fs), bw = w2 - w1, w0 = Math.sqrt(w1 * w2), pb = [];
+        for (i = 0; i < N; i++) {
+          var ph = [p[i][0] * bw / 2, p[i][1] * bw / 2], dsc = csqrt([ph[0] * ph[0] - ph[1] * ph[1] - w0 * w0, 2 * ph[0] * ph[1]]);
+          pb.push([ph[0] + dsc[0], ph[1] + dsc[1]]); pb.push([ph[0] - dsc[0], ph[1] - dsc[1]]);
+        }
+        p = pb; for (i = 0; i < N; i++) z.push([0, 0]); gain = Math.pow(bw, N);
+      } else {
+        var wn = fs2 * Math.tan(Math.PI * f / fs);
+        if (type === 'low') { for (i = 0; i < N; i++) p[i] = [p[i][0] * wn, p[i][1] * wn]; gain = Math.pow(wn, N); }
+        else { for (i = 0; i < N; i++) { p[i] = cdiv([wn, 0], p[i]); z.push([0, 0]); } gain = 1; }
+      }
+      // bilinear
+      var num = [1, 0], den = [1, 0], zd = [], pd = [];
+      for (i = 0; i < z.length; i++) { num = cmul(num, [fs2 - z[i][0], -z[i][1]]); zd.push(cdiv([fs2 + z[i][0], z[i][1]], [fs2 - z[i][0], -z[i][1]])); }
+      for (i = 0; i < p.length; i++) { den = cmul(den, [fs2 - p[i][0], -p[i][1]]); pd.push(cdiv([fs2 + p[i][0], p[i][1]], [fs2 - p[i][0], -p[i][1]])); }
+      while (zd.length < pd.length) zd.push([-1, 0]);
+      var kd = gain * cdiv(num, den)[0];
+      // group poles into conjugate pairs / reals, zeros likewise (real zeros only here: +1 / -1 / 0)
+      var used = [], pairs = [];
+      for (i = 0; i < pd.length; i++) {
+        if (used[i]) continue; used[i] = true;
+        if (Math.abs(pd[i][1]) > 1e-12) {
+          var best = -1, bd = 1e9;
+          for (var j = i + 1; j < pd.length; j++) if (!used[j]) { var dd = Math.abs(pd[j][0] - pd[i][0]) + Math.abs(pd[j][1] + pd[i][1]); if (dd < bd) { bd = dd; best = j; } }
+          used[best] = true; pairs.push([2 * pd[i][0], pd[i][0] * pd[i][0] + pd[i][1] * pd[i][1], 2]);
+        } else pairs.push([pd[i][0], 0, 1]);
+      }
+      // merge single real poles pairwise
+      var secP = [], singles = [];
+      for (i = 0; i < pairs.length; i++) { if (pairs[i][2] === 2) secP.push([-pairs[i][0], pairs[i][1]]); else singles.push(pairs[i][0]); }
+      while (singles.length >= 2) { var r1 = singles.shift(), r2 = singles.shift(); secP.push([-(r1 + r2), r1 * r2]); }
+      if (singles.length) secP.push([-singles[0], 0, 1]);
+      var zr = zd.map(function (q) { return q[0]; }), secs = [];
+      for (i = 0; i < secP.length; i++) {
+        var order = secP[i].length > 2 ? 1 : 2, b;
+        if (order === 2) { var za = zr.shift(), zb = zr.shift(); b = [1, -(za + zb), za * zb]; }
+        else { var zc = zr.shift(); b = [1, -zc, 0]; }
+        if (i === 0) b = [b[0] * kd, b[1] * kd, b[2] * kd];
+        secs.push([b[0], b[1], b[2], secP[i][0], secP[i][1]]);
+      }
+      return secs;
+    }
+    function Filt(secs) { this.c = secs; this.n = secs.length; this.s = new Float64Array(2 * secs.length); }
+    Filt.prototype.f = function (x) {   // transposed direct form II (sosfilt)
+      var c = this.c, s = this.s, i, k, y;
+      for (i = 0; i < this.n; i++) {
+        k = c[i]; y = k[0] * x + s[2 * i];
+        s[2 * i] = k[1] * x - k[3] * y + s[2 * i + 1];
+        s[2 * i + 1] = k[2] * x - k[4] * y;
+        x = y;
+      }
+      return x;
+    };
+
+    // ---------------------------------------------------------------- xorshift64 (numba _rnd), as two uint32 halves
+    function Rng(seedHi, seedLo) { this.h = seedHi >>> 0; this.l = seedLo >>> 0; }
+    Rng.prototype.rnd = function () {
+      var h = this.h, l = this.l, th, tl;
+      th = ((h << 13) | (l >>> 19)) >>> 0; tl = (l << 13) >>> 0; h = (h ^ th) >>> 0; l = (l ^ tl) >>> 0;
+      tl = ((l >>> 7) | (h << 25)) >>> 0; th = h >>> 7; h = (h ^ th) >>> 0; l = (l ^ tl) >>> 0;
+      th = ((h << 17) | (l >>> 15)) >>> 0; tl = (l << 17) >>> 0; h = (h ^ th) >>> 0; l = (l ^ tl) >>> 0;
+      this.h = h; this.l = l;
+      return (h * 2097152 + (l >>> 11)) * (1.0 / 9007199254740992.0);
+    };
+    Rng.prototype.gau = function () { return (this.rnd() + this.rnd() + this.rnd() + this.rnd() - 2.0) * 1.732; };
+    Rng.prototype.norm = function () {   // Box-Muller (post-chain noise sources; numpy RandomState is not reproduced there)
+      var u = this.rnd(), v = this.rnd(); if (u < 1e-300) u = 1e-300;
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(TWO_PI * v);
+    };
+    // seed = 0x9E3779B97F4A7C15 ^ (seed * 7919) (seed * 7919 < 2^32 for small seeds)
+    function rngFor(seed) { return new Rng(0x9E3779B9, (0x7F4A7C15 ^ (seed * 7919)) >>> 0); }
+
+    // ---------------------------------------------------------------- geometry (brm9.py)
+    var FIRE = new Float64Array(16), BANK = new Int32Array(16), TWW = new Float64Array(16), CDN = new Float64Array(16), POS = new Int32Array(16);
+    (function () {
+      var DIST = [4, 3, 2, 1, 1, 2, 3, 4], TW = { 1: 0.4, 2: 0.7, 3: 0.9, 4: 1.0 }, c, i;
+      for (var k = 0; k < 16; k++) FIRE[P.fire_order[k] - 1] = 45.0 * k;
+      for (c = 1; c <= 16; c++) {
+        i = (c - 1) % 8; BANK[c - 1] = c <= 8 ? 0 : 1; TWW[c - 1] = TW[DIST[i]]; CDN[c - 1] = (DIST[i] - 2.5) / 3.0;
+        POS[c - 1] = (c > 8 && GE.b_mirror) ? 7 - i : i;
+      }
+    })();
+    function stubXyz(c) {
+      var p = PH.exit_pitch, i = (c - 1) % 8, gap = 0.05 * p / 0.06;
+      if (c > 8 && GE.b_mirror) i = 7 - i;
+      var x = p * (3.5 - i) + (i < 4 ? 0.5 * gap : -0.5 * gap);
+      if (c > 8) x += PH.bank_dx;
+      return [x, c <= 8 ? GE.stub_y : -GE.stub_y, GE.stub_z];
+    }
+    var SOURCES = { exhL: [0.0, 0.45, 0.25], exhR: [0.0, -0.45, 0.25], blower: [1.1, 0.0, 0.5], mech: [0.35, 0.0, 0.55] };
+    function dist3(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
+    /** listening perspective for a game position: 'rear' = Python PERSPECTIVES.rear (chase view, static), in_cabin = onboard (fitted mic) */
+    function perspective(pos) {
+      if (pos === 'in_cabin' || pos === 'onboard') {
+        var x = PH.onb_x, y = PH.onb_y, z = PH.onb_z, o = P.persp.onboard;
+        return { name: 'onboard', ears: [[x, y + 0.09, z], [x, y - 0.09, z]], ground: PH.onb_ground > 0 ? PH.onb_ground : o.ground, shadow_far_db: o.shadow_far_db, wind: o.wind, outside: false };
+      }
+      var q = P.persp[pos === 'side' ? 'side' : 'rear'];
+      return { name: pos === 'side' ? 'side' : 'rear', ears: q.ears, ground: q.ground, shadow_far_db: q.shadow_far_db, wind: q.wind, outside: true, ambience: q.ambience };
+    }
+    function interp(x, X, Y) {
+      if (x <= X[0]) return Y[0];
+      for (var i = 1; i < X.length; i++) if (x <= X[i]) return Y[i - 1] + (x - X[i - 1]) / (X[i] - X[i - 1]) * (Y[i] - Y[i - 1]);
+      return Y[Y.length - 1];
+    }
+    function pmod(a, m) { var r = a % m; return r < 0 ? r + m : r; }
+
+    // ---------------------------------------------------------------- the model at internal rate fs: kernel + post chain
+    function Eng(fs, pp, seed) {
+      this.fs = fs; this.pp = pp;
+      var a = GE.stub_d / 2, i, c;
+      this.AS = Math.PI * a * a; this.ENDC = a;
+      this.thrK = 1.0 - Math.exp(-1.0 / (0.03 * fs)); this.boostK = 1.0 - Math.exp(-1.0 / (0.25 * fs)); this.tempK = 1.0 - Math.exp(-1.0 / (1.5 * fs));
+      this.avMax = GE.cd * Math.PI * GE.dv * GE.lmax; this.aPort = GE.cd * 0.85 * Math.PI * GE.dv * GE.dv / 4;
+      this.vd = 0.25 * Math.PI * GE.bore * GE.bore * GE.stroke; this.vc = this.vd / (GE.cr - 1.0);
+      this.slen = new Float64Array(16); this.cyl6 = new Float64Array(16); this.fire = new Float64Array(16);
+      for (c = 1; c <= 16; c++) {
+        i = c - 1;
+        this.slen[i] = Math.max(PH.stub_len * (1.0 + PH.stub_sig * P.stub_z[i] + PH.stub_c * CDN[i]) + 0.61 * a, 0.1);
+        this.cyl6[i] = Math.max(1.0 + PH.chg_c * CDN[i], 0.05) * Math.max(1.0 + PH.chg_lin * ((3.5 - POS[i]) / 3.5), 0.05);
+        this.fire[i] = FIRE[i] - 0.5 * (PH.half_deg || 0) * (POS[i] < 4 ? 1.0 : -1.0);
+      }
+      this.cyl6[PH.weak_cyl - 1] = PH.weak;
+      // kernel state
+      this.open = new Uint8Array(16); this.mass = new Float64Array(16); this.ise = new Float64Array(16); this.ee = new Float64Array(16);
+      for (i = 0; i < 16; i++) this.ee[i] = 1.0;
+      this.AT = new Float64Array(16 * DL); this.AF = new Float64Array(16 * DL); this.rptr = new Int32Array(16);
+      this.B = new Float64Array(16 * DL); this.widx = new Int32Array(16);
+      this.lp = new Float64Array(16); this.uprev = new Float64Array(16);
+      this.ring0 = new Float64Array(RING); this.ring1 = new Float64Array(RING); this.ridx = 0;
+      this.TH = 0; this.THR = 0; this.BOOST = 1.0; this.TSTUB = PH.t_stub0 + 0.3 * PH.t_stuba; this.OMD = 0; this.EM = 1.0; this.BPH = 0; this.NSEED = 0;
+      this.rng = rngFor(seed || 9); this.rng2 = rngFor(41 + (seed || 9));
+      this._r = null; this._t = 0;
+      this.setPersp(pp);
+      // post chain (brm9._render)
+      var f = this.fs, lim = 0.45 * f;
+      function F(N, fc, t) { return new Filt(butter(N, fc, t, f)); }
+      function cl(x) { return Math.min(x, lim); }
+      this.jetL = F(2, [1500, cl(9000)], 'bandpass'); this.jetR = F(2, [1500, cl(9000)], 'bandpass');
+      this.blF = F(1, [400, cl(PH.whine_lp)], 'bandpass'); this.rushF = F(2, [2000, cl(8000)], 'bandpass');
+      this.mechF = F(2, [1000, cl(7000)], 'bandpass'); this.mechPh = 0;
+      this.windF = F(2, [Math.min(PH.wind_fc, 9000), cl(10000)], 'bandpass'); this.gust = 0; this.gustN = 0; this.gustBlk = Math.max(1, Math.round(256 * f / 44100));
+      this.speed = 0;
+    }
+    Eng.prototype.setPersp = function (pp) {
+      var fs = this.fs, c, i, e, lim = 0.45 * fs;
+      this.pp = pp;
+      // per-stub relative delay / gain seen from the mean ear (stub_geometry)
+      var m = [0, 0, 0];
+      for (e = 0; e < pp.ears.length; e++) for (i = 0; i < 3; i++) m[i] += pp.ears[e][i] / pp.ears.length;
+      this.rdly = new Float64Array(16); this.rgain = new Float64Array(16);
+      var dmin = 1e9;
+      for (c = 1; c <= 16; c++) {
+        var src = SOURCES[c <= 8 ? 'exhL' : 'exhR'], r0 = dist3(src, m), ri = dist3(stubXyz(c), m);
+        this.rgain[c - 1] = r0 / ri; this.rdly[c - 1] = (ri - r0) / C_AIR * fs; if (this.rdly[c - 1] < dmin) dmin = this.rdly[c - 1];
+      }
+      for (i = 0; i < 16; i++) this.rdly[i] = this.rdly[i] - dmin + 1.0;
+      // Spatializer taps: per source, ear, image -> integer delay and the direct / air-absorbed weights
+      var names = ['exhL', 'exhR', 'blower', 'mech'];
+      this.taps = [];
+      var shadowOn = pp.shadow_far_db < 0;
+      this.far = [false, false, false, false];
+      for (var s = 0; s < 4; s++) {
+        var sp = SOURCES[names[s]], list = [];
+        this.far[s] = shadowOn && ((names[s] === 'exhR' && pp.ears[0][1] > 0) || (names[s] === 'exhL' && pp.ears[0][1] < 0));
+        for (e = 0; e < 2; e++) {
+          var ear = pp.ears[e], imgs = [[sp[1], sp[2], 1.0], [sp[1], -sp[2], pp.ground]];
+          for (var q = 0; q < imgs.length; q++) {
+            var gz = imgs[q][2]; if (gz === 0) continue;
+            var r = dist3([sp[0], imgs[q][0], imgs[q][1]], ear) + ((this.far[s] && !pp.outside) ? PH.far_dl : 0);
+            var wf = Math.min(1, Math.max(0, r / 80.0)), gg = gz / Math.max(r, 0.3);
+            list.push([e, Math.round(r / C_AIR * fs), (1 - wf) * gg, wf * gg]);
+          }
+        }
+        this.taps.push(list);
+      }
+      this.useShadow = PH.sh_fc > 0;
+      this.gsh = this.useShadow ? Math.pow(10, PH.sh_db / 20) : Math.pow(10, pp.shadow_far_db / 20);
+      this.shLo = [new Filt(butter(1, this.useShadow ? PH.sh_fc : 1400, 'low', fs)), new Filt(butter(1, this.useShadow ? PH.sh_fc : 1400, 'low', fs))];
+      if (!this.useShadow) this.shLo = [new Filt(butter(2, 1400, 'low', fs)), new Filt(butter(2, 1400, 'low', fs))];
+      this.air = []; this.dlS = []; this.dlA = [];
+      for (s = 0; s < 4; s++) { this.air.push(new Filt(butter(1, 2500, 'low', fs))); this.dlS.push(new Float64Array(SDL)); this.dlA.push(new Float64Array(SDL)); }
+      this.dli = 0;
+      // recording chain
+      if (pp.outside) {
+        this.chA = [new Filt(butter(2, Math.min(PH.out_lp, lim), 'low', fs)), new Filt(butter(2, Math.min(PH.out_lp, lim), 'low', fs))]; this.chMix = PH.out_mix;
+        this.chH = PH.out_hp > 0 ? [new Filt(butter(2, PH.out_hp, 'high', fs)), new Filt(butter(2, PH.out_hp, 'high', fs))] : null;
+      } else {
+        this.chA = PH.onb_mix > 0 ? [new Filt(butter(2, Math.min(PH.onb_lp, lim), 'low', fs)), new Filt(butter(2, Math.min(PH.onb_lp, lim), 'low', fs))] : null; this.chMix = PH.onb_mix;
+        this.chH = null;
+      }
+      this.windOn = pp.wind > 0;
+    };
+    Eng.prototype.kimp = function (rpm, thr) {
+      var w = Math.max(rpm, 500.0) * TWO_PI / 60;
+      var T = interp(rpm, P.mays_rpm, P.mays_bhp) * 745.7 / w * Math.pow(Math.max(thr, 0.05), 1.3);
+      return T * (4 * Math.PI / w) / 16.0 / (P.j_crank * w);
+    };
+    /** n internal samples; rpm / thr ramp linearly from the previous call's values (BRM9Synth.render). L/R += output */
+    Eng.prototype.run = function (n, rpmT, thrT, L, R, gain) {
+      var r0 = this._r !== null ? this._r : rpmT, t0 = this._r !== null ? this._t : thrT;
+      this._r = rpmT; this._t = thrT;
+      var tq = this.kimp(rpmT, thrT);
+      var fs = this.fs, dt = 1.0 / fs, g = GAMMA, gm1 = g - 1.0, crit = Math.pow((g + 1.0) / 2.0, g / gm1);
+      var psiCh = Math.sqrt(g) * Math.pow(2.0 / (g + 1.0), (g + 1.0) / (2.0 * gm1));
+      var AS = this.AS, vc = this.vc, bore = GE.bore, stroke = GE.stroke, conrod = GE.conrod, rcr = 0.5 * stroke, apist = 0.25 * Math.PI * bore * bore;
+      var IDLE = GE.idle_rpm, RED = GE.redline, PRMAX = GE.pr_max, IDLEMAP = PH.idle_map, OVMAP = PH.ov_map, TS0 = PH.t_stub0, TSA = PH.t_stuba;
+      var EVO = GE.evo, DUR = GE.dur, CAMX = GE.camx, KEVO = PH.k_evo, KMOT = PH.k_mot, TFIRE = PH.t_fire, TMOT = PH.t_mot;
+      var KNL = PH.k_nl, ROLOSS = PH.ro_loss, COV = PH.cov, COVI = PH.cov_idle, MISF = PH.misfire, MISI = PH.misfire_idle, TORS = PH.tors_deg;
+      var DR = GE.drive_ratio, LOBES = GE.blower_lobes, WW = PH.whine_w, BZ1 = GE.blade_z[0], BZ2 = GE.blade_z[1], KWH = PH.whine, KBL = PH.blade, KRU = PH.rush;
+      var avMax = this.avMax, aPort = this.aPort, evc = EVO + DUR, beta = KNL * 0.5 * (g + 1.0), invRs = 1.0 / R_GAS;
+      var open = this.open, mass = this.mass, ise = this.ise, ee = this.ee, cyl6 = this.cyl6, fire = this.fire, slen = this.slen, rdly = this.rdly, rgain = this.rgain;
+      var AT = this.AT, AF = this.AF, rptr = this.rptr, B = this.B, widx = this.widx, lpS = this.lp, uprev = this.uprev, ring0 = this.ring0, ring1 = this.ring1;
+      var rng = this.rng, rng2 = this.rng2, jetC = 2.0 * Math.sqrt(AS / Math.PI) / (343.0 * 343.0), kjet4 = PH.k_jet * 4.0;
+      var pp = this.pp, taps = this.taps, far = this.far, air = this.air, dlS = this.dlS, dlA = this.dlA, gsh = this.gsh, shLo = this.shLo, useSh = this.useShadow;
+      var chA = this.chA, chH = this.chH, chMix = this.chMix, mechK = PH.mech * 300.0, mechMod = PH.mech_mod, mechOn = PH.mech > 0;
+      var rrB = rpmT / RED, mechLev = mechOn ? mechK * Math.pow(rrB, 1.5) : 0, mechInc = rpmT / 60.0 / fs;
+      var windLev = PH.wind * 300.0, u3 = Math.pow(Math.max(0, this.speed * 3.6) / 200.0, 3);
+      var src = [0, 0, 0, 0], yo = [0, 0];
+      for (var k = 0; k < n; k++) {
+        var tt0 = (k + 1) / n, rpm_t = r0 + (rpmT - r0) * tt0, thr_in = t0 + (thrT - t0) * tt0;
+        var thr = this.THR + (thr_in - this.THR) * this.thrK; this.THR = thr;
+        var rr = rpm_t / RED, pr = 1.0 + (PRMAX - 1.0) * rr * rr;
+        this.BOOST += (pr - this.BOOST) * this.boostK;
+        var BOOST = this.BOOST, ov = 0.0;
+        if (thr < 0.06) { ov = (rpm_t - IDLE * 1.3) / (IDLE * 0.9); ov = Math.min(1.0, Math.max(0.0, ov)) * (0.06 - thr) / 0.06; }
+        var load = (IDLEMAP + (1.0 - IDLEMAP) * thr) * (1.0 - ov) + OVMAP * ov;
+        var p_man = P_ATM * load * BOOST;
+        var ttg = TS0 + TSA * load * (0.4 + 0.6 * rr);
+        this.TSTUB += (ttg - this.TSTUB) * this.tempK;
+        var Ts = this.TSTUB, cs = Math.sqrt(g * R_GAS * Ts), rho_s = P_ATM / (R_GAS * Ts), Z0 = rho_s * cs / AS, sqRTs = Math.sqrt(R_GAS * Ts);
+        var rpm = rpm_t * (1.0 + this.OMD), dth = rpm * 6.0 / fs;
+        this.OMD *= 1.0 - dth / 720.0;
+        var th0 = this.TH, th1 = th0 + dth;
+        this.TH = pmod(th1, 720.0);
+        var tors = TORS * load * BOOST / PRMAX, jet0 = 0.0, jet1 = 0.0, NS = this.NSEED;
+        var ao = 1.0 - Math.exp(-TWO_PI * (cs / (TWO_PI * this.ENDC)) / fs);
+        var ll = 1.0 - load; if (ll < 0.0) ll = 0.0;
+        for (var i = 0; i < 16; i++) {
+          var a0 = pmod(th0 - fire[i] + tors * TWW[i], 720.0), a1 = a0 + dth, e;
+          if (a1 >= 720.0) {
+            a1 -= 720.0;
+            e = 1.0 + (COV + COVI * ll * ll) * rng.gau();
+            e *= cyl6[i];
+            if (rng.rnd() < MISF * (0.3 + 0.7 * rr) * (0.2 + 0.8 * thr) + MISI * ll * ll) e = 0.1 * rng.rnd();
+            if (e < 0.0) e = 0.0;
+            ee[i] = e;
+            this.EM += (e - this.EM) * 0.02;
+            this.OMD += tq * (e - this.EM);
+          }
+          var q = 0.0, aeff = 0.0, V, ang, sn, x;
+          if (a0 < EVO && a1 >= EVO) {
+            e = ee[i];
+            var pe = p_man * (KMOT + (KEVO - KMOT) * e), Te = TMOT + (TFIRE - TMOT) * Math.min(e, 1.2);
+            ang = a1 * Math.PI / 180.0; sn = Math.sin(ang);
+            V = vc + apist * (rcr * (1.0 - Math.cos(ang)) + conrod - Math.sqrt(conrod * conrod - rcr * rcr * sn * sn));
+            var m0 = pe * V / (R_GAS * Te), rho0 = m0 / V;
+            open[i] = 1; mass[i] = m0; ise[i] = pe / Math.pow(rho0, g);
+          }
+          if (open[i]) {
+            if (a1 >= evc || a1 < EVO) open[i] = 0;
+            else {
+              x = (a1 - EVO) / DUR;
+              var lift = Math.pow(Math.sin(Math.PI * x), CAMX);
+              aeff = Math.min(avMax * lift, aPort);
+              ang = (a1 % 360.0) * Math.PI / 180.0; sn = Math.sin(ang);
+              V = vc + apist * (rcr * (1.0 - Math.cos(ang)) + conrod - Math.sqrt(conrod * conrod - rcr * rcr * sn * sn));
+              var m = mass[i], qs = 0.0;
+              for (var sub = 0; sub < 2; sub++) {
+                var rho = m / V, p = ise[i] * Math.pow(rho, g), T = p / (rho * R_GAS), psi, md, rho_e, y;
+                if (p >= P_ATM) {
+                  var rp = p / P_ATM;
+                  if (rp > crit) psi = psiCh;
+                  else { y = 1.0 / rp; psi = Math.sqrt(Math.max(0.0, 2.0 * g / gm1 * (Math.pow(y, 2.0 / g) - Math.pow(y, (g + 1.0) / g)))); }
+                  md = aeff * p / Math.sqrt(R_GAS * T) * psi;
+                  var Tex = T * Math.pow(P_ATM / p, gm1 / g);
+                  rho_e = P_ATM / (R_GAS * Tex);
+                } else {
+                  y = p / P_ATM;
+                  psi = Math.sqrt(Math.max(0.0, 2.0 * g / gm1 * (Math.pow(y, 2.0 / g) - Math.pow(y, (g + 1.0) / g))));
+                  md = -aeff * P_ATM / sqRTs * psi;
+                  rho_e = rho_s;
+                }
+                var dm = md * 0.5 * dt;
+                if (dm > 0.4 * m) { dm = 0.4 * m; md = dm / (0.5 * dt); }
+                if (md < 0.0 && m - dm > 4.0 * P_ATM * V / (R_GAS * Ts)) { dm = 0.0; md = 0.0; }
+                m -= dm;
+                if (md < 0.0) { var rho2 = m / V; ise[i] = Math.max(p, 0.2 * P_ATM) / Math.pow(rho2, g); }
+                qs += 0.5 * md / rho_e;
+              }
+              mass[i] = m;
+              q = qs;
+            }
+          }
+          // ---- stub waveguide i
+          var o = i * DL, Dn = slen[i] / cs * fs, idx = widx[i];
+          var di = Dn | 0, fr = Dn - di, ba = B[o + ((idx - di) & DLM)], bb = B[o + ((idx - di - 1) & DLM)], b_arr = ba + fr * (bb - ba);
+          var rv = (AS - aeff) / (AS + aeff) * ROLOSS;
+          var fin = Z0 * q + rv * b_arr, u = fin / (rho_s * cs);
+          if (beta * u < -0.6 * cs) u = -0.6 * cs / beta;
+          var ta = NS + slen[i] * fs / (cs + beta * u);
+          if (ta > NS + DLM - 2) ta = NS + DLM - 2;
+          var w = idx, tprev = AT[o + ((w - 1) & DLM)];
+          if (ta < tprev + 0.02) ta = tprev + 0.02;
+          AT[o + w] = ta; AF[o + w] = fin;
+          var rpp = rptr[i];
+          while (((rpp + 1) & DLM) !== w && AT[o + ((rpp + 1) & DLM)] <= NS) rpp = (rpp + 1) & DLM;
+          rptr[i] = rpp;
+          var t0a = AT[o + rpp], rn = (rpp + 1) & DLM, t1a = AT[o + rn], f_arr;
+          if (rn === ((w + 1) & DLM) || t1a <= t0a) f_arr = AF[o + rpp];
+          else {
+            var fr0 = (NS - t0a) / (t1a - t0a);
+            if (fr0 < 0.0) fr0 = 0.0; else if (fr0 > 1.0) fr0 = 1.0;
+            f_arr = AF[o + rpp] + fr0 * (AF[o + rn] - AF[o + rpp]);
+          }
+          lpS[i] += ao * (f_arr - lpS[i]);
+          var Mf = uprev[i] / AS / cs;
+          if (Mf < 0.0) Mf = 0.0; else if (Mf > 0.9) Mf = 0.9;
+          var rr2 = -ROLOSS * lpS[i] * (1.0 - Mf) / (1.0 + Mf), U = (f_arr - rr2) / Z0;
+          B[o + idx] = rr2;
+          widx[i] = (idx + 1) & DLM;
+          var dU = (U - uprev[i]) * fs;
+          uprev[i] = U;
+          if (U > 0.0) {
+            var uu = U / AS, u2 = uu * uu, jv = rho_s * u2 * u2 * jetC;
+            if (BANK[i] === 0) jet0 += jv; else jet1 += jv;
+          }
+          var pos = this.ridx + rdly[i], pi_ = Math.floor(pos), fq = pos - pi_, vv = rgain[i] * dU, ring = BANK[i] === 0 ? ring0 : ring1;
+          ring[pi_ & RINGM] += (1.0 - fq) * vv;
+          ring[(pi_ + 1) & RINGM] += fq * vv;
+        }
+        var kr = this.ridx & RINGM, busL = ring0[kr], busR = ring1[kr];
+        ring0[kr] = 0.0; ring1[kr] = 0.0; this.ridx++;
+        var jn0 = jet0 * (2.0 * rng.rnd() - 1.0), jn1 = jet1 * (2.0 * rng.rnd() - 1.0);
+        // ---- supercharger
+        this.BPH += DR * rpm / 60.0 / fs;
+        if (this.BPH > 1.0) this.BPH -= 1.0;
+        var xl = (this.BPH * LOBES) % 1.0, pul = 0.0;
+        if (xl < WW) pul = 0.5 - 0.5 * Math.cos(TWO_PI * xl / WW);
+        pul -= 0.5 * WW;
+        var dp = rr * rr * BOOST / PRMAX, flow = 0.25 + 0.75 * load;
+        var bl = KWH * pul * dp * flow / WW, phs = TWO_PI * this.BPH;
+        bl += KBL * dp * flow * (Math.sin(BZ1 * phs) + 0.7 * Math.sin(BZ2 * phs + 1.0));
+        var rush = KRU * dp * rr * flow * (2.0 * rng.rnd() - 1.0);
+        this.NSEED += 1.0;
+        if (this.NSEED > 1.0e6) { this.NSEED -= 1.0e6; for (var j = 0; j < AT.length; j++) AT[j] -= 1.0e6; }
+        // ---- post chain (brm9._render): buses
+        src[0] = RAD_K * busL + kjet4 * this.jetL.f(jn0);
+        src[1] = RAD_K * busR + kjet4 * this.jetR.f(jn1);
+        src[2] = 30.0 * (this.blF.f(bl) + this.rushF.f(rush));
+        if (mechOn) {
+          this.mechPh += mechInc; if (this.mechPh > 1.0) this.mechPh -= 1.0;
+          src[3] = mechLev * (1.0 + mechMod * Math.cos(16.0 * TWO_PI * this.mechPh)) * this.mechF.f(rng2.norm());
+        } else src[3] = 0;
+        // ---- Spatializer (static listener)
+        var di2 = this.dli; yo[0] = 0; yo[1] = 0;
+        for (var s = 0; s < 4; s++) {
+          if (s === 3 && !mechOn) continue;
+          var sg = src[s];
+          if (far[s]) {
+            if (useSh) { var lo = shLo[s].f(sg); sg = lo + gsh * (sg - lo); }
+            else sg = gsh * (0.35 * sg + 0.65 * shLo[s].f(sg));
+          }
+          dlS[s][di2] = sg; dlA[s][di2] = air[s].f(sg);
+          var tl = taps[s];
+          for (var t = 0; t < tl.length; t++) { var tp = tl[t], ix = (di2 - tp[1]) & SDLM; yo[tp[0]] += tp[2] * dlS[s][ix] + tp[3] * dlA[s][ix]; }
+        }
+        this.dli = (di2 + 1) & SDLM;
+        var yl = yo[0], yr = yo[1];
+        if (chA) { yl = (1 - chMix) * yl + chMix * chA[0].f(yl); yr = (1 - chMix) * yr + chMix * chA[1].f(yr); }
+        if (chH) { yl = chH[0].f(yl); yr = chH[1].f(yr); }
+        if (this.windOn) {
+          if (++this.gustN >= this.gustBlk) { this.gustN = 0; this.gust += (rng2.norm() * 0.3 - this.gust) * 0.05; }
+          var wv = u3 * (1.0 + this.gust) * this.windF.f(rng2.norm()) * windLev;
+          yl += wv; yr += 0.9 * wv;
+        }
+        L[k] += gain * yl; R[k] += gain * yr;
+      }
+    };
+    Eng.prototype.copyKernel = function (o) {   // same engine state (other listener)
+      var keys = ['open', 'mass', 'ise', 'ee', 'AT', 'AF', 'rptr', 'B', 'widx', 'lp', 'uprev', 'ring0', 'ring1'];
+      for (var i = 0; i < keys.length; i++) this[keys[i]].set(o[keys[i]]);
+      var sc = ['ridx', 'TH', 'THR', 'BOOST', 'TSTUB', 'OMD', 'EM', 'BPH', 'NSEED', '_r', '_t', 'mechPh', 'gust', 'speed'];
+      for (i = 0; i < sc.length; i++) this[sc[i]] = o[sc[i]];
+      this.rng.h = o.rng.h; this.rng.l = o.rng.l; this.rng2.h = o.rng2.h; this.rng2.l = o.rng2.l;
+    };
+
+    // ---------------------------------------------------------------- 2x interpolator (windowed-sinc half-band, odd phase)
+    var HB_N = 12, HB = new Float64Array(2 * HB_N);
+    (function () {
+      var s = 0, k;
+      for (k = 0; k < 2 * HB_N; k++) { var t = k - HB_N + 0.5, x = Math.PI * t; HB[k] = Math.sin(x) / x * (0.54 + 0.46 * Math.cos(Math.PI * t / (HB_N + 0.5))); s += HB[k]; }
+      for (k = 0; k < 2 * HB_N; k++) HB[k] /= s;
+    })();
+    function Up2() { this.x = new Float64Array(4 * HB_N); this.i = 0; }
+    Up2.prototype.push = function (v, out, o) {   // one input sample -> out[o], out[o+1]
+      var x = this.x, N = 2 * HB_N, i = this.i, k, acc = 0;
+      x[i] = v; x[i + N] = v; this.i = (i + 1) % N;
+      var base = this.i;   // oldest
+      for (k = 0; k < N; k++) acc += HB[k] * x[base + k];
+      out[o] = x[base + HB_N - 1]; out[o + 1] = acc;
+    };
+
+    // ---------------------------------------------------------------- the synth (ListenerSource interface)
+    function isMainThread() { return typeof registerProcessor !== 'function'; }
+    function BrmSynthV9(spec, listener, fs, opts) {
+      opts = opts || {};
+      this.fs = fs || 44100;
+      this.spec = Object.assign({ idle_rpm: 3800, redline: 12000, name: 'BRM P30 V16' }, spec || {});
+      this.listener = listener || {};
+      this.pos = this.listener.position || this.listener.pos || 'rear';
+      var qual = opts.quality || this.spec.quality || 'auto';
+      this.auto = qual === 'auto';
+      this.dec = qual === 'lite' ? 2 : (qual === 'hq' ? 1 : (isMainThread() ? 2 : 1));
+      if (this.fs < 30000) this.dec = 1;
+      this.seed = opts.seed || 9;
+      this.eng = new Eng(this.fs / this.dec, perspective(this.pos), this.seed);
+      this.up = [new Up2(), new Up2()];
+      this.bL = new Float64Array(64); this.bR = new Float64Array(64); this.uL = new Float64Array(2); this.uR = new Float64Array(2);
+      this.fifoL = new Float64Array(256); this.fifoR = new Float64Array(256); this.fn = 0;
+      this.gain = this.listener.level !== undefined ? this.listener.level : 1;   // (tests) raw model scale; the game level is gain_db in js/models.js
+      this.cpuMs = 0; this.cpuAudio = 0; this.speed = 0; this.xf = null;
+    }
+    BrmSynthV9.prototype.ctl = function (m) { if (m && m.speed !== undefined) { this.speed = m.speed; this.eng.speed = m.speed; if (this.xf) this.xf.eng.speed = m.speed; } };
+    BrmSynthV9.prototype.quality = function () { return this.dec === 1 ? 'hq' : 'lite'; };
+    BrmSynthV9.prototype.cloneWithListener = function (listener) {
+      var c = new BrmSynthV9(this.spec, listener, this.fs, { quality: this.quality(), seed: this.seed });
+      c.auto = this.auto; c.eng.copyKernel(this.eng); c.speed = this.speed; c.cpuMs = this.cpuMs; c.cpuAudio = this.cpuAudio;
+      return c;
+    };
+    BrmSynthV9.prototype._internal = function (m, rpm, thr, eng, L, R) {
+      for (var k = 0; k < m; k++) { L[k] = 0; R[k] = 0; }
+      eng.run(m, rpm, thr, L, R, this.gain);
+    };
+    /** n output samples (n <= 128) */
+    BrmSynthV9.prototype.render = function (n, rpm, thr, L, R) {
+      if (rpm < 60) rpm = 60;
+      if (thr < 0) thr = 0; if (thr > 1) thr = 1;
+      var t0 = this.auto && this.dec === 1 ? Date.now() : 0, k;
+      if (this.dec === 1) {
+        if (this.bL.length < n) { this.bL = new Float64Array(n); this.bR = new Float64Array(n); }
+        this._internal(n, rpm, thr, this.eng, this.bL, this.bR);
+        for (k = 0; k < n; k++) { L[k] = this.bL[k]; R[k] = this.bR[k]; }
+      } else {
+        // half rate: produce enough internal samples to fill n outputs (FIFO keeps the odd one)
+        var need = n - this.fn, m = (need + 1) >> 1;
+        if (m > 0) {
+          this._internal(m, rpm, thr, this.eng, this.bL, this.bR);
+          for (k = 0; k < m; k++) {
+            this.up[0].push(this.bL[k], this.fifoL, this.fn); this.up[1].push(this.bR[k], this.fifoR, this.fn); this.fn += 2;
+          }
+        }
+        for (k = 0; k < n; k++) { L[k] = this.fifoL[k]; R[k] = this.fifoR[k]; }
+        for (k = n; k < this.fn; k++) { this.fifoL[k - n] = this.fifoL[k]; this.fifoR[k - n] = this.fifoR[k]; }
+        this.fn -= n;
+      }
+      if (this.xf) this._crossfade(n, rpm, thr, L, R);
+      if (t0) {
+        this.cpuMs += Date.now() - t0; this.cpuAudio += n / this.fs * 1000;
+        if (this.cpuAudio >= 3000) {
+          if (this.cpuMs > 0.45 * this.cpuAudio) this._toLite();
+          this.cpuMs = 0; this.cpuAudio = 0;
+        }
+      }
+    };
+    BrmSynthV9.prototype._toLite = function () {   // CPU guard: rebuild at half rate and crossfade (50 ms)
+      var old = this.eng, ne = new Eng(this.fs / 2, old.pp, this.seed);
+      ne.TH = old.TH; ne.THR = old.THR; ne.BOOST = old.BOOST; ne.TSTUB = old.TSTUB; ne.EM = old.EM; ne.BPH = old.BPH; ne._r = old._r; ne._t = old._t; ne.speed = old.speed;
+      this.xf = { eng: old, a: 1, bL: new Float64Array(128), bR: new Float64Array(128) };
+      this.eng = ne; this.dec = 2; this.auto = false; this.fn = 0;
+    };
+    BrmSynthV9.prototype._crossfade = function (n, rpm, thr, L, R) {
+      var x = this.xf, k, step = 1 / (0.05 * this.fs);
+      this._internal(n, rpm, thr, x.eng, x.bL, x.bR);
+      for (k = 0; k < n; k++) { x.a = Math.max(0, x.a - step); var b = 1 - x.a; L[k] = b * L[k] + x.a * x.bL[k]; R[k] = b * R[k] + x.a * x.bR[k]; }
+      if (x.a <= 0) this.xf = null;
+    };
+    return [{ id: 'v9', Synth: BrmSynthV9, synthOpts: {}, positions: ["rear", "in_cabin"], P: P, Eng: Eng, butter: butter, perspective: perspective, Rng: Rng, rngFor: rngFor }];
   }]);
