@@ -2863,9 +2863,11 @@ function engineModuleBrm8(core) {
     return [{ id: 'v8', Synth: BrmSynthV8, synthOpts: {}, positions: ['rear', 'in_cabin'] }];
   },
 function engineModuleBrm9(core) {
-    var P = {"phys":{"stub_len":0.5425000000000001,"stub_sig":0.04349732181520666,"k_evo":4.5,"k_mot":1.1,"t_fire":1250.0,"t_mot":520.0,"t_stub0":497.34445043449153,"t_stuba":350.0,"k_nl":1.5,"mod_max":0.45,"ro_loss":0.97,"weak":0.8243873591057389,"weak_cyl":1,"misfire":0.13460058068130187,"cov":0.017984912644741766,"cov_idle":0.0818881435523372,"misfire_idle":0.22775540189090837,"exit_pitch":0.075,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.258978425022592,"stub_c":0.04,"chg_c":-0.2,"wind_fc":514.2647991368509,"out_lp":2395.5068175045653,"out_mix":1.0,"onb_lp":3500.120168882837,"onb_mix":0.9996904268672767,"mech":0.010328302997279824,"mech_mod":0.6,"out_hp":30.0,"bank_dx":-0.03,"chg_lin":0.02,"onb_x":-1.075,"onb_y":0.2,"onb_z":0.88,"onb_ground":0.0,"far_dl":0.0,"sh_fc":1500,"sh_db":-3,"gnd_fc":0.0,"idle_map":0.21668471290867022,"ov_map":0.04093851072666962,"half_deg":0.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":300.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"b_mirror":1},"stub_z":[0.4601578514017764,0.3596506232513735,0.09710951191066246,-0.07351765578769823,-0.07233413778823487,0.5381187567527944,-1.6807549872233718,0.09340929735988178,0.7033247016822283,-1.008014400498587,-1.050341006284517,0.4752506204861838,-0.0916655439252554,0.7426428208118669,2.3733095299198372,-1.8663459820689405],"mays_rpm":[0.0,2000.0,3500.0,5000.0,6000.0,7000.0,8000.0,9000.0,10000.0,11000.0,12000.0,12600.0],"mays_bhp":[0.0,18.0,50.0,100.0,175.0,250.0,335.0,412.0,525.0,585.0,600.0,560.0],"fire_order":[1,10,6,13,2,16,5,11,8,15,3,12,7,9,4,14],"j_crank":0.15,"persp":{"rear":{"ears":[[-5.4,0.09,1.0],[-5.4,-0.09,1.0]],"ground":0.75,"shadow_far_db":-3.0,"wind":0.0,"outside":true,"ambience":0.0},"side":{"ears":[[0.09,4.7,1.2],[-0.09,4.7,1.2]],"ground":0.75,"shadow_far_db":-9.0,"wind":0.0,"outside":true,"ambience":0.02},"onboard":{"ears":[[-1.2,0.09,0.75],[-1.2,-0.09,0.75]],"ground":0.0,"shadow_far_db":-2.0,"wind":0.02,"outside":false,"ambience":0.0}}};
-    var PH = P.phys, GE = P.geom;
-    var C_AIR = 343.0, P_ATM = 101325.0, R_GAS = 290.0, GAMMA = 1.32;
+    // model parameters only (tools/export_brm9_params.py from engine-sound brm9.py + fitted_params_v9_*.json): merged PHYS / GEOM
+    // per fitted set + the kernel constants brm9.BRM9Synth derives from them (q); COMMON = module constants of brm9.py / brm6.py
+    var COMMON = {"stub_z":[0.4601578514017764,0.3596506232513735,0.09710951191066246,-0.07351765578769823,-0.07233413778823487,0.5381187567527944,-1.6807549872233718,0.09340929735988178,0.7033247016822283,-1.008014400498587,-1.050341006284517,0.4752506204861838,-0.0916655439252554,0.7426428208118669,2.3733095299198372,-1.8663459820689405],"mays_rpm":[0.0,2000.0,3500.0,5000.0,6000.0,7000.0,8000.0,9000.0,10000.0,11000.0,12000.0,12600.0],"mays_bhp":[0.0,18.0,50.0,100.0,175.0,250.0,335.0,412.0,525.0,585.0,600.0,560.0],"fire_order":[1,10,6,13,2,16,5,11,8,15,3,12,7,9,4,14],"j_crank":0.15,"persp":{"rear":{"ears":[[-5.4,0.09,1.0],[-5.4,-0.09,1.0]],"ground":0.75,"shadow_far_db":-3.0,"wind":0.0,"outside":true,"ambience":0.0},"side":{"ears":[[0.09,4.7,1.2],[-0.09,4.7,1.2]],"ground":0.75,"shadow_far_db":-9.0,"wind":0.0,"outside":true,"ambience":0.02},"onboard":{"ears":[[-1.2,0.09,0.75],[-1.2,-0.09,0.75]],"ground":0.0,"shadow_far_db":-2.0,"wind":0.02,"outside":false,"ambience":0.0}}};
+    var SETS = {"v9_1":{"phys":{"stub_len":0.5414880233462647,"stub_sig":0.04095965620559825,"k_evo":4.5,"k_mot":1.1,"t_fire":1250.0,"t_mot":520.0,"t_stub0":471.1377477209218,"t_stuba":350.0,"k_nl":0.8951929515775512,"mod_max":0.45,"ro_loss":0.97,"weak":0.891530446025328,"weak_cyl":1,"misfire":0.1252235566149115,"cov":0.05143494614644671,"cov_idle":0.005181153021192375,"misfire_idle":0.20581154220665474,"exit_pitch":0.055899608452020355,"tors_deg":0.4859439587753051,"k_jet":0.024388675867880218,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.002,"wind":0.2026334683806248,"prim_len":0.35,"prim_d":0.06,"sec_f":0.55,"sec_r":0.25,"tail_len":1.0,"a2r":2.0,"atr":2.5,"t_pipe":750.0,"stub_c":0.0,"chg_c":0.18707186416778254,"wind_fc":405.40482361018735,"pad_lp":1509.4569422360382,"out_lp":3155.113511539341,"out_mix":0.6591947256480176,"shadow_db":-9.0,"onb_lp":20000.0,"onb_mix":0.0,"mech":0.0,"fuel_model":0.0,"fuel_meoh":0.8,"fuel_petrol":0.1,"fuel_acetone":0.1,"lam":0.8,"stub_dir":0.0,"stub_yaw":0.0,"stub_pitch":0.0,"onb_mic":0.0,"onb_aim":0.0,"onb_el":0.0,"onb_hp":0.0,"gnd_sigma":0.0,"da_sigma":0.0,"far_sigma":0.0,"half_deg":0.0,"stub_track":0.0,"da_lp":0.0,"out_hp":0.0,"da_az":0.0,"far_az":0.0,"tg_x":-2.0,"tg_y":0.0,"tg_z":0.95,"far_dl":0.0,"bank_dx":0.0,"onb_ground":0.0,"tun_w":4.5,"tun_h":5.5,"tun_cw":0.0,"tun_cc":0.0,"chg_lin":0.0,"onb_x":-1.2,"onb_y":0.0,"onb_z":0.75,"pad_sep":0.0,"gnd_fc":0.0,"sh_fc":0.0,"sh_db":-9.0,"idle_map":0.3,"ov_map":0.15,"mech_mod":0.6,"ab_on":0.0,"ab_xlim":0.5,"ab_xw":0.25,"ab_eff":0.3,"ab_tau":0.0015,"ab_mouth":0.5,"fl_on":0.0,"fl_eff":0.2,"fl_turb":0.5,"fl_fc":500.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.58855726702774,"dur":300.0,"camx":1.453387839370317,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.373551634521821,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"tail_x":-1.25,"tail_y":0.45,"tail_z":0.15,"b_mirror":1},"q":{"RG":290.0,"GAM":1.32,"TFIRE":1250.0,"KEVO":4.5,"TSTUB0":471.1377477209218,"TSTUBA":350.0,"ABON":0.0,"XLIM":0.0,"XW":0.0,"ABEFF":0.0,"ABTAU":0.0,"ABMOUTH":0.0,"AFRF":0.0,"LHVE":0.0,"TCH":0.0,"FLON":0.0,"FLK":0.0,"FLTURB":0.0}},"v9_2":{"phys":{"stub_len":0.55,"stub_sig":0.04349732181520666,"k_evo":4.5,"k_mot":1.1,"t_fire":1250.0,"t_mot":520.0,"t_stub0":497.34445043449153,"t_stuba":350.0,"k_nl":1.5,"mod_max":0.45,"ro_loss":0.97,"weak":0.8243873591057389,"weak_cyl":1,"misfire":0.13460058068130187,"cov":0.017984912644741766,"cov_idle":0.0818881435523372,"misfire_idle":0.22775540189090837,"exit_pitch":0.065,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.23897842502259198,"prim_len":0.35,"prim_d":0.06,"sec_f":0.55,"sec_r":0.25,"tail_len":1.0,"a2r":2.0,"atr":2.5,"t_pipe":750.0,"stub_c":0.0,"chg_c":-0.2,"wind_fc":514.2647991368509,"pad_lp":1107.911500472259,"out_lp":2395.5068175045653,"out_mix":1.0,"shadow_db":-9.0,"onb_lp":4100.120168882837,"onb_mix":0.8496904268672767,"mech":0.010328302997279824,"fuel_model":0.0,"fuel_meoh":0.8,"fuel_petrol":0.1,"fuel_acetone":0.1,"lam":0.8,"stub_dir":0.0,"stub_yaw":0.0,"stub_pitch":0.0,"onb_mic":0.0,"onb_aim":0.0,"onb_el":0.0,"onb_hp":0.0,"gnd_sigma":0.0,"da_sigma":0.0,"far_sigma":0.0,"half_deg":0.0,"stub_track":0.0,"da_lp":0.0,"out_hp":0.0,"da_az":0.0,"far_az":0.0,"tg_x":-2.0,"tg_y":0.0,"tg_z":0.95,"far_dl":0.0,"bank_dx":0.0,"onb_ground":0.0,"tun_w":4.5,"tun_h":5.5,"tun_cw":0.0,"tun_cc":0.0,"chg_lin":0.0,"onb_x":-1.2,"onb_y":0.0,"onb_z":0.75,"pad_sep":1.0,"gnd_fc":0.0,"sh_fc":997.3098617859288,"sh_db":-8.470900265610908,"idle_map":0.21668471290867022,"ov_map":0.04093851072666962,"mech_mod":0.6,"ab_on":0.0,"ab_xlim":0.5,"ab_xw":0.25,"ab_eff":0.3,"ab_tau":0.0015,"ab_mouth":0.5,"fl_on":0.0,"fl_eff":0.2,"fl_turb":0.5,"fl_fc":500.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":300.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"tail_x":-1.25,"tail_y":0.45,"tail_z":0.15,"b_mirror":1},"q":{"RG":290.0,"GAM":1.32,"TFIRE":1250.0,"KEVO":4.5,"TSTUB0":497.34445043449153,"TSTUBA":350.0,"ABON":0.0,"XLIM":0.0,"XW":0.0,"ABEFF":0.0,"ABTAU":0.0,"ABMOUTH":0.0,"AFRF":0.0,"LHVE":0.0,"TCH":0.0,"FLON":0.0,"FLK":0.0,"FLTURB":0.0}},"v9_3":{"phys":{"stub_len":0.5425000000000001,"stub_sig":0.04349732181520666,"k_evo":4.5,"k_mot":1.1,"t_fire":1250.0,"t_mot":520.0,"t_stub0":497.34445043449153,"t_stuba":350.0,"k_nl":1.5,"mod_max":0.45,"ro_loss":0.97,"weak":0.8243873591057389,"weak_cyl":1,"misfire":0.13460058068130187,"cov":0.017984912644741766,"cov_idle":0.0818881435523372,"misfire_idle":0.22775540189090837,"exit_pitch":0.075,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.258978425022592,"prim_len":0.35,"prim_d":0.06,"sec_f":0.55,"sec_r":0.25,"tail_len":1.0,"a2r":2.0,"atr":2.5,"t_pipe":750.0,"stub_c":0.0,"chg_c":-0.2,"wind_fc":514.2647991368509,"pad_lp":1107.911500472259,"out_lp":2395.5068175045653,"out_mix":1.0,"shadow_db":-9.0,"onb_lp":3500.120168882837,"onb_mix":0.9996904268672767,"mech":0.010328302997279824,"fuel_model":0.0,"fuel_meoh":0.8,"fuel_petrol":0.1,"fuel_acetone":0.1,"lam":0.8,"stub_dir":0.0,"stub_yaw":0.0,"stub_pitch":0.0,"onb_mic":0.0,"onb_aim":0.0,"onb_el":0.0,"onb_hp":0.0,"gnd_sigma":0.0,"da_sigma":0.0,"far_sigma":0.0,"half_deg":0.0,"stub_track":0.0,"da_lp":0.0,"out_hp":0.0,"da_az":0.0,"far_az":0.0,"tg_x":-2.0,"tg_y":0.0,"tg_z":0.95,"far_dl":0.0,"bank_dx":0.0,"onb_ground":0.0,"tun_w":4.5,"tun_h":5.5,"tun_cw":0.0,"tun_cc":0.0,"chg_lin":0.02,"onb_x":-1.125,"onb_y":0.2,"onb_z":0.88,"pad_sep":1.0,"gnd_fc":0.0,"sh_fc":1297.3098617859287,"sh_db":-3,"idle_map":0.21668471290867022,"ov_map":0.04093851072666962,"mech_mod":0.6,"ab_on":0.0,"ab_xlim":0.5,"ab_xw":0.25,"ab_eff":0.3,"ab_tau":0.0015,"ab_mouth":0.5,"fl_on":0.0,"fl_eff":0.2,"fl_turb":0.5,"fl_fc":500.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":300.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"tail_x":-1.25,"tail_y":0.45,"tail_z":0.15,"b_mirror":1},"q":{"RG":290.0,"GAM":1.32,"TFIRE":1250.0,"KEVO":4.5,"TSTUB0":497.34445043449153,"TSTUBA":350.0,"ABON":0.0,"XLIM":0.0,"XW":0.0,"ABEFF":0.0,"ABTAU":0.0,"ABMOUTH":0.0,"AFRF":0.0,"LHVE":0.0,"TCH":0.0,"FLON":0.0,"FLK":0.0,"FLTURB":0.0}},"v9_4":{"phys":{"stub_len":0.5425000000000001,"stub_sig":0.04349732181520666,"k_evo":4.5,"k_mot":1.1,"t_fire":1250.0,"t_mot":520.0,"t_stub0":497.34445043449153,"t_stuba":350.0,"k_nl":1.5,"mod_max":0.45,"ro_loss":0.97,"weak":0.8243873591057389,"weak_cyl":1,"misfire":0.13460058068130187,"cov":0.017984912644741766,"cov_idle":0.0818881435523372,"misfire_idle":0.22775540189090837,"exit_pitch":0.075,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.258978425022592,"prim_len":0.35,"prim_d":0.06,"sec_f":0.55,"sec_r":0.25,"tail_len":1.0,"a2r":2.0,"atr":2.5,"t_pipe":750.0,"stub_c":0.04,"chg_c":-0.2,"wind_fc":514.2647991368509,"pad_lp":1107.911500472259,"out_lp":2395.5068175045653,"out_mix":1.0,"shadow_db":-9.0,"onb_lp":3500.120168882837,"onb_mix":0.9996904268672767,"mech":0.010328302997279824,"fuel_model":0.0,"fuel_meoh":0.8,"fuel_petrol":0.1,"fuel_acetone":0.1,"lam":0.8,"stub_dir":0.0,"stub_yaw":0.0,"stub_pitch":0.0,"onb_mic":0.0,"onb_aim":0.0,"onb_el":0.0,"onb_hp":0.0,"gnd_sigma":0.0,"da_sigma":0.0,"far_sigma":0.0,"half_deg":0.0,"stub_track":0.0,"da_lp":0.0,"out_hp":0.0,"da_az":0.0,"far_az":0.0,"tg_x":-2.0,"tg_y":0.0,"tg_z":0.95,"far_dl":0.0,"bank_dx":-0.03,"onb_ground":0.0,"tun_w":4.5,"tun_h":5.5,"tun_cw":0.0,"tun_cc":0.0,"chg_lin":0.02,"onb_x":-1.075,"onb_y":0.2,"onb_z":0.88,"pad_sep":1.0,"gnd_fc":0.0,"sh_fc":1297.3098617859287,"sh_db":-3,"idle_map":0.21668471290867022,"ov_map":0.04093851072666962,"mech_mod":0.6,"ab_on":0.0,"ab_xlim":0.5,"ab_xw":0.25,"ab_eff":0.3,"ab_tau":0.0015,"ab_mouth":0.5,"fl_on":0.0,"fl_eff":0.2,"fl_turb":0.5,"fl_fc":500.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":300.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"tail_x":-1.25,"tail_y":0.45,"tail_z":0.15,"b_mirror":1},"q":{"RG":290.0,"GAM":1.32,"TFIRE":1250.0,"KEVO":4.5,"TSTUB0":497.34445043449153,"TSTUBA":350.0,"ABON":0.0,"XLIM":0.0,"XW":0.0,"ABEFF":0.0,"ABTAU":0.0,"ABMOUTH":0.0,"AFRF":0.0,"LHVE":0.0,"TCH":0.0,"FLON":0.0,"FLK":0.0,"FLTURB":0.0}},"v9_6":{"phys":{"stub_len":0.5425000000000001,"stub_sig":0.04349732181520666,"k_evo":4.5,"k_mot":1.1,"t_fire":1250.0,"t_mot":520.0,"t_stub0":497.34445043449153,"t_stuba":350.0,"k_nl":1.5,"mod_max":0.45,"ro_loss":0.97,"weak":0.8243873591057389,"weak_cyl":1,"misfire":0.13460058068130187,"cov":0.017984912644741766,"cov_idle":0.0818881435523372,"misfire_idle":0.22775540189090837,"exit_pitch":0.075,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.258978425022592,"prim_len":0.35,"prim_d":0.06,"sec_f":0.55,"sec_r":0.25,"tail_len":1.0,"a2r":2.0,"atr":2.5,"t_pipe":750.0,"stub_c":0.04,"chg_c":-0.2,"wind_fc":514.2647991368509,"pad_lp":1107.911500472259,"out_lp":2395.5068175045653,"out_mix":1.0,"shadow_db":-9.0,"onb_lp":3500.120168882837,"onb_mix":0.9996904268672767,"mech":0.010328302997279824,"fuel_model":0.0,"fuel_meoh":0.8,"fuel_petrol":0.1,"fuel_acetone":0.1,"lam":0.8,"stub_dir":0.0,"stub_yaw":0.0,"stub_pitch":0.0,"onb_mic":0.0,"onb_aim":0.0,"onb_el":0.0,"onb_hp":0.0,"gnd_sigma":0.0,"da_sigma":0.0,"far_sigma":0.0,"half_deg":0.0,"stub_track":0.0,"da_lp":0.0,"out_hp":30.0,"da_az":3.0,"far_az":12.0,"tg_x":-2.0,"tg_y":0.0,"tg_z":0.95,"far_dl":0.0,"bank_dx":-0.03,"onb_ground":0.0,"tun_w":4.5,"tun_h":5.5,"tun_cw":0.0,"tun_cc":0.0,"chg_lin":0.02,"onb_x":-1.075,"onb_y":0.2,"onb_z":0.88,"pad_sep":1.0,"gnd_fc":0.0,"sh_fc":1500,"sh_db":-3,"idle_map":0.21668471290867022,"ov_map":0.04093851072666962,"mech_mod":0.6,"ab_on":0.0,"ab_xlim":0.5,"ab_xw":0.25,"ab_eff":0.3,"ab_tau":0.0015,"ab_mouth":0.5,"fl_on":0.0,"fl_eff":0.2,"fl_turb":0.5,"fl_fc":500.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":300.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"tail_x":-1.25,"tail_y":0.45,"tail_z":0.15,"b_mirror":1},"q":{"RG":290.0,"GAM":1.32,"TFIRE":1250.0,"KEVO":4.5,"TSTUB0":497.34445043449153,"TSTUBA":350.0,"ABON":0.0,"XLIM":0.0,"XW":0.0,"ABEFF":0.0,"ABTAU":0.0,"ABMOUTH":0.0,"AFRF":0.0,"LHVE":0.0,"TCH":0.0,"FLON":0.0,"FLK":0.0,"FLTURB":0.0}},"v9_8":{"phys":{"stub_len":0.5425000000000001,"stub_sig":0.04349732181520666,"k_evo":4.5,"k_mot":1.1,"t_fire":1050.0,"t_mot":520.0,"t_stub0":445.89313136443366,"t_stuba":313.7917711582222,"k_nl":1.7,"mod_max":0.45,"ro_loss":0.97,"weak":0.5993873591057388,"weak_cyl":1,"misfire":0.13460058068130187,"cov":0.07798491264474176,"cov_idle":0.0818881435523372,"misfire_idle":0.22775540189090837,"exit_pitch":0.06999999999999999,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.258978425022592,"prim_len":0.35,"prim_d":0.06,"sec_f":0.55,"sec_r":0.25,"tail_len":1.0,"a2r":2.0,"atr":2.5,"t_pipe":750.0,"stub_c":-0.0049999999999999975,"chg_c":-0.2,"wind_fc":514.2647991368509,"pad_lp":1107.911500472259,"out_lp":2395.5068175045653,"out_mix":0.85,"shadow_db":-9.0,"onb_lp":3500.120168882837,"onb_mix":0.9996904268672767,"mech":0.010328302997279824,"fuel_model":1.0,"fuel_meoh":0.8,"fuel_petrol":0.1,"fuel_acetone":0.1,"lam":0.8,"stub_dir":0.0,"stub_yaw":0.0,"stub_pitch":0.0,"onb_mic":1.0,"onb_aim":0.0,"onb_el":30.0,"onb_hp":0.0,"gnd_sigma":0.0,"da_sigma":0.0,"far_sigma":30000000.0,"half_deg":0.0,"stub_track":0.0,"da_lp":0.0,"out_hp":30.0,"da_az":3.0,"far_az":12.0,"tg_x":-2.0,"tg_y":0.0,"tg_z":0.95,"far_dl":0.0,"bank_dx":-0.0375,"onb_ground":0.0,"tun_w":4.5,"tun_h":5.5,"tun_cw":0.0,"tun_cc":0.0,"chg_lin":0.17,"onb_x":-1.075,"onb_y":0.2,"onb_z":0.88,"pad_sep":1.0,"gnd_fc":0.0,"sh_fc":1500,"sh_db":-3,"idle_map":0.21668471290867022,"ov_map":0.04093851072666962,"mech_mod":0.6,"ab_on":0.0,"ab_xlim":0.5,"ab_xw":0.25,"ab_eff":0.3,"ab_tau":0.0015,"ab_mouth":0.5,"fl_on":0.0,"fl_eff":0.2,"fl_turb":0.5,"fl_fc":500.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":290.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"tail_x":-1.25,"tail_y":0.45,"tail_z":0.15,"b_mirror":1},"q":{"RG":312.6611364809158,"GAM":1.2939061828269274,"TFIRE":1108.1818469895627,"KEVO":4.3381427487802275,"TSTUB0":470.60064178609315,"TSTUBA":331.1793757449951,"ABON":0.0,"XLIM":0.0,"XW":0.0,"ABEFF":0.0,"ABTAU":0.0,"ABMOUTH":0.0,"AFRF":0.0,"LHVE":0.0,"TCH":0.0,"FLON":0.0,"FLK":0.0,"FLTURB":0.0}},"v9_9":{"phys":{"stub_len":0.5425000000000001,"stub_sig":0.04349732181520666,"k_evo":5.5,"k_mot":1.1,"t_fire":1050.0,"t_mot":520.0,"t_stub0":445.89313136443366,"t_stuba":313.7917711582222,"k_nl":1.7,"mod_max":0.45,"ro_loss":0.97,"weak":0.5993873591057388,"weak_cyl":1,"misfire":0.0,"cov":0.07798491264474176,"cov_idle":0.0818881435523372,"misfire_idle":0.0,"exit_pitch":0.06999999999999999,"tors_deg":0.0,"k_jet":0.02,"jet_x":4.0,"whine":0.5382794983771708,"whine_w":0.26970031294761004,"whine_lp":6000.0,"blade":0.002,"rush":0.02,"wind":0.188978425022592,"prim_len":0.35,"prim_d":0.06,"sec_f":0.55,"sec_r":0.25,"tail_len":1.0,"a2r":2.0,"atr":2.5,"t_pipe":750.0,"stub_c":-0.0049999999999999975,"chg_c":-0.05000000000000002,"wind_fc":514.2647991368509,"pad_lp":1107.911500472259,"out_lp":2395.5068175045653,"out_mix":0.85,"shadow_db":-9.0,"onb_lp":3500.120168882837,"onb_mix":0.8996904268672767,"mech":0.010328302997279824,"fuel_model":1.0,"fuel_meoh":0.8,"fuel_petrol":0.1,"fuel_acetone":0.1,"lam":0.8,"stub_dir":0.0,"stub_yaw":0.0,"stub_pitch":0.0,"onb_mic":1.0,"onb_aim":0.0,"onb_el":30.0,"onb_hp":0.0,"gnd_sigma":0.0,"da_sigma":0.0,"far_sigma":30000000.0,"half_deg":0.0,"stub_track":0.0,"da_lp":0.0,"out_hp":30.0,"da_az":-3.0,"far_az":12.0,"tg_x":-2.0,"tg_y":0.0,"tg_z":0.95,"far_dl":0.0,"bank_dx":-0.0375,"onb_ground":0.0,"tun_w":4.5,"tun_h":5.5,"tun_cw":0.3,"tun_cc":0.0,"chg_lin":0.17,"onb_x":-1.075,"onb_y":0.2,"onb_z":0.88,"pad_sep":1.0,"gnd_fc":0.0,"sh_fc":1500,"sh_db":-3,"idle_map":0.21668471290867022,"ov_map":0.05093851072666962,"mech_mod":0.6,"ab_on":1.0,"ab_xlim":0.5,"ab_xw":0.25,"ab_eff":0.675,"ab_tau":0.0015,"ab_mouth":0.5,"fl_on":1.0,"fl_eff":0.2,"fl_turb":0.5,"fl_fc":250.0},"geom":{"bore":0.04953,"stroke":0.04826,"cr":7.8,"conrod":0.096,"dv":0.0215,"lmax":0.0062,"evo":102.01096601086984,"dur":290.0,"camx":1.4767886436763162,"cd":0.65,"stub_d":0.034,"drive_ratio":4.15,"blower_lobes":2,"blade_z":[12,12],"pr_max":5.696214039276613,"idle_rpm":2500.0,"redline":12000.0,"stub_y":0.45,"stub_z":0.25,"tail_x":-1.25,"tail_y":0.45,"tail_z":0.15,"b_mirror":1},"q":{"RG":312.6611364809158,"GAM":1.2939061828269274,"TFIRE":1108.1818469895627,"KEVO":5.30217447073139,"TSTUB0":470.60064178609315,"TSTUBA":331.1793757449951,"ABON":1.0,"XLIM":0.5,"XW":0.25,"ABEFF":0.675,"ABTAU":0.0015,"ABMOUTH":0.5,"AFRF":6.023670229007634,"LHVE":18384203.562340967,"TCH":445.6077429377809,"FLON":1.0,"FLK":0.29338643748870946,"FLTURB":0.5}}};
+    var C_AIR = 343.0, P_ATM = 101325.0;   // exhaust R / gamma come from each set (q.RG / q.GAM: 290 / 1.32 up to v9.6, fuel thermochemistry from v9.8)
     var DL = 512, DLM = 511, RING = 2048, RINGM = 2047, SDL = 4096, SDLM = 4095;
     var RAD_K = 1.2 / (4 * Math.PI);
     var TWO_PI = 2 * Math.PI;
@@ -2951,34 +2953,16 @@ function engineModuleBrm9(core) {
     // seed = 0x9E3779B97F4A7C15 ^ (seed * 7919) (seed * 7919 < 2^32 for small seeds)
     function rngFor(seed) { return new Rng(0x9E3779B9, (0x7F4A7C15 ^ (seed * 7919)) >>> 0); }
 
-    // ---------------------------------------------------------------- geometry (brm9.py)
-    var FIRE = new Float64Array(16), BANK = new Int32Array(16), TWW = new Float64Array(16), CDN = new Float64Array(16), POS = new Int32Array(16);
-    (function () {
-      var DIST = [4, 3, 2, 1, 1, 2, 3, 4], TW = { 1: 0.4, 2: 0.7, 3: 0.9, 4: 1.0 }, c, i;
-      for (var k = 0; k < 16; k++) FIRE[P.fire_order[k] - 1] = 45.0 * k;
-      for (c = 1; c <= 16; c++) {
-        i = (c - 1) % 8; BANK[c - 1] = c <= 8 ? 0 : 1; TWW[c - 1] = TW[DIST[i]]; CDN[c - 1] = (DIST[i] - 2.5) / 3.0;
-        POS[c - 1] = (c > 8 && GE.b_mirror) ? 7 - i : i;
-      }
-    })();
-    function stubXyz(c) {
-      var p = PH.exit_pitch, i = (c - 1) % 8, gap = 0.05 * p / 0.06;
-      if (c > 8 && GE.b_mirror) i = 7 - i;
-      var x = p * (3.5 - i) + (i < 4 ? 0.5 * gap : -0.5 * gap);
-      if (c > 8) x += PH.bank_dx;
-      return [x, c <= 8 ? GE.stub_y : -GE.stub_y, GE.stub_z];
+    // v9.8 mic gradient term -i / (k r) as run by brm9.py (centred, Hann-windowed 1024-tap FIR at 44.1 kHz, non-causal): causal
+    // stand-in G(s) = (s + zr) / (s^2 + (w0 / Q) s + w0^2) x c / r (an integrator above ~150 Hz, rolled off like the window below);
+    // tuned on test/node_compare_v9.js against the Python renders (onboard: 1/3-oct. 0.05 dB per frame). HANN0 = window centre value.
+    var MICG = { f0: 15.0, q: 0.6, zr: 120.0 }, HANN0 = 0.5 - 0.5 * Math.cos(2 * Math.PI * 512 / 1023);
+    function micBiquad(fs) {   // bilinear transform, sections [b0, b1, b2, a1, a2]
+      var K = 2 * fs, w0 = 2 * Math.PI * MICG.f0, bq = w0 / MICG.q, zr = MICG.zr, a0 = K * K + bq * K + w0 * w0;
+      return [(K + zr) / a0, 2 * zr / a0, (zr - K) / a0, (2 * w0 * w0 - 2 * K * K) / a0, (K * K - bq * K + w0 * w0) / a0];
     }
     var SOURCES = { exhL: [0.0, 0.45, 0.25], exhR: [0.0, -0.45, 0.25], blower: [1.1, 0.0, 0.5], mech: [0.35, 0.0, 0.55] };
     function dist3(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
-    /** listening perspective for a game position: 'rear' = Python PERSPECTIVES.rear (chase view, static), in_cabin = onboard (fitted mic) */
-    function perspective(pos) {
-      if (pos === 'in_cabin' || pos === 'onboard') {
-        var x = PH.onb_x, y = PH.onb_y, z = PH.onb_z, o = P.persp.onboard;
-        return { name: 'onboard', ears: [[x, y + 0.09, z], [x, y - 0.09, z]], ground: PH.onb_ground > 0 ? PH.onb_ground : o.ground, shadow_far_db: o.shadow_far_db, wind: o.wind, outside: false };
-      }
-      var q = P.persp[pos === 'side' ? 'side' : 'rear'];
-      return { name: pos === 'side' ? 'side' : 'rear', ears: q.ears, ground: q.ground, shadow_far_db: q.shadow_far_db, wind: q.wind, outside: true, ambience: q.ambience };
-    }
     function interp(x, X, Y) {
       if (x <= X[0]) return Y[0];
       for (var i = 1; i < X.length; i++) if (x <= X[i]) return Y[i - 1] + (x - X[i - 1]) / (X[i] - X[i - 1]) * (Y[i] - Y[i - 1]);
@@ -2986,8 +2970,11 @@ function engineModuleBrm9(core) {
     }
     function pmod(a, m) { var r = a % m; return r < 0 ? r + m : r; }
 
+    // ---- shared kernel / synth classes (one hidden class for every model, so switching models keeps the JIT code monomorphic);
+    //      the per-model data (parameter set, firing / stub geometry, perspectives) comes in as MD (build below)
     // ---------------------------------------------------------------- the model at internal rate fs: kernel + post chain
-    function Eng(fs, pp, seed) {
+    function Eng(MD, fs, pp, seed) {
+      this.MD = MD; var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       this.fs = fs; this.pp = pp;
       var a = GE.stub_d / 2, i, c;
       this.AS = Math.PI * a * a; this.ENDC = a;
@@ -3005,11 +2992,16 @@ function engineModuleBrm9(core) {
       // kernel state
       this.open = new Uint8Array(16); this.mass = new Float64Array(16); this.ise = new Float64Array(16); this.ee = new Float64Array(16);
       for (i = 0; i < 16; i++) this.ee[i] = 1.0;
+      // v9.9 (cyl[:, 3, 4, 7..12] in brm9._k9): burnt share, unburnt fuel of this cycle, last mouth source, fuel stored in the stub,
+      // afterburn countdown (samples) / energy, mouth-flame outflow lag / noise state
+      this.abB = new Float64Array(16); this.abU = new Float64Array(16); this.qm7 = new Float64Array(16); this.abS = new Float64Array(16);
+      this.abN = new Float64Array(16); this.abE = new Float64Array(16); this.flM = new Float64Array(16); this.flZ = new Float64Array(16);
+      this.flA = 1.0 - Math.exp(-2.0 * Math.PI * PH.fl_fc / fs); this.flMk = 1.0 - Math.exp(-1.0 / (0.001 * fs));
       this.AT = new Float64Array(16 * DL); this.AF = new Float64Array(16 * DL); this.rptr = new Int32Array(16);
       this.B = new Float64Array(16 * DL); this.widx = new Int32Array(16);
       this.lp = new Float64Array(16); this.uprev = new Float64Array(16);
       this.ring0 = new Float64Array(RING); this.ring1 = new Float64Array(RING); this.ridx = 0;
-      this.TH = 0; this.THR = 0; this.BOOST = 1.0; this.TSTUB = PH.t_stub0 + 0.3 * PH.t_stuba; this.OMD = 0; this.EM = 1.0; this.BPH = 0; this.NSEED = 0;
+      this.TH = 0; this.THR = 0; this.BOOST = 1.0; this.TSTUB = PH.t_stub0 + 0.3 * PH.t_stuba;   /* brm9: start value from the unscaled phys */ this.OMD = 0; this.EM = 1.0; this.BPH = 0; this.NSEED = 0;
       this.rng = rngFor(seed || 9); this.rng2 = rngFor(41 + (seed || 9));
       this._r = null; this._t = 0;
       this.setPersp(pp);
@@ -3024,6 +3016,7 @@ function engineModuleBrm9(core) {
       this.speed = 0;
     }
     Eng.prototype.setPersp = function (pp) {
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       var fs = this.fs, c, i, e, lim = 0.45 * fs;
       this.pp = pp;
       // per-stub relative delay / gain seen from the mean ear (stub_geometry)
@@ -3040,17 +3033,28 @@ function engineModuleBrm9(core) {
       var names = ['exhL', 'exhR', 'blower', 'mech'];
       this.taps = [];
       var shadowOn = pp.shadow_far_db < 0;
+      // v9.4 tunnel images (onboard reference filmed in a road tunnel; used by the v9.9 fit) and the v9.8 onboard M-S mic
+      var tunOn = !pp.outside && PH.tun_cw > 0, micOn = !pp.outside && PH.onb_mic > 0, mic = null;
+      if (micOn) { var az = PH.onb_aim * Math.PI / 180, el = PH.onb_el * Math.PI / 180; mic = [Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)]; }
+      this.micOn = micOn;
       this.far = [false, false, false, false];
       for (var s = 0; s < 4; s++) {
         var sp = SOURCES[names[s]], list = [];
         this.far[s] = shadowOn && ((names[s] === 'exhR' && pp.ears[0][1] > 0) || (names[s] === 'exhL' && pp.ears[0][1] < 0));
         for (e = 0; e < 2; e++) {
           var ear = pp.ears[e], imgs = [[sp[1], sp[2], 1.0], [sp[1], -sp[2], pp.ground]];
+          if (tunOn) imgs.push([2 * PH.tun_w - sp[1], sp[2], PH.tun_cw], [-2 * PH.tun_w - sp[1], sp[2], PH.tun_cw], [sp[1], 2 * PH.tun_h - sp[2], PH.tun_cc]);
           for (var q = 0; q < imgs.length; q++) {
             var gz = imgs[q][2]; if (gz === 0) continue;
             var r = dist3([sp[0], imgs[q][0], imgs[q][1]], ear) + ((this.far[s] && !pp.outside) ? PH.far_dl : 0);
             var wf = Math.min(1, Math.max(0, r / 80.0)), gg = gz / Math.max(r, 0.3);
-            list.push([e, Math.round(r / C_AIR * fs), (1 - wf) * gg, wf * gg]);
+            if (micOn && q === 0) {
+              // v9.8 VP88 mid capsule (direct paths only): 0.5 + 0.5 cos(theta) (1 - i / kr). Python applies it as a centred
+              // 1024-tap FIR (1 sample net delay); here: pressure part exact, gradient part (c / r) x G(s) on the source streams
+              var rv = [sp[0] - ear[0], imgs[q][0] - ear[1], imgs[q][1] - ear[2]], rr = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
+              var ct = (rv[0] * mic[0] + rv[1] * mic[1] + rv[2] * mic[2]) / Math.max(rr, 1e-6), pw = HANN0 * (0.5 + 0.5 * ct), gw = 0.5 * ct * C_AIR / Math.max(rr, 0.05);
+              list.push([e, Math.round(r / C_AIR * fs) + 1, (1 - wf) * gg * pw, wf * gg * pw, (1 - wf) * gg * gw, wf * gg * gw]);
+            } else list.push([e, Math.round(r / C_AIR * fs), (1 - wf) * gg, wf * gg]);
           }
         }
         this.taps.push(list);
@@ -3061,6 +3065,8 @@ function engineModuleBrm9(core) {
       if (!this.useShadow) this.shLo = [new Filt(butter(2, 1400, 'low', fs)), new Filt(butter(2, 1400, 'low', fs))];
       this.air = []; this.dlS = []; this.dlA = [];
       for (s = 0; s < 4; s++) { this.air.push(new Filt(butter(1, 2500, 'low', fs))); this.dlS.push(new Float64Array(SDL)); this.dlA.push(new Float64Array(SDL)); }
+      this.micG = []; this.micGA = []; this.dlG = []; this.dlGA = [];
+      if (micOn) for (s = 0; s < 4; s++) { this.micG.push(new Filt([micBiquad(fs)])); this.micGA.push(new Filt([micBiquad(fs)])); this.dlG.push(new Float64Array(SDL)); this.dlGA.push(new Float64Array(SDL)); }
       this.dli = 0;
       // recording chain
       if (pp.outside) {
@@ -3068,25 +3074,27 @@ function engineModuleBrm9(core) {
         this.chH = PH.out_hp > 0 ? [new Filt(butter(2, PH.out_hp, 'high', fs)), new Filt(butter(2, PH.out_hp, 'high', fs))] : null;
       } else {
         this.chA = PH.onb_mix > 0 ? [new Filt(butter(2, Math.min(PH.onb_lp, lim), 'low', fs)), new Filt(butter(2, Math.min(PH.onb_lp, lim), 'low', fs))] : null; this.chMix = PH.onb_mix;
-        this.chH = null;
+        this.chH = PH.onb_hp > 0 ? [new Filt(butter(2, PH.onb_hp, 'high', fs)), new Filt(butter(2, PH.onb_hp, 'high', fs))] : null;   // v9.8 VP88 low-cut (0 in the fits)
       }
       this.windOn = pp.wind > 0;
     };
     Eng.prototype.kimp = function (rpm, thr) {
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       var w = Math.max(rpm, 500.0) * TWO_PI / 60;
       var T = interp(rpm, P.mays_rpm, P.mays_bhp) * 745.7 / w * Math.pow(Math.max(thr, 0.05), 1.3);
       return T * (4 * Math.PI / w) / 16.0 / (P.j_crank * w);
     };
     /** n internal samples; rpm / thr ramp linearly from the previous call's values (BRM9Synth.render). L/R += output */
     Eng.prototype.run = function (n, rpmT, thrT, L, R, gain) {
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       var r0 = this._r !== null ? this._r : rpmT, t0 = this._r !== null ? this._t : thrT;
       this._r = rpmT; this._t = thrT;
       var tq = this.kimp(rpmT, thrT);
-      var fs = this.fs, dt = 1.0 / fs, g = GAMMA, gm1 = g - 1.0, crit = Math.pow((g + 1.0) / 2.0, g / gm1);
+      var fs = this.fs, dt = 1.0 / fs, g = QD.GAM, R_GAS = QD.RG, gm1 = g - 1.0, crit = Math.pow((g + 1.0) / 2.0, g / gm1);
       var psiCh = Math.sqrt(g) * Math.pow(2.0 / (g + 1.0), (g + 1.0) / (2.0 * gm1));
       var AS = this.AS, vc = this.vc, bore = GE.bore, stroke = GE.stroke, conrod = GE.conrod, rcr = 0.5 * stroke, apist = 0.25 * Math.PI * bore * bore;
-      var IDLE = GE.idle_rpm, RED = GE.redline, PRMAX = GE.pr_max, IDLEMAP = PH.idle_map, OVMAP = PH.ov_map, TS0 = PH.t_stub0, TSA = PH.t_stuba;
-      var EVO = GE.evo, DUR = GE.dur, CAMX = GE.camx, KEVO = PH.k_evo, KMOT = PH.k_mot, TFIRE = PH.t_fire, TMOT = PH.t_mot;
+      var IDLE = GE.idle_rpm, RED = GE.redline, PRMAX = GE.pr_max, IDLEMAP = PH.idle_map, OVMAP = PH.ov_map, TS0 = QD.TSTUB0, TSA = QD.TSTUBA;
+      var EVO = GE.evo, DUR = GE.dur, CAMX = GE.camx, KEVO = QD.KEVO, KMOT = PH.k_mot, TFIRE = QD.TFIRE, TMOT = PH.t_mot;
       var KNL = PH.k_nl, ROLOSS = PH.ro_loss, COV = PH.cov, COVI = PH.cov_idle, MISF = PH.misfire, MISI = PH.misfire_idle, TORS = PH.tors_deg;
       var DR = GE.drive_ratio, LOBES = GE.blower_lobes, WW = PH.whine_w, BZ1 = GE.blade_z[0], BZ2 = GE.blade_z[1], KWH = PH.whine, KBL = PH.blade, KRU = PH.rush;
       var avMax = this.avMax, aPort = this.aPort, evc = EVO + DUR, beta = KNL * 0.5 * (g + 1.0), invRs = 1.0 / R_GAS;
@@ -3097,7 +3105,12 @@ function engineModuleBrm9(core) {
       var chA = this.chA, chH = this.chH, chMix = this.chMix, mechK = PH.mech * 300.0, mechMod = PH.mech_mod, mechOn = PH.mech > 0;
       var rrB = rpmT / RED, mechLev = mechOn ? mechK * Math.pow(rrB, 1.5) : 0, mechInc = rpmT / 60.0 / fs;
       var windLev = PH.wind * 300.0, u3 = Math.pow(Math.max(0, this.speed * 3.6) / 200.0, 3);
-      var src = [0, 0, 0, 0], yo = [0, 0];
+      var src = [0, 0, 0, 0], yo = [0, 0], micOn = this.micOn, micG = this.micG, micGA = this.micGA, dlG = this.dlG, dlGA = this.dlGA;
+      // v9.9 overrun afterburn / rich-exhaust mouth flame (off = 0 up to v9.8)
+      var ABON = QD.ABON > 0, FLON = QD.FLON > 0, MOUTH = ABON || FLON, CR = GE.cr, XLIM = QD.XLIM, XW = QD.XW, ABEFF = QD.ABEFF, LHVE = QD.LHVE;
+      var ABTAU = QD.ABTAU, ABTS = QD.ABTAU * fs, ABG = gm1 / (g * P_ATM), ABMOUTH = QD.ABMOUTH, AFRF = QD.AFRF, TCH = QD.TCH;
+      var FLK = QD.FLK, FLTURB = QD.FLTURB, FLA = this.flA, FLM = this.flMk, FLN = FLON ? Math.sqrt((2.0 - FLA) / FLA) : 0, vdc = this.vd + vc;
+      var abB = this.abB, abU = this.abU, qm7 = this.qm7, abS = this.abS, abN = this.abN, abE = this.abE, flM = this.flM, flZ = this.flZ;
       for (var k = 0; k < n; k++) {
         var tt0 = (k + 1) / n, rpm_t = r0 + (rpmT - r0) * tt0, thr_in = t0 + (thrT - t0) * tt0;
         var thr = this.THR + (thr_in - this.THR) * this.thrK; this.THR = thr;
@@ -3124,6 +3137,15 @@ function engineModuleBrm9(core) {
             e = 1.0 + (COV + COVI * ll * ll) * rng.gau();
             e *= cyl6[i];
             if (rng.rnd() < MISF * (0.3 + 0.7 * rr) * (0.2 + 0.8 * thr) + MISI * ll * ll) e = 0.1 * rng.rnd();
+            if (ABON) {
+              // v9.9: residual-gas dilution at this manifold pressure -> flame-kernel survival; unburnt charge
+              var pmx = p_man > 2000.0 ? p_man : 2000.0, xr = Math.pow(P_ATM / pmx, 1.0 / g) / CR;
+              if (xr > 1.0) xr = 1.0;
+              var bm = 1.0 - (xr - XLIM) / XW, bb = 1.0;
+              if (bm < 1.0) { if (rng.rnd() >= bm) bb = 0.5 * rng.rnd(); }
+              e *= bb; abB[i] = bb;
+              abU[i] = (1.0 - bb) * (pmx * vdc * (1.0 - xr) / (287.0 * TCH)) / AFRF;
+            }
             if (e < 0.0) e = 0.0;
             ee[i] = e;
             this.EM += (e - this.EM) * 0.02;
@@ -3137,6 +3159,15 @@ function engineModuleBrm9(core) {
             V = vc + apist * (rcr * (1.0 - Math.cos(ang)) + conrod - Math.sqrt(conrod * conrod - rcr * rcr * sn * sn));
             var m0 = pe * V / (R_GAS * Te), rho0 = m0 / V;
             open[i] = 1; mass[i] = m0; ise[i] = pe / Math.pow(rho0, g);
+            if (ABON) {
+              // v9.9: this cycle's gas pushes the older stub contents out (volume ratio); its hot gas ignites what is left if it
+              // burnt; its own unburnt charge (if any) is stored at the valve end
+              var vex = m0 * R_GAS * Ts / P_ATM, vst = AS * slen[i], fx = vex / vst;
+              if (fx > 1.0) fx = 1.0;
+              var res = abS[i] * (1.0 - fx);
+              if (abB[i] > 0.5 && res > 0.0) { abE[i] = ABEFF * res * LHVE; abN[i] = ABTS; res = 0.0; }
+              abS[i] = res + abU[i] * (vex > vst ? vst / vex : 1.0); abU[i] = 0.0;
+            }
           }
           if (open[i]) {
             if (a1 >= evc || a1 < EVO) open[i] = 0;
@@ -3173,6 +3204,13 @@ function engineModuleBrm9(core) {
               q = qs;
             }
           }
+          var qab = 0.0;
+          if (abN[i] > 0.0) {
+            // v9.9 afterburn heat release (raised cosine over ab_tau) -> volume source (gamma-1)/(gamma p) dQ/dt
+            qab = ABG * abE[i] / ABTAU * (1.0 - Math.cos(TWO_PI * (1.0 - abN[i] / ABTS)));
+            abN[i] -= 1.0;
+            q += (1.0 - ABMOUTH) * qab;
+          }
           // ---- stub waveguide i
           var o = i * DL, Dn = slen[i] / cs * fs, idx = widx[i];
           var di = Dn | 0, fr = Dn - di, ba = B[o + ((idx - di) & DLM)], bb = B[o + ((idx - di - 1) & DLM)], b_arr = ba + fr * (bb - ba);
@@ -3202,6 +3240,17 @@ function engineModuleBrm9(core) {
           widx[i] = (idx + 1) & DLM;
           var dU = (U - uprev[i]) * fs;
           uprev[i] = U;
+          if (MOUTH) {
+            var qm = ABMOUTH * qab;
+            if (FLON) {
+              // v9.9 mouth flame: heat release ~ outflow mass rate x h_c x fl_eff, ~1 ms mixing lag, band-limited turbulent fluctuation
+              flM[i] += ((U > 0.0 ? rho_s * U : 0.0) - flM[i]) * FLM;
+              flZ[i] += ((2.0 * rng.rnd() - 1.0) * 1.7320508 - flZ[i]) * FLA;
+              qm += FLK * flM[i] * (1.0 + FLTURB * (flZ[i] * FLN));
+            }
+            dU += (qm - qm7[i]) * fs;
+            qm7[i] = qm;
+          }
           if (U > 0.0) {
             var uu = U / AS, u2 = uu * uu, jv = rho_s * u2 * u2 * jetC;
             if (BANK[i] === 0) jet0 += jv; else jet1 += jv;
@@ -3242,9 +3291,14 @@ function engineModuleBrm9(core) {
             if (useSh) { var lo = shLo[s].f(sg); sg = lo + gsh * (sg - lo); }
             else sg = gsh * (0.35 * sg + 0.65 * shLo[s].f(sg));
           }
-          dlS[s][di2] = sg; dlA[s][di2] = air[s].f(sg);
+          var sa = air[s].f(sg);
+          dlS[s][di2] = sg; dlA[s][di2] = sa;
           var tl = taps[s];
-          for (var t = 0; t < tl.length; t++) { var tp = tl[t], ix = (di2 - tp[1]) & SDLM; yo[tp[0]] += tp[2] * dlS[s][ix] + tp[3] * dlA[s][ix]; }
+          if (micOn) {
+            var dG = dlG[s], dGA = dlGA[s];
+            dG[di2] = micG[s].f(sg); dGA[di2] = micGA[s].f(sa);
+            for (var t = 0; t < tl.length; t++) { var tp = tl[t], ix = (di2 - tp[1]) & SDLM; yo[tp[0]] += tp[2] * dlS[s][ix] + tp[3] * dlA[s][ix]; if (tp.length > 4) yo[tp[0]] += tp[4] * dG[ix] + tp[5] * dGA[ix]; }
+          } else for (var t2 = 0; t2 < tl.length; t2++) { var tpn = tl[t2], ix2 = (di2 - tpn[1]) & SDLM; yo[tpn[0]] += tpn[2] * dlS[s][ix2] + tpn[3] * dlA[s][ix2]; }
         }
         this.dli = (di2 + 1) & SDLM;
         var yl = yo[0], yr = yo[1];
@@ -3259,7 +3313,8 @@ function engineModuleBrm9(core) {
       }
     };
     Eng.prototype.copyKernel = function (o) {   // same engine state (other listener)
-      var keys = ['open', 'mass', 'ise', 'ee', 'AT', 'AF', 'rptr', 'B', 'widx', 'lp', 'uprev', 'ring0', 'ring1'];
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
+      var keys = ['open', 'mass', 'ise', 'ee', 'AT', 'AF', 'rptr', 'B', 'widx', 'lp', 'uprev', 'ring0', 'ring1', 'abB', 'abU', 'qm7', 'abS', 'abN', 'abE', 'flM', 'flZ'];
       for (var i = 0; i < keys.length; i++) this[keys[i]].set(o[keys[i]]);
       var sc = ['ridx', 'TH', 'THR', 'BOOST', 'TSTUB', 'OMD', 'EM', 'BPH', 'NSEED', '_r', '_t', 'mechPh', 'gust', 'speed'];
       for (i = 0; i < sc.length; i++) this[sc[i]] = o[sc[i]];
@@ -3284,7 +3339,8 @@ function engineModuleBrm9(core) {
 
     // ---------------------------------------------------------------- the synth (ListenerSource interface)
     function isMainThread() { return typeof registerProcessor !== 'function'; }
-    function BrmSynthV9(spec, listener, fs, opts) {
+    function BrmSynthV9(MD, spec, listener, fs, opts) {
+      this.MD = MD; var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       opts = opts || {};
       this.fs = fs || 44100;
       this.spec = Object.assign({ idle_rpm: 3800, redline: 12000, name: 'BRM P30 V16' }, spec || {});
@@ -3295,7 +3351,7 @@ function engineModuleBrm9(core) {
       this.dec = qual === 'lite' ? 2 : (qual === 'hq' ? 1 : (isMainThread() ? 2 : 1));
       if (this.fs < 30000) this.dec = 1;
       this.seed = opts.seed || 9;
-      this.eng = new Eng(this.fs / this.dec, perspective(this.pos), this.seed);
+      this.eng = new Eng(MD, this.fs / this.dec, perspective(this.pos), this.seed);
       this.up = [new Up2(), new Up2()];
       this.bL = new Float64Array(64); this.bR = new Float64Array(64); this.uL = new Float64Array(2); this.uR = new Float64Array(2);
       this.fifoL = new Float64Array(256); this.fifoR = new Float64Array(256); this.fn = 0;
@@ -3305,16 +3361,19 @@ function engineModuleBrm9(core) {
     BrmSynthV9.prototype.ctl = function (m) { if (m && m.speed !== undefined) { this.speed = m.speed; this.eng.speed = m.speed; if (this.xf) this.xf.eng.speed = m.speed; } };
     BrmSynthV9.prototype.quality = function () { return this.dec === 1 ? 'hq' : 'lite'; };
     BrmSynthV9.prototype.cloneWithListener = function (listener) {
-      var c = new BrmSynthV9(this.spec, listener, this.fs, { quality: this.quality(), seed: this.seed });
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
+      var c = new BrmSynthV9(MD, this.spec, listener, this.fs, { quality: this.quality(), seed: this.seed });
       c.auto = this.auto; c.eng.copyKernel(this.eng); c.speed = this.speed; c.cpuMs = this.cpuMs; c.cpuAudio = this.cpuAudio;
       return c;
     };
     BrmSynthV9.prototype._internal = function (m, rpm, thr, eng, L, R) {
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       for (var k = 0; k < m; k++) { L[k] = 0; R[k] = 0; }
       eng.run(m, rpm, thr, L, R, this.gain);
     };
     /** n output samples (n <= 128) */
     BrmSynthV9.prototype.render = function (n, rpm, thr, L, R) {
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       if (rpm < 60) rpm = 60;
       if (thr < 0) thr = 0; if (thr > 1) thr = 1;
       var t0 = this.auto && this.dec === 1 ? Date.now() : 0, k;
@@ -3345,16 +3404,54 @@ function engineModuleBrm9(core) {
       }
     };
     BrmSynthV9.prototype._toLite = function () {   // CPU guard: rebuild at half rate and crossfade (50 ms)
-      var old = this.eng, ne = new Eng(this.fs / 2, old.pp, this.seed);
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
+      var old = this.eng, ne = new Eng(MD, this.fs / 2, old.pp, this.seed);
       ne.TH = old.TH; ne.THR = old.THR; ne.BOOST = old.BOOST; ne.TSTUB = old.TSTUB; ne.EM = old.EM; ne.BPH = old.BPH; ne._r = old._r; ne._t = old._t; ne.speed = old.speed;
       this.xf = { eng: old, a: 1, bL: new Float64Array(128), bR: new Float64Array(128) };
       this.eng = ne; this.dec = 2; this.auto = false; this.fn = 0;
     };
     BrmSynthV9.prototype._crossfade = function (n, rpm, thr, L, R) {
+      var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       var x = this.xf, k, step = 1 / (0.05 * this.fs);
       this._internal(n, rpm, thr, x.eng, x.bL, x.bR);
       for (k = 0; k < n; k++) { x.a = Math.max(0, x.a - step); var b = 1 - x.a; L[k] = b * L[k] + x.a * x.bL[k]; R[k] = b * R[k] + x.a * x.bR[k]; }
       if (x.a <= 0) this.xf = null;
     };
-    return [{ id: 'v9', Synth: BrmSynthV9, synthOpts: {}, positions: ["rear", "in_cabin"], P: P, Eng: Eng, butter: butter, perspective: perspective, Rng: Rng, rngFor: rngFor }];
+    /** one BRM v9.x sound model = the shared kernel + one fitted parameter set */
+    function build(id, setKey, label) {
+    var P = Object.assign({ phys: SETS[setKey].phys, geom: SETS[setKey].geom, q: SETS[setKey].q, set: setKey }, COMMON);
+    var PH = P.phys, GE = P.geom, QD = P.q;
+    // ---------------------------------------------------------------- geometry (brm9.py)
+    var FIRE = new Float64Array(16), BANK = new Int32Array(16), TWW = new Float64Array(16), CDN = new Float64Array(16), POS = new Int32Array(16);
+    (function () {
+      var DIST = [4, 3, 2, 1, 1, 2, 3, 4], TW = { 1: 0.4, 2: 0.7, 3: 0.9, 4: 1.0 }, c, i;
+      for (var k = 0; k < 16; k++) FIRE[P.fire_order[k] - 1] = 45.0 * k;
+      for (c = 1; c <= 16; c++) {
+        i = (c - 1) % 8; BANK[c - 1] = c <= 8 ? 0 : 1; TWW[c - 1] = TW[DIST[i]]; CDN[c - 1] = (DIST[i] - 2.5) / 3.0;
+        POS[c - 1] = (c > 8 && GE.b_mirror) ? 7 - i : i;
+      }
+    })();
+    function stubXyz(c) {
+      var p = PH.exit_pitch, i = (c - 1) % 8, gap = 0.05 * p / 0.06;
+      if (c > 8 && GE.b_mirror) i = 7 - i;
+      var x = p * (3.5 - i) + (i < 4 ? 0.5 * gap : -0.5 * gap);
+      if (c > 8) x += PH.bank_dx;
+      return [x, c <= 8 ? GE.stub_y : -GE.stub_y, GE.stub_z];
+    }
+    /** listening perspective for a game position: 'rear' = Python PERSPECTIVES.rear (chase view, static), in_cabin = onboard (fitted mic) */
+    function perspective(pos) {
+      if (pos === 'in_cabin' || pos === 'onboard') {
+        var x = PH.onb_x, y = PH.onb_y, z = PH.onb_z, o = P.persp.onboard;
+        return { name: 'onboard', ears: [[x, y + 0.09, z], [x, y - 0.09, z]], ground: PH.onb_ground > 0 ? PH.onb_ground : o.ground, shadow_far_db: o.shadow_far_db, wind: o.wind, outside: false };
+      }
+      var q = P.persp[pos === 'side' ? 'side' : 'rear'];
+      return { name: pos === 'side' ? 'side' : 'rear', ears: q.ears, ground: q.ground, shadow_far_db: q.shadow_far_db, wind: q.wind, outside: true, ambience: q.ambience };
+    }
+    var MD = { P: P, PH: PH, GE: GE, QD: QD, FIRE: FIRE, BANK: BANK, TWW: TWW, CDN: CDN, POS: POS, stubXyz: stubXyz, perspective: perspective };
+    function Synth(spec, listener, fs, opts) { return new BrmSynthV9(MD, spec, listener, fs, opts); }
+    function EngM(fs, pp, seed) { return new Eng(MD, fs, pp, seed); }
+    return { id: id, label: label, set: setKey, micG: MICG, Synth: Synth, synthOpts: {}, positions: ['rear', 'in_cabin'], P: P, Eng: EngM, butter: butter, perspective: perspective, Rng: Rng, rngFor: rngFor };
+    }
+    return [build('v9', 'v9_6', 'v9.6'), build('v9_1', 'v9_1', 'v9.1'), build('v9_2', 'v9_2', 'v9.2'), build('v9_3', 'v9_3', 'v9.3'), build('v9_4', 'v9_4', 'v9.4'),
+      build('v9_8', 'v9_8', 'v9.8'), build('v9_9', 'v9_9', 'v9.9')];
   }]);
