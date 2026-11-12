@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.10.3)</title>
+<title>Street Rod: engine sound + driving demo (v1.10.4)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -954,6 +954,10 @@ function engineWorkletMain(modules) {
     }
   }
 
+  // v1.10.4: the game's speed wind (band noise 700 Hz-3 kHz, 0.02 x (v/40)^1.5, louder inside) is not engine sound and is off for
+  // every car; the code stays (MIXER_WIND = 0.02 brings it back). Tyre / road noise and the starter are unchanged.
+  const MIXER_WIND = 0;
+
   /**
    * EngineVoice: everything the game hears, independent of the audio API, so it
    * runs inside the AudioWorklet or (fallback) a main-thread ScriptProcessor.
@@ -1060,11 +1064,11 @@ function engineWorkletMain(modules) {
         const eL = tL[k], eR = tR[k];
         const v = this.speedS, vr = v / 40;
         const road = Math.min(0.08, 0.05 * vr * vr);
-        let wn = 0;   // wind: broadband, gusty, rising ~ v^3 in power
-        if (v > 3) {
+        let wn = 0;   // wind: broadband, gusty, rising ~ v^3 in power; off since v1.10.4 (MIXER_WIND = 0: not engine sound, every car)
+        if (MIXER_WIND > 0 && v > 3) {
           this.windLfo += 2 * Math.PI * 0.3 / fs; if (this.windLfo > 6.2832) this.windLfo -= 6.2832;
           wn = bqs(bqs(this.rnd(), this.wind[0], this.windSt[0]), this.wind[1], this.windSt[1]);
-          wn *= 0.02 * Math.pow(vr, 1.5) * (0.85 + 0.15 * Math.sin(this.windLfo));
+          wn *= MIXER_WIND * Math.pow(vr, 1.5) * (0.85 + 0.15 * Math.sin(this.windLfo));
         }
         const st = this.starterLvl > 1e-4 ? this.starter.sample(this.starterLvl * 0.35, this.crank) : 0;
         const ty = (road > 1e-4 || this.skidS > 1e-4) ? this.tyre.sample(road * (1 + 1.2 * w), this.skidS * (1 - 0.35 * w)) : 0;
@@ -3336,6 +3340,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     var DL = 512, DLM = 511, RING = 2048, RINGM = 2047, SDL = 4096, SDLM = 4095;
     var RAD_K = 1.2 / (4 * Math.PI);
     var TWO_PI = 2 * Math.PI;
+    // v1.10.4 (Wim, 12 Nov 2026): non-engine noise removed from every v9.x set - the onboard cockpit wind (Wind9, PH.wind /
+    // persp.onboard.wind) and the v9.11 onboard structure-borne pickup (k_vib, band noise added after the cabin filter) are zero
+    // here, in the kernel, so a re-export of SETS cannot bring them back. The fitted values stay in SETS (reversible: set to 1).
+    // The wind noise draws still run (rng2 is shared with the valve-train noise), so the valve-train noise is unchanged.
+    var NON_ENGINE_NOISE = 0;
 
     // ---------------------------------------------------------------- Butterworth (scipy.signal.butter, bilinear, prewarped) as biquads
     function cmul(a, b) { return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
@@ -3578,10 +3587,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var pp = this.pp, taps = this.taps, far = this.far, air = this.air, dlS = this.dlS, dlA = this.dlA, gsh = this.gsh, shLo = this.shLo, useSh = this.useShadow;
       var chA = this.chA, chH = this.chH, chMix = this.chMix, mechK = PH.mech * 300.0, mechMod = PH.mech_mod, mechOn = PH.mech > 0;
       var rrB = rpmT / RED, mechLev = mechOn ? mechK * Math.pow(rrB, 1.5) : 0, mechInc = rpmT / 60.0 / fs;
-      var windLev = PH.wind * 300.0, u3 = Math.pow(Math.max(0, this.speed * 3.6) / 200.0, 3);
+      var windLev = NON_ENGINE_NOISE ? PH.wind * 300.0 : 0.0, u3 = Math.pow(Math.max(0, this.speed * 3.6) / 200.0, 3);
       // v9.11 onboard structure-borne pickup (k_vib; 0 / absent = off up to v9.10): 300 x lc^comb_x x rpm/redline x env x band noise,
       // added to the onboard mic signal after the mic chain and the wind (brm9._render), both channels, never outside
-      var KVIB = PH.k_vib > 0 ? PH.k_vib : 0.0, vibK = KVIB > 0.0, vibOn = vibK && !pp.outside, vibLev = vibOn ? KVIB * 300.0 * rrB : 0.0;
+      var KVIB = NON_ENGINE_NOISE && PH.k_vib > 0 ? PH.k_vib : 0.0, vibK = KVIB > 0.0, vibOn = vibK && !pp.outside, vibLev = vibOn ? KVIB * 300.0 * rrB : 0.0;
       var COMBX = PH.comb_x !== undefined ? PH.comb_x : 1.0, rng3 = this.rng3, chs = 0.0;
       var src = [0, 0, 0, 0], yo = [0, 0], micOn = this.micOn, micG = this.micG, micGA = this.micGA, dlG = this.dlG, dlGA = this.dlGA;
       // v9.9 overrun afterburn / rich-exhaust mouth flame (off = 0 up to v9.8)
@@ -5388,7 +5397,9 @@ var SoundModels = (function () {
     // +0.57 dB, i.e. 0.85 / 0.65 dB from v9.10, inside the 1 dB tolerance. The whole difference is the near-idle shut-throttle point
     // (3800 rpm / 0.08: -4.2 dB, the reversion energy balance itself); on throttle v9.11 is within 0.5 dB of v9.10 (inside 6000 / 0.5:
     // +1.5 dB, the onboard k_vib source). Raising the gain would undo that physical change, so v9.10 <-> v9.11 stays level-matched as is.
-    { id: 'v9_11', brm: 'v9.11', note: 'engine-sound v9.11: physical reversion (the cylinder takes in the returning stub gas, its pressure rises; overrun pipe tones mostly gone), onboard load-following structure-borne pickup, joint refit', gainDb: { rear: -24.0, in_cabin: -36.3 } },
+    // v1.10.4: k_vib and the onboard cockpit wind are switched off in the kernel (js/engine-brm9.js NON_ENGINE_NOISE = 0) for every
+    // v9.x set; gainDb not raised to compensate (the removed noise is not engine sound).
+    { id: 'v9_11', brm: 'v9.11', note: 'engine-sound v9.11: physical reversion (the cylinder takes in the returning stub gas, its pressure rises; overrun pipe tones mostly gone), joint refit; its onboard structure-borne pickup and the cockpit wind are off since v1.10.4 (not engine sound)', gainDb: { rear: -24.0, in_cabin: -36.3 } },
   ];
   if (typeof ENGINE_MODULES !== 'undefined') BRM9.forEach(function (b) {
     register({
@@ -9145,7 +9156,8 @@ var ProjectHistory = {
       { v: 'v1.10', date: '2026-11-12', status: 'done', text: 'New \u201cEngine bay\u201d view next to Inside and Outside, for every car (key E): a real 3D cut-away of the engine, built from the same numbers the sound model uses. One parametric model for all three cars: the BRM V16 (bore, stroke, rods, firing order, 135\u00b0 banks, twin-cam valves, stub exhausts, centre gear drive and the two-stage blower from the v9 physics model) and the GT350 and Cadillac V8s (bore, stroke, rods, cam timing, headers or log manifolds, four-barrel carb, fan, alternator or generator and starter from their sound settings). Parts a car does not have are switched off, and each part can be toggled in the Parts panel. Pistons, valves, cams, blower and fan move with the crank angle the sound engine is playing, so what you see is what you hear. Slow motion (1/10, 1/50, 1/200) and a crank-angle scrub slider slow the picture down while the sound keeps running at real speed. Exhaust glow, overrun pops and the v9.9 mouth flame light up the stub ends. A light mode keeps it smooth on older iPhones and iPads. Some sizes are not in the model (stub bore, exhaust cam timing, blower vane counts, a few V8 dimensions); the bay marks them as assumptions on screen. Before release two fixes from Wim\u2019s look at the preview: the valves, cams and compressor vanes stay visible in the light mode, and the two-stage blower is a clear cut-away (scroll housings cut open at the front, twelve backswept vanes per stage); the sixteen BRM exhaust stubs stand in two neat parallel rows, like on the real car. The 2D art and the sound are unchanged and v8 stays the BRM sound default.' },
       { v: 'v1.10.1', date: '2026-11-12', status: 'done', text: 'The brake and gas pedals and the shift up / down buttons are now on screen in the desktop browser too, not only on phones and iPads, so the game can be driven on a touchscreen that presents itself as a desktop, such as a Tesla\u2019s in-car browser, or with a mouse. Brake on the left, gas on the right, shift buttons next to the gas, a little larger than on a phone. Fingers, the mouse and several fingers at once all work, a pedal lights up as you press it, and dragging sideways on the road steers. The keyboard still works as before, the desktop page keeps its side panel and top bar, and phones and iPads are unchanged. In the engine bay the bar sits between the pedals. ?pedals=0 hides them. v8 stays the BRM sound default.' },
       { v: 'v1.10.2', date: '2026-11-12', status: 'done', text: 'New in the BRM sound picker: v9.10, the latest physics model. The supercharger\u2019s whine now keeps following the engine speed when you lift off, and gets stronger on a closed throttle, as on the real car, while the rush of air through it still dies away with the throttle. Key B and ?sound=v9.10 reach it too. It is the best of the v9 models but still not better than v8, so v8 stays the BRM sound default and every visit still starts on v8. The other sounds are unchanged.' },
-      { v: 'v1.10.3', date: '2026-11-12', status: 'done', text: 'New in the BRM sound picker: v9.11, the latest physics model. When you lift off, the gas that flows back from the exhaust stubs into a cylinder now raises its pressure, as it does in a real engine; before, the cylinder swallowed it without limit. That takes away most of the hollow pipe tones (around 1.0 and 1.4 kHz) on the overrun, and the overrun comes about 3 dB closer to the recordings of the real car, although it is still about 5 dB too loud on average and 11 dB too loud when you lift from 9,400 rpm. Inside the car there is a new sound that follows the throttle: the engine\u2019s combustion shaking the car, picked up by the onboard camera microphone. Its level is fitted to the recordings; that it travels through the chassis rather than the air is our best guess. The cockpit wind, the valve gear, the blower whine and the inside filtering were refitted with it. Key B and ?sound=v9.11 reach it too. It is the best of the v9 models so far, but still not better than v8, so v8 stays the BRM sound default and every visit still starts on v8. The other sounds are unchanged.' }
+      { v: 'v1.10.3', date: '2026-11-12', status: 'done', text: 'New in the BRM sound picker: v9.11, the latest physics model. When you lift off, the gas that flows back from the exhaust stubs into a cylinder now raises its pressure, as it does in a real engine; before, the cylinder swallowed it without limit. That takes away most of the hollow pipe tones (around 1.0 and 1.4 kHz) on the overrun, and the overrun comes about 3 dB closer to the recordings of the real car, although it is still about 5 dB too loud on average and 11 dB too loud when you lift from 9,400 rpm. Inside the car there is a new sound that follows the throttle: the engine\u2019s combustion shaking the car, picked up by the onboard camera microphone. Its level is fitted to the recordings; that it travels through the chassis rather than the air is our best guess. The cockpit wind, the valve gear, the blower whine and the inside filtering were refitted with it. Key B and ?sound=v9.11 reach it too. It is the best of the v9 models so far, but still not better than v8, so v8 stays the BRM sound default and every visit still starts on v8. The other sounds are unchanged.' },
+      { v: 'v1.10.4', date: '2026-11-12', status: 'done', text: 'Less hiss in the BRM physics models. The cockpit wind and the onboard vibration noise were not engine sound: they were noise added on top of the engine in the inside view, and on the newest model they were the hiss you heard on the gas and when lifting off at speed. Both are now taken out of every model that had them (v9.1 to v9.11), and the game\u2019s own speed wind is gone for every car too. Inside at speed on v9.11, the 6\u201310 kHz hiss is about 9\u201319 dB lower and the 3\u20136 kHz band about 2\u201310 dB lower (most on a light throttle, least at full throttle, where the engine itself is loudest). The engine itself is unchanged: exhaust, valve gear, supercharger, overrun pops and the tyre / road noise are as before, and the inside view is simply quieter in the hiss band, not turned up to make up for it. v8 is still the default and sounds the same, and ?sound=v9.11 still reaches v9.11.' },
     ] }
   ]
 };

@@ -591,6 +591,10 @@
     }
   }
 
+  // v1.10.4: the game's speed wind (band noise 700 Hz-3 kHz, 0.02 x (v/40)^1.5, louder inside) is not engine sound and is off for
+  // every car; the code stays (MIXER_WIND = 0.02 brings it back). Tyre / road noise and the starter are unchanged.
+  const MIXER_WIND = 0;
+
   /**
    * EngineVoice: everything the game hears, independent of the audio API, so it
    * runs inside the AudioWorklet or (fallback) a main-thread ScriptProcessor.
@@ -697,11 +701,11 @@
         const eL = tL[k], eR = tR[k];
         const v = this.speedS, vr = v / 40;
         const road = Math.min(0.08, 0.05 * vr * vr);
-        let wn = 0;   // wind: broadband, gusty, rising ~ v^3 in power
-        if (v > 3) {
+        let wn = 0;   // wind: broadband, gusty, rising ~ v^3 in power; off since v1.10.4 (MIXER_WIND = 0: not engine sound, every car)
+        if (MIXER_WIND > 0 && v > 3) {
           this.windLfo += 2 * Math.PI * 0.3 / fs; if (this.windLfo > 6.2832) this.windLfo -= 6.2832;
           wn = bqs(bqs(this.rnd(), this.wind[0], this.windSt[0]), this.wind[1], this.windSt[1]);
-          wn *= 0.02 * Math.pow(vr, 1.5) * (0.85 + 0.15 * Math.sin(this.windLfo));
+          wn *= MIXER_WIND * Math.pow(vr, 1.5) * (0.85 + 0.15 * Math.sin(this.windLfo));
         }
         const st = this.starterLvl > 1e-4 ? this.starter.sample(this.starterLvl * 0.35, this.crank) : 0;
         const ty = (road > 1e-4 || this.skidS > 1e-4) ? this.tyre.sample(road * (1 + 1.2 * w), this.skidS * (1 - 0.35 * w)) : 0;
@@ -2895,6 +2899,11 @@ function engineModuleBrm9(core) {
     var DL = 512, DLM = 511, RING = 2048, RINGM = 2047, SDL = 4096, SDLM = 4095;
     var RAD_K = 1.2 / (4 * Math.PI);
     var TWO_PI = 2 * Math.PI;
+    // v1.10.4 (Wim, 12 Nov 2026): non-engine noise removed from every v9.x set - the onboard cockpit wind (Wind9, PH.wind /
+    // persp.onboard.wind) and the v9.11 onboard structure-borne pickup (k_vib, band noise added after the cabin filter) are zero
+    // here, in the kernel, so a re-export of SETS cannot bring them back. The fitted values stay in SETS (reversible: set to 1).
+    // The wind noise draws still run (rng2 is shared with the valve-train noise), so the valve-train noise is unchanged.
+    var NON_ENGINE_NOISE = 0;
 
     // ---------------------------------------------------------------- Butterworth (scipy.signal.butter, bilinear, prewarped) as biquads
     function cmul(a, b) { return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
@@ -3137,10 +3146,10 @@ function engineModuleBrm9(core) {
       var pp = this.pp, taps = this.taps, far = this.far, air = this.air, dlS = this.dlS, dlA = this.dlA, gsh = this.gsh, shLo = this.shLo, useSh = this.useShadow;
       var chA = this.chA, chH = this.chH, chMix = this.chMix, mechK = PH.mech * 300.0, mechMod = PH.mech_mod, mechOn = PH.mech > 0;
       var rrB = rpmT / RED, mechLev = mechOn ? mechK * Math.pow(rrB, 1.5) : 0, mechInc = rpmT / 60.0 / fs;
-      var windLev = PH.wind * 300.0, u3 = Math.pow(Math.max(0, this.speed * 3.6) / 200.0, 3);
+      var windLev = NON_ENGINE_NOISE ? PH.wind * 300.0 : 0.0, u3 = Math.pow(Math.max(0, this.speed * 3.6) / 200.0, 3);
       // v9.11 onboard structure-borne pickup (k_vib; 0 / absent = off up to v9.10): 300 x lc^comb_x x rpm/redline x env x band noise,
       // added to the onboard mic signal after the mic chain and the wind (brm9._render), both channels, never outside
-      var KVIB = PH.k_vib > 0 ? PH.k_vib : 0.0, vibK = KVIB > 0.0, vibOn = vibK && !pp.outside, vibLev = vibOn ? KVIB * 300.0 * rrB : 0.0;
+      var KVIB = NON_ENGINE_NOISE && PH.k_vib > 0 ? PH.k_vib : 0.0, vibK = KVIB > 0.0, vibOn = vibK && !pp.outside, vibLev = vibOn ? KVIB * 300.0 * rrB : 0.0;
       var COMBX = PH.comb_x !== undefined ? PH.comb_x : 1.0, rng3 = this.rng3, chs = 0.0;
       var src = [0, 0, 0, 0], yo = [0, 0], micOn = this.micOn, micG = this.micG, micGA = this.micGA, dlG = this.dlG, dlGA = this.dlGA;
       // v9.9 overrun afterburn / rich-exhaust mouth flame (off = 0 up to v9.8)
