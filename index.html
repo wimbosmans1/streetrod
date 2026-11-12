@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.10)</title>
+<title>Street Rod: engine sound + driving demo (v1.10.1)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -42,6 +42,15 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 
 #touch { display: none; position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; }
 .touch #touch { display: block; }
+/* v1.10.1: desktop layout (not .touch): the same pedal + shift overlay on the 16:9 stage, for touchscreens that look like a desktop (Tesla in-car
+   browser) and for mouse use; a little larger than the phone minimum for a 15-18" screen. Keyboard still works; ?pedals=0 hides them. */
+.pedals #touch { display: block; }
+.pedals .pedal { min-width: 92px; cursor: pointer; }
+.pedals .shifts { right: calc(max(10px, env(safe-area-inset-right)) + max(11%, 92px) + 12px); gap: 12px; }
+.pedals .tb.big { width: 84px; height: 72px; font-size: 28px; }
+.pedals .tb.big small { font-size: 11px; }
+.pedals .pedal span { font-size: 16px; }
+.nogap.pedals .shifts > * + * { margin-top: 12px; }
 .pedal { position: absolute; bottom: max(10px, env(safe-area-inset-bottom)); width: 11%; min-width: 78px; height: 50%; border-radius: 16px; opacity: .82; pointer-events: auto;
   background: repeating-linear-gradient(0deg, #3a3a3a 0 10px, #2a2a2a 10px 20px); border: 3px solid #9a9a9a; overflow: hidden; touch-action: none; }
 #pBrake { left: max(10px, env(safe-area-inset-left)); width: 13%; }
@@ -332,8 +341,8 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>M</td><td>Mute</td></tr>
       <tr><td>H</td><td>About / History</td></tr>
     </table>
-    <h3>Touch</h3>
-    <p class="note">Brake pedal left, gas right: press higher up the pedal for more. Shift buttons next to the gas. Works with several fingers at once.</p>
+    <h3>Touch / mouse</h3>
+    <p class="note">Brake pedal left, gas right: press higher up the pedal for more. Shift buttons next to the gas. Works with several fingers at once, and with a mouse. Steer by dragging sideways on the road.</p>
     <h3>Car</h3>
     <div id="specs"></div>
     <p class="note">Engine sound is synthesised live in the browser (no recordings). The inside sound is a model (exhaust through the body, intake and mechanical noise through the firewall, cabin boom, road and wind noise), not a measured cabin.</p>
@@ -8069,7 +8078,7 @@ var EngineBay = (function () {
     cv.style.top = d.offsetTop + 'px'; cv.style.left = d.offsetLeft + 'px'; cv.style.width = d.offsetWidth + 'px'; cv.style.height = d.offsetHeight + 'px'; cv.style.display = 'block';
     if (!st.ovT || now - st.ovT > 500) {   // pedals drawn over the picture (phone landscape)? then the bar sits between them
       st.ovT = now; var gp = document.getElementById('pGas'), dr = d.getBoundingClientRect(), gr = gp && gp.getClientRects().length ? gp.getBoundingClientRect() : null;
-      st.overlay = !!(s.touch && gr && gr.top < dr.bottom - 1 && gr.bottom > dr.top + 1);
+      st.overlay = !!((s.touch || s.pedals) && gr && gr.top < dr.bottom - 1 && gr.bottom > dr.top + 1);
     }
     var inL = st.overlay ? 0.16 : 0.015, inR = st.overlay ? 0.74 : 0.985;
     st.bar.classList.remove('hidden'); st.bar.style.left = (d.offsetLeft + d.offsetWidth * inL) + 'px'; st.bar.style.right = (d.offsetParent ? d.offsetParent.clientWidth - d.offsetLeft - d.offsetWidth * inR : 0) + 'px';
@@ -9091,7 +9100,8 @@ var ProjectHistory = {
       { v: 'v1.9', date: '2026-11-11', status: 'done', text: 'The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II\u2019s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30\u00d7 crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged.' },
       { v: 'v1.9.1', date: '2026-11-12', status: 'done', text: 'BRM sound switch, so you can compare the two BRM sound models: next to the car buttons, pick the engine sound v8 (the current one) or v9 (the physics model: sixteen cylinders blowing down into their own short exhaust stubs, the two-stage supercharger, and the sound carried to where you are). Both play live in the game and switch instantly; v8 stays the default and every visit starts on v8 (key B also switches). A link with ?car=brm&sound=v9 opens straight into v9.' },
       { v: 'v1.9.2', date: '2026-11-12', status: 'done', text: 'All the BRM sound models are in the picker now. v8 is still the default, and every visit still starts on v8. Next to the car buttons you can now also pick the physics models v9.1, v9.2, v9.3, v9.4, v9.6 (the one called \u201cv9\u201d in v1.9.1), v9.8 and v9.9. v9.8 adds the real fuel (your 80:10:10 methanol, petrol and acetone mix) and a model of the VP88 onboard microphone. v9.9 adds the physical overrun pops and bangs: unburnt fuel that lights up in the exhaust when you lift off. They all play live and switch instantly. Key B steps through them, and a link like ?car=brm&sound=v9.9 opens straight into one (?sound=v9 still means v9.6). The picker is now a small drop-down, so it fits on iPhone and iPad.' },
-      { v: 'v1.10', date: '2026-11-12', status: 'done', text: 'New \u201cEngine bay\u201d view next to Inside and Outside, for every car (key E): a real 3D cut-away of the engine, built from the same numbers the sound model uses. One parametric model for all three cars: the BRM V16 (bore, stroke, rods, firing order, 135\u00b0 banks, twin-cam valves, stub exhausts, centre gear drive and the two-stage blower from the v9 physics model) and the GT350 and Cadillac V8s (bore, stroke, rods, cam timing, headers or log manifolds, four-barrel carb, fan, alternator or generator and starter from their sound settings). Parts a car does not have are switched off, and each part can be toggled in the Parts panel. Pistons, valves, cams, blower and fan move with the crank angle the sound engine is playing, so what you see is what you hear. Slow motion (1/10, 1/50, 1/200) and a crank-angle scrub slider slow the picture down while the sound keeps running at real speed. Exhaust glow, overrun pops and the v9.9 mouth flame light up the stub ends. A light mode keeps it smooth on older iPhones and iPads. Some sizes are not in the model (stub bore, exhaust cam timing, blower vane counts, a few V8 dimensions); the bay marks them as assumptions on screen. Before release two fixes from Wim\u2019s look at the preview: the valves, cams and compressor vanes stay visible in the light mode, and the two-stage blower is a clear cut-away (scroll housings cut open at the front, twelve backswept vanes per stage); the sixteen BRM exhaust stubs stand in two neat parallel rows, like on the real car. The 2D art and the sound are unchanged and v8 stays the BRM sound default.' }
+      { v: 'v1.10', date: '2026-11-12', status: 'done', text: 'New \u201cEngine bay\u201d view next to Inside and Outside, for every car (key E): a real 3D cut-away of the engine, built from the same numbers the sound model uses. One parametric model for all three cars: the BRM V16 (bore, stroke, rods, firing order, 135\u00b0 banks, twin-cam valves, stub exhausts, centre gear drive and the two-stage blower from the v9 physics model) and the GT350 and Cadillac V8s (bore, stroke, rods, cam timing, headers or log manifolds, four-barrel carb, fan, alternator or generator and starter from their sound settings). Parts a car does not have are switched off, and each part can be toggled in the Parts panel. Pistons, valves, cams, blower and fan move with the crank angle the sound engine is playing, so what you see is what you hear. Slow motion (1/10, 1/50, 1/200) and a crank-angle scrub slider slow the picture down while the sound keeps running at real speed. Exhaust glow, overrun pops and the v9.9 mouth flame light up the stub ends. A light mode keeps it smooth on older iPhones and iPads. Some sizes are not in the model (stub bore, exhaust cam timing, blower vane counts, a few V8 dimensions); the bay marks them as assumptions on screen. Before release two fixes from Wim\u2019s look at the preview: the valves, cams and compressor vanes stay visible in the light mode, and the two-stage blower is a clear cut-away (scroll housings cut open at the front, twelve backswept vanes per stage); the sixteen BRM exhaust stubs stand in two neat parallel rows, like on the real car. The 2D art and the sound are unchanged and v8 stays the BRM sound default.' },
+      { v: 'v1.10.1', date: '2026-11-12', status: 'done', text: 'The brake and gas pedals and the shift up / down buttons are now on screen in the desktop browser too, not only on phones and iPads, so the game can be driven on a touchscreen that presents itself as a desktop, such as a Tesla\u2019s in-car browser, or with a mouse. Brake on the left, gas on the right, shift buttons next to the gas, a little larger than on a phone. Fingers, the mouse and several fingers at once all work, a pedal lights up as you press it, and dragging sideways on the road steers. The keyboard still works as before, the desktop page keeps its side panel and top bar, and phones and iPads are unchanged. In the engine bay the bar sits between the pedals. ?pedals=0 hides them. v8 stays the BRM sound default.' }
     ] }
   ]
 };
@@ -9109,6 +9119,11 @@ var ProjectHistory = {
   var isTouch = params.has('touch') || iPadLike || (('ontouchstart' in window) || mtp > 0) && (mq('(pointer: coarse)') || mq('(any-pointer: coarse)') && !mq('(any-pointer: fine)'));
   if (params.get('touch') === '0') isTouch = false;
   if (isTouch) document.documentElement.classList.add('touch');
+  // v1.10.1: the desktop layout shows the on-screen pedals and shift buttons too (a touchscreen that reports itself as a desktop, such as
+  // a Tesla's in-car browser, has no keyboard to hold throttle / brake). Only the controls overlay: not the full-screen .touch layout.
+  // ?pedals=0 hides them on the desktop layout (tests / layout comparisons with v1.10).
+  var deskPedals = !isTouch && params.get('pedals') !== '0';
+  if (deskPedals) document.documentElement.classList.add('pedals');
 
   var cars = {};
   Vehicles.list.forEach(function (v) {
@@ -9405,11 +9420,12 @@ var ProjectHistory = {
 
   // ---- pedals: multitouch, pressure from finger height on the pedal ----
   document.querySelectorAll('.pedal').forEach(function (p) {
-    var which = p.dataset.pedal, active = {};
+    var which = p.dataset.pedal, active = {}, fill = deskPedals ? p.querySelector('.fill') : null;
     function val(e) { var r = p.getBoundingClientRect(); return Math.max(0.15, Math.min(1, (r.bottom - e.clientY) / r.height * 1.15)); }
     function update() {
       var v = 0; for (var k in active) v = Math.max(v, active[k]);
       if (which === 'gas') state.touchGas = v; else state.touchBrake = v;
+      if (fill) fill.style.height = Math.round(v * 100) + '%';   // v1.10.1: pressed feedback on the desktop overlay
     }
     var up = function (e) { delete active[e.pointerId]; update(); };
     onPtr(p, { down: function (e) { e.preventDefault(); capture(p, e.pointerId); active[e.pointerId] = val(e); update(); },
@@ -9524,7 +9540,7 @@ var ProjectHistory = {
     if (state.bay && typeof EngineBay !== 'undefined' && !EngineBay.failed) {   // v1.10 engine bay: the 3D view replaces the 2D drawing while it is open
       if (typeof GLView !== 'undefined') GLView.hide();
       if (EngineBay.draw(dash, { engineKey: v.engineKey, soundId: soundId(), audio: audio.ctx ? audio : null, audioMode: audio.mode, rpm: state.tachRpm !== null && state.tachRpm !== undefined ? state.tachRpm : c.rpm(),
-        thr: state.throttle, engine: c.engine, touch: isTouch })) return;
+        thr: state.throttle, engine: c.engine, touch: isTouch, pedals: isTouch || deskPedals })) return;
       state.bay = false; flash('Engine bay unavailable (WebGL error); back to the 2D view', 3); updatePanel();
     }
     VisualModels.get(state.visual).draw(dash, {
@@ -9542,7 +9558,7 @@ var ProjectHistory = {
   }
   if (params.get('view') === 'bay') setView(2);   // v1.10: open straight into the engine bay
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash, quality: quality };
+  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
 })();
 </script>
 </body>
