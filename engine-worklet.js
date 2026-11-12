@@ -567,6 +567,7 @@
     ctl(m) { if (this.cur.ctl) this.cur.ctl(m); if (this.next && this.next.ctl) this.next.ctl(m); }
     initRunning(on) { if (this.cur.initRunning) this.cur.initRunning(on); }
     report() { return this.cur.report ? this.cur.report() : null; }
+    bay(o) { return this.cur.bay ? this.cur.bay(o) : false; }   // v1.10 engine bay: kernel crank state if the model has one
     gainOf(pos) { const l = this.listeners[pos]; return Math.pow(10, ((l && l.gain_db) || 0) / 20); }
     setView(v) {
       const pos = this.views[v] || this.views[0];
@@ -651,6 +652,7 @@
           if (this.src) this.src.setView(this.view); if (this.nsrc) this.nsrc.setView(this.view);
         }
       } else if (m.type === 'script') { this.script = m.script; this.scriptPos = 0; }
+      if (m.type === 'ctl' && m.bay !== undefined) this.bayOn = !!m.bay;   // v1.10 engine bay view open: report the crank state
     }
     process(L, R, n) {
       this.blocks++;
@@ -668,6 +670,8 @@
       const tL = this.tL, tR = this.tR, wv = this.wv;
       for (let k = 0; k < n; k++) { this.listenS += (this.listen - this.listenS) * this.listenK; wv[k] = this.listenS; }
       this.src.render(n, rpm, thr, tL, tR, wv, this.raw);
+      // v1.10 engine bay: crank angle of the rpm this source is rendered at (models without their own crank); free when unused
+      this.bayRpm = rpm; this.bayTh = ((this.bayTh || 0) + rpm * 6.0 * n / this.fs) % 720.0;
       if (this.raw) { for (let k = 0; k < n; k++) { L[k] = tL[k]; R[k] = tR[k]; } return; }
       // engine on/off gate per source: v1/v2 are gated by the game's running flag (30 ms fade),
       // self-gated sources (v3+) play their own start-up, coast-down and silence
@@ -710,6 +714,25 @@
     }
   }
 
+  /** v1.10 engine bay: a thin snapshot of the crank state the audio is rendering (no extra DSP), o = Float32Array(56):
+   *  [0] crank angle deg (0..720, 0 = cylinder 1 firing TDC), [1] rpm, [2] throttle, [3] boost (pressure ratio), [4] blower phase (revs),
+   *  [5] 1 = full-rate v9 kernel, [6] source kind (9 = v9 kernel, 1 = rpm-integrated), [7] running (engine audible / cranking),
+   *  [8..23] per-cylinder combustion energy, [24..39] afterburn energy (v9.9), [40..55] mouth-flame outflow (v9.9) */
+  EngineVoice.prototype.bayState = function (o) {
+    const s = this.nsrc || this.src;
+    let i, own = false;
+    for (i = 0; i < 56; i++) o[i] = 0;
+    if (s && s.bay) own = s.bay(o);
+    const r = s && s.selfGated && s.report ? s.report() : null;
+    if (!own) {
+      o[0] = this.bayTh || 0; o[2] = this.sm.thr; o[6] = 1;
+      o[1] = r ? (r.rpm || 0) : (this.engGainTarget > 0 ? (this.bayRpm || 0) : (this.starterTarget > 0 ? this.crank : 0));
+      for (i = 0; i < 16; i++) o[8 + i] = 1;
+    }
+    o[7] = r ? (r.phase !== 'off' && r.phase !== 'stopped' && r.phase !== 'ign' ? 1 : 0) : ((this.engGainTarget > 0 || this.starterTarget > 0) ? 1 : 0);
+    if (!o[7] && !r) o[1] = 0;
+    return o;
+  };
   /** start-up state of a self-gated source (v3+), for the game's tach / physics hand-over */
   EngineVoice.prototype.report = function () { const s = this.nsrc || this.src; return s && s.selfGated && s.report ? s.report() : null; };
   const api = { EngineSynth, EngineVoice, V1Source, ListenerSource, NpRandomState, Starter, TyreNoise, Limiter, bq, lopeOf, DEFAULT_SPEC };
@@ -733,6 +756,7 @@
         this.voice.process(L, R, L.length);
         if ((++this.n & 31) === 0) { this.port.postMessage({ type: 'meter', gr: this.voice.gr, blocks: this.n, model: this.voice.modelId, err: this.voice.error }); }
         if ((this.n & 7) === 0) { const r = this.voice.report(); if (r || this.lastRep) this.port.postMessage({ type: 'eng', r: r }); this.lastRep = r; }
+        if (this.voice.bayOn && (this.n & 7) === 4) { const o = this.voice.bayState(new Float32Array(56)); this.port.postMessage({ type: 'bay', t: currentTime + L.length / sampleRate, s: o }, [o.buffer]); }
         return true;
       }
     }
@@ -3360,6 +3384,15 @@ function engineModuleBrm9(core) {
     }
     BrmSynthV9.prototype.ctl = function (m) { if (m && m.speed !== undefined) { this.speed = m.speed; this.eng.speed = m.speed; if (this.xf) this.xf.eng.speed = m.speed; } };
     BrmSynthV9.prototype.quality = function () { return this.dec === 1 ? 'hq' : 'lite'; };
+    /** v1.10 engine bay: a thin read of the kernel state (no computation): crank angle TH (deg, 0..720), rpm with the torque-impulse
+     *  ripple, smoothed throttle, boost, blower phase (revs), quality (1 = full rate), per-cylinder combustion energy ee, afterburn
+     *  energy abE (changes on each v9.9 afterburn event) and mouth-flame outflow flM. o: Float32Array(56). */
+    BrmSynthV9.prototype.bay = function (o) {
+      var e = this.eng, i;
+      o[0] = e.TH; o[1] = (e._r !== null ? e._r : 0) * (1.0 + e.OMD); o[2] = e.THR; o[3] = e.BOOST; o[4] = e.BPH; o[5] = this.dec === 1 ? 1 : 0; o[6] = 9;
+      for (i = 0; i < 16; i++) { o[8 + i] = e.ee[i]; o[24 + i] = e.abE[i]; o[40 + i] = e.flM[i]; }
+      return true;
+    };
     BrmSynthV9.prototype.cloneWithListener = function (listener) {
       var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       var c = new BrmSynthV9(MD, this.spec, listener, this.fs, { quality: this.quality(), seed: this.seed });
@@ -3450,7 +3483,7 @@ function engineModuleBrm9(core) {
     var MD = { P: P, PH: PH, GE: GE, QD: QD, FIRE: FIRE, BANK: BANK, TWW: TWW, CDN: CDN, POS: POS, stubXyz: stubXyz, perspective: perspective };
     function Synth(spec, listener, fs, opts) { return new BrmSynthV9(MD, spec, listener, fs, opts); }
     function EngM(fs, pp, seed) { return new Eng(MD, fs, pp, seed); }
-    return { id: id, label: label, set: setKey, micG: MICG, Synth: Synth, synthOpts: {}, positions: ['rear', 'in_cabin'], P: P, Eng: EngM, butter: butter, perspective: perspective, Rng: Rng, rngFor: rngFor };
+    return { id: id, label: label, set: setKey, MD: MD, micG: MICG, Synth: Synth, synthOpts: {}, positions: ['rear', 'in_cabin'], P: P, Eng: EngM, butter: butter, perspective: perspective, Rng: Rng, rngFor: rngFor };
     }
     return [build('v9', 'v9_6', 'v9.6'), build('v9_1', 'v9_1', 'v9.1'), build('v9_2', 'v9_2', 'v9.2'), build('v9_3', 'v9_3', 'v9.3'), build('v9_4', 'v9_4', 'v9.4'),
       build('v9_8', 'v9_8', 'v9.8'), build('v9_9', 'v9_9', 'v9.9')];

@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.9.2)</title>
+<title>Street Rod: engine sound + driving demo (v1.10)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -226,6 +226,33 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 /* on-screen error report (window.onerror / unhandledrejection, see <head>) */
 #errbox { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 99; background: rgba(120,10,10,.94); color: #fff; font: 12px/1.35 Menlo, 'Courier New', monospace; padding: 8px 34px 8px 10px; border-radius: 8px; max-height: 40%; overflow: auto; white-space: pre-wrap; -webkit-user-select: text; user-select: text; pointer-events: auto; }
 #errbox b { position: absolute; top: 4px; right: 8px; font-size: 20px; cursor: pointer; padding: 0 4px; }
+
+/* v1.10 Engine bay view (js/engine-bay.js): the WebGL canvas covers the picture area; the bar sits at its bottom (between the pedals on touch) */
+#bayBar { position: absolute; display: flex; flex-direction: column; align-items: stretch; pointer-events: none; font: 12px/1.3 Georgia, serif; }
+#bayBar.hidden { display: none; }
+#bayBar > * { pointer-events: auto; }
+#bayBar .bayInfo { pointer-events: none; align-self: flex-start; max-width: 100%; background: rgba(0,0,0,.55); color: #eadfc6; border-radius: 6px; padding: 3px 7px; margin-bottom: 5px; font: 11px/1.3 'Courier New', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#bayBar .bayRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#bayBar .bayRow .tb { padding: 6px 10px; min-height: 32px; }
+#bayBar .bayRow .sel select { max-width: 190px; }
+#bayBar input[type=range] { flex: 1 1 120px; min-width: 100px; height: 32px; margin: 0; touch-action: none; }
+#bayBar input[type=range].hidden { display: none; }
+#bayBar .bayPanel { position: absolute; bottom: 100%; left: 0; right: 0; max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; margin-bottom: 6px; background: rgba(243,233,210,.96); color: #2a2016;
+  border-radius: 10px; padding: 8px 10px; font: 12.5px/1.35 Georgia, serif; box-shadow: 0 6px 20px rgba(0,0,0,.5); -webkit-user-select: text; user-select: text; }
+#bayBar .bayPanel.hidden { display: none; }
+#bayBar .bayPanel .dim { color: #6b5a44; font-size: 11.5px; }
+#bayBar .bayParams { margin: 4px 0 6px; font: 11.5px/1.35 'Courier New', monospace; }
+#bayBar .bayToggles { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-bottom: 6px; }
+#bayBar .bayToggles label { white-space: nowrap; min-height: 26px; display: inline-flex; align-items: center; gap: 4px; }
+#bayBar .bayToggles label.na { color: #9a8a70; }
+#bayBar .bayNotes p { margin: 3px 0; font-size: 11.5px; }
+.nogap #bayBar .bayRow > * { margin: 0 6px 6px 0; }
+@media (min-width: 600px) and (min-height: 600px) { .touch #bayBar .bayRow .tb { min-height: 40px; } .touch #bayBar input[type=range] { height: 40px; } }
+/* v1.10: the Engine bay button must not wrap the touch top bar (iPad portrait); shorten the view labels on narrower touch screens */
+@media (max-width: 1000px) { .touch #segView .lx { display: none; } }
+@media (max-width: 700px) and (orientation: landscape) { .touch #segView .lx2 { display: none; } }
+@media (min-width: 760px) and (max-width: 1000px) and (min-height: 600px) { .touch #segView .tb { padding-left: 9px; padding-right: 9px; } }
 </style>
 <script>
 /* v1.8.2: self-reporting on real devices. Any uncaught error or rejected promise is shown in a red box at the bottom of the page
@@ -264,7 +291,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <div class="seg" id="segCar"><button class="tb" data-act="car" data-v="gt350">GT350</button><button class="tb" data-act="car" data-v="caddy">Cadillac</button><button class="tb" data-act="car" data-v="brm">BRM</button></div>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v8 (default) or a v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
-      <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside car</button><button class="tb" data-act="view" data-v="0">Outside (rear)</button></div>
+      <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside<span class="lx"> car</span></button><button class="tb" data-act="view" data-v="0">Outside<span class="lx"> (rear)</span></button><button class="tb" id="bBay" data-act="view" data-v="2" title="Engine bay: 3D engine from the sound model's parameters (key E)">Engine<span class="lx2"> bay</span></button></div>
       <label class="sel more"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
@@ -293,6 +320,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>S or I</td><td>Ignition: start / stop engine</td></tr>
       <tr><td>1 / 2 / 3</td><td>Select car (GT350 / Cadillac / BRM)</td></tr>
       <tr><td>V</td><td>Inside car / Outside (rear)</td></tr>
+      <tr><td>E</td><td>Engine bay (3D engine from the sound model’s parameters; drag to turn, pinch / wheel to zoom, double-tap to reset)</td></tr>
       <tr><td>X</td><td>Next sound model (v1 – v4; v3/v4 play the real start-up and shutdown)</td></tr>
       <tr><td>B</td><td>BRM: next engine sound (v8 &rarr; v9.1 &rarr; &hellip; &rarr; v9.6 &rarr; v9.8 &rarr; v9.9 physics models &rarr; v8); also the picker next to the cars</td></tr>
       <tr><td>Z</td><td>Next visuals</td></tr>
@@ -893,6 +921,7 @@ function engineWorkletMain(modules) {
     ctl(m) { if (this.cur.ctl) this.cur.ctl(m); if (this.next && this.next.ctl) this.next.ctl(m); }
     initRunning(on) { if (this.cur.initRunning) this.cur.initRunning(on); }
     report() { return this.cur.report ? this.cur.report() : null; }
+    bay(o) { return this.cur.bay ? this.cur.bay(o) : false; }   // v1.10 engine bay: kernel crank state if the model has one
     gainOf(pos) { const l = this.listeners[pos]; return Math.pow(10, ((l && l.gain_db) || 0) / 20); }
     setView(v) {
       const pos = this.views[v] || this.views[0];
@@ -977,6 +1006,7 @@ function engineWorkletMain(modules) {
           if (this.src) this.src.setView(this.view); if (this.nsrc) this.nsrc.setView(this.view);
         }
       } else if (m.type === 'script') { this.script = m.script; this.scriptPos = 0; }
+      if (m.type === 'ctl' && m.bay !== undefined) this.bayOn = !!m.bay;   // v1.10 engine bay view open: report the crank state
     }
     process(L, R, n) {
       this.blocks++;
@@ -994,6 +1024,8 @@ function engineWorkletMain(modules) {
       const tL = this.tL, tR = this.tR, wv = this.wv;
       for (let k = 0; k < n; k++) { this.listenS += (this.listen - this.listenS) * this.listenK; wv[k] = this.listenS; }
       this.src.render(n, rpm, thr, tL, tR, wv, this.raw);
+      // v1.10 engine bay: crank angle of the rpm this source is rendered at (models without their own crank); free when unused
+      this.bayRpm = rpm; this.bayTh = ((this.bayTh || 0) + rpm * 6.0 * n / this.fs) % 720.0;
       if (this.raw) { for (let k = 0; k < n; k++) { L[k] = tL[k]; R[k] = tR[k]; } return; }
       // engine on/off gate per source: v1/v2 are gated by the game's running flag (30 ms fade),
       // self-gated sources (v3+) play their own start-up, coast-down and silence
@@ -1036,6 +1068,25 @@ function engineWorkletMain(modules) {
     }
   }
 
+  /** v1.10 engine bay: a thin snapshot of the crank state the audio is rendering (no extra DSP), o = Float32Array(56):
+   *  [0] crank angle deg (0..720, 0 = cylinder 1 firing TDC), [1] rpm, [2] throttle, [3] boost (pressure ratio), [4] blower phase (revs),
+   *  [5] 1 = full-rate v9 kernel, [6] source kind (9 = v9 kernel, 1 = rpm-integrated), [7] running (engine audible / cranking),
+   *  [8..23] per-cylinder combustion energy, [24..39] afterburn energy (v9.9), [40..55] mouth-flame outflow (v9.9) */
+  EngineVoice.prototype.bayState = function (o) {
+    const s = this.nsrc || this.src;
+    let i, own = false;
+    for (i = 0; i < 56; i++) o[i] = 0;
+    if (s && s.bay) own = s.bay(o);
+    const r = s && s.selfGated && s.report ? s.report() : null;
+    if (!own) {
+      o[0] = this.bayTh || 0; o[2] = this.sm.thr; o[6] = 1;
+      o[1] = r ? (r.rpm || 0) : (this.engGainTarget > 0 ? (this.bayRpm || 0) : (this.starterTarget > 0 ? this.crank : 0));
+      for (i = 0; i < 16; i++) o[8 + i] = 1;
+    }
+    o[7] = r ? (r.phase !== 'off' && r.phase !== 'stopped' && r.phase !== 'ign' ? 1 : 0) : ((this.engGainTarget > 0 || this.starterTarget > 0) ? 1 : 0);
+    if (!o[7] && !r) o[1] = 0;
+    return o;
+  };
   /** start-up state of a self-gated source (v3+), for the game's tach / physics hand-over */
   EngineVoice.prototype.report = function () { const s = this.nsrc || this.src; return s && s.selfGated && s.report ? s.report() : null; };
   const api = { EngineSynth, EngineVoice, V1Source, ListenerSource, NpRandomState, Starter, TyreNoise, Limiter, bq, lopeOf, DEFAULT_SPEC };
@@ -1059,6 +1110,7 @@ function engineWorkletMain(modules) {
         this.voice.process(L, R, L.length);
         if ((++this.n & 31) === 0) { this.port.postMessage({ type: 'meter', gr: this.voice.gr, blocks: this.n, model: this.voice.modelId, err: this.voice.error }); }
         if ((this.n & 7) === 0) { const r = this.voice.report(); if (r || this.lastRep) this.port.postMessage({ type: 'eng', r: r }); this.lastRep = r; }
+        if (this.voice.bayOn && (this.n & 7) === 4) { const o = this.voice.bayState(new Float32Array(56)); this.port.postMessage({ type: 'bay', t: currentTime + L.length / sampleRate, s: o }, [o.buffer]); }
         return true;
       }
     }
@@ -3764,6 +3816,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     }
     BrmSynthV9.prototype.ctl = function (m) { if (m && m.speed !== undefined) { this.speed = m.speed; this.eng.speed = m.speed; if (this.xf) this.xf.eng.speed = m.speed; } };
     BrmSynthV9.prototype.quality = function () { return this.dec === 1 ? 'hq' : 'lite'; };
+    /** v1.10 engine bay: a thin read of the kernel state (no computation): crank angle TH (deg, 0..720), rpm with the torque-impulse
+     *  ripple, smoothed throttle, boost, blower phase (revs), quality (1 = full rate), per-cylinder combustion energy ee, afterburn
+     *  energy abE (changes on each v9.9 afterburn event) and mouth-flame outflow flM. o: Float32Array(56). */
+    BrmSynthV9.prototype.bay = function (o) {
+      var e = this.eng, i;
+      o[0] = e.TH; o[1] = (e._r !== null ? e._r : 0) * (1.0 + e.OMD); o[2] = e.THR; o[3] = e.BOOST; o[4] = e.BPH; o[5] = this.dec === 1 ? 1 : 0; o[6] = 9;
+      for (i = 0; i < 16; i++) { o[8 + i] = e.ee[i]; o[24 + i] = e.abE[i]; o[40 + i] = e.flM[i]; }
+      return true;
+    };
     BrmSynthV9.prototype.cloneWithListener = function (listener) {
       var MD = this.MD, P = MD.P, PH = MD.PH, GE = MD.GE, QD = MD.QD, FIRE = MD.FIRE, BANK = MD.BANK, TWW = MD.TWW, CDN = MD.CDN, POS = MD.POS, stubXyz = MD.stubXyz, perspective = MD.perspective;
       var c = new BrmSynthV9(MD, this.spec, listener, this.fs, { quality: this.quality(), seed: this.seed });
@@ -3854,7 +3915,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     var MD = { P: P, PH: PH, GE: GE, QD: QD, FIRE: FIRE, BANK: BANK, TWW: TWW, CDN: CDN, POS: POS, stubXyz: stubXyz, perspective: perspective };
     function Synth(spec, listener, fs, opts) { return new BrmSynthV9(MD, spec, listener, fs, opts); }
     function EngM(fs, pp, seed) { return new Eng(MD, fs, pp, seed); }
-    return { id: id, label: label, set: setKey, micG: MICG, Synth: Synth, synthOpts: {}, positions: ['rear', 'in_cabin'], P: P, Eng: EngM, butter: butter, perspective: perspective, Rng: Rng, rngFor: rngFor };
+    return { id: id, label: label, set: setKey, MD: MD, micG: MICG, Synth: Synth, synthOpts: {}, positions: ['rear', 'in_cabin'], P: P, Eng: EngM, butter: butter, perspective: perspective, Rng: Rng, rngFor: rngFor };
     }
     return [build('v9', 'v9_6', 'v9.6'), build('v9_1', 'v9_1', 'v9.1'), build('v9_2', 'v9_2', 'v9.2'), build('v9_3', 'v9_3', 'v9.3'), build('v9_4', 'v9_4', 'v9.4'),
       build('v9_8', 'v9_8', 'v9.8'), build('v9_9', 'v9_9', 'v9.9')];
@@ -6056,7 +6117,8 @@ var EngineAudio = (function () {
           var d = e.data;
           if (d.type === 'meter') { self.gr = d.gr; self.blocks = d.blocks; self.activeModel = d.model; if (d.err) self.voiceErr = d.err; }
           else if (d.type === 'hello') self.workletAlive = true;
-          else if (d.type === 'eng') self.eng = d.r;   // start-up sound models: phase / rpm / idle reported by the audio
+          else if (d.type === 'eng') self.eng = d.r;
+          else if (d.type === 'bay') self.bay = { t: d.t, s: d.s, p: performance.now() };   // v1.10 engine bay: crank state from the audio thread   // start-up sound models: phase / rpm / idle reported by the audio
         };
         node.onprocessorerror = function (e) { self.log('processor error: ' + (e && e.message || 'unknown')); self.fallback(); };
         node.connect(this.master);
@@ -6083,6 +6145,7 @@ var EngineAudio = (function () {
     sp.onaudioprocess = function (e) {
       var L = e.outputBuffer.getChannelData(0), R = e.outputBuffer.getChannelData(1), n = L.length;
       for (var o = 0; o < n; o += 128) voice.process(L.subarray(o, o + 128), R.subarray(o, o + 128), Math.min(128, n - o));
+      if (voice.bayOn) self.bay = { t: (e.playbackTime || ctx.currentTime) + n / ctx.sampleRate, s: voice.bayState(self.bayBuf || (self.bayBuf = new Float32Array(56))), p: performance.now() };
       self.blocks += n / 128; self.eng = voice.report(); self.gr = voice.gr; self.activeModel = voice.modelId; if (voice.error) self.voiceErr = voice.error;
     };
     // some WebKit versions need an input connected for onaudioprocess to fire
@@ -7283,6 +7346,773 @@ var GLView = (function () {
   return { available: available, draw: draw, hide: hide, stats: stats, get failed() { return failed; } };
 })();
 </script>
+<script>/* js/engine-params.js */
+/*
+ * engine-params.js (v1.10): ONE unified engine parameter set for every car, built from the numbers the sound models already use,
+ * for the parametric 3D engine bay (js/engine-bay.js). Nothing here is drawn or tuned by eye: each field says where it comes from.
+ *   BRM P30 Mk II V16: the v9 kernel (js/engine-brm9.js, engine-sound brm9.py) PHYS / GEOM of the selected fitted set (v9.1 ... v9.9;
+ *     with the v8 sound, which has no geometry, the bay shows the latest kernel fit, v9.9).
+ *   1967 Shelby GT350 / 1959 Cadillac: the car spec of the selected V8 sound model (v1 / v2 / v3 / v4: displacement, compression, firing
+ *     order, banks, cam duration at 0.050 in. and lobe separation, headers, pipes, carb, fan) + the v3/v4 start-up data
+ *     (EngineDataV34.START_SPECS: starter, ring gear, charging, fan ratio).
+ * Figures no sound model has are filled from period sources or marked as ASSUMED (src: 'assumed'), in this same set; nothing else.
+ * Parts a car does not have are switched off (parts.* = false), not modelled separately. Units: metres, degrees, crank revs.
+ * ES2017.
+ */
+var EngineParams = (function () {
+  'use strict';
+  var IN = 0.0254;
+  var brmModels = null;   // the v9 kernel's per-fit data, read once on the main thread (no audio runs here)
+  function brm9(id) {
+    if (!brmModels) {
+      brmModels = {};
+      var mods = typeof ENGINE_MODULES !== 'undefined' ? ENGINE_MODULES : [];
+      for (var i = 0; i < mods.length; i++) if (mods[i].name === 'engineModuleBrm9') { var r = mods[i]({}); r.forEach(function (m) { brmModels[m.id] = m; }); }
+    }
+    return brmModels[id] || brmModels.v9_9 || null;
+  }
+  function note(P, key, text, assumed) { P.notes.push({ key: key, text: text, assumed: !!assumed }); }
+  function pmod(a, m) { var r = a % m; return r < 0 ? r + m : r; }
+
+  // ---------------------------------------------------------------- BRM P30 Mk II V16 (v9 kernel)
+  function brm(soundId) {
+    var setId = /^v9/.test(soundId || '') ? soundId : 'v9_9', m = brm9(setId);
+    if (!m) return null;
+    var P0 = m.P, GE = P0.geom, PH = P0.phys, MD = m.MD, c, i;
+    var P = { car: 'brm', label: 'BRM P30 Mk II V16', soundId: soundId, fit: m.label, kernel: 'engine-sound brm9.py (v9 kernel), fit ' + m.label,
+      nCyl: 16, vAngle: 135, rotation: 'cw-front',
+      bore: GE.bore, stroke: GE.stroke, conrod: GE.conrod, cr: GE.cr, idle: GE.idle_rpm, redline: GE.redline,
+      firingOrder: P0.fire_order.slice(), fireDeg: [], bank: [], x: [], valveLayout: 'across', cam: 'dohc',
+      exValve: { d: GE.dv, lift: GE.lmax, open: GE.evo, dur: GE.dur, camx: GE.camx },
+      inValve: null, stubs: null, headers: null, blower: null, starter: null, fan: null, charging: null, carb: null, centreGear: null,
+      crankHeight: 0.28, notes: [], src: {} };
+    if (soundId === 'v8' || !/^v9/.test(soundId || '')) note(P, 'fit', 'The v8 BRM sound has no engine geometry; the bay shows the v9 kernel with the latest fit (v9.9). v8 stays the sound.', false);
+    for (c = 1; c <= 16; c++) {
+      i = c - 1;
+      P.fireDeg[i] = pmod(MD.FIRE[i], 720);          // brm9: 45 deg x position in the firing order
+      P.bank[i] = MD.BANK[i];                          // 0 = cylinders 1-8 (+y, left), 1 = 9-16
+      P.x[i] = MD.stubXyz(c)[0];                       // the kernel's stub row: exit_pitch, centre gap (split crank), bank_dx stagger
+    }
+    // intake valve: not in the sound model (the kernel only blows down through the exhaust valve)
+    P.inValve = { d: GE.dv, lift: GE.lmax, open: 720 - (GE.evo + GE.dur - 360) - GE.dur, dur: GE.dur, camx: GE.camx };
+    P.inValve.open = pmod(360 - (GE.evo + GE.dur - 360), 720);   // mirror of the exhaust event about the overlap TDC (360)
+    note(P, 'inValve', 'Intake valve: not in the sound model; drawn with the exhaust valve\u2019s size and lift law, mirrored about overlap TDC.', true);
+    note(P, 'exCam', 'Exhaust cam (EVO ' + GE.evo.toFixed(1) + '\u00b0 after firing TDC, ' + GE.dur + '\u00b0 open, lift law sin^' + GE.camx.toFixed(2) + '), valve \u00d8 ' + (GE.dv * 1000).toFixed(1) + ' mm and lift ' + (GE.lmax * 1000).toFixed(1) + ' mm are model assumptions (fitted / estimated, not measured).', true);
+    // stubs: kernel slen without the acoustic end correction (0.61 a)
+    var a = GE.stub_d / 2, len = [], mouth = [];
+    for (c = 1; c <= 16; c++) {
+      i = c - 1;
+      len[i] = Math.max(PH.stub_len * (1.0 + PH.stub_sig * P0.stub_z[i] + PH.stub_c * MD.CDN[i]), 0.1 - 0.61 * a);
+      mouth[i] = MD.stubXyz(c);
+    }
+    var lenMean = len.reduce(function (s0, v) { return s0 + v; }, 0) / len.length;
+    // drawn layout (v1.10 fix, Wim: "they don't look parallel"): one shared direction per bank (mirror image on the other bank), every
+    // stub drawn at the mean fitted length so the mouths line up; sweep back 'yaw' (photos of P30 2/02: straight, parallel, the open ends
+    // facing out and slightly back), the downward angle is set in the bay so the mean mouth height equals the kernel's stub_z.
+    P.stubs = { d: GE.stub_d, len: len, lenMean: lenMean, yaw: 10, mouth: mouth, y: GE.stub_y, z: GE.stub_z, pitch: PH.exit_pitch, bankDx: PH.bank_dx };
+    note(P, 'stub', 'Stub bore \u00d8 ' + (GE.stub_d * 1000).toFixed(0) + ' mm is a model assumption; lengths are the fitted ' + (PH.stub_len * 1000).toFixed(0) + ' mm \u00b1 per-stub spread.', true);
+    note(P, 'stubSweep', 'Drawn as two parallel rows: every stub on a bank has the same direction (the other bank is its mirror image), straight out sideways, swept back ' + P.stubs.yaw + '\u00b0 (photos of P30 2/02) and tilted down so the mouths sit at the kernel\u2019s ' + GE.stub_z + ' m height; all drawn at the mean fitted length ' + (lenMean * 1000).toFixed(0) + ' mm (sound: ' + (Math.min.apply(null, len) * 1000).toFixed(0) + '\u2013' + (Math.max.apply(null, len) * 1000).toFixed(0) + ' mm per stub, unchanged). The kernel\u2019s mouth side offset (\u00b1' + GE.stub_y + ' m) is not used for the picture; the sweep and tilt angles are read from photos.', true);
+    var gap = 0.05 * PH.exit_pitch / 0.06;
+    P.centreGear = { gap: gap, teeth: 36, d: Math.min(0.11, 2.2 * gap + 0.02) };
+    note(P, 'centreGear', 'Split crank with centre power take-off: the gap (' + (gap * 1000).toFixed(0) + ' mm) is the kernel\u2019s stub-row centre gap; gear size and teeth are assumed.', true);
+    P.blower = { ratio: GE.drive_ratio, lobes: GE.blower_lobes, z: GE.blade_z.slice(), prMax: GE.pr_max, d: [0.20, 0.17], gear: [83, 20] };
+    note(P, 'blower', 'Two-stage centrifugal blower at ' + GE.drive_ratio + '\u00d7 crank, ' + GE.blade_z.join(' + ') + ' blades (vane counts are a model assumption); impeller \u00d8 and the 83:20 step-up gear (= ' + (83 / 20).toFixed(2) + ':1) are assumed.', true);
+    P.parts = { block: true, pistons: true, rods: true, crank: true, valvesEx: true, valvesIn: true, cams: true, stubs: true, headers: false, collector: false, crossover: false,
+      blower: true, centreGear: true, starter: false, fan: false, charging: false, carb: false, glow: true };
+    note(P, 'starter', 'No electric starter (push / external start), so the starter is switched off.', false);
+    note(P, 'misc', 'Assumed: crank height 0.28 m, piston compression height, head and block sizes (shell only).', true);
+    P.src = { bore: 'kernel GEOM', stroke: 'kernel GEOM', conrod: 'kernel GEOM (guess in brm9.py)', cr: 'kernel GEOM', fire: 'kernel fire_order', x: 'kernel stubXyz' };
+    return P;
+  }
+
+  // ---------------------------------------------------------------- the V8s (GT350 289 Hi-Po, Cadillac 390)
+  // period figures not in any sound model: [S1] 1959-60 Cadillac shop manual specifications (palmantics.com), [S2] MotorTrend 289 Hi-Po
+  // ID guide / OnAllCylinders 289 Hi-Po (valves 1.78 / 1.45 in., 5.155 in. rods, 4.38 in. bore spacing, 0.477 in. lift).
+  var V8DATA = {
+    GT350: { bore: 4.00, rod: 5.155, spacing: 4.38, vIn: 1.78, vEx: 1.45, lift: 0.477, stagger: 0.90, crankH: 0.42, label: '1967 Shelby GT350 289 Hi-Po V8', srcTxt: '289 Hi-Po: bore 4.00 in., rods 5.155 in., bore spacing 4.38 in., valves 1.78 / 1.45 in., 0.477 in. lift (period sources)' },
+    CADDY: { bore: 4.00, rod: 6.50, spacing: 4.62, vIn: 1.875, vEx: 1.50, lift: 0.450, stagger: 0.95, crankH: 0.45, label: '1959 Cadillac 390 V8', srcTxt: 'Cadillac 390: bore 4.00 in., rods 6.5 in., valves 1.875 / 1.50 in., 0.450 in. lift (1959-60 shop manual); bore spacing 4.62 in. assumed' },
+  };
+  function v8(key, soundId) {
+    var sm = typeof SoundModels !== 'undefined' ? SoundModels.get(soundId) : null;
+    var base = (typeof EngineCarsV4 !== 'undefined' && EngineCarsV4[key]) || {};
+    var sp = Object.assign({}, base, (sm && sm.cars && sm.cars[key]) || {});
+    var D = V8DATA[key], carKey = key === 'GT350' ? 'gt350' : 'cadillac59';
+    var ST = (typeof EngineDataV34 !== 'undefined' && EngineDataV34.START_SPECS && EngineDataV34.START_SPECS[carKey]) || null;
+    var bore = D.bore * IN, vd1 = sp.displacement_ci * Math.pow(IN, 3) / 8, stroke = vd1 / (0.25 * Math.PI * bore * bore);
+    var P = { car: key === 'GT350' ? 'gt350' : 'caddy', label: D.label, soundId: soundId, fit: sm ? sm.label : '', kernel: 'sound model ' + (sm ? sm.label : soundId) + ' car spec',
+      nCyl: 8, vAngle: 90, rotation: 'cw-front', bore: bore, stroke: stroke, conrod: D.rod * IN, cr: sp.compression, idle: sp.idle_rpm, redline: sp.redline,
+      firingOrder: sp.firing_order.slice(), fireDeg: [], bank: [], x: [], valveLayout: 'inline', cam: 'pushrod',
+      exValve: null, inValve: null, stubs: null, headers: null, blower: null, starter: null, fan: null, charging: null, carb: null, centreGear: null,
+      crankHeight: D.crankH, notes: [], src: {} };
+    var left = sp.left_bank, c, i, k;
+    for (k = 0; k < 8; k++) P.fireDeg[sp.firing_order[k] - 1] = 90 * k;
+    // cylinders in pairs along the crank: Ford 1-4 right bank (1 at the front), 5-8 left; GM/Cadillac odd left, even right (1 at the front)
+    var right = []; for (c = 1; c <= 8; c++) if (left.indexOf(c) < 0) right.push(c);
+    var leftFirst = left[0] === 1, sp2 = D.spacing * IN, stag = D.stagger * IN;
+    for (k = 0; k < 4; k++) {
+      var xl = sp2 * (1.5 - k) + (leftFirst ? 0.5 : -0.5) * stag, xr = sp2 * (1.5 - k) + (leftFirst ? -0.5 : 0.5) * stag;
+      P.bank[left[k] - 1] = 0; P.x[left[k] - 1] = xl; P.bank[right[k] - 1] = 1; P.x[right[k] - 1] = xr;
+    }
+    // cam from the sound model: duration at 0.050 in. and lobe separation; lift law sin^2 over an opening sized so the 0.050 in. points
+    // fall on the model's duration; installed straight up (intake centreline = LSA after overlap TDC, exhaust = LSA before)
+    var L = D.lift, cx = 2.0, x0 = Math.asin(Math.pow(0.050 / L, 1 / cx)) / Math.PI, dur = sp.cam_duration_050 / (1 - 2 * x0), lsa = sp.lsa;
+    P.exValve = { d: D.vEx * IN, lift: L * IN, open: pmod(360 - lsa - dur / 2, 720), dur: dur, camx: cx };
+    P.inValve = { d: D.vIn * IN, lift: L * IN, open: pmod(360 + lsa - dur / 2, 720), dur: dur, camx: cx };
+    note(P, 'cam', 'Cam from the sound model: ' + sp.cam_duration_050 + '\u00b0 at 0.050 in., ' + lsa + '\u00b0 lobe separation (sin\u00b2 lift law and straight-up install assumed).', true);
+    note(P, 'dims', D.srcTxt + '; stroke = model displacement ' + sp.displacement_ci + ' ci / bore.', false);
+    var hd = sp.headers || 'tubular';
+    P.headers = { type: hd, len: sp.header_len_m || 0.6, primD: (hd === 'log' ? 1.75 : 1.625) * IN, pipeD: (sp.pipe_diam_in || 2.25) * IN, pipeLen: sp.pipe_len_m || 3, crossover: sp.crossover || (sp.hcross > 0 ? 'h' : 'none') };
+    note(P, 'headers', (hd === 'log' ? 'Cast log manifolds' : 'Tubular headers') + ' ' + P.headers.len + ' m (model header_len_m), pipe \u00d8 ' + (sp.pipe_diam_in || 2.25) + ' in.; primary \u00d8 assumed.', true);
+    P.carb = { count: /^(\d)x/.test(sp.carbs || '1x4') ? +RegExp.$1 : 1, barrels: /x(\d)/.test(sp.carbs || '1x4') ? +RegExp.$1 : 4, cfm: sp.carb_cfm, cleaner: sp.air_cleaner || 'open' };
+    P.fan = { blades: sp.fan_blades || (key === 'GT350' ? 4 : 5), ratio: ST ? ST.fan_ratio : 1, d: key === 'GT350' ? 0.43 : 0.48 };
+    if (ST) {
+      P.starter = { type: ST.starter, ringTeeth: ST.ring_teeth, ratio: ST.ring_ratio, pinionTeeth: Math.round(ST.ring_teeth / ST.ring_ratio), crankWarm: ST.crank_rpm_warm, poles: ST.st_poles };
+      P.charging = { type: ST.charging, ratio: ST.charge_ratio, fanBlades: ST.charge_fan_blades, wpVanes: ST.wp_vanes };
+      note(P, 'starter', 'Starter ' + ST.starter + ': ' + ST.ring_teeth + '-tooth ring gear, ' + ST.ring_ratio + ':1 (pinion ' + P.starter.pinionTeeth + ' teeth); ' + ST.charging + ' at ' + ST.charge_ratio + '\u00d7 crank, fan ' + P.fan.ratio + '\u00d7 (v3/v4 start-up data).', false);
+    } else note(P, 'starter', 'No start-up data loaded: starter / charging switched off.', false);
+    note(P, 'misc', 'Assumed: bank stagger, crank height, fan \u00d8, primary-pipe \u00d8, block / head shells, carb and air-cleaner size.', true);
+    P.parts = { block: true, pistons: true, rods: true, crank: true, valvesEx: true, valvesIn: true, cams: true, stubs: false, headers: true, collector: hd !== 'log', crossover: P.headers.crossover === 'h',
+      blower: false, centreGear: false, starter: !!P.starter, fan: true, charging: !!P.charging, carb: true, glow: true };
+    note(P, 'blower', 'Naturally aspirated: supercharger switched off.', false);
+    return P;
+  }
+
+  /** engineKey 'BRM' | 'GT350' | 'CADDY', soundId = the sound model now playing for that car */
+  function forCar(engineKey, soundId) { return engineKey === 'BRM' ? brm(soundId) : v8(engineKey, soundId); }
+  /** kinematics shared by the bay and the tests: piston pin distance from the crank axis at local angle phi (deg after firing TDC) */
+  function pinDist(P, phi) { var r = 0.5 * P.stroke, a = phi * Math.PI / 180, s = Math.sin(a); return r * Math.cos(a) + Math.sqrt(P.conrod * P.conrod - r * r * s * s); }
+  /** valve lift (m) of event V at the cylinder's local angle a (deg after its firing TDC, 0..720): the kernel's law sin(pi x)^camx */
+  function lift(V, a) { var x = pmod(a - V.open, 720) / V.dur; return x < 1 ? V.lift * Math.pow(Math.sin(Math.PI * x), V.camx) : 0; }
+  return { forCar: forCar, pinDist: pinDist, lift: lift, pmod: pmod, brm9: brm9 };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = EngineParams;
+</script>
+<script>/* js/engine-bay.js */
+/*
+ * engine-bay.js (v1.10): the Engine bay view. ONE parametric WebGL cutaway for every car, meshed from the unified parameter set
+ * in js/engine-params.js (the same numbers the sound models use) and animated from the crank angle / rpm the audio thread is rendering
+ * (EngineVoice.bayState: the v9 kernel's own crank angle TH, blower phase and per-cylinder burn / afterburn / mouth-flame state, or the
+ * rpm the V8 models are rendered at). No second physics engine: this file only does kinematics (piston, rod, crank, valve lift from the
+ * kernel's cam law, gear ratios).
+ * Parts a car does not have are switched off (P.parts), not modelled separately. Changing car or sound model rebuilds the same bay.
+ * Kinematic cutaway: tens of thousands of triangles, repeated parts instanced, two lights, Lambert shading, glow = additive sprites.
+ * Lite mode (old phones, ScriptProcessor audio, full-rate v9 audio, median frame > 28 ms, ?bay=lite) is a performance mode only:
+ * pixel ratio 1, 30 fps cap, fewer segments, plain gear discs (no teeth), coarser header tubes. Valves, cams, impeller vanes and the
+ * blower cutaway stay in lite (fix after Wim on the preview: "Missing the valves on the brm", "vanes not visible? Housing not clear"); only the
+ * Parts panel switches them off. ?bay=full (or ?bay=hq) forces full detail. Needs WebGL 2 (three.js r163+); without it the view is not offered and the 2D views stay as they are.
+ * Coordinates: metres; three.js X = forward along the crank, Y = up, Z = -(model y) (model +y = left bank side). ES2017.
+ */
+var EngineBay = (function () {
+  'use strict';
+  var T = window.THREE, R = null, st = null, failed = false, glOk = null;
+  var mobile = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  var qs = new URLSearchParams(location.search);
+  var opt = { speed: 'auto', scrub: false, scrubDeg: 0, lite: qs.get('bay') === 'lite' ? 'on' : (qs.get('bay') === 'full' || qs.get('bay') === 'hq' ? 'off' : 'auto'), over: {} };
+  var D2R = Math.PI / 180;
+
+  function available() {
+    if (failed || !T) return false;
+    if (glOk === null) { try { var c = document.createElement('canvas'); glOk = !!(window.WebGL2RenderingContext && c.getContext('webgl2')); } catch (e) { glOk = false; } }
+    return glOk;
+  }
+  function pmod(a, m) { var r = a % m; return r < 0 ? r + m : r; }
+
+  // ---------------------------------------------------------------- geometry helpers
+  var UP = null, XA = null;
+  function v3(x, y, z) { return new T.Vector3(x, y, z); }
+  function rotX(v, deg) { var a = deg * D2R, c = Math.cos(a), s = Math.sin(a); return v3(v.x, v.y * c - v.z * s, v.y * s + v.z * c); }
+  /** direction at angle beta (deg) about +X from straight up (model dir(beta) = (0, -sin, cos) in model y, z) */
+  function dirAt(beta) { return rotX(UP, beta); }
+  /** merge indexed / non-indexed BufferGeometries (position + normal) into one */
+  function merge(list) {
+    var np = 0, ni = 0, i;
+    list = list.filter(Boolean).map(function (g) { return g.index ? g : indexed(g); });
+    list.forEach(function (g) { np += g.attributes.position.count; ni += g.index.count; });
+    var pos = new Float32Array(np * 3), nor = new Float32Array(np * 3), idx = new (np > 65535 ? Uint32Array : Uint16Array)(ni), op = 0, oi = 0;
+    list.forEach(function (g) {
+      if (!g.attributes.normal) g.computeVertexNormals();
+      pos.set(g.attributes.position.array, op * 3); nor.set(g.attributes.normal.array, op * 3);
+      var gi = g.index.array; for (i = 0; i < gi.length; i++) idx[oi + i] = gi[i] + op;
+      op += g.attributes.position.count; oi += gi.length;
+    });
+    var m = new T.BufferGeometry(); m.setAttribute('position', new T.BufferAttribute(pos, 3)); m.setAttribute('normal', new T.BufferAttribute(nor, 3)); m.setIndex(new T.BufferAttribute(idx, 1));
+    m.computeBoundingSphere(); return m;
+  }
+  function indexed(g) { var n = g.attributes.position.count, a = new Uint32Array(n); for (var i = 0; i < n; i++) a[i] = i; g.setIndex(new T.BufferAttribute(a, 1)); return g; }
+  var _m = null, _q = null, _s = null, _p = null;
+  function place(g, pos, dir, rollDeg) {   // geometry built along +Y, moved so its +Y points along dir, origin at pos
+    var q = new T.Quaternion().setFromUnitVectors(UP, dir.clone().normalize());
+    if (rollDeg) q.multiply(new T.Quaternion().setFromAxisAngle(UP, rollDeg * D2R));
+    g.applyMatrix4(new T.Matrix4().compose(pos, q, v3(1, 1, 1))); return g;
+  }
+  function cyl(r1, r2, h, seg, open) { return new T.CylinderGeometry(r1, r2, h, seg, 1, !!open); }
+  function boxAt(w, h, d, x, y, z) { var g = new T.BoxGeometry(w, h, d); g.translate(x, y, z); return g; }
+  function segBetween(a, b, r, seg, open) { var d = b.clone().sub(a), L = d.length(), g = cyl(r, r, L, seg, open); g.translate(0, L / 2, 0); return place(g, a, d); }
+  /** swept circle along a polyline (parallel-transport frames) */
+  function tube(pts, r, seg) {
+    var n = pts.length, pos = [], idx = [], i, k, t = [], nrm = null;
+    for (i = 0; i < n; i++) t.push((i === 0 ? pts[1].clone().sub(pts[0]) : i === n - 1 ? pts[n - 1].clone().sub(pts[n - 2]) : pts[i + 1].clone().sub(pts[i - 1])).normalize());
+    nrm = Math.abs(t[0].y) < 0.9 ? v3(0, 1, 0).cross(t[0]).normalize() : v3(1, 0, 0).cross(t[0]).normalize();
+    var frames = [];
+    for (i = 0; i < n; i++) {
+      if (i > 0) { var ax = t[i - 1].clone().cross(t[i]), s = ax.length(); if (s > 1e-6) { ax.normalize(); nrm.applyQuaternion(new T.Quaternion().setFromAxisAngle(ax, Math.asin(Math.min(1, s)) * (t[i - 1].dot(t[i]) < 0 ? -1 : 1))); } }
+      frames.push([nrm.clone(), t[i].clone().cross(nrm).normalize()]);
+    }
+    for (i = 0; i < n; i++) for (k = 0; k <= seg; k++) {
+      var a = k / seg * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a), N = frames[i][0], B = frames[i][1];
+      pos.push(pts[i].x + r * (c * N.x + sn * B.x), pts[i].y + r * (c * N.y + sn * B.y), pts[i].z + r * (c * N.z + sn * B.z));
+    }
+    for (i = 0; i < n - 1; i++) for (k = 0; k < seg; k++) { var a0 = i * (seg + 1) + k, b0 = a0 + seg + 1; idx.push(a0, b0, a0 + 1, b0, b0 + 1, a0 + 1); }
+    var g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+  }
+  function smooth(pts, it) {   // Chaikin corner cutting, ends kept
+    for (var k = 0; k < it; k++) { var o = [pts[0]]; for (var i = 0; i < pts.length - 1; i++) { o.push(pts[i].clone().lerp(pts[i + 1], 0.25), pts[i].clone().lerp(pts[i + 1], 0.75)); } o.push(pts[pts.length - 1]); pts = o; }
+    return pts;
+  }
+  function plen(p) { var L = 0; for (var i = 1; i < p.length; i++) L += p[i].distanceTo(p[i - 1]); return L; }
+  function gearGeo(teeth, rPitch, width, toothH, seg) {   // disc + teeth (merged), axis +X
+    var d0 = cyl(rPitch - toothH * 0.5, rPitch - toothH * 0.5, width, seg); d0.rotateX(Math.PI / 2);   // disc axis -> Z
+    var list = [d0];
+    if (teeth) {
+      var tw = Math.PI * 2 * rPitch / teeth * 0.5;
+      for (var i = 0; i < teeth; i++) { var a = i / teeth * Math.PI * 2, b = new T.BoxGeometry(tw, toothH, width); b.translate(0, rPitch, 0); b.rotateZ(a); list.push(b); }
+    }
+    var g = merge(list);
+    g.rotateY(Math.PI / 2);   // axis Z -> X (teeth in the YZ plane)
+    return g;
+  }
+  /** centrifugal impeller vane on a backplate at x = xb, axis +X: root radius r1 to tip r2, axial height hIn at the root tapering to hOut
+   *  at the tip, thickness t, backswept by 'sweep' (rad) toward +angle, i.e. the tip trails the rotation (bay rotates the impeller by -angle) */
+  function vane(r1, r2, xb, hIn, hOut, t, sweep, n) {
+    var pos = [], i, St = [];
+    for (i = 0; i <= n; i++) {
+      var u = i / n, rr = r1 + (r2 - r1) * u, a = sweep * Math.pow(u, 1.6), h = hIn + (hOut - hIn) * u, cy = Math.cos(a), cz = Math.sin(a), ty = -cz, tz = cy;
+      St.push([[xb, rr * cy - ty * t / 2, rr * cz - tz * t / 2], [xb, rr * cy + ty * t / 2, rr * cz + tz * t / 2], [xb + h, rr * cy + ty * t / 2, rr * cz + tz * t / 2], [xb + h, rr * cy - ty * t / 2, rr * cz - tz * t / 2]]);
+    }
+    var quad = function (A, B, C, D) { pos.push.apply(pos, A.concat(B, C, A, C, D)); };
+    for (i = 0; i < n; i++) { var P0 = St[i], P1 = St[i + 1]; for (var e = 0; e < 4; e++) { var e2 = (e + 1) % 4; quad(P0[e], P1[e], P1[e2], P0[e2]); } }
+    quad(St[0][3], St[0][2], St[0][1], St[0][0]); quad(St[n][0], St[n][1], St[n][2], St[n][3]);
+    var g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3)); g.computeVertexNormals(); return g;
+  }
+  function mk(p, idx) { var g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(p), 3)); g.setIndex(idx); g.computeVertexNormals(); return g; }
+  function radialTex() {
+    var c = document.createElement('canvas'); c.width = c.height = 64; var g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 1, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c);
+  }
+
+  // ---------------------------------------------------------------- materials
+  function mats() {
+    var L = function (c, o) { return new T.MeshLambertMaterial(Object.assign({ color: c }, o || {})); };
+    var G = function (c, op) { return new T.MeshLambertMaterial({ color: c, transparent: true, opacity: op, depthWrite: false, side: T.DoubleSide }); };
+    return { steel: L(0x8f979f), crank: L(0x6f7780), rod: L(0xb9c0c8), piston: L(0xd9d6cc), valveEx: L(0xd08a4c, { emissive: 0x2a1406 }), valveIn: L(0xd2d8de, { emissive: 0x16191c }), cam: L(0x7a6f60),
+      stub: L(0x8a6648), header: L(0x5d6166), pipe: L(0x6c6f72), gear: L(0xa08a50), impeller: L(0xd9b04a, { emissive: 0x2a1e06 }), fan: L(0x4a4d52), starter: L(0x3a3d42), alt: L(0x9aa0a6),
+      carb: G(0xb9a77a, 0.45), plate: L(0x6c5a3a), cleaner: G(0x30353c, 0.35), shell: G(0x7c8794, 0.16), head: G(0x9aa6b2, 0.22), casing: G(0xaeb4ba, 0.3), shellB: G(0xc6d0d8, 0.5), wallB: G(0x9aa6b2, 0.32), cut: L(0xc0392b, { emissive: 0x300a06 }), rim: L(0x3b4046), impDisc: L(0x4a4038), floor: L(0x2a2420) };
+  }
+
+  // ---------------------------------------------------------------- build the bay for one parameter set
+  function build(P, lite) {
+    var M = st.M, g = new T.Group(), up = {}, parts = Object.assign({}, P.parts, opt.over[P.car] || {}), segs = lite ? 12 : 20, i, c;
+    var N = P.nCyl, r = 0.5 * P.stroke, l = P.conrod, b = P.bore, H = P.crankHeight, C0 = v3(0, H, 0);
+    var hc = 0.5 * b, hp = 0.8 * b, hClear = P.stroke / (P.cr - 1);   // compression height, piston length (assumed); chamber height from CR
+    var deck = r + l + hc + hClear;
+    var beta = function (bk) { return bk === 0 ? -P.vAngle / 2 : P.vAngle / 2; };
+    var U = [dirAt(beta(0)), dirAt(beta(1))];
+    var W = U.map(function (u) { var w = v3(0, 0, 0).crossVectors(XA, u).normalize(); if (Math.sign(w.z) !== Math.sign(u.z)) w.negate(); return w; });   // exhaust side (outer / lower)
+    var xs = P.x, xmin = Math.min.apply(null, xs) - 0.6 * b, xmax = Math.max.apply(null, xs) + 0.6 * b;
+    up.P = P; up.parts = parts; up.C0 = C0; up.U = U; up.W = W; up.r = r; up.deck = deck; up.hClear = hClear; up.hc = hc; up.lite = lite;
+    up.beta = []; up.throw = [];
+    for (c = 0; c < N; c++) { up.beta[c] = beta(P.bank[c]); up.throw[c] = beta(P.bank[c]) + P.fireDeg[c]; }
+    // floor (scale reference: 0.1 m grid lines)
+    var fl = new T.Mesh(new T.PlaneGeometry(3.2, 2.2), M.floor); fl.rotation.x = -Math.PI / 2; fl.position.set((xmin + xmax) / 2 - 0.2, 0, 0); g.add(fl);
+    var gl = []; for (i = -16; i <= 16; i++) { gl.push(boxAt(0.003, 0.001, 2.2, (xmin + xmax) / 2 - 0.2 + i * 0.1, 0.001, 0)); } for (i = -11; i <= 11; i++) gl.push(boxAt(3.2, 0.001, 0.003, (xmin + xmax) / 2 - 0.2, 0.001, i * 0.1));
+    g.add(new T.Mesh(merge(gl), new T.MeshBasicMaterial({ color: 0x3d342c })));
+    // ---- crank (built at theta = 0, rotated about X by -theta) ----
+    var crank = new T.Group(); crank.position.copy(C0); g.add(crank); up.crankG = crank;
+    var pins = [], used = [];
+    for (c = 0; c < N; c++) {
+      if (used[c]) continue; used[c] = true; var mate = -1, best = 1e9;
+      for (var c2 = 0; c2 < N; c2++) if (!used[c2] && P.bank[c2] !== P.bank[c] && Math.abs(pmod(up.throw[c2] - up.throw[c] + 180, 360) - 180) < 1 && Math.abs(xs[c2] - xs[c]) < best) { best = Math.abs(xs[c2] - xs[c]); mate = c2; }
+      if (mate >= 0 && best < 1.5 * b) used[mate] = true; else mate = -1;
+      pins.push({ cyl: mate >= 0 ? [c, mate] : [c], ang: up.throw[c], x0: Math.min(xs[c], mate >= 0 ? xs[mate] : xs[c]) - 0.17 * b, x1: Math.max(xs[c], mate >= 0 ? xs[mate] : xs[c]) + 0.17 * b });
+    }
+    up.pins = pins;
+    if (parts.crank) {
+      var cl = [], mainR = 0.5 * r + 0.06 * b, pinR = 0.42 * r + 0.05 * b;
+      var mainX0 = xmin - 0.05, mainX1 = xmax + 0.03;
+      var sh = cyl(mainR, mainR, mainX1 - mainX0, segs); sh.rotateZ(Math.PI / 2); sh.translate((mainX0 + mainX1) / 2, 0, 0); cl.push(sh);
+      pins.forEach(function (p) {
+        var d = dirAt(p.ang), pc = d.clone().multiplyScalar(r), pg = cyl(pinR, pinR, p.x1 - p.x0, segs); pg.rotateZ(Math.PI / 2); pg.translate((p.x0 + p.x1) / 2 + pc.x, pc.y, pc.z); cl.push(pg);
+        [p.x0 - 0.06 * b, p.x1 + 0.06 * b].forEach(function (wx) {   // webs with counterweight lobe
+          var wb = new T.BoxGeometry(0.12 * b, r + 2 * pinR + 0.35 * r, 2.3 * pinR); wb.translate(0, (r - 0.35 * r) / 2, 0); place(wb, v3(wx, 0, 0), d); cl.push(wb);
+        });
+      });
+      if (parts.centreGear && P.centreGear) {   // BRM: split crank, centre power take-off gear in the kernel's centre gap
+        var gx = 0.5 * (P.x[3] + P.x[4]);   // between cylinders 4 and 5 (the two crank halves)
+        var cg = lite ? gearGeo(0, P.centreGear.d / 2, P.centreGear.gap * 0.6, 0.006, segs) : gearGeo(P.centreGear.teeth, P.centreGear.d / 2, P.centreGear.gap * 0.6, 0.006, segs); cg.translate(gx, 0, 0); cl.push(cg);
+        var og = lite ? gearGeo(0, P.centreGear.d / 2, P.centreGear.gap * 0.6, 0.006, segs) : gearGeo(P.centreGear.teeth, P.centreGear.d / 2, P.centreGear.gap * 0.6, 0.006, segs);
+        var outG = new T.Mesh(og, M.gear); outG.position.set(gx, H - P.centreGear.d, 0); g.add(outG); up.outGear = outG;
+      }
+      crank.add(new T.Mesh(merge(cl), M.crank));
+    }
+    // flywheel + starter ring gear at the rear (V8s with a starter)
+    if (parts.starter && P.starter) {
+      var mod = 0.00254, rr = P.starter.ringTeeth * mod / 2, fx = xmin - 0.07;
+      var fw = new T.Mesh(lite ? gearGeo(0, rr, 0.028, 0.006, 32) : gearGeo(P.starter.ringTeeth, rr, 0.028, 0.006, 48), M.steel); fw.position.x = fx; crank.add(fw);
+      var pr = P.starter.pinionTeeth * mod / 2, pd = dirAt(P.car === 'caddy' ? 120 : 125), pc0 = C0.clone().add(pd.clone().multiplyScalar(rr + pr + 0.001));
+      var pin = new T.Mesh(gearGeo(lite ? 0 : P.starter.pinionTeeth, pr, 0.02, 0.005, 16), M.gear); pin.position.set(fx, pc0.y, pc0.z); g.add(pin); up.pinion = pin; up.pinionX = fx;
+      var sm = new T.Mesh(merge([(function () { var s = cyl(0.055, 0.055, 0.19, segs); s.rotateZ(Math.PI / 2); s.translate(fx + 0.135, 0, 0); return s; })(),
+        (function () { var s = cyl(0.03, 0.03, 0.07, segs); s.rotateZ(Math.PI / 2); s.translate(fx + 0.05, 0.0, 0); return s; })(),
+        (function () { var s = cyl(0.024, 0.024, 0.12, segs); s.rotateZ(Math.PI / 2); s.translate(fx + 0.12, 0.07, 0); return s; })()]), M.starter);
+      sm.position.set(0, pc0.y, pc0.z); g.add(sm);
+    }
+    // ---- block shell / liners / heads (translucent cutaway) ----
+    if (parts.block) {
+      var sl = [], hl = [];
+      for (c = 0; c < N; c++) {
+        var u = U[P.bank[c]], base = r * 0.2 + l - r + hc - hp, lin = cyl(0.5 * b + 0.004, 0.5 * b + 0.004, deck - base, segs, true); lin.translate(0, base + (deck - base) / 2, 0);
+        sl.push(place(lin, v3(xs[c], H, 0), u));
+      }
+      for (var bk = 0; bk < 2; bk++) {
+        var u2 = U[bk], w2 = W[bk], bx0 = Infinity, bx1 = -Infinity;
+        for (c = 0; c < N; c++) if (P.bank[c] === bk) { bx0 = Math.min(bx0, xs[c]); bx1 = Math.max(bx1, xs[c]); }
+        var hd = new T.BoxGeometry(bx1 - bx0 + 1.1 * b, 0.55 * b, 1.6 * b); hd.translate((bx0 + bx1) / 2, deck + 0.275 * b, 0);
+        hl.push(place(hd, v3(0, H, 0), u2));
+      }
+      var cc = new T.BoxGeometry(xmax - xmin, 1.2 * r + 0.5 * b, 2.2 * (r + 0.3 * b)); cc.translate((xmin + xmax) / 2, H - 0.3 * r - 0.15 * b, 0); sl.push(cc);
+      g.add(new T.Mesh(merge(sl), M.shell)); g.add(new T.Mesh(merge(hl), M.head));
+    }
+    // ---- pistons and rods (instanced) ----
+    if (parts.pistons) {
+      var pg2 = merge([cyl(0.5 * b, 0.5 * b, hp, segs), (function () { var p = cyl(0.12 * b, 0.12 * b, b * 0.98, 8); p.rotateZ(Math.PI / 2); return p; })()]);
+      pg2.translate(0, hc - hp / 2, 0);   // origin at the wrist pin, crown at +hc
+      up.pist = new T.InstancedMesh(pg2, M.piston, N); up.pist.frustumCulled = false; g.add(up.pist);
+    }
+    if (parts.rods) {
+      var rg = new T.BoxGeometry(0.16 * b, 1, 0.1 * b); rg.translate(0, 0.5, 0);
+      up.rod = new T.InstancedMesh(rg, M.rod, N); up.rod.frustumCulled = false; g.add(up.rod);
+    }
+    // ---- valves + cams ----
+    up.vOff = [];
+    for (c = 0; c < N; c++) {
+      var uu = U[P.bank[c]], ww = W[P.bank[c]], ex, inn;
+      if (P.valveLayout === 'across') { ex = ww.clone().multiplyScalar(0.25 * b).add(v3(xs[c], 0, 0)); inn = ww.clone().multiplyScalar(-0.25 * b).add(v3(xs[c], 0, 0)); }
+      else { var sgn = (c % 2 ? 1 : -1); ex = v3(xs[c] + sgn * 0.23 * b, 0, 0); inn = v3(xs[c] - sgn * 0.23 * b, 0, 0); }
+      up.vOff.push([ex, inn]);
+    }
+    // valves stay in lite (only fewer lathe segments). Head Ø = the parameter; stem (not in the model) drawn Ø 0.22 d with a spring
+    // retainer near the top so the stems read through the translucent head; the stem top sits above the head shell.
+    if (parts.valvesEx || parts.valvesIn) {
+      var vg = function (d) { var pts = [new T.Vector2(0, 0), new T.Vector2(0.5 * d, 0), new T.Vector2(0.5 * d, 0.07 * d), new T.Vector2(0.12 * d, 0.32 * d), new T.Vector2(0.11 * d, 2.15 * d),
+        new T.Vector2(0.34 * d, 2.18 * d), new T.Vector2(0.34 * d, 2.3 * d), new T.Vector2(0.11 * d, 2.33 * d), new T.Vector2(0.11 * d, 2.4 * d), new T.Vector2(0, 2.4 * d)]; return new T.LatheGeometry(pts, lite ? 8 : 12); };
+      if (parts.valvesEx) { up.vEx = new T.InstancedMesh(vg(P.exValve.d), M.valveEx, N); up.vEx.frustumCulled = false; g.add(up.vEx); }
+      if (parts.valvesIn) { up.vIn = new T.InstancedMesh(vg(P.inValve.d), M.valveIn, N); up.vIn.frustumCulled = false; g.add(up.vIn); }
+    }
+    up.cams = [];
+    if (parts.cams) {   // cams stay in lite too (half crank speed)
+      var lobeFor = function (V, c3, toward) {   // lobe angle in the cam frame so it points at the valve (toward) at peak lift
+        var aPk = V.open + V.dur / 2; return { ang: toward + (P.fireDeg[c3] + aPk) / 2, lift: V.lift };
+      };
+      var camSets = [];
+      if (P.cam === 'dohc') {
+        for (var bk2 = 0; bk2 < 2; bk2++) [['ex', P.exValve], ['in', P.inValve]].forEach(function (kv) {
+          var list = []; for (var c4 = 0; c4 < N; c4++) if (P.bank[c4] === bk2) list.push({ c: c4, lobe: lobeFor(kv[1], c4, up.beta[c4] + 180), x: up.vOff[c4][kv[0] === 'ex' ? 0 : 1].x });
+          var o = U[bk2].clone().multiplyScalar(deck + 2.9 * P.exValve.d + 0.012).add(W[bk2].clone().multiplyScalar((kv[0] === 'ex' ? 1 : -1) * 0.25 * b));
+          camSets.push({ pos: C0.clone().add(o), list: list, r: 0.25 * P.exValve.d + 0.004 });
+        });
+      } else {   // pushrod V8: one cam in the vee, the lobes point up each bank at peak
+        var list2 = []; for (var c5 = 0; c5 < N; c5++) { list2.push({ c: c5, lobe: lobeFor(P.exValve, c5, up.beta[c5]), x: up.vOff[c5][0].x }); list2.push({ c: c5, lobe: lobeFor(P.inValve, c5, up.beta[c5]), x: up.vOff[c5][1].x }); }
+        camSets.push({ pos: C0.clone().add(v3(0, r + 0.5 * l, 0)), list: list2, r: 0.014 });
+      }
+      camSets.forEach(function (cs) {
+        var grp = new T.Group(); grp.position.copy(cs.pos); g.add(grp);
+        var xa = cs.list.map(function (o) { return o.x; }), s0 = Math.min.apply(null, xa) - 0.02, s1 = Math.max.apply(null, xa) + 0.02;
+        var shf = cyl(cs.r * 0.7, cs.r * 0.7, s1 - s0, lite ? 6 : 10); shf.rotateZ(Math.PI / 2); shf.translate((s0 + s1) / 2, 0, 0);
+        var lob = cs.list.map(function (o) { var lb = new T.BoxGeometry(Math.min(0.014, 0.3 * b), cs.r * 2 + o.lobe.lift, cs.r * 2); lb.translate(0, o.lobe.lift / 2, 0); place(lb, v3(o.x, 0, 0), dirAt(o.lobe.ang)); return lb; });
+        grp.add(new T.Mesh(merge([shf].concat(lob)), M.cam)); up.cams.push(grp);
+      });
+    }
+    // ---- exhaust: ports ----
+    up.port = [];
+    for (c = 0; c < N; c++) up.port.push(C0.clone().add(U[P.bank[c]].clone().multiplyScalar(deck + 0.012)).add(W[P.bank[c]].clone().multiplyScalar(0.62 * b)).add(v3(up.vOff[c][0].x, 0, 0)));
+    up.mouth = [];
+    if (parts.stubs && P.stubs) {   // BRM straight stubs: two parallel rows, one shared direction per bank (mirror), mean fitted length, kernel bore
+      var sg = cyl(P.stubs.d / 2, P.stubs.d / 2 * 1.08, 1, segs, true); sg.translate(0, 0.5, 0);
+      var stubs = new T.InstancedMesh(sg, M.stub, N); stubs.frustumCulled = false;
+      var mm = new T.Matrix4(), qq = new T.Quaternion(), Ls = P.stubs.lenMean, yw = P.stubs.yaw * D2R, py = 0;
+      for (c = 0; c < N; c++) py += up.port[c].y / N;
+      // downward tilt so that the mean mouth height = the kernel's stub_z (clamped 0..25 deg)
+      var pt = Math.asin(Math.max(0, Math.min(Math.sin(25 * D2R), (py - P.stubs.z) / Ls)));
+      up.stubDir = [0, 1].map(function (bk) { var sd = Math.sign(W[bk].z) || (bk === 0 ? 1 : -1); return v3(-Math.sin(yw) * Math.cos(pt), -Math.sin(pt), sd * Math.cos(yw) * Math.cos(pt)).normalize(); });
+      up.stubPitch = pt / D2R; up.stubYaw = P.stubs.yaw; up.stubLen = Ls;
+      qq.set(0, 0, 0, 1);
+      for (c = 0; c < N; c++) {
+        var p0 = up.port[c], D = up.stubDir[P.bank[c]], m1 = p0.clone().addScaledVector(D, Ls);
+        qq.setFromUnitVectors(UP, D); mm.compose(p0, qq, v3(1, Ls, 1)); stubs.setMatrixAt(c, mm); up.mouth.push(m1);
+      }
+      up.stubs = stubs;
+      g.add(stubs);
+    }
+    if (parts.headers && P.headers) {   // V8: tubular headers (each primary exactly header_len_m) into a collector, or a log manifold
+      var hdr = [], pipeR = P.headers.pipeD / 2, primR = P.headers.primD / 2, rearX = xmin - 0.12, pipeEnd = xmin - 0.75, pipeY = H - 0.26;
+      for (var bk3 = 0; bk3 < 2; bk3++) {
+        var side = bk3 === 0 ? -1 : 1, latO = side * (Math.abs(up.port[P.bank.indexOf(bk3)].z) + 0.07);   // pipes run outside the ports
+        var colA = v3(rearX, pipeY + 0.04, latO), colB = v3(rearX - 0.12, pipeY, latO);
+        var cyls = []; for (c = 0; c < N; c++) if (P.bank[c] === bk3) cyls.push(c);
+        if (P.headers.type !== 'log') {
+          cyls.forEach(function (c6) {
+            var p0 = up.port[c6], out = W[bk3].clone().multiplyScalar(0.05);
+            var mk = function (dep) { return smooth([p0, p0.clone().add(out), v3(p0.x, p0.y - 0.06 - dep, latO), v3((p0.x + rearX) / 2, pipeY + 0.04 - dep * 0.3, latO + side * 0.02), colA], 3); };
+            var lo = 0, hi = 0.6, pts = mk(0);
+            for (var it = 0; it < 30; it++) { var mid = (lo + hi) / 2; pts = mk(mid); if (plen(pts) < P.headers.len) lo = mid; else hi = mid; }
+            hdr.push(tube(pts, primR, lite ? 6 : 10)); up.mouth[c6] = p0.clone();
+          });
+          if (parts.collector) hdr.push(segBetween(colA.clone().add(v3(0.04, 0, 0)), colB, pipeR * 1.25, lite ? 8 : 14));
+          hdr.push(segBetween(colB, v3(pipeEnd, pipeY, latO), pipeR, lite ? 8 : 14));
+        } else {
+          // log: runner + run along the log to the outlet = header_len_m on average
+          var lx = cyls.map(function (k) { return up.port[k].x; }), mean = lx.reduce(function (a, x) { return a + x; }, 0) / lx.length, xout = mean - Math.max(0.05, P.headers.len - 0.05);
+          var ly = up.port[cyls[0]].y - 0.025, lz = up.port[cyls[0]].z + side * 0.045;
+          hdr.push(segBetween(v3(Math.max.apply(null, lx) + 0.04, ly, lz), v3(xout, ly, lz), primR * 1.25, lite ? 8 : 14));
+          cyls.forEach(function (c7) { hdr.push(segBetween(up.port[c7], v3(up.port[c7].x, ly, lz), primR * 0.8, 8)); up.mouth[c7] = up.port[c7].clone(); });
+          hdr.push(tube(smooth([v3(xout, ly, lz), v3(xout - 0.06, ly - 0.08, lz), v3(xout - 0.1, pipeY, latO), v3(pipeEnd, pipeY, latO)], 2), pipeR, lite ? 8 : 12));
+        }
+        up['pipeZ' + bk3] = latO;
+      }
+      if (parts.crossover) hdr.push(segBetween(v3(pipeEnd + 0.12, pipeY, up.pipeZ0), v3(pipeEnd + 0.12, pipeY, up.pipeZ1), pipeR * 0.9, 10));
+      g.add(new T.Mesh(merge(hdr), M.header));
+    }
+    // ---- blower (BRM): two-stage centrifugal at the front, step-up gear from the crank nose ----
+    if (parts.blower && P.blower) {
+      var fx2 = xmax + 0.05, gm = 0.12 / P.blower.gear[0], rg1 = gm * P.blower.gear[0] / 2, rg2 = gm * P.blower.gear[1] / 2, by = H + rg1 + rg2;
+      var g1 = new T.Mesh(gearGeo(lite ? 0 : P.blower.gear[0], rg1, 0.018, 0.004, 48), M.gear); g1.position.set(fx2, 0, 0); crank.add(g1);
+      var bl = new T.Group(); bl.position.set(fx2, by, 0); g.add(bl); up.blower = bl;
+      var bp = [gearGeo(lite ? 0 : P.blower.gear[1], rg2, 0.018, 0.004, 16), (function () { var s = cyl(0.008, 0.008, 0.32, 8); s.rotateZ(Math.PI / 2); s.translate(0.16, 0, 0); return s; })()];
+      // Each stage: impeller (backplate, hub, z backswept vanes; spins in bl) inside a static volute casing cut away in front of the
+      // vane tips' mid-plane (front-half cutaway): what is left is the back half of the scroll (glass), the back wall (glass), the red
+      // cut faces along the spiral and an opaque rim, so the scroll outline reads and you look straight onto the vanes.
+      // Vane counts (P.blower.z, 12 + 12) and impeller diameters are model assumptions (noted on screen). Lite keeps all of it.
+      var dsk = [], na = lite ? 36 : 64, ns = lite ? 6 : 10, vst = lite ? 4 : 7, shellL = [], wallL = [], cutL = [], rimL = [], ductL = [], outl = [];
+      up.bladeCount = 0; up.housings = 0;
+      P.blower.z.forEach(function (z, k) {
+        var R0 = P.blower.d[k] / 2, x0 = 0.09 + k * 0.11, xb = x0 - 0.016, hIn = 0.026, hOut = 0.012, xc = xb + hOut / 2;
+        // -- impeller (rotating, local blower frame: axis +X)
+        var bpl = cyl(R0, R0, 0.004, segs); bpl.rotateZ(Math.PI / 2); bpl.translate(xb - 0.002, 0, 0); dsk.push(bpl);   // dark backplate + hub: the gold vanes read against it
+        var hub = cyl(R0 * 0.14, R0 * 0.3, hIn, segs); hub.rotateZ(-Math.PI / 2); hub.translate(xb + hIn / 2, 0, 0); dsk.push(hub);
+        var r1 = R0 * 0.24, tB = Math.max(0.0045, R0 * 0.05), sweep = 32 * D2R;
+        for (var j = 0; j < z; j++) { var bv = vane(r1, R0 * 0.985, xb, hIn, hOut, tB, sweep, vst); bv.rotateX(j / z * Math.PI * 2); bp.push(bv); up.bladeCount++; }
+        // -- volute (static): scroll radius grows from the tongue (aT) along the flow (rotation = decreasing angle a, a = 0 up, 90 = +Z)
+        var aT = (k === 0 ? 0 : 90) * D2R, rs0 = 0.006, rs1 = R0 * 0.28, wall = 0.0055;
+        var at = function (p) { var a = aT - p * Math.PI * 2, rs = rs0 + (rs1 - rs0) * p; return { a: a, rs: rs, rc: R0 * 1.04 + rs, cy: Math.cos(a), cz: Math.sin(a) }; };
+        var sp = [], sidx = [], wp = [], widx = [], cp = [], cidx = [], i2, q, S2;
+        for (i2 = 0; i2 <= na; i2++) {
+          S2 = at(i2 / na);
+          for (q = 0; q <= ns; q++) {   // back half of the scroll section: phi 180..360 (x <= xc)
+            var ph = Math.PI + q / ns * Math.PI, rr = S2.rc + S2.rs * Math.cos(ph), xx = xc + S2.rs * Math.sin(ph);
+            sp.push(xx, rr * S2.cy, rr * S2.cz);
+          }
+          var rIn = S2.rc - S2.rs;   // back wall behind the backplate: shaft out to the middle of the scroll section
+          wp.push(xb - 0.006, 0.014 * S2.cy, 0.014 * S2.cz, xb - 0.006, S2.rc * S2.cy, S2.rc * S2.cz);
+          var ro = S2.rc + S2.rs;   // red cut faces in the cut plane: outer and inner wall of the scroll
+          cp.push(xc + 0.0005, ro * S2.cy, ro * S2.cz, xc + 0.0005, (ro + wall) * S2.cy, (ro + wall) * S2.cz, xc + 0.0005, (rIn - wall) * S2.cy, (rIn - wall) * S2.cz, xc + 0.0005, rIn * S2.cy, rIn * S2.cz);
+        }
+        for (i2 = 0; i2 < na; i2++) {
+          for (q = 0; q < ns; q++) { var A0 = i2 * (ns + 1) + q, B0 = A0 + ns + 1; sidx.push(A0, B0, A0 + 1, B0, B0 + 1, A0 + 1); }
+          var w0 = i2 * 2, w1 = w0 + 2; widx.push(w0, w1, w0 + 1, w1, w1 + 1, w0 + 1);
+          var c0 = i2 * 4, c1 = c0 + 4; cidx.push(c0, c1, c0 + 1, c1, c1 + 1, c0 + 1, c0 + 2, c1 + 2, c0 + 3, c1 + 2, c1 + 3, c0 + 3);
+        }
+        shellL.push(mk(sp, sidx)); wallL.push(mk(wp, widx)); cutL.push(mk(cp, cidx));
+        // tongue: the red cut face across the step from the end of the scroll back to its start
+        var Se = at(1), Sb = at(0); var tg = new T.BoxGeometry(rs1, (Se.rc + Se.rs + wall) - (Sb.rc - Sb.rs - wall), 0.003); tg.translate(xc - rs1 / 2, 0.5 * ((Se.rc + Se.rs + wall) + (Sb.rc - Sb.rs - wall)), 0); tg.rotateX(aT); cutL.push(tg);
+        // opaque rim: the spiral's outer edge in the cut plane + a ring at the back-wall edge, so the outline reads from any angle
+        var rimP = []; for (i2 = 0; i2 <= na; i2++) { S2 = at(i2 / na); var ro2 = S2.rc + S2.rs + wall; rimP.push(v3(xc, ro2 * S2.cy, ro2 * S2.cz)); }
+        rimL.push(tube(rimP, 0.0028, 6));
+        var rimB = []; for (i2 = 0; i2 <= na; i2++) { S2 = at(i2 / na); var rb = S2.rc + S2.rs * 0.7; rimB.push(v3(xc - S2.rs * 0.7, rb * S2.cy, rb * S2.cz)); }
+        rimL.push(tube(rimB, 0.002, 5));
+        // outlet: tangential (flow direction) from the end of the scroll, full pipe in glass with an opaque flange
+        var oP = v3(xc, Se.rc * Se.cy, Se.rc * Se.cz), oD = v3(0, Math.sin(Se.a), -Math.cos(Se.a));
+        var oE = oP.clone().addScaledVector(oD, 0.07); ductL.push(segBetween(oP, oE, rs1, lite ? 10 : 16, true)); rimL.push(place((function () { var t = new T.TorusGeometry(rs1, 0.0028, 5, lite ? 12 : 20); t.rotateX(Math.PI / 2); return t; })(), oE, oD));
+        outl.push({ p: oE, d: oD, r: rs1 }); up.housings++;
+      });
+      // interstage duct (stage 1 outlet -> round the far side -> stage 2 eye) and the stage-2 delivery to the plenum in the vee
+      var o1 = outl[0], o2 = outl[1], eyeR = P.blower.d[1] / 2 * 0.42, xe = 0.2 + 0.03;
+      ductL.push(tube(smooth([o1.p, o1.p.clone().addScaledVector(o1.d, 0.05), v3(0.13, 0.0, -0.21), v3(0.3, 0.0, -0.2), v3(0.31, 0.0, -0.06), v3(xe + 0.035, 0, 0)], 3), o1.r * 0.9, lite ? 8 : 12));
+      var bell = cyl(eyeR, o1.r * 0.9, 0.035, lite ? 12 : 20, true); bell.rotateZ(Math.PI / 2); bell.translate(xe + 0.0175, 0, 0); ductL.push(bell);
+      rimL.push((function () { var t = new T.TorusGeometry(eyeR, 0.0025, 5, lite ? 16 : 28); t.rotateY(Math.PI / 2); t.translate(xe, 0, 0); return t; })());
+      bl.add(new T.Mesh(merge(bp), M.impeller)); bl.add(new T.Mesh(merge(dsk), M.impDisc));
+      var off = function (gm2) { gm2.translate(fx2, by, 0); return gm2; };
+      g.add(new T.Mesh(off(merge(shellL)), M.shellB)); g.add(new T.Mesh(off(merge(wallL)), M.wallB)); g.add(new T.Mesh(off(merge(cutL)), M.cut)); g.add(new T.Mesh(off(merge(rimL)), M.rim));
+      var vY = H + (deck + 0.3 * b) * Math.cos(P.vAngle / 2 * D2R) * 0.6 + 0.04, d2 = o2.p.clone().add(v3(fx2, by, 0));
+      var pl = [tube(smooth([d2, d2.clone().addScaledVector(o2.d, 0.06), v3(fx2 + 0.12, by + 0.2, 0.05), v3(xmax - 0.05, vY + 0.05, 0), v3(xmax - 0.15, vY, 0)], 2), o2.r * 0.9, lite ? 8 : 12),
+        boxAt(xmax - xmin - 0.1, 0.05, 0.12, (xmin + xmax) / 2, vY, 0)];
+      g.add(new T.Mesh(merge(pl.concat(ductL.map(off))), M.casing));
+    }
+    // ---- V8 accessories: carb + air cleaner, fan, alternator / generator ----
+    if (parts.carb && P.carb) {
+      var topY = H + Math.cos(P.vAngle / 2 * D2R) * (deck + 0.55 * b) + 0.02, cxC = 0.5 * (xmin + xmax) * 0.3;
+      g.add(new T.Mesh(merge([boxAt(xmax - xmin - 0.05, 0.05, 0.16, (xmin + xmax) / 2, topY - 0.02, 0)]), M.shell));
+      var cb = new T.Mesh(new T.BoxGeometry(0.15, 0.085, 0.14), M.carb); cb.position.set(cxC, topY + 0.045, 0); g.add(cb);
+      up.plates = [];
+      var nb = P.carb.count * P.carb.barrels, br = 0.0215;
+      for (i = 0; i < nb; i++) { var pt = new T.Mesh(cyl(br, br, 0.002, 16), M.plate); pt.position.set(cxC + (i % 2 ? 0.035 : -0.035), topY + 0.045, (i < 2 ? 0.032 : -0.032)); g.add(pt); up.plates.push(pt); }
+      var ac = P.carb.cleaner === 'oilbath' ? merge([(function () { var s = cyl(0.15, 0.15, 0.15, segs, true); s.translate(cxC, topY + 0.16, 0); return s; })(), (function () { var s = cyl(0.15, 0.06, 0.04, segs); s.translate(cxC, topY + 0.255, 0); return s; })()])
+        : merge([(function () { var s = cyl(0.18, 0.18, 0.06, segs, true); s.translate(cxC, topY + 0.12, 0); return s; })(), (function () { var s = cyl(0.18, 0.18, 0.004, segs); s.translate(cxC, topY + 0.152, 0); return s; })()]);
+      g.add(new T.Mesh(ac, M.cleaner));
+    }
+    if (parts.fan && P.fan) {
+      var fg = new T.Group(), fy = H + 0.12; fg.position.set(xmax + 0.16, fy, 0); g.add(fg); up.fan = fg;
+      var fl2 = [(function () { var s = cyl(0.04, 0.04, 0.03, 16); s.rotateZ(Math.PI / 2); return s; })(), (function () { var s = cyl(0.012, 0.012, 0.14, 8); s.rotateZ(Math.PI / 2); s.translate(-0.07, 0, 0); return s; })()];
+      for (i = 0; i < P.fan.blades; i++) { var fb = new T.BoxGeometry(0.004, P.fan.d / 2 - 0.035, 0.07); fb.rotateY(0.45); fb.translate(0, 0.035 + (P.fan.d / 2 - 0.035) / 2, 0); fb.rotateX(i / P.fan.blades * Math.PI * 2); fl2.push(fb); }
+      fg.add(new T.Mesh(merge(fl2), M.fan));
+      var pul = cyl(0.075, 0.075, 0.02, segs); pul.rotateZ(Math.PI / 2); pul.translate(xmax + 0.06, 0, 0); crank.add(new T.Mesh(pul, M.steel));
+    }
+    if (parts.charging && P.charging) {
+      var ag = new T.Group(), az = (P.car === 'caddy' ? 1 : -1) * 0.2; ag.position.set(xmax + 0.02, H + 0.2, az); g.add(ag); up.alt = ag;
+      var al = [(function () { var s = cyl(P.charging.type === 'generator' ? 0.06 : 0.065, P.charging.type === 'generator' ? 0.06 : 0.065, P.charging.type === 'generator' ? 0.22 : 0.13, segs); s.rotateZ(Math.PI / 2); s.translate(-0.08, 0, 0); return s; })()];
+      g.add((function () { var m = new T.Mesh(merge(al), M.alt); m.position.copy(ag.position); return m; })());
+      var ap = [(function () { var s = cyl(0.04, 0.04, 0.018, 16); s.rotateZ(Math.PI / 2); s.translate(0.03, 0, 0); return s; })()];
+      for (i = 0; i < P.charging.fanBlades; i++) { var ab = new T.BoxGeometry(0.012, 0.03, 0.003); ab.translate(0.012, 0.035, 0); ab.rotateX(i / P.charging.fanBlades * Math.PI * 2); ap.push(ab); }
+      ag.add(new T.Mesh(merge(ap), M.gear));
+    }
+    // ---- glow sprites: combustion (per chamber) and exhaust (stub mouth / header port) ----
+    up.glowC = []; up.glowE = [];
+    if (parts.glow) {
+      for (c = 0; c < N; c++) {
+        var sc = new T.Sprite(new T.SpriteMaterial({ map: st.tex, color: 0xffa040, blending: T.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+        sc.position.copy(C0.clone().add(U[P.bank[c]].clone().multiplyScalar(deck - hClear * 0.5)).add(v3(xs[c], 0, 0))); sc.scale.set(b * 1.4, b * 1.4, 1); g.add(sc); up.glowC.push(sc);
+        var se = new T.Sprite(new T.SpriteMaterial({ map: st.tex, color: P.car === 'brm' ? 0x8fb0ff : 0xff6a20, blending: T.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+        se.position.copy(up.mouth[c] || up.port[c]); se.scale.set(0.06, 0.06, 1); g.add(se); up.glowE.push(se);
+      }
+    }
+    up.flame = new Float32Array(N); up.pop = new Float32Array(N); up.lastAb = new Float32Array(16);
+    // framing: bounding box of everything but the floor
+    var lo = v3(1e9, 1e9, 1e9), hi = v3(-1e9, -1e9, -1e9);
+    g.updateMatrixWorld(true);
+    g.traverse(function (o) {
+      if (!o.geometry || o === fl || o.isSprite || o.isInstancedMesh || o.geometry.attributes.position.count < 3) return;
+      if (o.material && o.material.isMeshBasicMaterial) return;
+      o.geometry.computeBoundingBox(); var bb = o.geometry.boundingBox, mw = o.matrixWorld;
+      [bb.min, bb.max].forEach(function (pp) { var q = pp.clone().applyMatrix4(mw); lo.min(q); hi.max(q); });
+    });
+    lo.y = Math.max(lo.y, 0); up.center = lo.clone().add(hi).multiplyScalar(0.5); up.size = hi.clone().sub(lo).length() * 0.5;
+    return { group: g, up: up };
+  }
+
+  // ---------------------------------------------------------------- per-frame kinematics
+  var tmpM = null, tmpQ = null, tmpV = null, tmpV2 = null, ONE = null;
+  function animate(up, th, thUn, info) {
+    var P = up.P, N = P.nCyl, r = up.r, l = P.conrod, C0 = up.C0, c;
+    up.crankG.rotation.x = -th * D2R;
+    if (up.outGear) up.outGear.rotation.x = th * D2R;
+    for (c = 0; c < N; c++) {
+      var phi = th - P.fireDeg[c], u = up.U[P.bank[c]];
+      var pinD = dirAt(up.throw[c] - th), pin = tmpV.set(P.x[c], 0, 0).add(C0).addScaledVector(pinD, r);
+      var s = r * Math.cos(phi * D2R) + Math.sqrt(l * l - r * r * Math.pow(Math.sin(phi * D2R), 2));
+      var wrist = tmpV2.set(P.x[c], 0, 0).add(C0).addScaledVector(u, s);
+      if (up.pist) { tmpQ.setFromUnitVectors(UP, u); tmpM.compose(wrist, tmpQ, ONE); up.pist.setMatrixAt(c, tmpM); }
+      if (up.rod) { var d = wrist.clone().sub(pin), L = d.length(); tmpQ.setFromUnitVectors(UP, d.multiplyScalar(1 / L)); tmpM.compose(pin, tmpQ, new T.Vector3(1, L, 1)); up.rod.setMatrixAt(c, tmpM); }
+      var a = pmod(phi, 720);
+      if (up.vEx || up.vIn) {
+        tmpQ.setFromUnitVectors(UP, u);
+        if (up.vEx) { var le = EngineParams.lift(P.exValve, a), pe = up.vOff[c][0].clone().add(C0).addScaledVector(u, up.deck - le); tmpM.compose(pe, tmpQ, ONE); up.vEx.setMatrixAt(c, tmpM); }
+        if (up.vIn) { var li = EngineParams.lift(P.inValve, a), pi = up.vOff[c][1].clone().add(C0).addScaledVector(u, up.deck - li); tmpM.compose(pi, tmpQ, ONE); up.vIn.setMatrixAt(c, tmpM); }
+      }
+      // glow: combustion from firing TDC to exhaust opening (scaled by the kernel's per-cylinder burn energy), exhaust while the valve is open
+      if (up.glowC.length) {
+        var e = info.ee ? info.ee[c] : 1, comb = a < P.exValve.open ? Math.exp(-a / 55) * Math.min(1.3, e) * (0.25 + 0.75 * info.load) : 0;
+        up.glowC[c].material.opacity = info.running ? Math.min(1, comb) : 0;
+        var ex = EngineParams.lift(P.exValve, a) / P.exValve.lift, fl = info.flame, pop = up.pop[c];
+        var eg = info.running ? Math.min(1, ex * (P.car === 'brm' ? (0.15 + 0.85 * fl) : 0.25 * (0.3 + 0.7 * info.load)) + pop) : pop;
+        up.glowE[c].material.opacity = eg; var sz = (P.car === 'brm' ? 0.05 : 0.04) * (1 + 1.5 * pop + 0.6 * ex * fl); up.glowE[c].scale.set(sz, sz, 1);
+      }
+    }
+    if (up.pist) up.pist.instanceMatrix.needsUpdate = true; if (up.rod) up.rod.instanceMatrix.needsUpdate = true;
+    if (up.vEx) up.vEx.instanceMatrix.needsUpdate = true; if (up.vIn) up.vIn.instanceMatrix.needsUpdate = true;
+    for (var k = 0; k < up.cams.length; k++) up.cams[k].rotation.x = -th / 2 * D2R;
+    if (up.blower) up.blower.rotation.x = -(info.blowerDeg !== null ? info.blowerDeg : thUn * P.blower.ratio) * D2R;
+    if (up.fan) up.fan.rotation.x = -thUn * P.fan.ratio * D2R;
+    if (up.alt) up.alt.rotation.x = -thUn * P.charging.ratio * D2R;
+    if (up.pinion) {
+      var eng = info.cranking; up.pinion.position.x = up.pinionX + (eng ? 0 : 0.025);
+      if (eng) up.pinion.rotation.x = thUn * P.starter.ratio * D2R;
+    }
+    if (up.plates) for (var j = 0; j < up.plates.length; j++) up.plates[j].rotation.z = (90 - 82 * info.thr) * D2R;
+  }
+
+  // ---------------------------------------------------------------- scene, camera, input
+  function init(dash) {
+    UP = v3(0, 1, 0); XA = v3(1, 0, 0); tmpM = new T.Matrix4(); tmpQ = new T.Quaternion(); tmpV = v3(0, 0, 0); tmpV2 = v3(0, 0, 0); ONE = v3(1, 1, 1);
+    var cv = document.createElement('canvas'); cv.id = 'baygl'; cv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:none;touch-action:none;';
+    dash.cv.parentNode.insertBefore(cv, dash.cv.nextSibling);
+    R = new T.WebGLRenderer({ canvas: cv, antialias: !mobile || (window.devicePixelRatio || 1) < 2, powerPreference: 'high-performance' });
+    R.outputColorSpace = T.SRGBColorSpace;
+    var gl = R.getContext(), maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    var scene = new T.Scene(); scene.background = new T.Color(0x15110d);
+    scene.add(new T.HemisphereLight(0xfff1dc, 0x3a2c20, 1.5));
+    var sun = new T.DirectionalLight(0xffffff, 1.9); sun.position.set(1.2, 2.5, 1.6); scene.add(sun);
+    var cam = new T.PerspectiveCamera(40, 16 / 9, 0.02, 30);
+    st = { cv: cv, dash: dash, scene: scene, cam: cam, M: null, tex: radialTex(), key: '', bay: null, w: 0, h: 0, pr: 0, fps: 0, last: 0, lastR: 0, frames: [],
+      orbit: { az: 40, el: 28, dist: 1, tgt: null }, ptr: {}, weak: mobile && maxTex < 8192, slow: 0, th: 0, thUn: 0, src: '', autoLite: false, perfLite: false, drawT: 0 };
+    st.M = mats();
+    input(cv); ui(dash);
+  }
+  function input(cv) {
+    var O = function () { return st.orbit; };
+    function pts() { var a = []; for (var k in st.ptr) a.push(st.ptr[k]); return a; }
+    var lastTap = 0;
+    cv.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+      st.ptr[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var now = Date.now(); if (now - lastTap < 300 && pts().length === 1) { O().az = 40; O().el = 28; O().dist = 1; } lastTap = now;
+    });
+    cv.addEventListener('pointermove', function (e) {
+      var p = st.ptr[e.pointerId]; if (!p) return; var a = pts();
+      if (a.length === 1) { O().az -= (e.clientX - p.x) * 0.35; O().el = Math.max(-10, Math.min(85, O().el + (e.clientY - p.y) * 0.3)); }
+      else if (a.length === 2) { var q = a[0] === p ? a[1] : a[0], d0 = Math.hypot(p.x - q.x, p.y - q.y), d1 = Math.hypot(e.clientX - q.x, e.clientY - q.y); if (d0 > 1) O().dist = Math.max(0.25, Math.min(3, O().dist * d0 / Math.max(1, d1))); }
+      p.x = e.clientX; p.y = e.clientY;
+    });
+    var end = function (e) { delete st.ptr[e.pointerId]; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('wheel', function (e) { e.preventDefault(); O().dist = Math.max(0.25, Math.min(3, O().dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
+  }
+  // ---- the bay bar (speed / scrub / lite / parts) ----
+  var SPEEDS = [['auto', 'Slow-mo: auto (1 rev/s)'], ['0.1', 'Slow-mo 1/10'], ['0.02', 'Slow-mo 1/50'], ['0.005', 'Slow-mo 1/200'], ['1', 'Real speed']];
+  function ui(dash) {
+    var bar = document.createElement('div'); bar.id = 'bayBar'; bar.className = 'hidden';
+    bar.innerHTML = '<div id="bayInfo" class="bayInfo"></div><div class="bayRow">' +
+      '<label class="sel"><select id="baySpeed" aria-label="Engine bay animation speed">' + SPEEDS.map(function (s) { return '<option value="' + s[0] + '">' + s[1] + '</option>'; }).join('') + '</select></label>' +
+      '<button class="tb" id="bayScrub" aria-pressed="false">Scrub</button>' +
+      '<input type="range" id="bayAngle" min="0" max="719" step="1" value="0" aria-label="Crank angle (degrees after cylinder 1 firing TDC)" class="hidden">' +
+      '<label class="sel"><select id="bayLite" aria-label="Engine bay detail"><option value="auto">Detail: auto</option><option value="off">Detail: full</option><option value="on">Detail: lite</option></select></label>' +
+      '<button class="tb" id="bayParts" aria-label="Parts and parameters">Parts</button></div>' +
+      '<div id="bayPanel" class="bayPanel hidden"></div>';
+    dash.cv.parentNode.appendChild(bar); st.bar = bar;
+    var $ = function (id) { return document.getElementById(id); };
+    $('baySpeed').value = opt.speed; $('bayLite').value = opt.lite;
+    $('baySpeed').addEventListener('change', function () { opt.speed = this.value; this.blur(); });
+    $('bayLite').addEventListener('change', function () { opt.lite = this.value; st.perfLite = false; st.key = ''; this.blur(); });
+    $('bayScrub').addEventListener('click', function () { opt.scrub = !opt.scrub; if (opt.scrub) { opt.scrubDeg = Math.round(pmod(st.th, 720)); $('bayAngle').value = opt.scrubDeg; } this.classList.toggle('on', opt.scrub); this.setAttribute('aria-pressed', String(opt.scrub)); $('bayAngle').classList.toggle('hidden', !opt.scrub); });
+    $('bayAngle').addEventListener('input', function () { opt.scrubDeg = +this.value; });
+    $('bayParts').addEventListener('click', function () { var p = $('bayPanel'); p.classList.toggle('hidden'); this.classList.toggle('on', !p.classList.contains('hidden')); if (!p.classList.contains('hidden')) panel(); });
+    ['pointerdown', 'touchstart', 'touchmove'].forEach(function (ev) { bar.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+  }
+  var PART_NAMES = { block: 'Block / heads (cutaway)', pistons: 'Pistons', rods: 'Con-rods', crank: 'Crankshaft', valvesEx: 'Exhaust valves', valvesIn: 'Intake valves', cams: 'Camshafts', stubs: 'Exhaust stubs',
+    headers: 'Headers / manifolds', collector: 'Collectors', crossover: 'H crossover', blower: 'Supercharger', centreGear: 'Centre gear (split crank)', starter: 'Starter + ring gear', fan: 'Fan', charging: 'Alternator / generator', carb: 'Carburettor + air cleaner', glow: 'Combustion / exhaust glow' };
+  function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function panel() {
+    var P = st.bay && st.bay.up.P, el = document.getElementById('bayPanel'); if (!P) return;
+    var base = P.parts, cur = Object.assign({}, base, opt.over[P.car] || {}), mm = function (v) { return (v * 1000).toFixed(1) + ' mm'; };
+    var h = '<b>' + esc(P.label) + '</b> <span class="dim">(' + esc(P.kernel) + ')</span><div class="bayParams">' +
+      'bore ' + mm(P.bore) + ' \u00b7 stroke ' + mm(P.stroke) + ' \u00b7 rod ' + mm(P.conrod) + ' \u00b7 CR ' + P.cr + ' (chamber ' + mm(P.stroke / (P.cr - 1)) + ')<br>' +
+      P.nCyl + ' cyl, ' + P.vAngle + '\u00b0 V, firing ' + P.firingOrder.join('-') + '<br>' +
+      'exhaust valve \u00d8 ' + mm(P.exValve.d) + ', lift ' + mm(P.exValve.lift) + ', opens ' + P.exValve.open.toFixed(0) + '\u00b0, ' + P.exValve.dur.toFixed(0) + '\u00b0 open' +
+      (P.stubs ? '<br>16 stubs \u00d8 ' + mm(P.stubs.d) + ', ' + mm(Math.min.apply(null, P.stubs.len)) + ' \u2013 ' + mm(Math.max.apply(null, P.stubs.len)) + ', pitch ' + mm(P.stubs.pitch) : '') +
+      (P.blower ? '<br>blower ' + P.blower.ratio + '\u00d7 crank, ' + P.blower.z.join(' + ') + ' blades, max PR ' + P.blower.prMax.toFixed(2) : '') +
+      (P.headers ? '<br>' + P.headers.type + ' headers ' + P.headers.len + ' m, pipe \u00d8 ' + mm(P.headers.pipeD) : '') +
+      (P.starter ? '<br>starter ' + P.starter.type + ', ring ' + P.starter.ringTeeth + ' teeth, pinion ' + P.starter.pinionTeeth + ' (' + P.starter.ratio + ':1)' : '') + '</div><div class="bayToggles">';
+    Object.keys(PART_NAMES).forEach(function (k) {
+      var has = base[k] || (k === 'starter' && P.starter) || (k === 'blower' && P.blower) || (k === 'stubs' && P.stubs) || (k === 'centreGear' && P.centreGear) || ((k === 'headers' || k === 'collector' || k === 'crossover') && P.headers) || ((k === 'fan' || k === 'carb') && P.fan) || (k === 'charging' && P.charging) || ['block', 'pistons', 'rods', 'crank', 'valvesEx', 'valvesIn', 'cams', 'glow'].indexOf(k) >= 0;
+      h += '<label class="' + (has ? '' : 'na') + '"><input type="checkbox" data-part="' + k + '"' + (cur[k] && has ? ' checked' : '') + (has ? '' : ' disabled') + '> ' + PART_NAMES[k] + (has ? '' : ' (not on this car)') + '</label>';
+    });
+    h += '</div><div class="bayNotes">' + P.notes.map(function (n) { return '<p>' + (n.assumed ? '<b>Assumed:</b> ' : '') + esc(n.text) + '</p>'; }).join('') + '</div>';
+    el.innerHTML = h;
+    el.querySelectorAll('input[data-part]').forEach(function (cb) { cb.addEventListener('change', function () { var o = opt.over[P.car] || (opt.over[P.car] = {}); o[cb.dataset.part] = cb.checked; st.key = ''; }); });
+  }
+
+  // ---------------------------------------------------------------- draw (called from the game loop instead of the 2D view)
+  function liteNow(s) {
+    if (opt.lite === 'on') return true; if (opt.lite === 'off') return false;
+    return st.weak || st.perfLite || s.audioMode === 'scriptprocessor' || st.autoLite;
+  }
+  function draw(dash, s) {
+    if (!st) { try { init(dash); } catch (e) { failed = true; console.warn('engine bay unavailable: ' + e.message); return false; } }
+    try { return frame(s); } catch (e) { failed = true; hide(); console.warn('engine bay failed: ' + e.message); if (window.__showErr) window.__showErr(e, 'engine bay'); return false; }
+  }
+  function frame(s) {
+    var now = performance.now(), dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now;
+    // audio state: crank angle at the moment being heard
+    var A = s.audio, B = A && A.bay, S = B && (now - B.p < 400) ? B.s : null, th, rpm, info = { ee: null, load: s.thr, thr: s.thr, flame: 0, running: s.engine !== 'off', cranking: s.engine === 'cranking', blowerDeg: null };
+    if (S) {
+      var dtx = (now - B.p) / 1000, ctx = A.ctx;
+      if (ctx) { var th2 = null; try { if (ctx.getOutputTimestamp) { var ts = ctx.getOutputTimestamp(); if (ts && ts.contextTime > 0 && ts.performanceTime > 0) th2 = ts.contextTime + (now - ts.performanceTime) / 1000 - B.t; } } catch (x) {}
+        if (th2 === null) th2 = ctx.currentTime - (ctx.outputLatency || 0) - (ctx.baseLatency || 0) - B.t; if (Math.abs(th2) < 0.3) dtx = th2; }
+      rpm = S[1]; th = pmod(S[0] + 6 * rpm * dtx, 720); info.thr = S[2]; info.running = S[7] > 0 || rpm > 30; st.src = S[6] === 9 ? 'v9 kernel crank' : 'audio rpm';
+      if (S[6] === 9) {
+        info.ee = []; var fl = 0; for (var i = 0; i < 16; i++) { info.ee[i] = S[8 + i]; fl += S[40 + i]; }
+        info.load = Math.min(1, S[2] * S[3] / 3 + 0.15); info.blowerDeg = pmod(S[4] * 360 + 6 * rpm * dtx * (st.bay ? st.bay.up.P.blower.ratio : 4.15), 360);
+        st.flAvg = (st.flAvg || 0) + (fl - (st.flAvg || 0)) * 0.05; st.flMax = Math.max((st.flMax || 1e-9) * 0.9995, st.flAvg); info.flame = st.flMax > 0 ? Math.min(1, st.flAvg / st.flMax) * Math.min(1, S[2] * 2 + 0.2) : 0;
+        if (st.bay) { var up0 = st.bay.up; for (var k = 0; k < 16; k++) { var abE = S[24 + k]; if (abE !== up0.lastAb[k] && abE > 0 && up0.lastAb[k] !== 0) up0.pop[k] = 1; up0.lastAb[k] = abE; } }
+        st.autoLite = S[5] === 1;   // full-rate v9 audio on: keep the main thread light
+      } else st.autoLite = false;
+    } else {   // no audio yet (sound not enabled): the game's rpm, integrated here
+      rpm = s.engine === 'off' ? 0 : s.rpm; st.thFree = pmod((st.thFree || 0) + 6 * rpm * dt, 720); th = st.thFree; st.src = 'game rpm (sound off)'; st.autoLite = false;
+    }
+    if (!info.running) rpm = 0;
+    // (re)build when car / sound model / detail / parts change
+    var lite = liteNow(s), key = s.engineKey + '/' + s.soundId + '/' + (lite ? 'L' : 'F') + '/' + JSON.stringify(opt.over);
+    if (key !== st.key) {
+      var P = EngineParams.forCar(s.engineKey, s.soundId); if (!P) return false;
+      if (st.bay) { st.scene.remove(st.bay.group); st.bay.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
+      st.bay = build(P, lite); st.scene.add(st.bay.group); st.key = key; st.lite = lite;
+      if (!document.getElementById('bayPanel').classList.contains('hidden')) panel();
+    }
+    var up = st.bay.up;
+    // visual crank angle: real speed = the audio's; slow-mo integrates the audio rpm x factor; scrub = the slider
+    var k2 = opt.speed === 'auto' ? (rpm > 60 ? 60 / rpm : 1) : +opt.speed, dTh;
+    if (opt.scrub) { dTh = pmod(opt.scrubDeg - st.th + 360, 720) - 360; st.th = opt.scrubDeg; info.blowerDeg = null; }
+    else if (k2 >= 1) { dTh = 6 * rpm * dt; st.th = th; }
+    else { dTh = 6 * rpm * k2 * dt; st.th = pmod(st.th + dTh, 720); info.blowerDeg = null; }
+    st.thUn = (st.thUn + dTh) % (720 * 1000);
+    for (var j = 0; j < up.pop.length; j++) up.pop[j] = Math.max(0, up.pop[j] - dt / 0.12);
+    // canvas over the picture area, size, pixel ratio
+    var d = st.dash.cv, cv = st.cv;
+    cv.style.top = d.offsetTop + 'px'; cv.style.left = d.offsetLeft + 'px'; cv.style.width = d.offsetWidth + 'px'; cv.style.height = d.offsetHeight + 'px'; cv.style.display = 'block';
+    if (!st.ovT || now - st.ovT > 500) {   // pedals drawn over the picture (phone landscape)? then the bar sits between them
+      st.ovT = now; var gp = document.getElementById('pGas'), dr = d.getBoundingClientRect(), gr = gp && gp.getClientRects().length ? gp.getBoundingClientRect() : null;
+      st.overlay = !!(s.touch && gr && gr.top < dr.bottom - 1 && gr.bottom > dr.top + 1);
+    }
+    var inL = st.overlay ? 0.16 : 0.015, inR = st.overlay ? 0.74 : 0.985;
+    st.bar.classList.remove('hidden'); st.bar.style.left = (d.offsetLeft + d.offsetWidth * inL) + 'px'; st.bar.style.right = (d.offsetParent ? d.offsetParent.clientWidth - d.offsetLeft - d.offsetWidth * inR : 0) + 'px';
+    st.bar.style.bottom = (d.offsetParent ? d.offsetParent.clientHeight - d.offsetTop - d.offsetHeight + 8 : 8) + 'px';
+    var pr = Math.min(window.devicePixelRatio || 1, lite ? 1 : 2), w = cv.clientWidth | 0, h = cv.clientHeight | 0;
+    if (w !== st.w || h !== st.h || pr !== st.pr) { st.w = w; st.h = h; st.pr = pr; R.setPixelRatio(pr); R.setSize(w, h, false); st.cam.aspect = w / Math.max(1, h); st.cam.updateProjectionMatrix(); }
+    // lite: 30 fps cap
+    if (lite && now - st.lastR < 30) info.skip = true; else animate(up, st.th, st.thUn, info);
+    var o = st.orbit, fitV = up.size / Math.sin(st.cam.fov / 2 * D2R), dist = 0.78 * fitV * o.dist / Math.max(0.5, Math.min(1, st.cam.aspect)), az = o.az * D2R, el = o.el * D2R;
+    st.cam.position.set(up.center.x + dist * Math.cos(el) * Math.cos(az), up.center.y + dist * Math.sin(el), up.center.z + dist * Math.cos(el) * Math.sin(az)); st.cam.lookAt(up.center);
+    if (!info.skip) {
+      var t0 = performance.now(); R.render(st.scene, st.cam); st.drawT = performance.now() - t0;
+      if (st.lastR) { var fdt = now - st.lastR; st.fps += (1000 / Math.max(1, fdt) - st.fps) * 0.1; st.frames.push(fdt); }
+      st.lastR = now;
+      if (st.frames.length >= 120) { var a = st.frames.slice().sort(function (x, y) { return x - y; }), med = a[a.length >> 1]; st.frames.length = 0; if (!lite && opt.lite === 'auto' && med > 28) { st.perfLite = true; } }
+    }
+    // info line
+    if (!st.infoT || now - st.infoT > 200) {
+      st.infoT = now; var P2 = up.P;
+      document.getElementById('bayInfo').textContent = (s.touch ? '' : P2.label + ' \u00b7 ') + (P2.car === 'brm' ? 'geometry: ' + P2.fit : 'spec: sound ' + (P2.fit || '').split(' ')[0]) + ' \u00b7 ' + Math.round(rpm) + ' rpm (' + st.src + ')' +
+        ' \u00b7 crank ' + Math.round(pmod(st.th, 720)) + '\u00b0' + (P2.blower && rpm ? ' \u00b7 blower ' + Math.round(rpm * P2.blower.ratio) + ' rpm' : '') + ' \u00b7 ' + (opt.scrub ? 'scrub' : k2 >= 1 ? 'real speed' : 'slow-mo 1/' + Math.round(1 / k2)) +
+        ' \u00b7 ' + (lite ? 'lite' : 'full') + ' ' + Math.round(st.fps) + ' fps';
+    }
+    return true;
+  }
+  function hide() { if (st) { st.cv.style.display = 'none'; st.bar.classList.add('hidden'); st.last = 0; } }
+  function stats() {
+    if (!st || !R) return null;
+    return { fps: +st.fps.toFixed(1), lite: !!st.lite, pr: st.pr, size: [st.w, st.h], calls: R.info.render.calls, tris: R.info.render.triangles, th: +st.th.toFixed(1), src: st.src, drawMs: +st.drawT.toFixed(2),
+      car: st.bay && st.bay.up.P.car, parts: st.bay && st.bay.up.parts, autoLite: st.autoLite, perfLite: st.perfLite,
+      valves: st.bay ? (st.bay.up.vEx ? st.bay.up.vEx.count : 0) + (st.bay.up.vIn ? st.bay.up.vIn.count : 0) : 0, cams: st.bay ? st.bay.up.cams.length : 0,
+      blades: st.bay ? st.bay.up.bladeCount || 0 : 0, stubs: stubInfo(), housings: st.bay ? st.bay.up.housings || 0 : 0, opt: JSON.parse(JSON.stringify(opt)) };
+  }
+  function stubInfo() {   // per-stub direction (unit, from the instance matrix) and length, for the parallelism test
+    var u = st && st.bay && st.bay.up; if (!u || !u.stubs) return null;
+    var m = new T.Matrix4(), out = [];
+    for (var c = 0; c < u.stubs.count; c++) { u.stubs.getMatrixAt(c, m); var e = m.elements, d = v3(e[4], e[5], e[6]), L = d.length(); d.multiplyScalar(1 / L); out.push({ bank: u.P.bank[c], d: [+d.x.toFixed(6), +d.y.toFixed(6), +d.z.toFixed(6)], len: +L.toFixed(4) }); }
+    return { yaw: u.stubYaw, pitch: +u.stubPitch.toFixed(2), len: +u.stubLen.toFixed(4), list: out };
+  }
+  function orbit(az, el, dist) { if (st) { st.orbit.az = az; st.orbit.el = el; st.orbit.dist = dist; } }   // (tests / screenshots)
+  return { available: available, draw: draw, hide: hide, stats: stats, opt: opt, orbit: orbit, get failed() { return failed; } };
+})();
+</script>
 <script>/* js/painted-assets.js */
 /* painted-assets.js: generated by proposals/visuals-v2/interior-r3/build-assets-v2.py (Visuals v2 painted). The single-file build inlines these as data URIs. */
 var PAINTED_ASSETS = {"meta": {"upscale": "edsr-x2", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [924, 658], "bodyX": [6, 917], "contactY": 651, "splitY": 521, "realW": 1.73, "lamps": [[75, 366, 55, 55], [142, 366, 53, 55], [207, 366, 54, 55], [664, 368, 55, 53], [731, 369, 52, 53], [796, 369, 52, 53]], "tips": [[198, 573, 20], [724, 574, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [991, 630], "bodyX": [6, 984], "contactY": 623, "splitY": 527, "realW": 2.03, "lamps": [[72, 165, 36, 91], [883, 165, 37, 93], [32, 321, 30, 26], [85, 322, 26, 26], [876, 321, 32, 27], [930, 321, 30, 28]], "tips": [[69, 477, 24], [923, 478, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [767, 518], "bodyX": [6, 760], "contactY": 511, "splitY": 145, "realW": 1.55, "lamps": [], "tips": [[177, 160, 33], [185, 242, 36], [592, 154, 34], [584, 236, 37]], "dist": 4.8, "len": 4.01}}, "props": [{"k": "sage", "r": [0, 101, 273, 205], "h": 0.9}, {"k": "creosote", "r": [277, 110, 272, 196], "h": 1.1}, {"k": "grass", "r": [553, 220, 88, 86], "h": 0.35}, {"k": "yucca", "r": [645, 15, 163, 291], "h": 1.6}, {"k": "fencepost", "r": [812, 1, 61, 305], "h": 1.2}, {"k": "delineator", "r": [877, 0, 52, 306], "h": 1.0}], "brm": {"axisX": 640, "hub": [640, 540], "wheelR": 250, "view": {"hz": 75, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[186, 320, 58], [1058, 320, 58]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.743, 0.78], "wheel": {"px": 1020, "logical": 510.0}}}, "files": {"caddy-cockpit": "assets/painted/caddy-cockpit.webp", "caddy-lever": "assets/painted/caddy-lever.webp", "caddy-rear": "assets/painted/caddy-rear.webp", "caddy-wheel-shadow": "assets/painted/caddy-wheel-shadow.webp", "caddy-wheel": "assets/painted/caddy-wheel.webp", "desert-backdrop": "assets/painted/desert-backdrop.jpg", "desert-props": "assets/painted/desert-props.webp", "gt350-cockpit": "assets/painted/gt350-cockpit.webp", "gt350-rear": "assets/painted/gt350-rear.webp", "gt350-shifter": "assets/painted/gt350-shifter.webp", "gt350-wheel-shadow": "assets/painted/gt350-wheel-shadow.webp", "gt350-wheel": "assets/painted/gt350-wheel.webp", "brm-cockpit": "assets/painted/brm-cockpit.webp", "brm-rear": "assets/painted/brm-rear.webp", "brm-wheel": "assets/painted/brm-wheel.webp", "brm-wheel-shadow": "assets/painted/brm-wheel-shadow.webp", "brm-shifter": "assets/painted/brm-shifter.webp"}};
@@ -8260,7 +9090,8 @@ var ProjectHistory = {
       { v: 'v1.8.2', date: '2026-11-11', status: 'done', text: 'Works on older iPads and iPhones again (Wim\u2019s iPad showed only the buttons and a black screen). Older Safari (before iOS 14.5) did not understand one page-layout instruction, so the picture area had no size; the page now uses instructions that iOS 12 and later understand, touch controls work without Pointer Events, the 3D preview is left out where it cannot run, and the sound runs without AudioWorklet (all sound models, with the start-up). If anything still goes wrong, the page shows the error in a red box at the bottom.' },
       { v: 'v1.9', date: '2026-11-11', status: 'done', text: 'The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II\u2019s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30\u00d7 crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged.' },
       { v: 'v1.9.1', date: '2026-11-12', status: 'done', text: 'BRM sound switch, so you can compare the two BRM sound models: next to the car buttons, pick the engine sound v8 (the current one) or v9 (the physics model: sixteen cylinders blowing down into their own short exhaust stubs, the two-stage supercharger, and the sound carried to where you are). Both play live in the game and switch instantly; v8 stays the default and every visit starts on v8 (key B also switches). A link with ?car=brm&sound=v9 opens straight into v9.' },
-      { v: 'v1.9.2', date: '2026-11-12', status: 'done', text: 'All the BRM sound models are in the picker now. v8 is still the default, and every visit still starts on v8. Next to the car buttons you can now also pick the physics models v9.1, v9.2, v9.3, v9.4, v9.6 (the one called \u201cv9\u201d in v1.9.1), v9.8 and v9.9. v9.8 adds the real fuel (your 80:10:10 methanol, petrol and acetone mix) and a model of the VP88 onboard microphone. v9.9 adds the physical overrun pops and bangs: unburnt fuel that lights up in the exhaust when you lift off. They all play live and switch instantly. Key B steps through them, and a link like ?car=brm&sound=v9.9 opens straight into one (?sound=v9 still means v9.6). The picker is now a small drop-down, so it fits on iPhone and iPad.' }
+      { v: 'v1.9.2', date: '2026-11-12', status: 'done', text: 'All the BRM sound models are in the picker now. v8 is still the default, and every visit still starts on v8. Next to the car buttons you can now also pick the physics models v9.1, v9.2, v9.3, v9.4, v9.6 (the one called \u201cv9\u201d in v1.9.1), v9.8 and v9.9. v9.8 adds the real fuel (your 80:10:10 methanol, petrol and acetone mix) and a model of the VP88 onboard microphone. v9.9 adds the physical overrun pops and bangs: unburnt fuel that lights up in the exhaust when you lift off. They all play live and switch instantly. Key B steps through them, and a link like ?car=brm&sound=v9.9 opens straight into one (?sound=v9 still means v9.6). The picker is now a small drop-down, so it fits on iPhone and iPad.' },
+      { v: 'v1.10', date: '2026-11-12', status: 'done', text: 'New \u201cEngine bay\u201d view next to Inside and Outside, for every car (key E): a real 3D cut-away of the engine, built from the same numbers the sound model uses. One parametric model for all three cars: the BRM V16 (bore, stroke, rods, firing order, 135\u00b0 banks, twin-cam valves, stub exhausts, centre gear drive and the two-stage blower from the v9 physics model) and the GT350 and Cadillac V8s (bore, stroke, rods, cam timing, headers or log manifolds, four-barrel carb, fan, alternator or generator and starter from their sound settings). Parts a car does not have are switched off, and each part can be toggled in the Parts panel. Pistons, valves, cams, blower and fan move with the crank angle the sound engine is playing, so what you see is what you hear. Slow motion (1/10, 1/50, 1/200) and a crank-angle scrub slider slow the picture down while the sound keeps running at real speed. Exhaust glow, overrun pops and the v9.9 mouth flame light up the stub ends. A light mode keeps it smooth on older iPhones and iPads. Some sizes are not in the model (stub bore, exhaust cam timing, blower vane counts, a few V8 dimensions); the bay marks them as assumptions on screen. Before release two fixes from Wim\u2019s look at the preview: the valves, cams and compressor vanes stay visible in the light mode, and the two-stage blower is a clear cut-away (scroll housings cut open at the front, twelve backswept vanes per stage); the sixteen BRM exhaust stubs stand in two neat parallel rows, like on the real car. The 2D art and the sound are unchanged and v8 stays the BRM sound default.' }
     ] }
   ]
 };
@@ -8305,6 +9136,7 @@ var ProjectHistory = {
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v1')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   state.viewBlend = state.view === 1 ? 1 : 0;
+  state.bay = false;
   var audio = new EngineAudio({ forceScriptProcessor: params.get('audio') === 'sp' });
   var canvas = document.getElementById('dash');
   // v1.7.1 adaptive quality: the canvas resolution (device pixels per CSS px, at most 2) steps down while frames stay over budget
@@ -8451,7 +9283,15 @@ var ProjectHistory = {
     if (!radio) radio = new CarRadio(audio.ctx);
     var on = radio.toggle(); flash(on ? 'Radio on: “Desert Highway Shuffle” (original, generated live)' : 'Radio off', 2); updatePanel();
   }
-  function setView(v) { state.view = +v === 1 ? 1 : 0; updatePanel(); }   // 0 outside (rear), 1 inside
+  // 0 outside (rear), 1 inside; v1.10: 2 = Engine bay (3D, js/engine-bay.js). The bay keeps the last driving view's sound position.
+  function setView(v) {
+    if (+v === 2) {
+      if (typeof EngineBay === 'undefined' || !EngineBay.available()) { flash('Engine bay needs WebGL 2 (iOS / Safari 15 or newer)', 2.5); return; }
+      state.bay = true; audio.control({ bay: 1 }); flash('Engine bay: drag to turn, pinch to zoom', 2); updatePanel(); return;
+    }
+    if (state.bay) { state.bay = false; audio.control({ bay: 0 }); if (typeof EngineBay !== 'undefined') EngineBay.hide(); }
+    state.view = +v === 1 ? 1 : 0; updatePanel();
+  }
   function setModel(id) {
     var m = SoundModels.get(id);
     if (m.hidden) return;
@@ -8509,6 +9349,7 @@ var ProjectHistory = {
       case 's': case 'S': case 'i': case 'I': ignition(); break;
       case 'm': case 'M': toggleMute(); break;
       case 'v': case 'V': setView(state.view === 1 ? 0 : 1); break;
+      case 'e': case 'E': setView(state.bay ? state.view : 2); break;
       case 'x': case 'X': setModel(cycle(SoundModels.list, state.model)); break;
       case 'b': case 'B': if (spec().engineKey === 'BRM') nextBrmSound(); break;
       case 'z': case 'Z': setVisual(cycle(VisualModels.list, state.visual)); break;
@@ -8599,7 +9440,7 @@ var ProjectHistory = {
   function updatePanel() {
     var v = spec(), auto = v.trans === 'auto';
     document.querySelectorAll('#segCar .tb').forEach(function (b) { b.classList.toggle('on', b.dataset.v === state.carId); });
-    document.querySelectorAll('#segView .tb').forEach(function (b) { b.classList.toggle('on', +b.dataset.v === state.view); });
+    document.querySelectorAll('#segView .tb').forEach(function (b) { b.classList.toggle('on', state.bay ? +b.dataset.v === 2 : +b.dataset.v === state.view); });
     document.getElementById('segBrmSound').classList.toggle('hidden', v.engineKey !== 'BRM');
     selB.value = state.brmSound;
     selS.value = state.model; selV.value = state.visual;
@@ -8627,7 +9468,7 @@ var ProjectHistory = {
     var dtMs = now - last, dt = Math.min(0.05, Math.max(0, dtMs / 1000)); last = now;
     var w0 = performance.now();
     try { tick(dt); render(); } catch (e) { if (!frame.err) { frame.err = 1; console.error(e); if (window.__showErr) window.__showErr(e, 'frame'); } }
-    adaptQuality(dtMs, now, performance.now() - w0);
+    if (!state.bay) adaptQuality(dtMs, now, performance.now() - w0);   // the 2D resolution is not judged by engine-bay frames
     requestAnimationFrame(frame);
   }
   function tick(dt) {
@@ -8680,6 +9521,12 @@ var ProjectHistory = {
   }
   function render() {
     var c = car(), v = c.c, d = new Date();
+    if (state.bay && typeof EngineBay !== 'undefined' && !EngineBay.failed) {   // v1.10 engine bay: the 3D view replaces the 2D drawing while it is open
+      if (typeof GLView !== 'undefined') GLView.hide();
+      if (EngineBay.draw(dash, { engineKey: v.engineKey, soundId: soundId(), audio: audio.ctx ? audio : null, audioMode: audio.mode, rpm: state.tachRpm !== null && state.tachRpm !== undefined ? state.tachRpm : c.rpm(),
+        thr: state.throttle, engine: c.engine, touch: isTouch })) return;
+      state.bay = false; flash('Engine bay unavailable (WebGL error); back to the 2D view', 3); updatePanel();
+    }
     VisualModels.get(state.visual).draw(dash, {
       view: state.view, model: state.model,
       carId: state.carId, rpm: state.tachRpm !== null && state.tachRpm !== undefined ? state.tachRpm : c.rpm(), kmh: c.v * 3.6, units: state.units, tachMax: v.tachMax, tachRed: v.tachRed,
@@ -8693,8 +9540,9 @@ var ProjectHistory = {
       msg: state.msg || (!state.started ? (isTouch ? 'Tap \u201cStart engine\u201d' : 'Click \u201cStart engine\u201d or press S') : ''),
     });
   }
+  if (params.get('view') === 'bay') setView(2);   // v1.10: open straight into the engine bay
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash, quality: quality };
+  window.__game = { cars: cars, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return typeof GLView !== 'undefined' ? GLView.stats() : null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, dash: dash, quality: quality };
 })();
 </script>
 </body>
