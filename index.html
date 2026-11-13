@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.7)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.8)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -8999,9 +8999,39 @@ var PaintedVisuals = (function () {
   // steering wheel + its shadow: while the angle holds still (most of the time) both are kept as one composite at canvas resolution and
   // drawn with a single axis-aligned blit; while steering they are drawn rotated (pre-scaled sprites)
   var WC = {};
+  // v1.11.8: the wheel plane is perpendicular to the (corrected) column. pitch is the
+  // angle between the view and the column axis (a slight look-down squash); bank rotates
+  // the squash to follow a column that is not vertical in the picture. The 911 sprite is
+  // already drawn in perspective, so its pitch stays 0. Applied around the hub, then steer.
+  var WHEEL_PLANE = { gt350: { pitch: 0.26, bank: 0 }, caddy: { pitch: 0.30, bank: 0 }, brm: { pitch: 0.16, bank: -0.14 }, p997: { pitch: 0, bank: 0 } };
   function wheelDraw(g, car, hub, wl, rot, boss) {
     boss = boss || [0, 0];
     var bx = boss[0], by = boss[1];
+    var pl = WHEEL_PLANE[car] || { pitch: 0, bank: 0 };
+    var pitch = pl.pitch || 0, bank = pl.bank || 0;
+    if (pitch || bank) {
+      g.save();
+      g.translate(hub[0], hub[1]);
+      if (bank) g.rotate(bank);
+      g.scale(1, Math.cos(pitch));
+      if (bank) g.rotate(-bank);
+      g.translate(-hub[0], -hub[1]);
+      var sh = A[car + '-wheel-shadow'], wh = A[car + '-wheel'];
+      if (sh) {
+        g.save(); g.globalAlpha = 0.5;
+        g.translate(hub[0] + 10, hub[1] + 16);
+        if (rot) g.rotate(rot);
+        g.drawImage(sh, -wl / 2 - bx, -wl / 2 - by, wl, wl);
+        g.restore();
+      }
+      g.save();
+      g.translate(hub[0], hub[1]);
+      if (rot) g.rotate(rot);
+      g.drawImage(wh, -wl / 2 - bx, -wl / 2 - by, wl, wl);
+      g.restore();
+      g.restore();
+      return;
+    }
     var m = g.getTransform ? g.getTransform() : null, W = WC[car] || (WC[car] = { rot: null, still: 0 });
     if (Math.abs(rot - (W.last === undefined ? rot : W.last)) < 1e-5) W.still++; else W.still = 0; W.last = rot;
     if (!m || m.b || m.c || W.still < 2 || (window.__pvOff || {}).wheelOld) {
@@ -9337,6 +9367,7 @@ var ProjectHistory = {
       { v: "v1", date: "2026-11-11", status: "done", headline: "Driving demo: gearbox, weight, brakes and gauges", text: "Driving demo: gearbox and Hydra-Matic, weight, brakes with lock-up and fade, rev counter and odometer." },
     ] },
     { title: "Visuals and engine bay", items: [
+      { v: "v1.11.8", date: "2026-11-13", status: "done", headline: "Steering columns now follow the real cars, and the wheel sits at the end", text: "The painted steering column of each car now follows the real cockpit — its direction, tilt and length — and the steering wheel sits at the end of that column, facing the right way. On the Cadillac the painted shaft had been pointing at the floor while the wheel faced you; that long downward tube is gone, and the short column comes out of the dash toward the driver, as on a real Series 62. The BRM had no painted column; it now has a short metal tube from the wheel into the scuttle, slightly to the right of centre, as on the Type 15 at Beaulieu. The GT350 and 911 columns were already short and aimed at the driver; the GT350 wheel is tilted a little so it stays square to the column. Wheel sizes are the same. The Cadillac column shifter and the BRM's front wheels still work as before." },
       { v: "v1.11.7", date: "2026-11-13", status: "done", headline: "Steering wheels now sit on the column in the cockpit pictures", text: "In the driver's view, the steering wheel of each car now sits on the steering column in the cockpit picture, and turns about that point. The GT350 and Cadillac wheels were a little to the left of the painted boss; they are now centred on it. The 911 wheel lines up with the column opening in the dashboard, and the crest stays on that axis when you turn. On the BRM P30, photographs of the real car confirm that the wheel sits slightly to the right of centre, as Wim thought; the live wheel is now in that place. The BRM's front wheels still turn with the steering wheel." },
       { v: "v1.11.5", date: "2026-11-13", status: "done", headline: "911 bonnet now follows the real 997.1 shape", text: "The 911 bonnet, as you see it from the driver's seat, now follows a real 2006 Carrera 4S (997.1): a low, almost-flat lid with a shallow centre crease, the front fenders a little higher than the lid, oval headlight cut-outs at the front corners, and a sharp front edge where the lid meets the bumper. The old drawing had a high centre bulge, like a scoop, and did not show the lamps or how the lid meets the fenders." },
       { v: "v1.11.1", date: "2026-11-13", status: "done", headline: "BRM inside view: the front wheels steer with the wheel", text: "BRM, inside view: the front wheels now steer with the steering wheel. Turning the wheel to full lock turns the front tyres by about 11 degrees (a steering ratio of 11 to 1, normal for a 1950s Grand Prix car), and the tread keeps rolling while you steer. Driving straight looks exactly as before." },
