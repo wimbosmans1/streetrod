@@ -3530,4 +3530,686 @@ function engineModuleBrm9(core) {
     return [build('v9', 'v9_6', 'v9.6'), build('v9_1', 'v9_1', 'v9.1'), build('v9_2', 'v9_2', 'v9.2'), build('v9_3', 'v9_3', 'v9.3'), build('v9_4', 'v9_4', 'v9.4'),
       build('v9_8', 'v9_8', 'v9.8'), build('v9_9', 'v9_9', 'v9.9'), build('v9_10', 'v9_10', 'v9.10'),
       build('v9_11', 'v9_11', 'v9.11')];
+  },
+function engineModuleV8p(core) {
+    // ---- model data (tools/export_v8p_params.py: engine-sound v8phys.CARS + PHYS merged with fitted_params_v8phys.json)
+    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.141082763671875,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.9620153485230031,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.345489501953125,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0}}}/*END_V8P_DATA*/;
+    var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
+    var DL = 1024, DLM = DL - 1, HB = 4096, NSRC = 6;
+    // Q
+    var Q_BORE_A = 0, Q_CRANK_R = 1, Q_ROD = 2, Q_VC = 3, Q_IVO = 4, Q_IVC = 5, Q_EVO = 6, Q_EVC = 7, Q_DV = 8, Q_LMAX = 9, Q_CAMX = 10,
+      Q_CD = 11, Q_QC = 12, Q_HL = 13, Q_NP = 14, Q_BURN = 15, Q_XR0 = 16, Q_XROV = 17, Q_OVL = 18, Q_COV = 19, Q_COVR = 20, Q_MISR = 21,
+      Q_ETAV = 22, Q_VD = 23, Q_VMAN = 24, Q_ATHW = 25, Q_AIDLE = 26, Q_FIDLE = 27, Q_ROL = 28, Q_J = 29, Q_F0 = 30, Q_F1 = 31, Q_F2 = 32,
+      Q_FCOLD = 33, Q_STG = 34, Q_STKE = 35, Q_STRM = 36, Q_STRB = 37, Q_STIF = 38, Q_STJM = 39, Q_TEETH = 40, Q_VBAT = 41, Q_SOLID = 42,
+      Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, NQ = 56;
+    var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
+      S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
+      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, NS = 32;
+    var C_PHI = 0, C_M = 1, C_K = 2, C_OPEN = 3, C_PIVC = 4, C_VIVC = 5, C_TIVC = 6, C_RP = 7, C_VALID = 8, C_P = 9, C_Q = 10, C_E = 11,
+      C_XRES = 12, C_ADV = 13, C_DUR = 14, C_OFF = 15, C_BANK = 16, C_PIPE = 17, NC = 20;
+    var F_D = 0, F_A = 1, F_GAIN = 2, F_LP = 3, F_SA = 4, F_SB = 5, F_C = 6, F_RP = 7, NF = 8;
+    var K_THR0 = 0, K_THR1 = 1, K_RPM0 = 2, K_RPM1 = 3, K_MODE = 4, K_IGN = 5, K_SOL = 6, K_PIN = 7, K_FIREP = 8, K_CHOKE = 9, K_COLD = 10, K_BLEND = 11, NK = 12;
+    var O_U0 = 0, O_U1 = 1, O_INT = 2, O_TICK0 = 3, O_TICK1 = 4, O_ST = 5, O_JET0 = 6, O_JET1 = 7, O_RPM = 8, O_HISS = 9, NO = 10;
+
+    function rnd(S) {
+      var x = S[S_RNG] >>> 0;
+      x = (x ^ (x << 13)) >>> 0; x = (x ^ (x >>> 17)) >>> 0; x = (x ^ (x << 5)) >>> 0;
+      S[S_RNG] = x; return x / 4294967296.0;
+    }
+    function vol(Q, phi) {
+      var a = phi * Math.PI / 180.0, r = Q[Q_CRANK_R], l = Q[Q_ROD], s = Math.sin(a);
+      return Q[Q_VC] + Q[Q_BORE_A] * (r * (1.0 - Math.cos(a)) + l - Math.sqrt(l * l - r * r * s * s));
+    }
+    function dvdth(Q, phi) {
+      var a = phi * Math.PI / 180.0, r = Q[Q_CRANK_R], l = Q[Q_ROD], s = Math.sin(a), c = Math.cos(a);
+      return Q[Q_BORE_A] * r * s * (1.0 + r * c / Math.sqrt(l * l - r * r * s * s));
+    }
+    function psi(pr, g) {
+      var pc = Math.pow(2.0 / (g + 1.0), g / (g - 1.0));
+      if (pr < pc) pr = pc; if (pr > 1.0) pr = 1.0;
+      return Math.sqrt(2.0 * g / (g - 1.0) * (Math.pow(pr, 2.0 / g) - Math.pow(pr, (g + 1.0) / g)));
+    }
+    function crossed(a, b, e) { if (b >= a) return a < e && e <= b; return e > a || e <= b; }
+    function aeffOf(Q, phi) {
+      var lf = (phi - Q[Q_EVO]) / (Q[Q_EVC] - Q[Q_EVO]);
+      if (lf <= 0.0 || lf >= 1.0) return 0.0;
+      var lift = Q[Q_LMAX] * Math.pow(Math.sin(Math.PI * lf), Q[Q_CAMX]), a = Math.PI * Q[Q_DV] * lift, amax = 0.85 * Math.PI * Q[Q_DV] * Q[Q_DV] / 4.0;
+      return Q[Q_CD] * (a < amax ? a : amax);
+    }
+    function vq(qg, p, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt) {
+      var g = G_EX, pport = base + z0 * qg, dm, lim;
+      if (pport < 0.2 * P_ATM) pport = 0.2 * P_ATM;
+      if (p >= pport) {
+        dm = aeff * p / Math.sqrt(R_GAS * tc) * psi(pport / p, g) * dt;
+        var meq = V * Math.pow(pport / Kc, 1.0 / g);
+        lim = m > meq ? 0.5 * (m - meq) : 0.0;
+        if (dm > lim) dm = lim;
+      } else {
+        dm = -aeff * pport / Math.sqrt(R_GAS * tpr) * psi(p / pport, g) * dt;
+        lim = 0.5 * (pport - p) * V / (g * R_GAS * tpr);
+        if (-dm > lim) dm = -lim;
+      }
+      return dm * fs / rho_e;
+    }
+
+    /** the per-sample kernel (v8phys._kv8). CY, PF, AB, BB, NA, NODE, out: flat typed arrays (row-major) */
+    /** arrival time of the forward sample just written (finite-amplitude steepening, BRM v9.11; v8phys._arr) */
+    function arr(AB, AT, PF, p, wi, nt, knl) {
+      var pf = p * NF, c = PF[pf + F_C], beta = knl * 0.5 * (G_EX + 1.0), u = AB[p * DL + wi] * c / (G_EX * P_ATM);
+      if (beta * u < -0.6 * c) u = -0.6 * c / beta;
+      var ta = nt + PF[pf + F_D] * c / (c + beta * u);
+      if (ta > nt + DLM - 2) ta = nt + DLM - 2;
+      var tp = AT[p * DL + ((wi - 1) & DLM)];
+      if (ta < tp + 0.02) ta = tp + 0.02;
+      AT[p * DL + wi] = ta;
+    }
+
+    function kv8(n, fs, K, Q, S, CY, PF, NPI, NODE, NN, NW, AB, BB, AT, NA, out) {
+      var dt = 1.0 / fs, rad = Math.PI / 180.0, g = G_EX, k, i, p, j, knl = Q[Q_KNL];
+      for (k = 0; k < n; k++) {
+        var u = (k + 1.0) / n, ko = k * NO;
+        var thr = K[K_THR0] + (K[K_THR1] - K[K_THR0]) * u;
+        var a_th = Q[Q_AIDLE] * (1.0 + Q[Q_FIDLE] * K[K_CHOKE]) + Q[Q_ATHW] * (1.0 - Math.cos(thr * Math.PI / 2.0));
+        var w = S[S_W];
+        var m_th = Q[Q_CD] * a_th * P_ATM / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / P_ATM, G_AIR);
+        var m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
+        S[S_PMAN] += R_GAS * T_AMB / Q[Q_VMAN] * (m_th - m_en) * dt;
+        if (S[S_PMAN] < 0.12 * P_ATM) S[S_PMAN] = 0.12 * P_ATM;
+        if (S[S_PMAN] > P_ATM) S[S_PMAN] = P_ATM;
+        var pman = S[S_PMAN];
+        // electric starter
+        var G = Q[Q_STG], ke = Q[Q_STKE], Rm = Q[Q_STRM] + Q[Q_STRB];
+        var powered = K[K_SOL] > 0.5, engaged = K[K_PIN] > 0.5, wm = S[S_WM];
+        if (!engaged) S[S_LOCK] = 0.0;
+        if (S[S_LOCK] > 0.5) wm = G * (w > 0.0 ? w : 0.0);
+        // series-wound motor: k(I) = a I / (1 + I / I_s), k(I_free) = ke (see v8phys.py)
+        var cur = 0.0, kI = ke;
+        if (powered) {
+          var Is = Q[Q_STIS], a_s = ke * (1.0 + Q[Q_STIF] / Is) / Q[Q_STIF], qa = Rm / Is, qb = Rm + a_s * wm - Q[Q_VBAT] / Is;
+          cur = (-qb + Math.sqrt(qb * qb + 4.0 * qa * Q[Q_VBAT])) / (2.0 * qa); if (cur < 0.0) cur = 0.0;
+          kI = a_s * cur / (1.0 + cur / Is);
+        }
+        var loss = Q[Q_STIF] * (wm > 5.0 ? 1.0 : wm / 5.0);
+        var tm = powered ? kI * (cur - loss) : -ke * 0.3 * loss;
+        var tst = 0.0;
+        if (S[S_LOCK] > 0.5 && tm > 0.0) tst = G * tm;
+        else {
+          S[S_LOCK] = 0.0;
+          wm += tm / Q[Q_STJM] * dt;
+          if (wm < 0.0) wm = 0.0;
+          if (engaged && powered && wm >= G * (w > 0.0 ? w : 0.0)) S[S_LOCK] = 1.0;
+        }
+        S[S_WM] = wm; S[S_TST] = tst; S[S_CUR] = cur;
+        var jtot = Q[Q_J] + (S[S_LOCK] > 0.5 ? Q[Q_STJM] * G * G : 0.0);
+        // crank
+        var krpm = (w > 0.0 ? w : 0.0) * 60.0 / (2.0 * Math.PI) / 1000.0;
+        var visc = 1.0 + (Q[Q_FCOLD] - 1.0) * K[K_COLD];
+        var tf = (Q[Q_F0] + Q[Q_F1] * krpm + Q[Q_F2] * krpm * krpm) * visc * 1e5 * Q[Q_VD] / (4.0 * Math.PI);
+        var tg = S[S_TGAS], wf;
+        if (w > 0.0) wf = w + (tg + tst - tf) / jtot * dt;
+        else if (tg + tst > tf) wf = (tg + tst - tf) / jtot * dt;
+        else wf = 0.0;
+        if (wf < 0.0) wf = 0.0;
+        // running mean of the gas torque over about one engine cycle (both modes); see v8phys.py
+        var tmk = krpm > 0.8 ? 120.0 / (krpm * 1000.0) : 0.15;
+        if (tmk < 0.015) tmk = 0.015;
+        var tm0 = S[S_TM];
+        S[S_TM] += (tg - S[S_TM]) * (dt / tmk);
+        S[S_TMD] += ((S[S_TM] - tm0) / dt - S[S_TMD]) * (dt / tmk);
+        if (K[K_MODE] < 0.5) {
+          var wt = (K[K_RPM0] + (K[K_RPM1] - K[K_RPM0]) * u) * 2.0 * Math.PI / 60.0;
+          S[S_DW] += (tg - S[S_TM] - tmk * S[S_TMD]) / jtot * dt;
+          S[S_DW] -= S[S_DW] * (dt / Q[Q_DWT]);
+          S[S_DWM] += (S[S_DW] - S[S_DWM]) * (dt / Q[Q_DWT]);   // minus its own running mean (see v8phys.py)
+          var dvm = 0.04 * wt, dv = S[S_DW] - S[S_DWM];               // bounded +-4 % (anti-windup), see v8phys.py
+          if (dv > dvm) { S[S_DW] = S[S_DWM] + dvm; dv = dvm; } else if (dv < -dvm) { S[S_DW] = S[S_DWM] - dvm; dv = -dvm; }
+          w = wf + (wt + dv - wf) * K[K_BLEND];
+        } else { w = wf; S[S_DW] = 0.0; S[S_DWM] = 0.0; }
+        S[S_W] = w;
+        var dth = w * dt / rad, th = S[S_TH] + dth;
+        if (th >= 720.0) th -= 720.0;
+        S[S_TH] = th; S[S_REVS] += dth / 360.0;
+        var rpm = w * 60.0 / (2.0 * Math.PI);
+        // delay-line arrivals
+        var wi = S[S_WI] | 0, nt = S[S_NT];
+        for (p = 0; p < NPI; p++) {
+          var pf = p * NF, D = PF[pf + F_D], i0 = D | 0, fr = D - i0, j0 = (wi - i0) & DLM, j1 = (wi - i0 - 1) & DLM, pb = p * DL;
+          var xb = (1.0 - fr) * BB[pb + j0] + fr * BB[pb + j1], xa;
+          if (knl > 0.0) {
+            var rp = PF[pf + F_RP] | 0, nx;
+            for (;;) { nx = (rp + 1) & DLM; if (nx === wi || AT[pb + nx] > nt) break; rp = nx; }
+            PF[pf + F_RP] = rp;
+            nx = (rp + 1) & DLM;
+            var t0a = AT[pb + rp], t1a = AT[pb + nx];
+            if (nx === wi || t1a <= t0a) xa = AB[pb + rp];
+            else { var fr0 = (nt - t0a) / (t1a - t0a); if (fr0 < 0.0) fr0 = 0.0; else if (fr0 > 1.0) fr0 = 1.0; xa = AB[pb + rp] + fr0 * (AB[pb + nx] - AB[pb + rp]); }
+          } else xa = (1.0 - fr) * AB[pb + j0] + fr * AB[pb + j1];
+          var al = PF[pf + F_LP];
+          PF[pf + F_SA] += (1.0 - al) * (PF[pf + F_GAIN] * xa - PF[pf + F_SA]);
+          PF[pf + F_SB] += (1.0 - al) * (PF[pf + F_GAIN] * xb - PF[pf + F_SB]);
+        }
+        // cylinders
+        tg = 0.0;
+        var qin = 0.0, tick0 = 0.0, tick1 = 0.0, tpr = S[S_TPRIM], rho_e = P_ATM / (R_GAS * tpr);
+        var npol = Q[Q_NP] - (Q[Q_NP] - 1.12) * Math.exp(-rpm / 250.0), leak = Math.exp(-dt / 3.0);
+        var hk = dt / 0.03 * Math.exp(-rpm / 100.0);   // burnt-charge wall heat transfer at near-standstill (v8phys.py)
+        for (i = 0; i < 8; i++) {
+          var c = i * NC, phi0 = CY[c + C_PHI], phi = th - CY[c + C_OFF];
+          if (phi < 0.0) phi += 720.0;
+          CY[c + C_PHI] = phi;
+          var V = vol(Q, phi), dvd = dvdth(Q, phi), tk = 0.0, m, pcy, vr;
+          if (crossed(phi0, phi, Q[Q_IVC])) {
+            var piv = pman;
+            CY[c + C_PIVC] = piv; CY[c + C_VIVC] = vol(Q, Q[Q_IVC]);
+            var xres = Q[Q_XR0] * Math.pow(P_ATM / piv, 1.0 / g) + Q[Q_XROV] * Q[Q_OVL] / 100.0 * (P_ATM / piv - 1.0) * Math.sqrt(1000.0 / (rpm > 100.0 ? rpm : 100.0));
+            if (xres > 0.6) xres = 0.6;
+            CY[c + C_XRES] = xres; CY[c + C_TIVC] = T_AMB + 30.0 + 500.0 * xres;
+            var r1 = rnd(S), r2 = rnd(S);
+            var gs = (rnd(S) + rnd(S) + rnd(S) + rnd(S) - 2.0) * 1.7320508075688772;
+            var pm = xres > 0.25 ? Q[Q_MISR] * (xres - 0.25) : 0.0, e = 0.0;
+            if (K[K_IGN] > 0.5 && r1 < K[K_FIREP] && r2 >= pm) {
+              e = 1.0 + (Q[Q_COV] + Q[Q_COVR] * xres) * gs; if (e < 0.0) e = 0.0;
+              S[S_NFIRE] += 1.0;
+            }
+            S[S_NEVT] += 1.0;
+            CY[c + C_E] = e;
+            var rc = 400.0 / (rpm > 50.0 ? rpm : 50.0); if (rc > 1.0) rc = 1.0;
+            CY[c + C_RP] = 1.0 - Q[Q_HL] * (0.5 + 0.5 * rc) + e * Q[Q_QC] * (1.0 - xres);
+            CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * (1.0 - piv / P_ATM);
+            CY[c + C_DUR] = Q[Q_BURN] * (1.0 + 0.8 * xres);
+            CY[c + C_VALID] = 1.0;
+            tk += 0.6;
+          }
+          if (crossed(phi0, phi, Q[Q_EVO])) {
+            var ve = vol(Q, Q[Q_EVO]), pe, te;
+            if (CY[c + C_VALID] > 0.5) {
+              vr = CY[c + C_VIVC] / ve;
+              pe = CY[c + C_PIVC] * Math.pow(vr, npol) * CY[c + C_RP];
+              te = CY[c + C_TIVC] * CY[c + C_RP] * Math.pow(vr, npol - 1.0);
+            } else { pe = pman; te = T_AMB; }
+            m = pe * ve / (R_GAS * te);
+            CY[c + C_M] = m; CY[c + C_K] = pe / Math.pow(m / ve, g); CY[c + C_OPEN] = 1.0; CY[c + C_VALID] = 0.0;
+            tk += 1.0;
+          }
+          if (crossed(phi0, phi, Q[Q_EVC])) { CY[c + C_OPEN] = 0.0; tk += 0.8; }
+          if (crossed(phi0, phi, Q[Q_IVO])) tk += 0.4;
+          if (tk > 0.0) {
+            var amp = tk * (0.15 + rpm / 1000.0) * (Q[Q_SOLID] > 0.5 ? 1.0 : 0.35);
+            if (CY[c + C_BANK] < 0.5) tick0 += amp; else tick1 += amp;
+          }
+          var pp = CY[c + C_PIPE] | 0, ppf = pp * NF, pin = PF[ppf + F_SB];
+          var aeff = CY[c + C_OPEN] > 0.5 ? aeffOf(Q, phi) : 0.0, ap = PF[ppf + F_A];
+          var rv = (ap - aeff) / (ap + aeff) * Q[Q_ROL], z0 = rho_e * PF[ppf + F_C] / ap, q = 0.0;
+          if (CY[c + C_OPEN] > 0.5) {
+            m = CY[c + C_M];
+            pcy = CY[c + C_K] * Math.pow(m / V, g);
+            var tc = pcy * V / (m * R_GAS), base = P_ATM + (1.0 + rv) * pin, Kc = CY[c + C_K];
+            var q0 = vq(0.0, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt);
+            if (q0 === 0.0) q = 0.0;
+            else {
+              var a_ = 0.0, fa = q0, b_ = q0, fb = vq(q0, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt) - q0, side = 0;
+              q = b_;
+              for (var it = 0; it < 8; it++) {
+                if (fb === fa) break;
+                q = b_ - fb * (b_ - a_) / (fb - fa);
+                var fq = vq(q, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt) - q;
+                if (fq * fb < 0.0) { a_ = b_; fa = fb; if (side === -1) fa *= 0.5; side = -1; }
+                else { if (side === 1) fa *= 0.5; side = 1; }
+                b_ = q; fb = fq;
+                if (Math.abs(fq) < 1e-7) break;
+              }
+            }
+            var dm = q * rho_e / fs;
+            if (dm >= 0.0) { m -= dm; CY[c + C_M] = m; pcy = CY[c + C_K] * Math.pow(m / V, g); }
+            else {
+              m -= dm; pcy = pcy - g * R_GAS * tpr * dm / V; CY[c + C_M] = m; CY[c + C_K] = pcy / Math.pow(m / V, g);
+            }
+            q = dm * fs / rho_e;
+          } else {
+            var psi_ = phi >= Q[Q_IVC] ? phi - 720.0 : phi;
+            if (CY[c + C_VALID] > 0.5 && psi_ < Q[Q_EVO]) {
+              vr = CY[c + C_VIVC] / V;
+              var z = (psi_ + CY[c + C_ADV]) / CY[c + C_DUR], xb2 = 0.0;
+              if (z > 0.0) { var zz = z < 1.6 ? z : 1.6; xb2 = 1.0 - Math.exp(-5.0 * zz * zz * zz); }
+              CY[c + C_PIVC] *= leak;
+              if (xb2 > 0.0) CY[c + C_RP] += ((1.0 - Q[Q_HL]) - CY[c + C_RP]) * hk * xb2;
+              pcy = CY[c + C_PIVC] * Math.pow(vr, npol) * (1.0 + (CY[c + C_RP] - 1.0) * xb2);
+            } else pcy = pman;
+          }
+          if (phi >= Q[Q_IVO] && phi < Q[Q_IVC]) qin += dvd * w;
+          CY[c + C_Q] = q; CY[c + C_P] = pcy;
+          AB[pp * DL + wi] = z0 * q + rv * pin;
+          if (knl > 0.0) arr(AB, AT, PF, pp, wi, nt, knl);
+          tg += (pcy - P_ATM) * dvd;
+        }
+        S[S_TGAS] = tg;
+        // exhaust network nodes
+        for (var nd = 0; nd < NN; nd++) {
+          var nb = nd * NW, typ = NODE[nb];
+          if (typ === 0) {
+            var npt = NODE[nb + 2], sy = 0.0, sp = 0.0, p_, pin_;
+            for (j = 0; j < npt; j++) {
+              p_ = NODE[nb + 3 + 2 * j];
+              var y = PF[p_ * NF + F_A] * PF[p_ * NF + F_C];
+              pin_ = NODE[nb + 4 + 2 * j] === 0 ? PF[p_ * NF + F_SB] : PF[p_ * NF + F_SA];
+              sy += y; sp += y * pin_;
+            }
+            var pj = 2.0 * sp / sy;
+            for (j = 0; j < npt; j++) {
+              p_ = NODE[nb + 3 + 2 * j];
+              if (NODE[nb + 4 + 2 * j] === 0) { AB[p_ * DL + wi] = pj - PF[p_ * NF + F_SB]; if (knl > 0.0) arr(AB, AT, PF, p_, wi, nt, knl); }
+              else BB[p_ * DL + wi] = pj - PF[p_ * NF + F_SA];
+            }
+          } else if (typ === 2) {
+            var mo = NODE[nb + 1], pq = NODE[nb + 3], pinm = PF[pq * NF + F_SA];
+            var st = NA[nd * 2] + NA[nd * 2 + 1] * (pinm - NA[nd * 2]);
+            NA[nd * 2] = st;
+            BB[pq * DL + wi] = -st;
+            var rho_t = P_ATM / (R_GAS * S[S_TTAIL]);
+            var U = (pinm + st) * PF[pq * NF + F_A] / (rho_t * PF[pq * NF + F_C]);
+            out[ko + O_U0 + mo] = U;
+            var uu = U / Q[Q_TAILA]; if (uu < 0.0) uu = 0.0;
+            var nz = (rnd(S) - 0.5) * 3.4641016151377544;
+            var fj = uu / Math.sqrt(4.0 * Q[Q_TAILA] / Math.PI) + 150.0, aj = 1.0 - Math.exp(-2.0 * Math.PI * fj / fs);
+            var r4 = (uu / 30.0) * (uu / 30.0);
+            S[S_JET0 + mo] += aj * (nz * 7e-4 * Q[Q_KJET] * r4 * r4 - S[S_JET0 + mo]);
+            out[ko + O_JET0 + mo] = S[S_JET0 + mo];
+          }
+        }
+        S[S_WI] = (wi + 1) & DLM;
+        S[S_NT] = nt + 1.0;
+        // intake
+        var gp = G_AIR * P_ATM;
+        S[S_PPL] += gp / Q[Q_VMAN] * (S[S_QTH] - qin) * dt;
+        var ath = a_th > 2e-6 ? a_th : 2e-6, mth = RHO_AIR * Q[Q_LTH] / ath, rth = Q[Q_RTH] * RHO_AIR * C_AIR / ath;
+        S[S_QTH] = (S[S_QTH] + (S[S_PAC] - S[S_PPL]) / mth * dt) / (1.0 + rth / mth * dt);
+        S[S_PAC] += gp / Q[Q_VAC] * (S[S_QSN] - S[S_QTH]) * dt;
+        S[S_QSN] = (S[S_QSN] - S[S_PAC] / Q[Q_SNM] * dt) / (1.0 + Q[Q_SNR] / Q[Q_SNM] * dt);
+        out[ko + O_INT] = S[S_QSN];
+        if (S[S_PMAN] < 0.528 * P_ATM) out[ko + O_HISS] = (rnd(S) - 0.5) * 3.4641016151377544 * m_th * Math.pow(1.0 - S[S_PMAN] / (0.528 * P_ATM), 0.5);
+        out[ko + O_TICK0] = tick0; out[ko + O_TICK1] = tick1;
+        var sst = 0.0;
+        if (S[S_LOCK] > 0.5) {
+          S[S_MESH] += Q[Q_TEETH] * w * dt / (2.0 * Math.PI);
+          if (S[S_MESH] >= 1.0) { S[S_MESH] -= Math.floor(S[S_MESH]); sst += 0.3 + tst / (G * ke * Q[Q_VBAT] / Rm); }
+        }
+        if (wm > 1.0) {
+          S[S_COMM] += Q[Q_NSEG] * wm * dt / (2.0 * Math.PI);
+          if (S[S_COMM] >= 1.0) { S[S_COMM] -= Math.floor(S[S_COMM]); sst += 0.1 + cur / 400.0; }
+        }
+        out[ko + O_ST] += sst;
+        out[ko + O_RPM] = rpm;
+      }
+    }
+
+    function bq(x, c, ci, s, si) {
+      var y = c[ci] * x + s[si];
+      s[si] = c[ci + 1] * x - c[ci + 3] * y + s[si + 1];
+      s[si + 1] = c[ci + 2] * x - c[ci + 4] * y;
+      return y;
+    }
+    /** post: sources -> listener (v8phys._post). BQ flat (rows of 5), BS flat (rows of 2), PATH flat (rows of 5), y interleaved L/R */
+    function post(n, fs, out, PV, PST, H, PATH, NPATH, BQ, BS, yL, yR, off) {
+      var k, e, j, m;
+      for (k = 0; k < n; k++) {
+        var ko = k * NO, hi = PST[3] | 0;
+        var U0 = out[ko + O_U0], U1 = out[ko + O_U1], qi = out[ko + O_INT];
+        PST[4] += PV[7] * ((U0 - PST[0]) * fs - PST[4]);
+        PST[5] += PV[7] * ((U1 - PST[1]) * fs - PST[5]);
+        var x0 = PV[0] * PST[4] + out[ko + O_JET0], x1 = PV[0] * PST[5] + out[ko + O_JET1];
+        var hs = out[ko + O_HISS];
+        PST[6] += PV[9] * (hs - PST[6]);
+        PST[7] += PV[10] * ((hs - PST[6]) - PST[7]);
+        var x2 = PV[1] * PV[0] * (qi - PST[2]) * fs + PV[8] * PST[7];
+        PST[0] = U0; PST[1] = U1; PST[2] = qi;
+        var t0 = out[ko + O_TICK0] * PV[2], t1 = out[ko + O_TICK1] * PV[2];
+        var x3 = bq(t0, BQ, 0, BS, 0) + 0.6 * bq(t0, BQ, 5, BS, 2);
+        var x4 = bq(t1, BQ, 0, BS, 4) + 0.6 * bq(t1, BQ, 5, BS, 6);
+        var sv = out[ko + O_ST] * PV[3];
+        var x5 = bq(sv, BQ, 10, BS, 8) + 0.7 * bq(sv, BQ, 15, BS, 10);
+        H[hi] = x0; H[HB + hi] = x1; H[2 * HB + hi] = x2; H[3 * HB + hi] = x3; H[4 * HB + hi] = x4; H[5 * HB + hi] = x5;
+        for (e = 0; e < 2; e++) {
+          var r0 = 0.0, r1 = 0.0, r2 = 0.0;
+          for (j = 0; j < NPATH; j++) {
+            var pr = j * 5;
+            if ((PATH[pr + 1] | 0) !== e) continue;
+            var s = PATH[pr] | 0, D = PATH[pr + 3], i0 = D | 0, fr = D - i0, hb = s * HB;
+            var v = (1.0 - fr) * H[hb + ((hi - i0) & (HB - 1))] + fr * H[hb + ((hi - i0 - 1) & (HB - 1))];
+            var rt = PATH[pr + 4] | 0;
+            if (rt === 0) r0 += PATH[pr + 2] * v; else if (rt === 1) r1 += PATH[pr + 2] * v; else r2 += PATH[pr + 2] * v;
+          }
+          var b = (6 + e * 16) * 2;
+          if (PV[6] > 0.0) {
+            var c1 = bq(bq(r1, BQ, 20, BS, b), BQ, 25, BS, b + 2);
+            var c2 = bq(bq(r2, BQ, 30, BS, b + 4), BQ, 35, BS, b + 6);
+            var cab = PV[4] * (c1 + c2), md = 0.0;
+            for (m = 0; m < (PV[6] | 0); m++) md += bq(cab, BQ, 40 + 5 * m, BS, b + 8 + 2 * m);
+            r0 += cab + md;
+          }
+          if (e === 0) yL[off + k] = PV[5] * r0; else yR[off + k] = PV[5] * r0;
+        }
+        PST[3] = (hi + 1) & (HB - 1);
+      }
+    }
+
+    function rbj(kind, f, q, fs) {
+      var w = 2 * Math.PI * f / fs, cw = Math.cos(w), sw = Math.sin(w), al = sw / (2 * q), b;
+      if (kind === 'lp') b = [(1 - cw) / 2, 1 - cw, (1 - cw) / 2]; else b = [al, 0.0, -al];
+      var a = [1 + al, -2 * cw, 1 - al];
+      return [b[0] / a[0], b[1] / a[0], b[2] / a[0], a[1] / a[0], a[2] / a[0]];
+    }
+    function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
+    function camEvents(c) {
+      var d = c.adv_dur / 2.0;
+      return [360.0 + (c.lsa - d), 360.0 + (c.lsa + d), 360.0 - (c.lsa + d), 360.0 - (c.lsa - d)];
+    }
+    function perspective(c, name) {
+      var m = c.mouth[0], x, z;
+      if (name === 'rear') { var mm = [m[0] - 1.0, m[1], 0.5]; return { ears: [[mm[0], mm[1] + 0.09, mm[2]], [mm[0], mm[1] - 0.09, mm[2]]], ground: 0.8, outside: true, shadow: 0.3 }; }
+      if (name === 'rear_far') return { ears: [[-4.0, 0.09, 1.5], [-4.0, -0.09, 1.5]], ground: 0.8, outside: true, shadow: 0.3 };
+      if (name === 'engine_bay') { x = c.intake[0]; z = c.intake[2]; return { ears: [[x - 0.25, 0.09, z + 0.55], [x - 0.25, -0.09, z + 0.55]], ground: 0.8, outside: true, shadow: 0.5, bay: true }; }
+      var h = c.head; return { ears: [[h[0], h[1] + 0.09, h[2]], [h[0], h[1] - 0.09, h[2]]], ground: 0.0, outside: false, shadow: 1.0 };
+    }
+    /** exhaust network (v8phys.build_net / net_arrays) */
+    function buildNet(c) {
+      var pipes = [], nodes = [], left = {}, xp = -1;
+      c.left_bank.forEach(function (x) { left[x] = 1; });
+      function pipe(L, d, grp, pack) { pipes.push([L, d, Math.PI * d * d / 4, grp, pack || 0, 0]); return pipes.length - 1; }
+      function node(t, x, ports) { nodes.push([t, x, ports]); }
+      for (var bank = 0; bank < 2; bank++) {
+        var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0;
+        for (i = 1; i <= 8; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
+        if (c.exhaust === 'tri-y') {
+          var secs = [];
+          c.tri_pairs.forEach(function (pr) {
+            if (cyls.indexOf(pr[0]) < 0) return;
+            var pa = pipe(c.prim_len, c.prim_d, 0), pb = pipe(c.prim_len * 1.04, c.prim_d, 0);
+            node(1, pr[0] - 1, [[pa, 0]]); node(1, pr[1] - 1, [[pb, 0]]);
+            var s = pipe(c.sec_len, c.sec_d, 0);
+            node(0, 0, [[pa, 1], [pb, 1], [s, 0]]); secs.push(s);
+          });
+          head = pipe(c.head_len, c.pipe_d, 1);
+          node(0, 0, [[secs[0], 1], [secs[1], 1], [head, 0]]);
+        } else {
+          prev = null;
+          for (var jj = 0; jj < cyls.length; jj++) {
+            var pp = pipe(c.port_len, c.port_d, 0);
+            node(1, cyls[jj] - 1, [[pp, 0]]);
+            var ports = [[pp, 1]];
+            if (prev !== null) ports.push([prev, 1]);
+            var nxt = jj < cyls.length - 1 ? pipe(c.log_seg, c.log_d, 0) : pipe(c.head_len, c.pipe_d, 1);
+            ports.push([nxt, 0]); node(0, 0, ports); prev = nxt;
+          }
+          head = prev;
+        }
+        if (bank === 0) xp = pipe(c.x_len, c.x_d, 1);
+        var inter = pipe(c.inter_len + dl, c.pipe_d, 1);
+        node(0, 0, [[head, 1], [xp, bank], [inter, 0]]);
+        prev = inter;
+        c.muf.forEach(function (mf) {
+          var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
+          var p = pipe(mf[1], d, 2, mf[3]); node(0, 0, [[prev, 1], [p, 0]]); prev = p;
+        });
+        var tail = pipe(c.tail_len, c.pipe_d, 2);
+        node(0, 0, [[prev, 1], [tail, 0]]);
+        node(2, bank, [[tail, 1]]);
+      }
+      var NW = 0; nodes.forEach(function (n) { NW = Math.max(NW, 3 + 2 * n[2].length); });
+      var NODE = new Int32Array(nodes.length * NW);
+      nodes.forEach(function (n, k) {
+        NODE[k * NW] = n[0]; NODE[k * NW + 1] = n[1]; NODE[k * NW + 2] = n[2].length;
+        n[2].forEach(function (pe, j) { NODE[k * NW + 3 + 2 * j] = pe[0]; NODE[k * NW + 4 + 2 * j] = pe[1]; });
+      });
+      return { PG: pipes, NODE: NODE, NN: nodes.length, NW: NW };
+    }
+
+    /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
+    function V8pSynth(spec, listener, fs, opts) {
+      opts = opts || {};
+      var key = spec.car_key || (spec.engineKey === 'CADDY' ? 'cadillac59' : 'gt350');
+      var D = DATA[key];
+      if (!D) throw new Error('v8p: no data for ' + key);
+      this.key = key; this.c = D.car; this.P = Object.assign({}, D.phys, opts.phys || {}); this.fs = fs;
+      this.spec = { idle_rpm: this.c.idle_rpm, redline: this.c.redline, name: this.c.name, car_key: key };
+      this.selfGated = opts.mode !== 'run' && opts.mode !== 'raw';
+      var N = buildNet(this.c);
+      this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
+      this.Q = this._q();
+      this.S = new Float64Array(NS); this.CY = new Float64Array(8 * NC); this.PF = new Float64Array(this.NP * NF);
+      this.AB = new Float64Array(this.NP * DL); this.BB = new Float64Array(this.NP * DL); this.AT = new Float64Array(this.NP * DL); this.NA = new Float64Array(this.NN * 2);
+      var seed = opts.seed === undefined ? 1 : opts.seed;
+      this.S[S_RNG] = (Math.imul(0x9E3779B9 | 0, seed + 1) >>> 0) || 1;
+      this.S[S_PMAN] = P_ATM; this.S[S_TPRIM] = T_AMB; this.S[S_TTAIL] = T_AMB;
+      var fo = this.c.fire_order, off = [], i, left = {};
+      this.c.left_bank.forEach(function (x) { left[x] = 1; });
+      for (i = 0; i < 8; i++) off[fo[i] - 1] = 90.0 * i;
+      for (i = 0; i < 8; i++) { this.CY[i * NC + C_OFF] = off[i]; this.CY[i * NC + C_BANK] = left[i + 1] ? 0.0 : 1.0; }
+      for (var nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 1) this.CY[this.NODE[nd * this.NW + 1] * NC + C_PIPE] = this.NODE[nd * this.NW + 3];
+      for (i = 0; i < 8; i++) { var v0 = (0.0 - off[i]) % 720.0; this.CY[i * NC + C_PHI] = v0 < 0 ? v0 + 720.0 : v0; }
+      this.pw = 0.0; this.load = 0.0;
+      this.K = new Float64Array(NK);
+      this.out = new Float64Array(256 * NO);
+      this.ctlr = new Ctl(this, opts.cold === undefined ? true : !!opts.cold);
+      this._pipes();
+      this.listener = listener || { position: 'rear' };
+      this._listener(this.listener.position || 'rear');
+      this.game = { running: false, starter: false, warm: false, gear: 0, has: false };
+      if (opts.mode === 'run' || opts.mode === 'raw') this.setRunning(this.c.idle_rpm);
+    }
+    V8pSynth.prototype._q = function () {
+      var c = this.c, P = this.P, Q = new Float64Array(NQ);
+      var A = Math.PI * c.bore * c.bore / 4, vd1 = A * c.stroke, ev = camEvents(c);
+      Q[Q_BORE_A] = A; Q[Q_CRANK_R] = c.stroke / 2; Q[Q_ROD] = c.rod; Q[Q_VC] = vd1 / (c.cr - 1.0);
+      Q[Q_IVO] = ev[0]; Q[Q_IVC] = ev[1]; Q[Q_EVO] = ev[2]; Q[Q_EVC] = ev[3]; Q[Q_OVL] = ev[3] - ev[0];
+      Q[Q_DV] = c.ev_d; Q[Q_LMAX] = c.ev_lift; Q[Q_CAMX] = c.camx; Q[Q_CD] = P.cd;
+      Q[Q_QC] = P.q_comb; Q[Q_HL] = P.heat_loss; Q[Q_NP] = P.n_poly; Q[Q_BURN] = P.burn;
+      Q[Q_XR0] = P.xr0; Q[Q_XROV] = P.xr_ov; Q[Q_COV] = P.cov; Q[Q_COVR] = P.cov_res; Q[Q_MISR] = P.mis_res;
+      Q[Q_ETAV] = P.eta_v; Q[Q_VD] = 8 * vd1; Q[Q_VMAN] = c.v_man; Q[Q_ATHW] = c.th_area_wot;
+      Q[Q_AIDLE] = P.a_idle > 0 ? P.a_idle : 2.0e-5; Q[Q_FIDLE] = P.fast_idle; Q[Q_ROL] = P.ro_loss;
+      Q[Q_J] = c.inertia; Q[Q_F0] = P.fric0; Q[Q_F1] = P.fric1; Q[Q_F2] = P.fric2; Q[Q_FCOLD] = P.fric_cold;
+      var vlock = c.st_kind === 'ford_pe' ? 5.0 : 3.5, Rm = vlock / c.st_i_lock, wfree = c.st_free_rpm * 2 * Math.PI / 60;
+      Q[Q_STG] = c.st_ratio; Q[Q_STRM] = Rm; Q[Q_STRB] = c.r_batt;
+      Q[Q_STKE] = (c.st_v_test - c.st_i_free * Rm) / wfree; Q[Q_STIF] = c.st_i_free; Q[Q_STJM] = 2.5e-4; Q[Q_STIS] = c.st_i_sat;
+      Q[Q_TEETH] = c.st_teeth; Q[Q_VBAT] = c.v_batt; Q[Q_NSEG] = 22; Q[Q_SOLID] = c.lifters === 'solid' ? 1.0 : 0.0;
+      Q[Q_KJET] = P.k_jet; Q[Q_VAC] = c.v_ac; Q[Q_LTH] = c.th_len; Q[Q_RTH] = P.r_th;
+      var asn = Math.PI * c.sn_d * c.sn_d / 4;
+      Q[Q_SNM] = RHO_AIR * (c.sn_len + 0.85 * c.sn_d) / asn; Q[Q_SNR] = 0.1 * RHO_AIR * C_AIR / asn;
+      Q[Q_SPARK0] = c.spark0; Q[Q_TAILA] = Math.PI * c.pipe_d * c.pipe_d / 4; Q[Q_DWT] = P.dw_tau; Q[Q_KNL] = P.k_nl;
+      return Q;
+    };
+    V8pSynth.prototype._pipes = function () {
+      var P = this.P, fs = this.fs, S = this.S, tp = S[S_TPRIM], tt = S[S_TTAIL], tm = T_AMB + 0.65 * (tp - T_AMB), p, nd;
+      var tail = {};
+      for (nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 2) tail[this.NODE[nd * this.NW + 3]] = 1;
+      for (p = 0; p < this.NP; p++) {
+        var g = this.PG[p], L = g[0], d = g[1], A = g[2], grp = g[3], pack = g[4];
+        var T = grp === 0 ? tp : (grp === 1 ? tm : tt), c = Math.sqrt(G_EX * R_GAS * T);
+        var Le = L + (tail[p] ? 0.61 * d / 2 : 0.0), f = p * NF;
+        this.PF[f + F_C] = c; this.PF[f + F_A] = A;
+        this.PF[f + F_D] = Math.min(Math.max(Le / c * fs, 1.0), DL - 4);
+        this.PF[f + F_GAIN] = Math.exp(-P.wall * L / d);
+        this.PF[f + F_LP] = Math.min(0.9, P.hf * L / d + pack * P.pack);
+      }
+      for (nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 2) {
+        var pq = this.NODE[nd * this.NW + 3], a = this.PG[pq][1] / 2, fc = this.PF[pq * NF + F_C] / (2 * Math.PI * a);
+        this.NA[nd * 2 + 1] = 1.0 - Math.exp(-2 * Math.PI * Math.min(fc, 0.45 * fs) / fs);
+      }
+    };
+    V8pSynth.prototype._listener = function (name, keepState) {
+      var c = this.c, P = this.P, fs = this.fs, pr = perspective(c, name), rows = [], e, s;
+      this.persp = pr; this.posName = name;
+      var srcs = [c.mouth[0], c.mouth[1], c.intake, c.covers[0], c.covers[1], c.starter_pos];
+      for (e = 0; e < 2; e++) for (s = 0; s < srcs.length; s++) {
+        var ear = pr.ears[e], pos = srcs[s], front = s >= 2, r = dist(ear, pos);
+        if (pr.outside) {
+          var sh = 1.0;
+          if (front && !pr.bay) sh = pr.shadow;
+          if (!front && pr.bay) sh = P.bay_exh;
+          rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
+          var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
+          rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0]);
+        } else rows.push([s, e, 1.0 / Math.max(r, 0.25), r / C_AIR * fs, front ? 2 : 1]);
+      }
+      this.NPATH = rows.length; this.PATH = new Float64Array(rows.length * 5);
+      rows.forEach(function (rw, j) { for (var t = 0; t < 5; t++) this.PATH[j * 5 + t] = rw[t]; }, this);
+      var BQ = [rbj('bp', 2300.0, 10.0, fs), rbj('bp', 4300.0, 14.0, fs), rbj('bp', 950.0, 6.0, fs), rbj('bp', 2200.0, 8.0, fs),
+        rbj('lp', P.f_floor, 0.707, fs), rbj('lp', P.f_floor, 0.707, fs), rbj('lp', P.f_fw, 0.707, fs), rbj('lp', P.f_fw, 0.707, fs)];
+      var modes = [C_AIR / (2 * c.cabin_len), C_AIR / (2 * c.cabin_h)];
+      modes.forEach(function (f) { var b = rbj('bp', f, P.cab_q, fs), h = P.cab_q * 0.5; BQ.push([b[0] * h, b[1] * h, b[2] * h, b[3], b[4]]); });
+      this.BQ = new Float64Array(BQ.length * 5);
+      BQ.forEach(function (b, j) { for (var t = 0; t < 5; t++) this.BQ[j * 5 + t] = b[t]; }, this);
+      if (!keepState || !this.BS) { this.BS = new Float64Array(80); this.H = new Float64Array(NSRC * HB); }
+      if (!this.PST) this.PST = new Float64Array(8);
+      var fka = C_AIR / (2 * Math.PI * c.pipe_d / 2);
+      this.PV = new Float64Array([RHO_AIR / (4 * Math.PI), P.k_int, 0.02 * P.k_tick, 0.05 * P.k_st, P.k_cab, 0.25 * P.gain,
+        pr.outside ? 0.0 : modes.length, 1.0 - Math.exp(-2 * Math.PI * fka / fs), P.k_hiss,
+        1.0 - Math.exp(-2 * Math.PI * 1500.0 / fs), 1.0 - Math.exp(-2 * Math.PI * 7000.0 / fs)]);
+    };
+    V8pSynth.prototype.cloneWithListener = function (lis) {
+      var o = Object.create(V8pSynth.prototype); Object.assign(o, this);
+      ['S', 'CY', 'PF', 'AB', 'BB', 'AT', 'NA', 'K', 'PST'].forEach(function (a) { o[a] = this[a].slice(); }, this);
+      o.out = new Float64Array(256 * NO); o.game = Object.assign({}, this.game);
+      o.ctlr = this.ctlr.clone(o);
+      o.BS = null; o.listener = lis; o._listener((lis && lis.position) || 'rear');
+      return o;
+    };
+    V8pSynth.prototype.setRunning = function (rpm) {
+      this.S[S_W] = rpm * 2 * Math.PI / 60; this.S[S_PMAN] = 0.4 * P_ATM; this.pw = 1.0;
+      this.S[S_TPRIM] = T_AMB + (this.P.t_prim0 - T_AMB); this.S[S_TTAIL] = T_AMB + 0.4 * (this.S[S_TPRIM] - T_AMB);
+      this.ctlr.setRunning(); this._pipes();
+    };
+    V8pSynth.prototype._thermal = function (dtb, firing) {
+      var P = this.P, S = this.S, pr = S[S_PMAN] / P_ATM, rpm = S[S_W] * 60 / (2 * Math.PI);
+      var tl = firing ? pr * (0.5 + 0.5 * Math.min(1.0, rpm / 4000.0)) : 0.0;
+      this.load += (tl - this.load) * Math.min(1.0, dtb / 1.5);
+      if (firing) this.pw += (1.0 - this.pw) * dtb / 25.0; else this.pw -= this.pw * dtb / 200.0;
+      var tg = firing ? (T_AMB + (P.t_prim0 + P.t_prima * this.load - T_AMB) * (0.6 + 0.4 * this.pw)) : T_AMB + 40.0 * this.pw;
+      S[S_TPRIM] += (tg - S[S_TPRIM]) * Math.min(1.0, dtb / 0.4);
+      var tt = T_AMB + (0.25 + 0.2 * this.pw) * (S[S_TPRIM] - T_AMB);
+      S[S_TTAIL] += (tt - S[S_TTAIL]) * Math.min(1.0, dtb / 1.0);
+    };
+    /** one block (n <= 256) -> L/R at off; game = { running, starter, warm, gear } or null (offline 'run' mode) */
+    V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {
+      var dtb = n / this.fs, K = this.ctlr.step(dtb, rpm, thr, game), out = this.out, i;
+      for (i = 0; i < n * NO; i++) out[i] = 0.0;
+      if (this.ctlr.click) { out[O_ST] += this.ctlr.click; this.ctlr.click = 0.0; }
+      if (this.ctlr.silent) { for (i = 0; i < n; i++) { L[off + i] = 0; R[off + i] = 0; } return; }
+      var nf0 = this.S[S_NFIRE];
+      kv8(n, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
+      var firing = K[K_IGN] > 0.5 && (this.S[S_NFIRE] > nf0 || this.ctlr.recentFire());
+      this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
+      this._thermal(dtb, firing); this._pipes();
+      post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off);
+    };
+    // ---- EngineVoice / ListenerSource interface
+    V8pSynth.prototype.render = function (n, rpm, thr, L, R, off) {
+      off = off || 0;
+      var gm = this.selfGated ? this.game : null;
+      for (var s = 0; s < n;) { var m = Math.min(256, n - s); this.block(m, rpm, thr, gm, L, R, off + s); s += m; }
+    };
+    V8pSynth.prototype.ctl = function (m) {
+      var g = this.game;
+      if (m.running !== undefined) { g.running = !!m.running; g.has = true; }
+      if (m.starter !== undefined) { g.starter = !!m.starter; g.has = true; }
+      if (m.warm !== undefined) g.warm = !!m.warm;
+      if (m.gear !== undefined) g.gear = m.gear;
+    };
+    /** the engine was already running when this source was created (model / car switch) */
+    V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
+    V8pSynth.prototype.report = function () { return this.ctlr.report(); };
+    V8pSynth.prototype.rpmNow = function () { return this.S[S_W] * 60 / (2 * Math.PI); };
+
+    function Ctl(syn, cold) {
+      this.syn = syn; this.phase = 'off'; this.t = 0.0; this.key = false;
+      this.t_key = 0.0; this.t_catch = null; this.t_rel = null; this.t_stop = null;
+      this.handed = false; this.blend = 0.0; this.bt = 0.0; this.coldness = cold ? 1.0 : 0.0;
+      this.revs0 = 0.0; this.nf0 = 0.0; this.wcrank = 0.0; this.ncrank = 0;
+      this.sol = 0.0; this.pin = 0.0; this.click = 0.0; this.silent = true;
+      this.fires = new Float64Array(16); this.fi = 0; this.idle = 0.0; this.lowt = 0.0; this.started_k = false;
+    }
+    Ctl.prototype.clone = function (syn) { var o = Object.create(Ctl.prototype); Object.assign(o, this); o.syn = syn; o.fires = this.fires.slice(); return o; };
+    Ctl.prototype.setRunning = function () {
+      this.phase = 'run'; this.handed = true; this.blend = 1.0; this.t_catch = -100.0; this.t_rel = -100.0;
+      this.coldness = 0.0; this.sol = this.pin = 0.0; this.silent = false; this.key = true; this.fires.fill(1.0);
+    };
+    Ctl.prototype.noteFire = function (n) { this.fires[this.fi] = n; this.fi = (this.fi + 1) % 16; };
+    Ctl.prototype.recentFire = function () { var s = 0; for (var i = 0; i < 16; i++) s += this.fires[i]; return s > 0; };
+    Ctl.prototype.keyOn = function (cold) {
+      if (cold !== null && cold !== undefined) this.coldness = cold ? 1.0 : 0.0;
+      this.phase = 'crank'; this.t_key = this.t; this.t_catch = null; this.t_rel = null; this.t_stop = null;
+      this.handed = false; this.blend = 0.0;
+      this.revs0 = this.syn.S[S_REVS]; this.nf0 = this.syn.S[S_NFIRE]; this.wcrank = 0.0; this.ncrank = 0;
+      this.silent = false; this.key = true;
+      this.click = this.syn.c.st_kind === 'ford_pe' ? 1.2 : 0.0;
+    };
+    Ctl.prototype.keyOff = function () {
+      this.key = false;
+      if (this.phase === 'crank' || this.phase === 'run') {
+        this.phase = 'shut'; this.t_stop = null;
+        if (this.sol > 0.5) this.click += 1.5;
+        this.sol = this.pin = 0.0;
+      }
+    };
+    Ctl.prototype.step = function (dtb, rpm_in, thr_in, game) {
+      var syn = this.syn, P = syn.P, S = syn.S, K = syn.K;
+      this.t += dtb;
+      var ford = syn.c.st_kind === 'ford_pe';
+      if (game && game.has) {
+        var on = !!(game.running || game.starter);
+        if (on && !this.key && (this.phase === 'off' || this.phase === 'stopped' || this.phase === 'shut')) this.keyOn(!game.warm);
+        else if (!on && this.key) this.keyOff();
+      }
+      var ph = this.phase, thr_prev = K[K_THR1], rpm_prev = this.started_k ? K[K_RPM1] : rpm_in;
+      this.started_k = true;
+      K.fill(0.0); K[K_THR0] = thr_prev;
+      var w = S[S_W], rpm = w * 60 / (2 * Math.PI);
+      if (ph === 'crank') {
+        var tc = this.t - this.t_key;
+        if (ford) { if (tc >= 0.03 && this.pin < 0.5) { this.pin = this.sol = 1.0; this.click += 1.6; } }
+        else {
+          if (tc >= 0.0 && this.pin < 0.5) { this.pin = 1.0; this.click += 1.4; }
+          if (tc >= 0.035 && this.sol < 0.5) { this.sol = 1.0; this.click += 0.6; }
+        }
+        var revs = S[S_REVS] - this.revs0, pr = P.prime_rev * (this.coldness > 0.5 ? 1.0 : 0.3);
+        K[K_FIREP] = 1.0 - Math.exp(-Math.max(0.0, revs - 0.3) / pr);
+        if (tc > 6.0) K[K_FIREP] = 1.0;
+        if (S[S_NFIRE] - this.nf0 < 1 && tc > 0.15) { this.ncrank += 1; this.wcrank += (rpm - this.wcrank) / this.ncrank; }
+        if (S[S_NFIRE] - this.nf0 >= 3 && rpm > P.catch_x * Math.max(this.wcrank, 60.0)) { this.phase = 'run'; this.t_catch = this.t; }
+        K[K_IGN] = 1.0; K[K_MODE] = 1.0; K[K_CHOKE] = this.coldness; K[K_COLD] = this.coldness;
+      }
+      if (this.phase === 'run') {
+        var tcat = this.t - this.t_catch;
+        if (this.t_rel === null && tcat >= P.react) { this.t_rel = this.t; if (this.sol > 0.5) this.click += 1.3; this.sol = this.pin = 0.0; }
+        K[K_FIREP] = 1.0; K[K_IGN] = 1.0;
+        var ch = Math.exp(-Math.max(tcat, 0.0) / 14.0);
+        K[K_CHOKE] = this.coldness * ch; K[K_COLD] = this.coldness * ch;
+        if (game && game.has) {
+          var hold = this.coldness > 0.5 ? 1.6 : 1.0;
+          if (!this.handed && (tcat > hold || (tcat > P.react + 0.1 && thr_in > 0.05))) { this.handed = true; this.bt = 0.0; }
+          if (this.handed) { this.bt += dtb; this.blend = Math.min(1.0, this.bt / 0.35); }
+        }
+        if (this.handed) { K[K_MODE] = 0.0; K[K_BLEND] = this.blend; }
+        else { K[K_MODE] = 1.0; this.idle = rpm; }
+      }
+      if (this.phase === 'shut') {
+        K[K_IGN] = 0.0; K[K_MODE] = 1.0;
+        if (game && game.gear && rpm_in > rpm) { K[K_MODE] = 0.0; K[K_BLEND] = 1.0; }
+        if (rpm < 15.0) { this.lowt += dtb; if (this.lowt > 0.15) { this.phase = 'stopped'; S[S_W] = 0.0; this.t_stop = this.t; this.click += 0.5; } }
+        else this.lowt = 0.0;
+      }
+      if (this.phase === 'stopped' && this.t - this.t_stop > 0.6) this.phase = 'off';
+      if (this.phase === 'off') this.silent = true;
+      K[K_SOL] = this.sol; K[K_PIN] = this.pin; K[K_THR1] = thr_in;
+      K[K_RPM0] = rpm_prev; K[K_RPM1] = rpm_in;
+      return K;
+    };
+    Ctl.prototype.report = function () {
+      if (this.phase === 'off') return { phase: 'off', rpm: 0 };
+      var r = this.syn.S[S_W] * 60 / (2 * Math.PI);
+      return { phase: this.phase, rpm: r, idle: this.idle, handed: this.handed, cold: this.coldness > 0.5 };
+    };
+
+    function Synth(spec, listener, fs, opts) { return new V8pSynth(spec, listener, fs, opts); }
+    return { id: 'v9p', label: 'v9.11 physics (V8)', Synth: Synth, synthOpts: { mode: 'game' }, startup: true, positions: ['rear', 'in_cabin'],
+      V8pSynth: V8pSynth, DATA: DATA, perspective: perspective, buildNet: buildNet };
   }]);
