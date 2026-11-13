@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.10.9)</title>
+<title>Street Rod: engine sound + driving demo (v1.10.10)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -7150,7 +7150,9 @@ var EngineParams = (function () {
     P.blower = { ratio: GE.drive_ratio, lobes: GE.blower_lobes, z: GE.blade_z.slice(), prMax: GE.pr_max, d: [0.20, 0.17], gear: [83, 20] };
     note(P, 'blower', 'Two-stage centrifugal blower at ' + GE.drive_ratio + '\u00d7 crank, ' + GE.blade_z.join(' + ') + ' blades (vane counts are a model assumption); impeller \u00d8 and the 83:20 step-up gear (= ' + (83 / 20).toFixed(2) + ':1) are assumed.', true);
     P.parts = { block: true, pistons: true, rods: true, crank: true, valvesEx: true, valvesIn: true, cams: true, stubs: true, headers: false, collector: false, crossover: false,
-      blower: true, centreGear: true, starter: false, fan: false, charging: false, carb: false, glow: true };
+      blower: true, centreGear: true, starter: false, fan: false, charging: false, carb: false, bay: true, ancillaries: true, glow: true };
+    note(P, 'bayLayout', 'Bay layout (v1.10.10): twin-choke SU carburettor (one body, two opposed pistons) feeding the first blower stage, induction manifold in the vee with a short runner to each inlet port (inlets inside the vee, exhaust stubs outside), four Lucas magnetos (each firing four cylinders, driven from the camshafts), radiator behind the nose grille. Sources: Wikipedia \u201cBritish Racing Motors V16\u201d; Octane / D. Lillywhite \u201cEngland expects\u201d (Hall & Hall strip-down); Motor Sport, X-Ray spec: BRM V16 (Sept 2004); britishracingmotors.co.uk (supercharger strip-down). No open-engine photo of a P30 was available under a free licence, so positions are read from these descriptions.', false);
+    note(P, 'bayAssumed', 'Assumed: the SU and magneto positions (magnetos drawn at the outer ends of the inlet camshafts), runner and radiator sizes. Not changed to match the real car, because they are model dimensions: the impeller diameters (drawn 200 / 170 mm; Rolls-Royce 6 in. / 5.5 in. = 152 / 140 mm) and the level, centred engine (the real engine is angled so the propshaft passes left of the driver).', true);
     note(P, 'starter', 'No electric starter (push / external start), so the starter is switched off.', false);
     note(P, 'misc', 'Assumed: crank height 0.28 m, piston compression height, head and block sizes (shell only).', true);
     P.src = { bore: 'kernel GEOM', stroke: 'kernel GEOM', conrod: 'kernel GEOM (guess in brm9.py)', cr: 'kernel GEOM', fire: 'kernel fire_order', x: 'kernel stubXyz' };
@@ -7204,7 +7206,14 @@ var EngineParams = (function () {
     } else note(P, 'starter', 'No start-up data loaded: starter / charging switched off.', false);
     note(P, 'misc', 'Assumed: bank stagger, crank height, fan \u00d8, primary-pipe \u00d8, block / head shells, carb and air-cleaner size.', true);
     P.parts = { block: true, pistons: true, rods: true, crank: true, valvesEx: true, valvesIn: true, cams: true, stubs: false, headers: true, collector: hd !== 'log', crossover: P.headers.crossover === 'h',
-      blower: false, centreGear: false, starter: !!P.starter, fan: true, charging: !!P.charging, carb: true, glow: true };
+      blower: false, centreGear: false, starter: !!P.starter, fan: true, charging: !!P.charging, carb: true, bay: true, ancillaries: true, glow: true };
+    if (key === 'GT350') {
+      note(P, 'bayLayout', 'Bay layout (v1.10.10, 1967 Shelby GT350): Cobra finned valve covers, round chromed 289 Hi-Po open-element air cleaner on the Holley 715 (the oval finned Cobra cleaner was the 1967 GT500 / 1968 part), distributor at the front of the intake, alternator on the right-hand head, power-steering pump low on the left, shock towers with the Monte Carlo bar across and the export brace to the cowl, battery right front, power-brake booster and master cylinder on the left of the firewall, radiator ahead of the fan. Sources: 1967 Shelby GT350 / GT500 spec sheet and brochure (\u201cexport front end reinforcement \u2026 Monte Carlo reinforcement bar\u201d); NVSAAC 1967 Shelby information and air-cleaner pages; SAAC forum (export braces, 1967 battery); vintage-mustang.com (289 alternator mounting); photos: Commons \u201cShelby Mustang GT350 engine.jpg\u201d (CC BY-SA 3.0), \u201c1968 Shelby GT350 engine.JPG\u201d (Stephen Foskett, CC BY-SA 3.0), Flickr \u201cGT350 289 from ahead\u201d (wbaiv, CC BY-SA 2.0), Commons \u201c289 V8 engine in 65 Ford Mustang.jpg\u201d (Kaleodu, CC BY 4.0).', false);
+      note(P, 'bayAssumed', 'Assumed: tower, battery, booster and radiator sizes and exact positions. Not changed, because they are sound-model settings: the drawn tubular (Tri-Y) headers; a stock 1967 GT350 had cast-iron manifolds with headers optional.', true);
+    } else {
+      note(P, 'bayLayout', 'Bay layout (v1.10.10, 1959 Cadillac 390): stamped valve covers, single Carter AFB four-barrel, distributor at the rear of the engine, canister oil filter top left near the front (1959 only), power-steering pump with its reservoir at the front right above the water pump, generator high on the right, battery left front, large power-brake booster on the left of the firewall, wide radiator, no shock towers. Sources: 1959 Cadillac specifications (\u201cdry-pack type air cleaner; intake silencer\u201d), 1959 Cadillac shop manual contents; CLC forum (1959 390 identification: oil filter; 1959 battery thread: battery on the left of a US car); teambuick.com engine identification (Cadillac distributor at the rear, starter on the right); photos: Commons \u201c1962 Cadillac Series 62 390 engine.jpg\u201d (CC BY-SA 3.0), \u201c1960 Cadillac Series 62 Engine.jpg\u201d (Martin Pettitt, CC BY 2.0).', false);
+      note(P, 'bayAssumed', 'Assumed: battery, booster, pump and radiator sizes and exact positions. The air cleaner follows the sound model (oil bath on v2 / v4, a heavy-duty option in 1959; dry-pack with intake silencer otherwise), which is not changed.', true);
+    }
     note(P, 'blower', 'Naturally aspirated: supercharger switched off.', false);
     return P;
   }
@@ -7344,7 +7353,11 @@ var EngineBay = (function () {
     var G = function (c, op) { return new T.MeshLambertMaterial({ color: c, transparent: true, opacity: op, depthWrite: false, side: T.DoubleSide }); };
     return { steel: L(0x8f979f), crank: L(0x6f7780), rod: L(0xb9c0c8), piston: L(0xd9d6cc), valveEx: L(0xd08a4c, { emissive: 0x2a1406 }), valveIn: L(0xd2d8de, { emissive: 0x16191c }), cam: L(0x7a6f60),
       stub: L(0x8a6648), header: L(0x5d6166), pipe: L(0x6c6f72), gear: L(0xa08a50), impeller: L(0xd9b04a, { emissive: 0x2a1e06 }), fan: L(0x4a4d52), starter: L(0x3a3d42), alt: L(0x9aa0a6),
-      carb: G(0xb9a77a, 0.45), plate: L(0x6c5a3a), cleaner: G(0x30353c, 0.35), shell: G(0x7c8794, 0.16), head: G(0x9aa6b2, 0.22), casing: G(0xaeb4ba, 0.3), shellB: G(0xc6d0d8, 0.5), wallB: G(0x9aa6b2, 0.32), cut: L(0xc0392b, { emissive: 0x300a06 }), rim: L(0x3b4046), impDisc: L(0x4a4038), floor: L(0x2a2420) };
+      carb: G(0xb9a77a, 0.45), plate: L(0x6c5a3a), cleaner: G(0x30353c, 0.35), shell: G(0x7c8794, 0.16), head: G(0x9aa6b2, 0.22), casing: G(0xaeb4ba, 0.3), shellB: G(0xc6d0d8, 0.5), wallB: G(0x9aa6b2, 0.32), cut: L(0xc0392b, { emissive: 0x300a06 }), rim: L(0x3b4046), impDisc: L(0x4a4038), floor: L(0x2a2420),
+      // v1.10.10 (job 7) engine-bay layout: body panels are glass so they never hide the engine; ancillaries opaque
+      body: G(0x5a626c, 0.13), bodyEdge: L(0x30353b), chrome: L(0xdfe4e8, { emissive: 0x15171a }), battery: L(0x1f2226), batTop: L(0x3a3e44), terminal: L(0xb04030),
+      radCore: G(0x4d463d, 0.32), radTank: G(0x575b60, 0.4), booster: L(0xa3a8ac), hose: L(0x1c1e21), vcFord: G(0x2b2d31, 0.42), vcCad: G(0x2d4c8e, 0.4),
+      pump: L(0x2f4f86), filter: L(0x2f4f86), dist: L(0x1d1f22), mag: L(0x25272b), su: L(0xc4bfb2), brace: L(0x3a3f45) };
   }
 
   // ---------------------------------------------------------------- build the bay for one parameter set
@@ -7592,7 +7605,13 @@ var EngineBay = (function () {
       up.plates = [];
       var nb = P.carb.count * P.carb.barrels, br = 0.0215;
       for (i = 0; i < nb; i++) { var pt = new T.Mesh(cyl(br, br, 0.002, 16), M.plate); pt.position.set(cxC + (i % 2 ? 0.035 : -0.035), topY + 0.045, (i < 2 ? 0.032 : -0.032)); g.add(pt); up.plates.push(pt); }
-      var ac = P.carb.cleaner === 'oilbath' ? merge([(function () { var s = cyl(0.15, 0.15, 0.15, segs, true); s.translate(cxC, topY + 0.16, 0); return s; })(), (function () { var s = cyl(0.15, 0.06, 0.04, segs); s.translate(cxC, topY + 0.255, 0); return s; })()])
+      var ac = P.car === 'caddy' ? (P.carb.cleaner === 'oilbath'
+        // v1.10.10: 1959-60 Cadillac heavy-duty oil-bath cleaner (round can, wider domed lid; 1960 Series 62 photo) when the sound model says oil bath,
+        ? merge([(function () { var s2 = cyl(0.15, 0.15, 0.13, segs, true); s2.translate(cxC, topY + 0.15, 0); return s2; })(), (function () { var s2 = cyl(0.175, 0.175, 0.025, segs); s2.translate(cxC, topY + 0.228, 0); return s2; })(),
+          (function () { var s2 = cyl(0.07, 0.11, 0.03, segs); s2.translate(cxC, topY + 0.255, 0); return s2; })()])
+        // otherwise the standard 1959 dry-pack cleaner with intake silencer (1959 Cadillac specifications: 'dry-pack type air cleaner; intake silencer')
+        : merge([(function () { var s2 = cyl(0.2, 0.2, 0.075, segs, true); s2.translate(cxC, topY + 0.12, 0); return s2; })(), (function () { var s2 = cyl(0.2, 0.2, 0.004, segs); s2.translate(cxC, topY + 0.158, 0); return s2; })(),
+          (function () { var s2 = cyl(0.045, 0.05, 0.16, segs, true); s2.rotateZ(-Math.PI / 2); s2.translate(cxC + 0.27, topY + 0.12, 0); return s2; })()])) : P.carb.cleaner === 'oilbath' ? merge([(function () { var s = cyl(0.15, 0.15, 0.15, segs, true); s.translate(cxC, topY + 0.16, 0); return s; })(), (function () { var s = cyl(0.15, 0.06, 0.04, segs); s.translate(cxC, topY + 0.255, 0); return s; })()])
         : merge([(function () { var s = cyl(0.18, 0.18, 0.06, segs, true); s.translate(cxC, topY + 0.12, 0); return s; })(), (function () { var s = cyl(0.18, 0.18, 0.004, segs); s.translate(cxC, topY + 0.152, 0); return s; })()]);
       g.add(new T.Mesh(ac, M.cleaner));
     }
@@ -7604,13 +7623,18 @@ var EngineBay = (function () {
       var pul = cyl(0.075, 0.075, 0.02, segs); pul.rotateZ(Math.PI / 2); pul.translate(xmax + 0.06, 0, 0); crank.add(new T.Mesh(pul, M.steel));
     }
     if (parts.charging && P.charging) {
-      var ag = new T.Group(), az = (P.car === 'caddy' ? 1 : -1) * 0.2; ag.position.set(xmax + 0.02, H + 0.2, az); g.add(ag); up.alt = ag;
+      // v1.10.10 (job 7): right-hand (passenger) side on both cars: 289 Hi-Po alternator on the RH head (Mustang / vintage-mustang.com),
+      // Cadillac 390 generator high on the RH side (1962 390 photo, Commons). Size, ratio and fan from the start-up data, unchanged.
+      var ag = new T.Group(), az = 0.2; ag.position.set(xmax + 0.02, H + 0.2, az); g.add(ag); up.alt = ag;
       var al = [(function () { var s = cyl(P.charging.type === 'generator' ? 0.06 : 0.065, P.charging.type === 'generator' ? 0.06 : 0.065, P.charging.type === 'generator' ? 0.22 : 0.13, segs); s.rotateZ(Math.PI / 2); s.translate(-0.08, 0, 0); return s; })()];
       g.add((function () { var m = new T.Mesh(merge(al), M.alt); m.position.copy(ag.position); return m; })());
       var ap = [(function () { var s = cyl(0.04, 0.04, 0.018, 16); s.rotateZ(Math.PI / 2); s.translate(0.03, 0, 0); return s; })()];
       for (i = 0; i < P.charging.fanBlades; i++) { var ab = new T.BoxGeometry(0.012, 0.03, 0.003); ab.translate(0.012, 0.035, 0); ab.rotateX(i / P.charging.fanBlades * Math.PI * 2); ap.push(ab); }
       ag.add(new T.Mesh(merge(ap), M.gear));
     }
+    // ---- v1.10.10 (job 7): the rest of the engine bay, per car, from photos and period descriptions (sources in engine-params notes) ----
+    up.bayItems = [];
+    if (parts.bay || parts.ancillaries) layout(P, g, up, parts, { H: H, b: b, r: r, deck: deck, xmin: xmin, xmax: xmax, U: U, W: W, C0: C0, segs: segs, lite: lite });
     // ---- glow sprites: combustion (per chamber) and exhaust (stub mouth / header port) ----
     up.glowC = []; up.glowE = [];
     if (parts.glow) {
@@ -7627,12 +7651,115 @@ var EngineBay = (function () {
     g.updateMatrixWorld(true);
     g.traverse(function (o) {
       if (!o.geometry || o === fl || o.isSprite || o.isInstancedMesh || o.geometry.attributes.position.count < 3) return;
+      if (o.userData.noFrame) return;   // v1.10.10: body panels / radiator / braces do not change the framing of the engine
       if (o.material && o.material.isMeshBasicMaterial) return;
       o.geometry.computeBoundingBox(); var bb = o.geometry.boundingBox, mw = o.matrixWorld;
       [bb.min, bb.max].forEach(function (pp) { var q = pp.clone().applyMatrix4(mw); lo.min(q); hi.max(q); });
     });
     lo.y = Math.max(lo.y, 0); up.center = lo.clone().add(hi).multiplyScalar(0.5); up.size = hi.clone().sub(lo).length() * 0.5;
     return { group: g, up: up };
+  }
+
+  // ---------------------------------------------------------------- v1.10.10 (job 7): engine-bay layout per car
+  // Only ancillaries and bay parts are placed here; nothing in this function reads back into, or changes, a model dimension (bore, stroke,
+  // rods, crank, cylinders, bank angle, firing order, valve / cam / stub / header / blower geometry or the block, head and moving-part sizes).
+  // Positions follow photos and period descriptions (P.notes 'bayLayout' lists the sources); sizes not in any source are marked assumed there.
+  // Body panels, radiator and braces are glass or thin so the engine stays readable, and are left out of the camera framing (noFrame).
+  function layout(P, g, up, parts, k) {
+    var M = st.M, H = k.H, b = k.b, xmin = k.xmin, xmax = k.xmax, segs = k.segs, sg = k.lite ? 10 : 16;
+    var add = function (name, list, mat, noFrame, part) {
+      if (!parts[part]) return null; list = list.filter(Boolean); if (!list.length) return null;
+      var m = new T.Mesh(merge(list), mat); if (noFrame) m.userData.noFrame = true; m.name = 'bay:' + name; g.add(m); up.bayItems.push(name); return m;
+    };
+    var cylX = function (rr, len, x, y, z, s) { var c = cyl(rr, rr, len, s || sg); c.rotateZ(Math.PI / 2); c.translate(x, y, z); return c; };
+    var cylY = function (r1, r2, h, x, y, z, s, open) { var c = cyl(r1, r2, h, s || sg, open); c.translate(x, y, z); return c; };
+    var cylZ = function (rr, len, x, y, z, s) { var c = cyl(rr, rr, len, s || sg); c.rotateX(Math.PI / 2); c.translate(x, y, z); return c; };
+    var bx = function (w, h, d, x, y, z) { return boxAt(w, h, d, x, y, z); };
+    var pt = function (x, y, z) { return v3(x, y, z); };
+    var hose = function (pts, rr) { return tube(smooth(pts, 2), rr, k.lite ? 6 : 8); };
+    var topY = H + Math.cos(P.vAngle / 2 * D2R) * (k.deck + 0.55 * b) + 0.02;
+    // valve-cover tops: on each head's top face (the head box is unchanged: deck .. deck + 0.55 b along the bank axis)
+    var coverOn = function (bk, hgt, fins, mat) {
+      var u = k.U[bk], x0 = Infinity, x1 = -Infinity, c;
+      for (c = 0; c < P.nCyl; c++) if (P.bank[c] === bk) { x0 = Math.min(x0, P.x[c]); x1 = Math.max(x1, P.x[c]); }
+      var L = x1 - x0 + 1.0 * b, wdt = 1.35 * b, list = [], base = k.deck + 0.55 * b;
+      var shell = new T.BoxGeometry(L, hgt, wdt); shell.translate((x0 + x1) / 2, base + hgt / 2, 0); list.push(place(shell, v3(0, H, 0), u));
+      for (var f = 0; f < fins; f++) { var fz = (f + 0.5) / fins * wdt - wdt / 2, fb = new T.BoxGeometry(L * 0.86, 0.008, 0.004); fb.translate((x0 + x1) / 2, base + hgt + 0.004, fz); list.push(place(fb, v3(0, H, 0), u)); }
+      return list;
+    };
+    if (P.car === 'gt350') {
+      // 1967 Shelby GT350 (Mustang unit body): Cobra finned valve covers (black crinkle, 1967), round chrome 289 Hi-Po open-element
+      // cleaner on the Holley 715 (lid detail here; element in the carb block), Holley front / rear float bowls, distributor at the
+      // front of the intake, shock towers with the Monte Carlo bar across and the export brace back to the cowl, battery right front,
+      // brake booster + dual master cylinder on the left of the firewall, radiator, hoses, power-steering pump low on the left.
+      var cx0 = 0.5 * (xmin + xmax) * 0.3, tx = 0.30, tz = 0.47, tTop = 0.80, fw = xmin - 0.28, fanX = xmax + 0.16, radX = fanX + 0.09;
+      add('valve covers', coverOn(0, 0.028, 9, M.vcFord).concat(coverOn(1, 0.028, 9, M.vcFord)), M.vcFord, false, 'ancillaries');
+      add('Hi-Po air cleaner lid + Holley bowls', [cylY(0.17, 0.11, 0.022, cx0, topY + 0.165, 0), cylY(0.012, 0.012, 0.03, cx0, topY + 0.185, 0, 8),
+        bx(0.03, 0.06, 0.11, cx0 + 0.09, topY + 0.04, 0), bx(0.03, 0.06, 0.11, cx0 - 0.09, topY + 0.04, 0)], M.chrome, false, 'ancillaries');
+      add('distributor', [cylY(0.028, 0.028, 0.07, xmax - 0.0, topY - 0.02, 0.0), cylY(0.048, 0.04, 0.045, xmax - 0.0, topY + 0.035, 0.0)], M.dist, false, 'ancillaries');
+      add('power-steering pump', [cylX(0.05, 0.09, xmax + 0.07, H + 0.07, -0.17), cylY(0.035, 0.035, 0.05, xmax + 0.07, H + 0.14, -0.17, 10), cylX(0.06, 0.012, xmax + 0.125, H + 0.07, -0.17)], M.pump, false, 'ancillaries');
+      add('radiator', [bx(0.05, 0.46, 0.62, radX, 0.53, 0), bx(0.07, 0.06, 0.64, radX, 0.79, 0), cylY(0.022, 0.022, 0.03, radX, 0.835, 0.16, 10)], M.radCore, true, 'bay');
+      add('radiator hoses', [hose([pt(xmax - 0.02, topY - 0.03, 0.06), pt(xmax + 0.12, topY - 0.02, 0.1), pt(radX - 0.04, 0.77, 0.2)], 0.019),
+        hose([pt(xmax + 0.04, H + 0.03, -0.06), pt(xmax + 0.14, H - 0.02, -0.16), pt(radX - 0.04, 0.33, -0.24)], 0.021)], M.hose, false, 'bay');
+      add('battery (right front)', [bx(0.17, 0.23, 0.26, radX - 0.02, 0.475, tz - 0.01), bx(0.012, 0.36, 0.012, radX - 0.02, 0.43, tz + 0.11)], M.battery, true, 'bay');
+      add('battery terminals', [cylY(0.012, 0.012, 0.025, radX - 0.06, 0.6, tz - 0.09, 8), cylY(0.012, 0.012, 0.025, radX - 0.06, 0.6, tz + 0.07, 8)], M.terminal, true, 'bay');
+      add('shock towers + inner fenders', [cylY(0.07, 0.13, tTop - 0.33, tx, (tTop + 0.33) / 2, -tz - 0.04, sg, true), cylY(0.07, 0.13, tTop - 0.33, tx, (tTop + 0.33) / 2, tz + 0.04, sg, true),
+        bx(radX - fw, 0.46, 0.004, (radX + fw) / 2, 0.57, -0.64), bx(radX - fw, 0.46, 0.004, (radX + fw) / 2, 0.57, 0.64),
+        bx(0.004, 0.56, 1.28, fw, 0.6, 0), bx(0.14, 0.004, 1.28, fw + 0.06, 0.88, 0)], M.body, true, 'bay');
+      // Monte Carlo bar: tower top to tower top just ahead of the air cleaner, a shallow drop in the middle; export brace: towers to the cowl
+      add('Monte Carlo bar + export brace', [hose([pt(tx, tTop, -tz), pt(tx, tTop - 0.035, -0.15), pt(tx, tTop - 0.04, 0), pt(tx, tTop - 0.035, 0.15), pt(tx, tTop, tz)], 0.013),
+        segBetween(pt(tx, tTop, -tz), pt(fw + 0.05, 0.87, -0.14), 0.011, 8), segBetween(pt(tx, tTop, tz), pt(fw + 0.05, 0.87, 0.14), 0.011, 8),
+        bx(0.05, 0.012, 0.36, fw + 0.05, 0.87, 0)], M.brace, true, 'bay');
+      add('shock-tower caps', [cylY(0.075, 0.075, 0.012, tx, tTop + 0.006, -tz - 0.04, sg), cylY(0.075, 0.075, 0.012, tx, tTop + 0.006, tz + 0.04, sg)], M.body, true, 'bay');
+      add('brake booster + master cylinder (left)', [cylX(0.115, 0.11, fw + 0.06, 0.70, -0.40, sg), cylX(0.035, 0.15, fw + 0.19, 0.70, -0.40, 10), bx(0.1, 0.05, 0.08, fw + 0.2, 0.75, -0.40)], M.booster, false, 'bay');
+    } else if (P.car === 'caddy') {
+      // 1959 Cadillac 390: stamped valve covers (Cadillac blue), oil-bath or dry-pack cleaner (carb block), distributor at the REAR,
+      // canister oil filter top left near the front (1959 only), power-steering pump with its reservoir at the front right above the
+      // water pump, generator high on the right (charging block), battery left front, big power-brake booster on the left of the firewall,
+      // wide radiator, inner fender aprons and firewall. No shock towers (coil springs on the lower arms).
+      var fw2 = xmin - 0.3, fanX2 = xmax + 0.16, radX2 = fanX2 + 0.1, cx1 = 0.5 * (xmin + xmax) * 0.3;
+      add('valve covers', coverOn(0, 0.034, 3, M.vcCad).concat(coverOn(1, 0.034, 3, M.vcCad)), M.vcCad, false, 'ancillaries');
+      add('distributor (rear)', [cylY(0.028, 0.028, 0.07, xmin - 0.02, topY - 0.02, 0.0), cylY(0.05, 0.042, 0.045, xmin - 0.02, topY + 0.035, 0.0)], M.dist, false, 'ancillaries');
+      add('oil filter canister (left front)', [cylY(0.05, 0.05, 0.16, xmax - 0.02, topY + 0.02, -0.15), cylY(0.052, 0.052, 0.012, xmax - 0.02, topY + 0.105, -0.15)], M.filter, false, 'ancillaries');
+      add('power-steering pump + reservoir (right front)', [cylX(0.065, 0.09, xmax + 0.06, H + 0.24, 0.07), cylY(0.04, 0.04, 0.07, xmax + 0.04, H + 0.33, 0.07, 10), cylX(0.075, 0.012, xmax + 0.12, H + 0.24, 0.07)], M.pump, false, 'ancillaries');
+      add('Carter AFB choke + air horn', [cylZ(0.022, 0.03, cx1 + 0.03, topY + 0.04, 0.085, 10)], M.chrome, false, 'ancillaries');
+      add('radiator', [bx(0.06, 0.52, 0.74, radX2, 0.57, 0), bx(0.08, 0.06, 0.76, radX2, 0.86, 0), cylY(0.024, 0.024, 0.03, radX2, 0.905, -0.2, 10)], M.radCore, true, 'bay');
+      add('radiator hoses', [hose([pt(xmax - 0.02, topY - 0.04, 0.0), pt(xmax + 0.12, topY - 0.02, -0.05), pt(radX2 - 0.04, 0.84, -0.12)], 0.021),
+        hose([pt(xmax + 0.04, H + 0.02, 0.06), pt(xmax + 0.15, H - 0.03, 0.18), pt(radX2 - 0.04, 0.35, 0.26)], 0.023)], M.hose, false, 'bay');
+      add('battery (left front)', [bx(0.17, 0.23, 0.31, radX2 - 0.03, 0.47, -0.54)], M.battery, true, 'bay');
+      add('battery terminals', [cylY(0.012, 0.012, 0.025, radX2 - 0.07, 0.6, -0.64, 8), cylY(0.012, 0.012, 0.025, radX2 - 0.07, 0.6, -0.44, 8)], M.terminal, true, 'bay');
+      add('inner fenders + firewall', [bx(radX2 - fw2, 0.5, 0.004, (radX2 + fw2) / 2, 0.6, -0.74), bx(radX2 - fw2, 0.5, 0.004, (radX2 + fw2) / 2, 0.6, 0.74),
+        bx(0.004, 0.6, 1.48, fw2, 0.64, 0), bx(0.16, 0.004, 1.48, fw2 + 0.07, 0.94, 0)], M.body, true, 'bay');
+      add('power-brake booster (left)', [cylX(0.14, 0.13, fw2 + 0.07, 0.78, -0.44, sg), cylX(0.04, 0.16, fw2 + 0.21, 0.78, -0.44, 10), bx(0.1, 0.05, 0.08, fw2 + 0.22, 0.83, -0.44)], M.booster, false, 'bay');
+    } else if (P.car === 'brm') {
+      // BRM P30 Mk II V16: the two-stage Rolls-Royce blower (blower block, unchanged) is fed by the twin-choke SU carburettor (one body,
+      // two opposed pistons: two dashpots) and delivers into the induction manifold in the vee (blower block) with a short runner to each
+      // inlet port (inlets inside the vee, exhausts outside); four Lucas magnetos, each firing four cylinders, driven off the camshafts
+      // (at the outer cam ends here); radiator behind the nose grille, scuttle bulkhead behind the engine.
+      var dk = k.deck, vY = H + (dk + 0.3 * b) * Math.cos(P.vAngle / 2 * D2R) * 0.6 + 0.04, run = [], mags = [], c;
+      for (c = 0; c < P.nCyl; c++) {
+        var bk = P.bank[c], u = k.U[bk], w = k.W[bk];
+        var pin = k.C0.clone().add(u.clone().multiplyScalar(dk + 0.012)).add(w.clone().multiplyScalar(-0.62 * b)).add(v3(up.vOff[c][1].x, 0, 0));
+        var sideZ = Math.sign(u.z) * 0.045;
+        run.push(tube(smooth([v3(pin.x, vY - 0.012, sideZ), v3(pin.x, (vY + pin.y) / 2 + 0.01, (sideZ + pin.z) / 2), pin], 1), 0.0095, k.lite ? 6 : 8));
+      }
+      add('inlet runners (16)', run, M.casing, false, 'ancillaries');
+      for (var bk2 = 0; bk2 < 2; bk2++) {   // intake (inner) cam of each bank: same position rule as the cam block
+        var u2 = k.U[bk2], w2 = k.W[bk2], o = k.C0.clone().add(u2.clone().multiplyScalar(dk + 2.9 * P.exValve.d + 0.012)).add(w2.clone().multiplyScalar(-0.25 * b));
+        var xs2 = []; for (c = 0; c < P.nCyl; c++) if (P.bank[c] === bk2) xs2.push(up.vOff[c][1].x);
+        var s0 = Math.min.apply(null, xs2) - 0.02, s1 = Math.max.apply(null, xs2) + 0.02;
+        [s0 - 0.075, s1 + 0.075].forEach(function (mx) { mags.push(cylX(0.034, 0.11, mx, o.y + 0.012, o.z, 12), cylX(0.038, 0.02, mx + Math.sign(mx) * 0.065, o.y + 0.012, o.z, 12)); });
+      }
+      add('Lucas magnetos (4)', mags, M.mag, false, 'ancillaries');
+      var fx2 = xmax + 0.05, gm = 0.12 / P.blower.gear[0], by = H + gm * P.blower.gear[0] / 2 + gm * P.blower.gear[1] / 2, suX = fx2 + 0.135, suZ = 0.3;
+      add('SU twin-choke carburettor', [bx(0.12, 0.07, 0.09, suX, by, suZ), cylY(0.03, 0.03, 0.07, suX - 0.03, by + 0.07, suZ, 12), cylY(0.03, 0.03, 0.07, suX + 0.03, by + 0.07, suZ, 12),
+        cylY(0.012, 0.012, 0.03, suX - 0.03, by + 0.12, suZ, 8), cylY(0.012, 0.012, 0.03, suX + 0.03, by + 0.12, suZ, 8)], M.su, false, 'ancillaries');
+      add('SU feed to the first-stage eye + air intake', [hose([v3(suX, by, suZ - 0.045), v3(suX, by, 0.2), v3(suX, by, 0.16)], 0.03),
+        hose([v3(suX, by, suZ + 0.045), v3(suX + 0.03, by + 0.02, suZ + 0.09), v3(suX + 0.2, by + 0.05, suZ + 0.05)], 0.034)], M.casing, false, 'ancillaries');
+      var rX = fx2 + 0.55;
+      add('radiator (nose)', [bx(0.05, 0.36, 0.46, rX, 0.36, 0), bx(0.07, 0.05, 0.4, rX - 0.01, 0.565, 0), cylY(0.02, 0.02, 0.03, rX - 0.01, 0.6, 0.0, 10)], M.radCore, true, 'bay');
+      add('scuttle bulkhead', [bx(0.004, 0.5, 0.8, xmin - 0.3, 0.42, 0)], M.body, true, 'bay');
+    }
   }
 
   // ---------------------------------------------------------------- per-frame kinematics
@@ -7734,7 +7861,7 @@ var EngineBay = (function () {
     ['pointerdown', 'touchstart', 'touchmove'].forEach(function (ev) { bar.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
   }
   var PART_NAMES = { block: 'Block / heads (cutaway)', pistons: 'Pistons', rods: 'Con-rods', crank: 'Crankshaft', valvesEx: 'Exhaust valves', valvesIn: 'Intake valves', cams: 'Camshafts', stubs: 'Exhaust stubs',
-    headers: 'Headers / manifolds', collector: 'Collectors', crossover: 'H crossover', blower: 'Supercharger', centreGear: 'Centre gear (split crank)', starter: 'Starter + ring gear', fan: 'Fan', charging: 'Alternator / generator', carb: 'Carburettor + air cleaner', glow: 'Combustion / exhaust glow' };
+    headers: 'Headers / manifolds', collector: 'Collectors', crossover: 'H crossover', blower: 'Supercharger', centreGear: 'Centre gear (split crank)', starter: 'Starter + ring gear', fan: 'Fan', charging: 'Alternator / generator', carb: 'Carburettor + air cleaner', bay: 'Engine bay (body, radiator, battery, bracing)', ancillaries: 'Ancillaries (distributor / magnetos, pumps, valve covers, intake)', glow: 'Combustion / exhaust glow' };
   function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
   function panel() {
     var P = st.bay && st.bay.up.P, el = document.getElementById('bayPanel'); if (!P) return;
@@ -7748,7 +7875,7 @@ var EngineBay = (function () {
       (P.headers ? '<br>' + P.headers.type + ' headers ' + P.headers.len + ' m, pipe \u00d8 ' + mm(P.headers.pipeD) : '') +
       (P.starter ? '<br>starter ' + P.starter.type + ', ring ' + P.starter.ringTeeth + ' teeth, pinion ' + P.starter.pinionTeeth + ' (' + P.starter.ratio + ':1)' : '') + '</div><div class="bayToggles">';
     Object.keys(PART_NAMES).forEach(function (k) {
-      var has = base[k] || (k === 'starter' && P.starter) || (k === 'blower' && P.blower) || (k === 'stubs' && P.stubs) || (k === 'centreGear' && P.centreGear) || ((k === 'headers' || k === 'collector' || k === 'crossover') && P.headers) || ((k === 'fan' || k === 'carb') && P.fan) || (k === 'charging' && P.charging) || ['block', 'pistons', 'rods', 'crank', 'valvesEx', 'valvesIn', 'cams', 'glow'].indexOf(k) >= 0;
+      var has = base[k] || (k === 'starter' && P.starter) || (k === 'blower' && P.blower) || (k === 'stubs' && P.stubs) || (k === 'centreGear' && P.centreGear) || ((k === 'headers' || k === 'collector' || k === 'crossover') && P.headers) || ((k === 'fan' || k === 'carb') && P.fan) || (k === 'charging' && P.charging) || ((k === 'bay' || k === 'ancillaries') && base[k]) || ['block', 'pistons', 'rods', 'crank', 'valvesEx', 'valvesIn', 'cams', 'glow'].indexOf(k) >= 0;
       h += '<label class="' + (has ? '' : 'na') + '"><input type="checkbox" data-part="' + k + '"' + (cur[k] && has ? ' checked' : '') + (has ? '' : ' disabled') + '> ' + PART_NAMES[k] + (has ? '' : ' (not on this car)') + '</label>';
     });
     h += '</div><div class="bayNotes">' + P.notes.map(function (n) { return '<p>' + (n.assumed ? '<b>Assumed:</b> ' : '') + esc(n.text) + '</p>'; }).join('') + '</div>';
@@ -7838,7 +7965,7 @@ var EngineBay = (function () {
     return { fps: +st.fps.toFixed(1), lite: !!st.lite, pr: st.pr, size: [st.w, st.h], calls: R.info.render.calls, tris: R.info.render.triangles, th: +st.th.toFixed(1), src: st.src, drawMs: +st.drawT.toFixed(2),
       car: st.bay && st.bay.up.P.car, parts: st.bay && st.bay.up.parts, autoLite: st.autoLite, perfLite: st.perfLite,
       valves: st.bay ? (st.bay.up.vEx ? st.bay.up.vEx.count : 0) + (st.bay.up.vIn ? st.bay.up.vIn.count : 0) : 0, cams: st.bay ? st.bay.up.cams.length : 0,
-      blades: st.bay ? st.bay.up.bladeCount || 0 : 0, stubs: stubInfo(), housings: st.bay ? st.bay.up.housings || 0 : 0, opt: JSON.parse(JSON.stringify(opt)) };
+      blades: st.bay ? st.bay.up.bladeCount || 0 : 0, bayItems: st.bay ? (st.bay.up.bayItems || []).slice() : [], stubs: stubInfo(), housings: st.bay ? st.bay.up.housings || 0 : 0, opt: JSON.parse(JSON.stringify(opt)) };
   }
   function stubInfo() {   // per-stub direction (unit, from the instance matrix) and length, for the parallelism test
     var u = st && st.bay && st.bay.up; if (!u || !u.stubs) return null;
@@ -8929,6 +9056,7 @@ var ProjectHistory = {
       { v: 'v1.10.7', date: '2026-11-13', status: 'done', text: 'New sound model for the GT350 and the Cadillac: v9p, the newest physics model (the same approach as the BRM\u2019s v9.11, built for each car\u2019s own V8), with an electric starter. Turn the key and you hear each car\u2019s original starter motor crank the engine (about 96 rpm and roughly one second to catch on the GT350, about 76 rpm on the Cadillac, matched to recordings of real start-ups), then the catch, a flare to about 1,200 rpm and the settle to idle. It is in the sound picker for both cars. On a fair comparison with the recordings it does not beat the current sound (GT350 2.13 against 1.85, lower is better; the Cadillac is closer at the tailpipe but loses in the engine bay), so v2 stays the default for both cars and sounds exactly as before. The BRM is unchanged.' },
       { v: 'v1.10.8', date: '2026-11-13', status: 'done', text: 'The 3D engine bay now runs at real engine speed when you open it. Slow motion is still in the bay\u2019s speed menu (auto, 1/10, 1/50, 1/200) and the game remembers what you picked. At real speed the screen cannot keep up with the crank, so the pistons can seem to jump or turn backwards (the wagon-wheel effect); slow motion shows the movement properly. Sound is unchanged.' },
       { v: 'v1.10.9', date: '2026-11-13', status: 'done', text: 'Only two picture styles are left: Ink (the default) and Flat. The old drawn, painted and 3D driving views are gone, together with the pictures only they used. Ink is the closest to the old drawn look. If you had picked one of the removed styles, the game switches to Ink by itself, and old links still work. The 3D engine bay, the sound, the driving and the gearbox are unchanged; v8 stays the BRM sound default and v2 the GT350 and Cadillac default.' },
+      { v: 'v1.10.10', date: '2026-11-13', status: 'done', text: 'The 3D engine bay now looks more like each real car under the bonnet. On the GT350: the Cobra valve covers, the round chrome air cleaner on the Holley, the distributor at the front, the alternator on the right-hand side, the shock towers with the Monte Carlo bar and the export brace, the battery at the right front, the brake booster on the left of the firewall and the radiator. On the Cadillac: blue valve covers, the distributor at the back, the 1959 oil-filter can, the power-steering pump at the front, the battery at the left front, the big brake booster and a wide radiator. On the BRM: the SU carburettor feeding the supercharger, a short intake pipe to every cylinder, the four magnetos and the radiator in the nose. The body panels are see-through so the engine stays easy to see, and the Parts panel can switch the new bits off and lists where they come from. All engine sizes stay exactly as the sound model has them; where the real car differs (the GT350\u2019s headers, the Cadillac\u2019s oil-bath air cleaner, the size of the BRM\u2019s supercharger wheels) the model\u2019s version is kept. Sound and driving are unchanged.' },
     ] }
   ]
 };
