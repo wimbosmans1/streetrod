@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.0)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.1)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -8772,8 +8772,60 @@ var PaintedVisuals = (function () {
     var front = key === 'brm/in', ang = front ? (s.wAngF || 0) : (s.wAngR || 0), om = front ? (s.wWF || 0) : (s.wW || 0);
     var sh = s.shutter !== undefined ? s.shutter : Math.max(1 / 240, Math.min(1 / 30, LV.gtDt || 1 / 60));
     var m = g.getTransform ? g.getTransform() : null, q = m ? Math.sqrt(m.a * m.a + m.b * m.b) : 1;
-    for (var i = 0; i < set.length; i++) tyreDraw(g, set[i], ang, om * sh, q);
-    TYS.n++; TYS[key] = { ang: ang, omega: om, n: TYS.n };
+    var dl = front ? steerDelta(s) : 0;
+    for (var i = 0; i < set.length; i++) { if (dl) tyreSteer(g, set[i], i, ang, om * sh, dl); else tyreDraw(g, set[i], ang, om * sh, q); }
+    TYS.n++; TYS[key] = { ang: ang, omega: om, n: TYS.n, steer: dl };
+  }
+  // v1.11.1 (job 9): the BRM's front wheels steer in the onboard view. Same input as the steering wheel (rot = steer x 2.1 rad); road-wheel
+  // angle = wheel angle / STEER_RATIO (about 11:1 overall, typical of a 1950s F1 worm-and-sector / rack box with its drag link). The wheel
+  // yaws about its (vertical) kingpin through the hub: the top of the tread above the axle stays put, a point a (rad) round the tread behind
+  // the axle moves sideways by R sin(a) sin(delta) (turning right swings the rear of the tyre left), drawn as a piecewise shear of the
+  // tyre (painted tyre + rolling tread) in bands, clipped above the cowl line so it never covers the body. The painted tyre is cut out of the
+  // cockpit art (the road shows where it was, the inner side is filled with the tyre's own smooth rubber = the inner sidewall now in view).
+  // steer = 0 draws exactly the old path (bit-identical).
+  var STEER_RATIO = 11, STEER_WHEEL = 2.1;
+  function steerDelta(s) { var st = s.steer || 0; if (V16 || (window.__pvOff || {}).steerTyres || Math.abs(st) < 0.002) return 0; return st * STEER_WHEEL / STEER_RATIO; }
+  var COWL_L = [[200, 90], [460, 90], [460, 194], [200, 353]];   // above the cowl line through (342,266)-(270,310), left tyre
+  var SPAD = 5, SOUT = 7;   // the cut-out takes the painted outline round the tyre too (ink draws it just outside TYRE_IN_L): poly + a 7 px stroke
+  function cowlOf(side) { return side ? COWL_L.map(function (p) { return [PW - p[0], p[1]]; }) : COWL_L; }
+  function path(x, pts) { x.beginPath(); pts.forEach(function (p, i) { x[i ? 'lineTo' : 'moveTo'](p[0], p[1]); }); x.closePath(); }
+  function cutShape(x, t, side) {   // tyre + outline, never below the cowl line
+    x.save(); path(x, cowlOf(side)); x.clip(); path(x, t.poly); x.fill(); x.lineWidth = SOUT; x.lineJoin = 'round'; x.stroke(); x.restore();
+  }
+  function holeCockpit(C) {
+    if (C.hole) return C.hole;
+    var c = document.createElement('canvas'); c.width = C.cv.width; c.height = C.cv.height; var x = c.getContext('2d');
+    x.drawImage(C.cv, 0, 0); x.globalCompositeOperation = 'destination-out'; x.setTransform(c.width / PW, 0, 0, c.height / PH, 0, 0); x.fillStyle = x.strokeStyle = '#000';
+    [TYRE_IN_L, mirrorT(TYRE_IN_L, PW)].forEach(function (t, i) { cutShape(x, t, i); });
+    return (C.hole = c);
+  }
+  function tyreSprite(T, side) {   // the painted tyre and its outline, cut from the cockpit art at 2x
+    if (T.spr) return T.spr;
+    var src = A['brm-cockpit'], sk = (src.naturalWidth || src.width) / PW, c = document.createElement('canvas'); c.width = Math.ceil((T.bw + 2 * SPAD) * 2); c.height = Math.ceil((T.bh + 2 * SPAD) * 2);
+    var x = c.getContext('2d'); x.setTransform(2, 0, 0, 2, -(T.bx - SPAD) * 2, -(T.by - SPAD) * 2);
+    x.drawImage(src, 0, 0, PW, (src.naturalHeight || src.height) / sk);
+    x.globalCompositeOperation = 'destination-in'; x.fillStyle = x.strokeStyle = '#000'; cutShape(x, T.t, side);
+    return (T.spr = c);
+  }
+  function tyreSteer(g, T, side, ang, dA, dl) {
+    var t = T.t, X0 = T.bx - SPAD, Y0 = T.by - SPAD, BW = T.bw + 2 * SPAD, BH = T.bh + 2 * SPAD, W2 = Math.ceil(BW * 2), H2 = Math.ceil(BH * 2);
+    if (!T.comp) { T.comp = document.createElement('canvas'); T.comp.width = W2; T.comp.height = H2; }
+    var cx = T.comp.getContext('2d'); cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, W2, H2); cx.drawImage(tyreSprite(T, side), 0, 0);
+    cx.setTransform(2, 0, 0, 2, -X0 * 2, -Y0 * 2); tyreDraw(cx, T, ang, dA, 2);
+    // inner sidewall: the smooth rubber, unsheared, on the inner half of the old outline
+    g.save(); path(g, t.poly); g.clip(); g.beginPath();
+    var mid = (t.cx[0] + t.cx[1]) / 2; if (side) g.rect(T.bx, T.by, mid - T.bx, T.bh); else g.rect(mid, T.by, T.bx + T.bw - mid, T.bh); g.clip();
+    g.drawImage(T.base, T.bx, T.by, T.bw, T.bh); g.restore();
+    var sd = Math.sin(dl), N = 16, y0 = Y0, yE = Y0 + BH;
+    function dxAt(y) { if (y <= t.yTop) return 0; var a = Math.acos(Math.max(-1, 1 - Math.min(2 * t.R, y - t.yTop) / t.R)); return -t.R * Math.sin(a) * sd; }
+    g.save(); path(g, cowlOf(side)); g.clip();
+    for (var b = 0; b < N; b++) {
+      var ya = y0 + (yE - y0) * b / N, yb = y0 + (yE - y0) * (b + 1) / N, da = dxAt(ya), db = dxAt(yb), c = (db - da) / (yb - ya);
+      g.save(); g.beginPath(); g.rect(X0 - 80, ya - 0.3, BW + 160, yb - ya + 0.6); g.clip();
+      g.transform(1, 0, c, 1, da - c * ya, 0); g.drawImage(T.comp, X0, Y0, BW, BH); g.restore();
+    }
+    g.restore();
+    T.steerDx = dxAt(t.yB);
   }
   // ---------------------------------------------------------------- inside frame
   // v1.10.6 draft (job 2): the BRM cockpit painting sat BRM_DY painting px too high against its own road camera (eye 0.9 m above the
@@ -8788,7 +8840,8 @@ var PaintedVisuals = (function () {
     var car = carOf(s.carId), m = M[car], C = cache(car, s), mph = s.kmh / 1.609344, DY = artDY(car);
     if (!(window.__pvOff || {}).backdrop) backdrop(g, car, s, Math.min(PH, C.glassY + DY));
     g.save(); if (DY) g.translate(0, DY);
-    if (!(window.__pvOff || {}).cockpit) blit(g, C.cv, 'cockpit/' + car, 0, 0, PW, PH, 0, 1);
+    var brmSteer = car === 'brm' && !V16 && steerDelta(s) && !(window.__pvOff || {}).tyres && tyreSet('brm/in');
+    if (!(window.__pvOff || {}).cockpit) { if (brmSteer) blit(g, holeCockpit(C), 'cockpit/brm/hole', 0, 0, PW, PH, 0, 1); else blit(g, C.cv, 'cockpit/' + car, 0, 0, PW, PH, 0, 1); }
     if (car === 'brm') tyres(g, 'brm/in', s);
     if (m.stalks) stalkMirrors(g, car, s, m);
     var running = s.engine === 'running';
@@ -9134,7 +9187,7 @@ var PaintedVisuals = (function () {
     var g = dash.g, cv = dash.cv, L = layout(dash), car = carOf(s.carId);
     scene.dash = dash; scene(g, cv, L, car, s);
   }
-  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, layout: function () { return LY; }, style: STY, _drawInside: drawInside, _drawOutside: drawOutside, _focus: function () { return focus(); }, _frames: function () { return LF; }, _tyres: function () { return TYS; }, _tyreSets: function () { return TY; }, artDY: artDY };
+  return { draw: draw, load: load, get status() { return status; }, meta: function () { return M; }, layout: function () { return LY; }, style: STY, _drawInside: drawInside, _drawOutside: drawOutside, _focus: function () { return focus(); }, _frames: function () { return LF; }, _tyres: function () { return TYS; }, _tyreSets: function () { return TY; }, _steerRatio: function () { return STEER_RATIO; }, artDY: artDY };
   }
   return { make: make };
 })();
@@ -9217,6 +9270,7 @@ var ProjectHistory = {
       { v: 'v1.10.9', date: '2026-11-13', status: 'done', text: 'Only two picture styles are left: Ink (the default) and Flat. The old drawn, painted and 3D driving views are gone, together with the pictures only they used. Ink is the closest to the old drawn look. If you had picked one of the removed styles, the game switches to Ink by itself, and old links still work. The 3D engine bay, the sound, the driving and the gearbox are unchanged; v8 stays the BRM sound default and v2 the GT350 and Cadillac default.' },
       { v: 'v1.10.10', date: '2026-11-13', status: 'done', text: 'The 3D engine bay now looks more like each real car under the bonnet. On the GT350: the Cobra valve covers, the round chrome air cleaner on the Holley, the distributor at the front, the alternator on the right-hand side, the shock towers with the Monte Carlo bar and the export brace, the battery at the right front, the brake booster on the left of the firewall and the radiator. On the Cadillac: blue valve covers, the distributor at the back, the 1959 oil-filter can, the power-steering pump at the front, the battery at the left front, the big brake booster and a wide radiator. On the BRM: the SU carburettor feeding the supercharger, a short intake pipe to every cylinder, the four magnetos and the radiator in the nose. The body panels are see-through so the engine stays easy to see, and the Parts panel can switch the new bits off and lists where they come from. All engine sizes stay exactly as the sound model has them; where the real car differs (the GT350\u2019s headers, the Cadillac\u2019s oil-bath air cleaner, the size of the BRM\u2019s supercharger wheels) the model\u2019s version is kept. Sound and driving are unchanged.' },
       { v: 'v1.11.0', date: '2026-11-13', status: 'done', text: 'New car: a 2006 Porsche 911 Carrera 4S (997.1) in Cobalt Blue Metallic. It has its own computed flat-six sound (3.8 litre boxer behind the rear axle, its own firing order and exhaust), an electric starter, the six-speed manual gearbox with the rev-match option, four-wheel drive and its real weight, power and gearing (0-100 km/h in about 4.8 s in the game, the factory says 4.8 s). Inside and outside pictures in Ink and Flat, real-looking gauges, and a 3D view of the rear engine bay. The sound was checked against recordings of standard cars only; cars with the optional sport exhaust are scored separately. The other cars are unchanged.' },
+      { v: 'v1.11.1', date: '2026-11-13', status: 'done', text: 'BRM, inside view: the front wheels now steer with the steering wheel. Turning the wheel to full lock turns the front tyres by about 11 degrees (a steering ratio of 11 to 1, normal for a 1950s Grand Prix car), and the tread keeps rolling while you steer. Driving straight looks exactly as before.' },
     ] }
   ]
 };
