@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.10.10)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.0)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -137,6 +137,7 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 #dragCard .row { display: flex; gap: 8px; justify-content: center; }
 #bRadio.hidden { display: none; }
 #segBrmSound.hidden { display: none; }
+#segSound.hidden { display: none; }   /* v1.11.0: the 911 has one sound model */
 .sel.brmsel { padding: 0 4px; position: relative; }   /* v1.9.2 BRM sound picker: no caption, the options say "Sound v8" ... "Sound v9.9" */
 .sel.brmsel select, .touch .sel.brmsel select { -webkit-appearance: none; appearance: none; box-sizing: border-box; height: 27px; line-height: 17px; padding: 4px 17px 4px 6px; margin: 3px 0; }
 .sel.brmsel::after { content: '\25BE'; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: #1a120c; font-size: 11px; pointer-events: none; }
@@ -308,10 +309,10 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <canvas id="dash"></canvas>
     <div id="topbar">
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
-      <div class="seg" id="segCar"><button class="tb" data-act="car" data-v="gt350">GT350</button><button class="tb" data-act="car" data-v="caddy">Cadillac</button><button class="tb" data-act="car" data-v="brm">BRM</button></div>
+      <div class="seg" id="segCar"><button class="tb" data-act="car" data-v="gt350">GT350</button><button class="tb" data-act="car" data-v="caddy">Cadillac</button><button class="tb" data-act="car" data-v="brm">BRM</button><button class="tb" data-act="car" data-v="p997">911</button></div>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v8 (default) or a v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
       <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside<span class="lx"> car</span></button><button class="tb" data-act="view" data-v="0">Outside<span class="lx"> (rear)</span></button><button class="tb" id="bBay" data-act="view" data-v="2" title="Engine bay: 3D engine from the sound model's parameters (key E)">Engine<span class="lx2"> bay</span></button></div>
-      <label class="sel more"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
+      <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
       <button class="tb more hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
@@ -336,9 +337,9 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <table>
       <tr><td>&uarr;</td><td>Throttle (hold; it ramps up)</td></tr>
       <tr><td>&darr;</td><td>Brake (hold; ramps to full pedal, can lock the wheels)</td></tr>
-      <tr><td>&rarr; / &larr;</td><td>GT350: shift up / down (automatic clutch).<br>BRM: shift up / down, 5-speed H (automatic clutch).<br>Cadillac: selector N &rarr; D &rarr; S &rarr; L (Hydra-Matic shifts itself)</td></tr>
+      <tr><td>&rarr; / &larr;</td><td>GT350: shift up / down (automatic clutch).<br>BRM: shift up / down, 5-speed H (automatic clutch).<br>911: shift up / down, 6-speed H (automatic clutch, AWD).<br>Cadillac: selector N &rarr; D &rarr; S &rarr; L (Hydra-Matic shifts itself)</td></tr>
       <tr><td>S or I</td><td>Ignition: start / stop engine</td></tr>
-      <tr><td>1 / 2 / 3</td><td>Select car (GT350 / Cadillac / BRM)</td></tr>
+      <tr><td>1 / 2 / 3 / 4</td><td>Select car (GT350 / Cadillac / BRM / Porsche 911)</td></tr>
       <tr><td>V</td><td>Inside car / Outside (rear)</td></tr>
       <tr><td>E</td><td>Engine bay (3D engine from the sound model’s parameters; drag to turn, pinch / wheel to zoom, double-tap to reset)</td></tr>
       <tr><td>X</td><td>Next sound model (v1 – v4; v3/v4 play the real start-up and shutdown)</td></tr>
@@ -4003,7 +4004,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
   if (!g0.ENGINE_MODULES) g0.ENGINE_MODULES = [];
   g0.ENGINE_MODULES.push(function engineModuleV8p(core) {
     // ---- model data (tools/export_v8p_params.py: engine-sound v8phys.CARS + PHYS merged with fitted_params_v8phys.json)
-    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.141082763671875,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.9620153485230031,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.345489501953125,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0}}}/*END_V8P_DATA*/;
+    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.141082763671875,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.9620153485230031,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.345489501953125,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252.0,"lsa":116.0,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1.0,"lifters":"hydraulic","idle_rpm":670.0,"redline":7300.0,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1.0,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0.0,"inter_len":0.6,"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["chamber",0.22,10.0,0.5],["pipe",0.12,0.045,0.0],["chamber",0.22,10.0,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0.0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1.0],"cabin_len":1.9,"cabin_h":1.0,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000.0,"st_i_free":70.0,"st_i_lock":850.0,"st_v_test":11.5,"st_v_lock":6.0,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000.0,"spark0":10.0},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.001324638794939649,"hf":0.0016656077186669369,"ro_loss":0.98,"t_prim0":678.3541752286684,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":0.0,"k_jet":0.27672619972869567,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.531341552734375,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.8,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":40.0,"pack":2.227712131406225,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0}}}/*END_V8P_DATA*/;
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     var DL = 1024, DLM = DL - 1, HB = 4096, NSRC = 6;
     // Q
@@ -4075,7 +4076,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     }
 
     function kv8(n, fs, K, Q, S, CY, PF, NPI, NODE, NN, NW, AB, BB, AT, NA, out) {
-      var dt = 1.0 / fs, rad = Math.PI / 180.0, g = G_EX, k, i, p, j, knl = Q[Q_KNL];
+      var dt = 1.0 / fs, rad = Math.PI / 180.0, g = G_EX, k, i, p, j, knl = Q[Q_KNL], NCY = (CY.length / NC) | 0;   // job 8: 8 (V8) or 6 (flat-six) cylinders
       for (k = 0; k < n; k++) {
         var u = (k + 1.0) / n, ko = k * NO;
         var thr = K[K_THR0] + (K[K_THR1] - K[K_THR0]) * u;
@@ -4163,7 +4164,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var qin = 0.0, tick0 = 0.0, tick1 = 0.0, tpr = S[S_TPRIM], rho_e = P_ATM / (R_GAS * tpr);
         var npol = Q[Q_NP] - (Q[Q_NP] - 1.12) * Math.exp(-rpm / 250.0), leak = Math.exp(-dt / 3.0);
         var hk = dt / 0.03 * Math.exp(-rpm / 100.0);   // burnt-charge wall heat transfer at near-standstill (v8phys.py)
-        for (i = 0; i < 8; i++) {
+        for (i = 0; i < NCY; i++) {
           var c = i * NC, phi0 = CY[c + C_PHI], phi = th - CY[c + C_OFF];
           if (phi < 0.0) phi += 720.0;
           CY[c + C_PHI] = phi;
@@ -4388,7 +4389,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       function node(t, x, ports) { nodes.push([t, x, ports]); }
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0;
-        for (i = 1; i <= 8; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
+        for (i = 1; i <= c.fire_order.length; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
         if (c.exhaust === 'tri-y') {
           var secs = [];
           c.tri_pairs.forEach(function (pr) {
@@ -4400,6 +4401,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           });
           head = pipe(c.head_len, c.pipe_d, 1);
           node(0, 0, [[secs[0], 1], [secs[1], 1], [head, 0]]);
+        } else if (c.exhaust === '3-1') {   // job 8: flat-six, three primaries per bank into a 3-1 collector (997.1 S)
+          var prims = [];
+          for (var j3 = 0; j3 < cyls.length; j3++) {
+            var p3 = pipe(c.prim_len * c.prim_x[j3], c.prim_d, 0);
+            node(1, cyls[j3] - 1, [[p3, 0]]); prims.push([p3, 1]);
+          }
+          head = pipe(c.head_len, c.pipe_d, 1);
+          node(0, 0, prims.concat([[head, 0]]));
         } else {
           prev = null;
           for (var jj = 0; jj < cyls.length; jj++) {
@@ -4412,9 +4421,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           }
           head = prev;
         }
-        if (bank === 0) xp = pipe(c.x_len, c.x_d, 1);
+        var hx = (c.x_len || 0) > 0;   // job 8: the 997.1 has no balance pipe, the banks stay separate
+        if (bank === 0 && hx) xp = pipe(c.x_len, c.x_d, 1);
         var inter = pipe(c.inter_len + dl, c.pipe_d, 1);
-        node(0, 0, [[head, 1], [xp, bank], [inter, 0]]);
+        node(0, 0, hx ? [[head, 1], [xp, bank], [inter, 0]] : [[head, 1], [inter, 0]]);
         prev = inter;
         c.muf.forEach(function (mf) {
           var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
@@ -4422,7 +4432,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         });
         var tail = pipe(c.tail_len, c.pipe_d, 2);
         node(0, 0, [[prev, 1], [tail, 0]]);
-        node(2, bank, [[tail, 1]]);
+        node(2, c.cross_mouth ? 1 - bank : bank, [[tail, 1]]);   // 997.1: each bank's cat pipe crosses to the other side
       }
       var NW = 0; nodes.forEach(function (n) { NW = Math.max(NW, 3 + 2 * n[2].length); });
       var NODE = new Int32Array(nodes.length * NW);
@@ -4436,7 +4446,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
     function V8pSynth(spec, listener, fs, opts) {
       opts = opts || {};
-      var key = spec.car_key || (spec.engineKey === 'CADDY' ? 'cadillac59' : 'gt350');
+      var key = spec.car_key || (spec.engineKey === 'CADDY' ? 'cadillac59' : spec.engineKey === 'P997' ? 'p997' : 'gt350');   // v1.11.0: P997 = the 911's flat-six
       var D = DATA[key];
       if (!D) throw new Error('v8p: no data for ' + key);
       this.key = key; this.c = D.car; this.P = Object.assign({}, D.phys, opts.phys || {}); this.fs = fs;
@@ -4445,17 +4455,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var N = buildNet(this.c);
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
       this.Q = this._q();
-      this.S = new Float64Array(NS); this.CY = new Float64Array(8 * NC); this.PF = new Float64Array(this.NP * NF);
+      this.S = new Float64Array(NS); this.NCY = this.c.fire_order.length; this.CY = new Float64Array(this.NCY * NC); this.PF = new Float64Array(this.NP * NF);
       this.AB = new Float64Array(this.NP * DL); this.BB = new Float64Array(this.NP * DL); this.AT = new Float64Array(this.NP * DL); this.NA = new Float64Array(this.NN * 2);
       var seed = opts.seed === undefined ? 1 : opts.seed;
       this.S[S_RNG] = (Math.imul(0x9E3779B9 | 0, seed + 1) >>> 0) || 1;
       this.S[S_PMAN] = P_ATM; this.S[S_TPRIM] = T_AMB; this.S[S_TTAIL] = T_AMB;
       var fo = this.c.fire_order, off = [], i, left = {};
       this.c.left_bank.forEach(function (x) { left[x] = 1; });
-      for (i = 0; i < 8; i++) off[fo[i] - 1] = 90.0 * i;
-      for (i = 0; i < 8; i++) { this.CY[i * NC + C_OFF] = off[i]; this.CY[i * NC + C_BANK] = left[i + 1] ? 0.0 : 1.0; }
+      for (i = 0; i < this.NCY; i++) off[fo[i] - 1] = 720.0 / this.NCY * i;   // even firing (V8 90 deg, flat-six 120 deg)
+      for (i = 0; i < this.NCY; i++) { this.CY[i * NC + C_OFF] = off[i]; this.CY[i * NC + C_BANK] = left[i + 1] ? 0.0 : 1.0; }
       for (var nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 1) this.CY[this.NODE[nd * this.NW + 1] * NC + C_PIPE] = this.NODE[nd * this.NW + 3];
-      for (i = 0; i < 8; i++) { var v0 = (0.0 - off[i]) % 720.0; this.CY[i * NC + C_PHI] = v0 < 0 ? v0 + 720.0 : v0; }
+      for (i = 0; i < this.NCY; i++) { var v0 = (0.0 - off[i]) % 720.0; this.CY[i * NC + C_PHI] = v0 < 0 ? v0 + 720.0 : v0; }
       this.pw = 0.0; this.load = 0.0;
       this.K = new Float64Array(NK);
       this.out = new Float64Array(256 * NO);
@@ -4474,10 +4484,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q[Q_DV] = c.ev_d; Q[Q_LMAX] = c.ev_lift; Q[Q_CAMX] = c.camx; Q[Q_CD] = P.cd;
       Q[Q_QC] = P.q_comb; Q[Q_HL] = P.heat_loss; Q[Q_NP] = P.n_poly; Q[Q_BURN] = P.burn;
       Q[Q_XR0] = P.xr0; Q[Q_XROV] = P.xr_ov; Q[Q_COV] = P.cov; Q[Q_COVR] = P.cov_res; Q[Q_MISR] = P.mis_res;
-      Q[Q_ETAV] = P.eta_v; Q[Q_VD] = 8 * vd1; Q[Q_VMAN] = c.v_man; Q[Q_ATHW] = c.th_area_wot;
+      Q[Q_ETAV] = P.eta_v; Q[Q_VD] = c.fire_order.length * vd1; Q[Q_VMAN] = c.v_man; Q[Q_ATHW] = c.th_area_wot;
       Q[Q_AIDLE] = P.a_idle > 0 ? P.a_idle : 2.0e-5; Q[Q_FIDLE] = P.fast_idle; Q[Q_ROL] = P.ro_loss;
       Q[Q_J] = c.inertia; Q[Q_F0] = P.fric0; Q[Q_F1] = P.fric1; Q[Q_F2] = P.fric2; Q[Q_FCOLD] = P.fric_cold;
-      var vlock = c.st_kind === 'ford_pe' ? 5.0 : 3.5, Rm = vlock / c.st_i_lock, wfree = c.st_free_rpm * 2 * Math.PI / 60;
+      var vlock = c.st_v_lock !== undefined ? c.st_v_lock : c.st_kind === 'ford_pe' ? 5.0 : 3.5, Rm = vlock / c.st_i_lock, wfree = c.st_free_rpm * 2 * Math.PI / 60;
       Q[Q_STG] = c.st_ratio; Q[Q_STRM] = Rm; Q[Q_STRB] = c.r_batt;
       Q[Q_STKE] = (c.st_v_test - c.st_i_free * Rm) / wfree; Q[Q_STIF] = c.st_i_free; Q[Q_STJM] = 2.5e-4; Q[Q_STIS] = c.st_i_sat;
       Q[Q_TEETH] = c.st_teeth; Q[Q_VBAT] = c.v_batt; Q[Q_NSEG] = 22; Q[Q_SOLID] = c.lifters === 'solid' ? 1.0 : 0.0;
@@ -4513,7 +4523,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var ear = pr.ears[e], pos = srcs[s], front = s >= 2, r = dist(ear, pos);
         if (pr.outside) {
           var sh = 1.0;
-          if (front && !pr.bay) sh = pr.shadow;
+          if (front && !pr.bay) sh = c.eng_shadow !== undefined ? c.eng_shadow : pr.shadow;   // job 8: rear engine behind the lid grille
           if (!front && pr.bay) sh = P.bay_exh;
           rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
           var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
@@ -6089,11 +6099,14 @@ var SoundModels = (function () {
   // startup: the model plays cranking / catch / choke idle / run-down and reports them (main.js startupLink), like v3 / v4.
   if (typeof ENGINE_MODULES !== 'undefined') register({
     id: 'v9p', label: 'v9.11 physics + starter', note: 'engine-sound v9.11-V8: each car\'s own V8 on the v9.11 physics kernel approach (blow-down cylinders, its own exhaust network, carb intake, valve train), electric starter and crank torque balance; refit on the gated recordings',
-    cars: { GT350: { car_key: 'gt350', idle_rpm: 850, redline: 6800, name: '1967 Shelby GT350 (289 Hi-Po)' }, CADDY: { car_key: 'cadillac59', idle_rpm: 520, redline: 5000, name: '1959 Cadillac Series 62 (390)' } },
-    outGain: { GT350: 0.8, CADDY: 0.85 },
-    listeners: { GT350: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } }, CADDY: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } } },
+    cars: { GT350: { car_key: 'gt350', idle_rpm: 850, redline: 6800, name: '1967 Shelby GT350 (289 Hi-Po)' }, CADDY: { car_key: 'cadillac59', idle_rpm: 520, redline: 5000, name: '1959 Cadillac Series 62 (390)' },
+      P997: { car_key: 'p997', idle_rpm: 670, redline: 7300, name: '2006 Porsche 911 Carrera 4S (997.1, 3.8 flat-six)' } },   // v1.11.0: the 911's only sound
+    outGain: { GT350: 0.8, CADDY: 0.85, P997: 0.8 },
+    listeners: { GT350: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } }, CADDY: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } },
+      P997: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } } },
     views: ['rear', 'in_cabin'], startup: true,
-    gainDb: /*V8P_GAIN*/{ GT350: { rear: -26.9, in_cabin: -4.2 }, CADDY: { rear: -19.2, in_cabin: -4.7 } }/*END_V8P_GAIN*/,   // test/level_match_v8p.js
+    gainDb: Object.assign(/*V8P_GAIN*/{ GT350: { rear: -26.9, in_cabin: -4.2 }, CADDY: { rear: -19.2, in_cabin: -4.7 } }/*END_V8P_GAIN*/,   // test/level_match_v8p.js
+      /*P997_GAIN*/{ P997: { rear: -32.5, in_cabin: -12.6 } }/*END_P997_GAIN*/),   // test/level_match_p997.js: the 911 at the GT350 v9p loudness
   });
   if (typeof ENGINE_MODULES !== 'undefined') register({
     id: 'v8', hidden: true, label: 'v8 (BRM V16)', note: 'engine-sound v8: BRM P30 Mk II V16 additive + supercharger whine, real-time port',
@@ -6239,7 +6252,40 @@ var Vehicles = (function () {
       rear: { type: 'drum', heatCap: 2200, coolBase: 0.008, coolSpeed: 0.0006 },
     },
   };
-  return { GT350: GT350, CADDY: CADDY, BRM: BRM, list: [GT350, CADDY, BRM] };
+
+  // job 8 (v1.11.0): Porsche 911 Carrera 4S, 997 Mk1 (2005-08). Factory data (Porsche 997 C4S press kit / owner's manual):
+  // M97.01 3,824 cc flat-six, 355 PS (261 kW) @ 6,600, 400 Nm @ 4,600 (DIN net, so netFactor 1); G97/01 6-speed manual;
+  // viscous-coupled AWD (5-40 % to the front); 1,475 kg DIN; 0-100 km/h 4.8 s; Vmax 280 km/h.
+  var P997 = {
+    id: 'p997', label: '2006 Porsche 911 Carrera 4S (997)', engineKey: 'P997',
+    engineText: '3.8 M97.01 flat-six, 355 PS @ 6600, 400 Nm @ 4600 (DIN)',
+    // Nm (net) at the flywheel, shaped on the published 997 C4S / Carrera S power / torque chart; 261 kW @ 6600 = 378 Nm
+    torque: [[0, 150], [600, 220], [1000, 260], [1500, 290], [2000, 320], [2500, 340], [3000, 355], [3500, 370], [4000, 385],
+             [4600, 400], [5000, 398], [5500, 393], [6000, 388], [6600, 378], [7000, 360], [7300, 345], [7500, 300]],
+    netFactor: 1.0, idleRpm: 670, limiterRpm: 7300, tachMax: 8000, tachRed: 7300,
+    engineInertia: 0.16,                        // kg m^2 dual-mass flywheel + clutch + crank (same as the sound model)
+    friction: [14, 6.0, 0.6],
+    trans: 'manual', transText: 'Getrag/Porsche G97/01 6-speed manual',
+    gears: [3.91, 2.32, 1.61, 1.28, 1.08, 0.88], finalDrive: 3.44, drivelineEff: 0.85,   // AWD: transaxle + prop shaft + front diff
+    clutchMax: 600,                             // Nm, 240 mm single dry plate (400 Nm engine + margin)
+    shiftSelect: 0.10,                          // s, short-shift G97 with triple-cone synchros on 1-2
+    massKg: 1475 + 75,                          // DIN kerb 1,475 kg + 75 kg driver
+    curbText: '1,475 kg (3,252 lb) DIN kerb + 75 kg driver',
+    rearFrac: 0.61, cgHeight: 0.46, wheelbase: 2.35,
+    tyreText: '235/35 ZR19 front, 305/30 ZR19 rear (N-rated)',
+    tyreRadius: 0.325,                          // 305/30 ZR19: 666 mm OD, loaded rolling radius
+    tyreRadiusFront: 0.316,                     // 235/35 ZR19: 647 mm OD (front wheel visuals)
+    wheelInertiaRear: 1.8, wheelInertiaFront: 1.4,
+    muPeak: 1.10, muSlide: 0.95, crr: 0.012, cd: 0.30, area: 2.0,
+    awd: { frontMax: 0.40, frontMin: 0.05, text: 'viscous coupling, 5-40 % front' },
+    brakes: {
+      text: '330 mm cross-drilled vented discs, 4-piston monobloc calipers, ABS 8.0 / PSM',
+      capG: 1.15, frontBias: 0.60, abs: true,
+      front: { type: 'disc', heatCap: 4200, coolBase: 0.012, coolSpeed: 0.0011 },
+      rear: { type: 'disc', heatCap: 3600, coolBase: 0.012, coolSpeed: 0.0011 },
+    },
+  };
+  return { GT350: GT350, CADDY: CADDY, BRM: BRM, P997: P997, list: [GT350, CADDY, BRM, P997] };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Vehicles;
 </script>
@@ -6401,7 +6447,8 @@ var Physics = (function () {
 
   Vehicle.prototype.step = function (dt, inp) {
     var c = this.c, r = c.tyreRadius, m = c.massKg, Je = c.engineInertia;
-    var mEff = m + c.wheelInertiaFront / (r * r);
+    // job 8: AWD cars (c.awd) drive the front wheels too: their inertia turns with the driven wheels (Jw), not with the body
+    var mEff = c.awd ? m : m + c.wheelInertiaFront / (r * r);
     this.time += dt;
     var rpm = this.we * RPM;
     var pedal = clamp(inp.throttle, 0, 1), bpedal = clamp(inp.brake, 0, 1);
@@ -6447,6 +6494,8 @@ var Physics = (function () {
     // ---- normal loads (static + longitudinal weight transfer) ----
     var Wt = m * G0, dN = m * this.a * c.cgHeight / c.wheelbase;
     var Nr = clamp(Wt * c.rearFrac + dN, 0.15 * Wt, 0.85 * Wt), Nf = Wt - Nr;
+    // drive load: the rear axle; AWD (viscous coupling, up to frontMax of the drive to the front) can use the front axle's grip too
+    var Nd = c.awd ? Math.min(Wt, Nr / (1 - c.awd.frontMax)) : Nr;
 
     // ---- brakes: demand, fade, lock-up (front axle on the body, rear on the tyre) ----
     var B = c.brakes;
@@ -6454,6 +6503,7 @@ var Physics = (function () {
     var FbfDem = bpedal * B.capG * Wt * B.frontBias * fadeF;
     var FbrDem = bpedal * B.capG * Wt * (1 - B.frontBias) * fadeR;
     this.fadeF = fadeF; this.fadeR = fadeR;
+    if (B.abs) { FbfDem = Math.min(FbfDem, 0.97 * c.muPeak * Nf); FbrDem = Math.min(FbrDem, 0.97 * c.muPeak * Nr); }   // job 8: ABS holds each axle under lock-up
     if (!this.frontLocked && FbfDem > c.muPeak * Nf && this.v > 0.3) this.frontLocked = true;
     else if (this.frontLocked && (FbfDem < c.muSlide * Nf * 0.98 || this.v < 0.05)) this.frontLocked = false;
     var Fbf = this.frontLocked ? c.muSlide * Nf : FbfDem;
@@ -6514,7 +6564,7 @@ var Physics = (function () {
     var Faero = 0.5 * RHO * c.cd * c.area * this.v * this.v;
     var Froll = c.crr * Wt;                      // static-capable (treated like friction)
     var v = this.v, a, ae, aw;
-    var Jw = c.wheelInertiaRear;
+    var Jw = c.awd ? c.wheelInertiaRear + c.wheelInertiaFront : c.wheelInertiaRear;
     var self = this;
     // friction (brakes + rolling) that can hold the car at rest
     function bodyAccel(Fdrive, Mass, Ffric) {
@@ -6554,7 +6604,7 @@ var Physics = (function () {
       Fneed = mEff * a + Faero + Fbf + Froll - FbrDem; this.sr = 0;
       this.brakeForce = Fbf + FbrDem;
       this.skid = 0;
-      if (Fneed > c.muPeak * Nr) {
+      if (Fneed > c.muPeak * Nd) {
         // grip exceeded: undo this step's rolling solution and solve it as spinning
         this.tyre = 'spin'; this.we = weBefore; this.ww = (v + 0.10 * Math.max(v, 2.0)) / r;   // enter at ~peak slip
       } else this.heat(dt, Fbf, FbrDem);
@@ -6562,7 +6612,7 @@ var Physics = (function () {
     if (this.tyre === 'spin') { // spin: wheel and body integrate separately
       var slipV = this.ww * r - v;
       var sr = slipV / Math.max(v, 2.0);          // slip ratio (floored near standstill)
-      var Ft = Nr * this.tyreMu(sr); this.sr = sr;
+      var Ft = Nd * this.tyreMu(sr); this.sr = sr;
       var Tdrive;
       if (locked) {
         aw = (Te * G * eta - Ft * r) / (Jw + Je * G * G);
@@ -7218,8 +7268,54 @@ var EngineParams = (function () {
     return P;
   }
 
-  /** engineKey 'BRM' | 'GT350' | 'CADDY', soundId = the sound model now playing for that car */
-  function forCar(engineKey, soundId) { return engineKey === 'BRM' ? brm(soundId) : v8(engineKey, soundId); }
+  // ---------------------------------------------------------------- 2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8 flat-six, v1.11.0)
+  // From the v9p physics model's own car data (js/engine-v8p.js DATA.p997 = engine-sound v8phys.CARS['p997'] + fitted_params_p997.json):
+  // bore, stroke, rod, CR, firing order, banks, valve lift, cam timing, header / pipe sizes, starter ring + pinion. Period figures not in the
+  // model: [S3] Porsche M97.01 data (118 mm bore spacing, 4 valves per cylinder, VarioCam Plus, dry sump, 7 main bearings).
+  var v8pData = null;
+  function v8p(car) {
+    if (!v8pData) {
+      var mods = typeof ENGINE_MODULES !== 'undefined' ? ENGINE_MODULES : [];
+      for (var i = 0; i < mods.length; i++) if (mods[i].name === 'engineModuleV8p') { v8pData = mods[i]({}).DATA; break; }
+    }
+    return v8pData ? v8pData[car] : null;
+  }
+  function p997(soundId) {
+    var D = v8p('p997'), c = D.car, i, k;
+    var spacing = 0.118, offset = 0.045;   // bore spacing [S3]; bank offset (each cylinder on its own throw) assumed
+    var P = { car: 'p997', label: 'Porsche M97.01 3.8 flat-six (997.1 Carrera 4S)', soundId: soundId, fit: 'v9p p997', kernel: 'engine-sound v8phys.py (v9.11 kernel), car p997 + fitted_params_p997.json',
+      nCyl: 6, vAngle: 180, flat: true, rotation: 'cw-front', bore: c.bore, stroke: c.stroke, conrod: c.rod, cr: c.cr, idle: c.idle_rpm, redline: c.redline,
+      firingOrder: c.fire_order.slice(), fireDeg: [], bank: [], x: [], valveLayout: 'across', cam: 'dohc',
+      exValve: null, inValve: null, stubs: null, headers: null, blower: null, starter: null, fan: null, charging: null, carb: null, centreGear: null,
+      crankHeight: 0.40, notes: [], src: {} };
+    for (k = 0; k < 6; k++) P.fireDeg[c.fire_order[k] - 1] = 120 * k;
+    // Porsche numbering: 1-2-3 right bank, 4-5-6 left bank, cylinders 1 and 4 at the pulley end (the back of the car; +x here);
+    // the left bank sits one offset further from the pulley than the right (separate throws on a 7-main crank)
+    for (i = 0; i < 6; i++) {
+      var left = c.left_bank.indexOf(i + 1) >= 0, n = left ? i - 3 : i;
+      P.bank[i] = left ? 0 : 1; P.x[i] = spacing * (1 - n) + (left ? -0.5 : 0.5) * offset;
+    }
+    var cx = c.camx || 1, dur = c.adv_dur, lsa = c.lsa, dEx = c.ev_d / Math.SQRT2;
+    P.exValve = { d: dEx, lift: c.ev_lift, open: pmod(360 - lsa - dur / 2, 720), dur: dur, camx: cx };
+    P.inValve = { d: 0.0395, lift: 0.011, open: pmod(360 + lsa - dur / 2, 720), dur: dur, camx: cx };
+    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration, ' + lsa + '\u00b0 lobe separation, ' + (c.ev_lift * 1000).toFixed(1) + ' mm exhaust lift (VarioCam Plus at its idle position); intake valve size and lift assumed.', true);
+    note(P, 'dims', 'Bore ' + (c.bore * 1000).toFixed(0) + ' mm, stroke ' + (c.stroke * 1000).toFixed(1) + ' mm, rods ' + (c.rod * 1000).toFixed(0) + ' mm, CR ' + c.cr + ' (model data); bore spacing 118 mm (M97 data); 4 valves per cylinder, one of each pair drawn (exhaust \u00d8 = the model\u2019s two-valve curtain / \u221a2).', false);
+    P.headers = { type: '3-1', len: +(c.prim_len * c.prim_x[1] + c.head_len).toFixed(3), primD: c.prim_d, pipeD: c.pipe_d, pipeLen: c.inter_len, crossover: 'none', toNose: true };
+    note(P, 'headers', '3-1 headers per bank to the catalysts and one rear silencer each side (model exhaust \u20183-1\u2019, no balance pipe), primaries \u00d8 ' + (c.prim_d * 1000).toFixed(0) + ' mm, pipe \u00d8 ' + (c.pipe_d * 1000).toFixed(0) + ' mm; drawn length = model primary + head runner.', false);
+    P.starter = { type: 'Bosch 1.7 kW PM reduction', ringTeeth: c.st_teeth, ratio: +(c.st_teeth / 9).toFixed(2), pinionTeeth: 9, crankWarm: 0, poles: 4 };
+    P.charging = { type: 'alternator', ratio: 2.9, fanBlades: 10, wpVanes: 0 };
+    note(P, 'starter', 'Starter: Bosch 1.7 kW permanent-magnet reduction starter, 9-tooth pinion on the ' + c.st_teeth + '-tooth flywheel ring gear (model data). Alternator ratio assumed.', false);
+    note(P, 'misc', 'Assumed: bank offset, crank height, intake valve size / lift, case and head shells, plenum and air-box sizes. Water-cooled: radiators are in the nose, so no engine fan.', true);
+    P.parts = { block: true, pistons: true, rods: true, crank: true, valvesEx: true, valvesIn: true, cams: true, stubs: false, headers: true, collector: true, crossover: false,
+      blower: false, centreGear: false, starter: true, fan: false, charging: true, carb: false, bay: true, ancillaries: true, glow: true };
+    note(P, 'bayLayout', 'Bay layout (v1.11.0, 997.1 Carrera 4S): rear engine, crank along the car with the pulley end at the back and the transaxle in front of the engine (bell housing at the flywheel); two-stage resonance intake plenum across the top with the single electronic throttle body on the left and the air box behind it under the engine-lid grille, coil-on-plug on each head, alternator top right on the poly-V belt, exhausts down and back to one silencer each side under the rear bumper, rear subframe and wheel arches either side.', false);
+    note(P, 'bayAssumed', 'Assumed: plenum, air box, alternator and subframe sizes and exact positions.', true);
+    note(P, 'blower', 'Naturally aspirated: supercharger switched off.', false);
+    return P;
+  }
+
+  /** engineKey 'BRM' | 'GT350' | 'CADDY' | 'P997', soundId = the sound model now playing for that car */
+  function forCar(engineKey, soundId) { return engineKey === 'BRM' ? brm(soundId) : engineKey === 'P997' ? p997(soundId) : v8(engineKey, soundId); }
   /** kinematics shared by the bay and the tests: piston pin distance from the crank axis at local angle phi (deg after firing TDC) */
   function pinDist(P, phi) { var r = 0.5 * P.stroke, a = phi * Math.PI / 180, s = Math.sin(a); return r * Math.cos(a) + Math.sqrt(P.conrod * P.conrod - r * r * s * s); }
   /** valve lift (m) of event V at the cylinder's local angle a (deg after its firing TDC, 0..720): the kernel's law sin(pi x)^camx */
@@ -7369,6 +7465,7 @@ var EngineBay = (function () {
     var beta = function (bk) { return bk === 0 ? -P.vAngle / 2 : P.vAngle / 2; };
     var U = [dirAt(beta(0)), dirAt(beta(1))];
     var W = U.map(function (u) { var w = v3(0, 0, 0).crossVectors(XA, u).normalize(); if (Math.sign(w.z) !== Math.sign(u.z)) w.negate(); return w; });   // exhaust side (outer / lower)
+    if (P.flat) W = [v3(0, -1, 0), v3(0, -1, 0)];   // v1.11.0 flat-six: exhaust ports on the underside of both heads, intakes on top
     var xs = P.x, xmin = Math.min.apply(null, xs) - 0.6 * b, xmax = Math.max.apply(null, xs) + 0.6 * b;
     up.P = P; up.parts = parts; up.C0 = C0; up.U = U; up.W = W; up.r = r; up.deck = deck; up.hClear = hClear; up.hc = hc; up.lite = lite;
     up.beta = []; up.throw = [];
@@ -7504,10 +7601,12 @@ var EngineBay = (function () {
       g.add(stubs);
     }
     if (parts.headers && P.headers) {   // V8: tubular headers (each primary exactly header_len_m) into a collector, or a log manifold
-      var hdr = [], pipeR = P.headers.pipeD / 2, primR = P.headers.primD / 2, rearX = xmin - 0.12, pipeEnd = xmin - 0.75, pipeY = H - 0.26;
+      // v1.11.0: toNose = the pipes run past the crank nose (the 911: pulley end at the back of the car, silencers under the rear bumper)
+      var hs = P.headers.toNose ? 1 : -1, hdr = [], pipeR = P.headers.pipeD / 2, primR = P.headers.primD / 2, rearX = P.headers.toNose ? xmax + 0.12 : xmin - 0.12,
+        pipeEnd = P.headers.toNose ? xmax + 0.42 : xmin - 0.75, pipeY = H - 0.26;
       for (var bk3 = 0; bk3 < 2; bk3++) {
         var side = bk3 === 0 ? -1 : 1, latO = side * (Math.abs(up.port[P.bank.indexOf(bk3)].z) + 0.07);   // pipes run outside the ports
-        var colA = v3(rearX, pipeY + 0.04, latO), colB = v3(rearX - 0.12, pipeY, latO);
+        var colA = v3(rearX, pipeY + 0.04, latO), colB = v3(rearX + hs * 0.12, pipeY, latO);
         var cyls = []; for (c = 0; c < N; c++) if (P.bank[c] === bk3) cyls.push(c);
         if (P.headers.type !== 'log') {
           cyls.forEach(function (c6) {
@@ -7517,7 +7616,7 @@ var EngineBay = (function () {
             for (var it = 0; it < 30; it++) { var mid = (lo + hi) / 2; pts = mk(mid); if (plen(pts) < P.headers.len) lo = mid; else hi = mid; }
             hdr.push(tube(pts, primR, lite ? 6 : 10)); up.mouth[c6] = p0.clone();
           });
-          if (parts.collector) hdr.push(segBetween(colA.clone().add(v3(0.04, 0, 0)), colB, pipeR * 1.25, lite ? 8 : 14));
+          if (parts.collector) hdr.push(segBetween(colA.clone().add(v3(-hs * 0.04, 0, 0)), colB, pipeR * 1.25, lite ? 8 : 14));
           hdr.push(segBetween(colB, v3(pipeEnd, pipeY, latO), pipeR, lite ? 8 : 14));
         } else {
           // log: runner + run along the log to the outlet = header_len_m on average
@@ -7759,6 +7858,41 @@ var EngineBay = (function () {
       var rX = fx2 + 0.55;
       add('radiator (nose)', [bx(0.05, 0.36, 0.46, rX, 0.36, 0), bx(0.07, 0.05, 0.4, rX - 0.01, 0.565, 0), cylY(0.02, 0.02, 0.03, rX - 0.01, 0.6, 0.0, 10)], M.radCore, true, 'bay');
       add('scuttle bulkhead', [bx(0.004, 0.5, 0.8, xmin - 0.3, 0.42, 0)], M.body, true, 'bay');
+    } else if (P.car === 'p997') {
+      // v1.11.0 (job 8) 2006 Porsche 911 Carrera 4S (997.1): the M97.01 flat-six sits behind the rear axle, crank along the car, pulley end
+      // (+x) at the back, transaxle ahead of it (-x) with the drive shafts out to the rear wheels; intakes on top of the heads, exhausts
+      // underneath. Two-stage resonance intake: a plenum over each bank joined by a cross tube with the resonance flap, single electronic
+      // throttle body on the cross tube fed from the air box under the engine-lid grille; coil-on-plug on each head; alternator top right on
+      // the poly-V belt (charging block); rear subframe, wheel arches and the engine-lid opening as glass. Radiators are in the nose (none here).
+      var dk3 = k.deck, plY = H + 0.6 * b + 0.085, plZ = 0.15, run3 = [], coils = [], c3;
+      for (c3 = 0; c3 < P.nCyl; c3++) {
+        var u3 = k.U[P.bank[c3]], w3 = k.W[P.bank[c3]];
+        var port = k.C0.clone().add(u3.clone().multiplyScalar(dk3 - 0.02)).add(w3.clone().multiplyScalar(-0.62 * b)).add(v3(up.vOff[c3][1].x, 0, 0));
+        var pz = Math.sign(u3.z) * plZ;
+        run3.push(tube(smooth([port, v3(port.x, port.y + 0.03, port.z - Math.sign(u3.z) * 0.01), v3(port.x, plY - 0.03, (pz + port.z) / 2), v3(port.x, plY, pz)], 1), 0.016, k.lite ? 6 : 8));
+        coils.push(bx(0.03, 0.05, 0.03, P.x[c3], H + 0.01, Math.sign(u3.z) * (dk3 + 0.55 * b + 0.035)));
+      }
+      var px0 = Math.min.apply(null, P.x) - 0.04, px1 = Math.max.apply(null, P.x) + 0.04, pmx = 0.5 * (px0 + px1);
+      add('valve covers', coverOn(0, 0.03, 0, M.vcFord).concat(coverOn(1, 0.03, 0, M.vcFord)), M.vcFord, false, 'ancillaries');
+      add('intake runners (6)', run3, M.casing, false, 'ancillaries');
+      add('resonance plenums + cross tube', [cylX(0.04, px1 - px0, pmx, plY, -plZ), cylX(0.04, px1 - px0, pmx, plY, plZ), cylZ(0.042, 2 * plZ, pmx - 0.02, plY + 0.01, 0)], M.casing, false, 'ancillaries');
+      add('resonance flap', [cylZ(0.046, 0.012, pmx - 0.02, plY + 0.01, 0)], M.dist, false, 'ancillaries');
+      add('electronic throttle body', [cylY(0.045, 0.045, 0.06, pmx - 0.02, plY + 0.07, 0), bx(0.05, 0.04, 0.04, pmx - 0.02, plY + 0.07, 0.065)], M.chrome, false, 'ancillaries');
+      var abX = xmax + 0.16, abY = plY + 0.13;
+      add('air box (under the lid grille)', [bx(0.22, 0.1, 0.36, abX, abY, -0.02)], M.cleaner, false, 'ancillaries');
+      add('intake duct', [hose([v3(pmx - 0.02, plY + 0.1, 0), v3(pmx + 0.05, plY + 0.16, -0.01), v3(abX - 0.11, abY, -0.02)], 0.042)], M.hose, false, 'ancillaries');
+      add('coil-on-plug (6)', coils, M.dist, false, 'ancillaries');
+      add('crank pulley + poly-V belt', [cylX(0.075, 0.022, xmax + 0.05, H, 0, sg), segBetween(v3(xmax + 0.05, H + 0.075, 0), v3(xmax + 0.05, H + 0.2 + 0.04, 0.2), 0.004, 6),
+        segBetween(v3(xmax + 0.05, H, 0.075), v3(xmax + 0.05, H + 0.2, 0.2 + 0.04), 0.004, 6)], M.hose, false, 'ancillaries');
+      // transaxle ahead of the engine: bell housing on the flywheel, gearbox case, drive shafts to the rear hubs (the rear axle line)
+      var bhX = xmin - 0.13, axX = xmin - 0.42;
+      add('transaxle (bell housing + 6-speed case)', [(function () { var s2 = cyl(0.13, 0.2, 0.16, sg, true); s2.rotateZ(Math.PI / 2); s2.translate(bhX, H, 0); return s2; })(),
+        bx(0.36, 0.2, 0.22, axX, H - 0.02, 0)], M.casing, true, 'bay');
+      add('drive shafts (rear axle)', [cylZ(0.016, 1.1, axX, H - 0.04, 0, 10)], M.steel, true, 'bay');
+      add('rear wheel hubs', [cylZ(0.09, 0.05, axX, H - 0.04, -0.6, sg), cylZ(0.09, 0.05, axX, H - 0.04, 0.6, sg)], M.rim, true, 'bay');
+      add('rear subframe, wheel arches + engine-lid opening', [bx(xmax - axX + 0.6, 0.04, 0.05, (xmax + axX) / 2 + 0.2, 0.2, -0.42), bx(xmax - axX + 0.6, 0.04, 0.05, (xmax + axX) / 2 + 0.2, 0.2, 0.42),
+        bx(0.6, 0.5, 0.004, axX, 0.5, -0.66), bx(0.6, 0.5, 0.004, axX, 0.5, 0.66), bx(0.004, 0.36, 1.3, xmax + 0.42, 0.42, 0),
+        bx(0.7, 0.004, 0.06, xmax - 0.05, 0.86, -0.5), bx(0.7, 0.004, 0.06, xmax - 0.05, 0.86, 0.5), bx(0.06, 0.004, 1.0, xmax + 0.3, 0.86, 0)], M.body, true, 'bay');
     }
   }
 
@@ -7868,7 +8002,7 @@ var EngineBay = (function () {
     var base = P.parts, cur = Object.assign({}, base, opt.over[P.car] || {}), mm = function (v) { return (v * 1000).toFixed(1) + ' mm'; };
     var h = '<b>' + esc(P.label) + '</b> <span class="dim">(' + esc(P.kernel) + ')</span><div class="bayParams">' +
       'bore ' + mm(P.bore) + ' \u00b7 stroke ' + mm(P.stroke) + ' \u00b7 rod ' + mm(P.conrod) + ' \u00b7 CR ' + P.cr + ' (chamber ' + mm(P.stroke / (P.cr - 1)) + ')<br>' +
-      P.nCyl + ' cyl, ' + P.vAngle + '\u00b0 V, firing ' + P.firingOrder.join('-') + '<br>' +
+      P.nCyl + ' cyl, ' + (P.flat ? 'flat (boxer, 180\u00b0)' : P.vAngle + '\u00b0 V') + ', firing ' + P.firingOrder.join('-') + '<br>' +
       'exhaust valve \u00d8 ' + mm(P.exValve.d) + ', lift ' + mm(P.exValve.lift) + ', opens ' + P.exValve.open.toFixed(0) + '\u00b0, ' + P.exValve.dur.toFixed(0) + '\u00b0 open' +
       (P.stubs ? '<br>16 stubs \u00d8 ' + mm(P.stubs.d) + ', ' + mm(Math.min.apply(null, P.stubs.len)) + ' \u2013 ' + mm(Math.max.apply(null, P.stubs.len)) + ', pitch ' + mm(P.stubs.pitch) : '') +
       (P.blower ? '<br>blower ' + P.blower.ratio + '\u00d7 crank, ' + P.blower.z.join(' + ') + ' blades, max PR ' + P.blower.prMax.toFixed(2) : '') +
@@ -7979,11 +8113,11 @@ var EngineBay = (function () {
 </script>
 <script>/* js/flat-assets.js */
 /* flat-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v4 flat; interior = v2 composition). The single-file build inlines these as data URIs. */
-var FLAT_ASSETS = {"meta": {"style": "flat", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [767, 518], "bodyX": [6, 760], "contactY": 511, "splitY": 145, "realW": 1.55, "lamps": [], "tips": [[177, 160, 33], [185, 242, 36], [592, 154, 34], [584, 236, 37]], "dist": 4.8, "len": 4.01}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}], "brm": {"axisX": 640, "hub": [640, 540], "wheelR": 250, "view": {"hz": 75, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[186, 320, 58], [1058, 320, 58]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.743, 0.78], "wheel": {"px": 1020, "logical": 510.0}}}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp", "brm-cockpit": "assets/flat/brm-cockpit.webp", "brm-rear": "assets/flat/brm-rear.webp", "brm-wheel": "assets/flat/brm-wheel.webp", "brm-wheel-shadow": "assets/flat/brm-wheel-shadow.webp", "brm-shifter": "assets/flat/brm-shifter.webp"}};
+var FLAT_ASSETS = {"meta": {"style": "flat", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [767, 518], "bodyX": [6, 760], "contactY": 511, "splitY": 145, "realW": 1.55, "lamps": [], "tips": [[177, 160, 33], [185, 242, 36], [592, 154, 34], [584, 236, 37]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 666], "bodyX": [4, 934], "contactY": 661, "splitY": 517, "realW": 1.852, "lamps": [[47, 306, 186, 78], [704, 306, 189, 78], [235, 340, 468, 37]], "tips": [[196, 577, 22], [245, 577, 22], [693, 577, 22], [742, 577, 22]], "dist": 4.6, "len": 4.427}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}], "brm": {"axisX": 640, "hub": [640, 540], "wheelR": 250, "view": {"hz": 75, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[186, 320, 58], [1058, 320, 58]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.743, 0.78], "wheel": {"px": 1020, "logical": 510.0}}, "p997": {"axisX": 462, "hub": [462, 650], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520}}}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp", "brm-cockpit": "assets/flat/brm-cockpit.webp", "brm-rear": "assets/flat/brm-rear.webp", "brm-wheel": "assets/flat/brm-wheel.webp", "brm-wheel-shadow": "assets/flat/brm-wheel-shadow.webp", "brm-shifter": "assets/flat/brm-shifter.webp", "p997-cockpit": "assets/flat/p997-cockpit.webp", "p997-rear": "assets/flat/p997-rear.webp", "p997-wheel": "assets/flat/p997-wheel.webp", "p997-wheel-shadow": "assets/flat/p997-wheel-shadow.webp", "p997-shifter": "assets/flat/p997-shifter.webp"}};
 </script>
 <script>/* js/ink-assets.js */
 /* ink-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v5 ink; interior = v2 composition). The single-file build inlines these as data URIs. */
-var INK_ASSETS = {"meta": {"style": "ink", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [776, 553], "bodyX": [6, 769], "contactY": 546, "splitY": 175, "realW": 1.55, "lamps": [], "tips": [[187, 193, 38], [195, 275, 42], [595, 189, 37], [587, 271, 41]], "dist": 4.8, "len": 4.01}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}], "brm": {"axisX": 640, "hub": [640, 540], "wheelR": 250, "view": {"hz": 74, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[204, 317, 56], [1068, 318, 54]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.737, 0.78], "wheel": {"px": 1018, "logical": 509.0}}}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp", "brm-cockpit": "assets/ink/brm-cockpit.webp", "brm-rear": "assets/ink/brm-rear.webp", "brm-wheel": "assets/ink/brm-wheel.webp", "brm-wheel-shadow": "assets/ink/brm-wheel-shadow.webp", "brm-shifter": "assets/ink/brm-shifter.webp"}};
+var INK_ASSETS = {"meta": {"style": "ink", "gt350": {"axisX": 555, "hub": [552, 490], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5}}, "caddy": {"axisX": 518, "hub": [512, 540], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [776, 553], "bodyX": [6, 769], "contactY": 546, "splitY": 175, "realW": 1.55, "lamps": [], "tips": [[187, 193, 38], [195, 275, 42], [595, 189, 37], [587, 271, 41]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 653], "bodyX": [4, 935], "contactY": 648, "splitY": 507, "realW": 1.852, "lamps": [[48, 290, 184, 73], [707, 290, 187, 73], [234, 328, 468, 36]], "tips": [[190, 567, 21], [237, 567, 21], [697, 567, 21], [745, 567, 21]], "dist": 4.6, "len": 4.427}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}], "brm": {"axisX": 640, "hub": [640, 540], "wheelR": 250, "view": {"hz": 74, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[204, 317, 56], [1068, 318, 54]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.737, 0.78], "wheel": {"px": 1018, "logical": 509.0}}, "p997": {"axisX": 462, "hub": [462, 650], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520}}}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp", "brm-cockpit": "assets/ink/brm-cockpit.webp", "brm-rear": "assets/ink/brm-rear.webp", "brm-wheel": "assets/ink/brm-wheel.webp", "brm-wheel-shadow": "assets/ink/brm-wheel-shadow.webp", "brm-shifter": "assets/ink/brm-shifter.webp", "p997-cockpit": "assets/ink/p997-cockpit.webp", "p997-rear": "assets/ink/p997-rear.webp", "p997-wheel": "assets/ink/p997-wheel.webp", "p997-wheel-shadow": "assets/ink/p997-wheel-shadow.webp", "p997-shifter": "assets/ink/p997-shifter.webp"}};
 </script>
 <script>/* js/visuals-painted.js */
 /*
@@ -8000,9 +8134,9 @@ var PaintedVisuals = (function () {
   'use strict';
   function make(getAssets, STY) {
   var PW = 1280, PH = 720, A = null, M = null, status = 'idle', caches = {}, V16 = false;
-  function carOf(id) { return id === 'gt350' ? 'gt350' : id === 'brm' ? 'brm' : 'caddy'; }
-  function trackOf(car) { return car === 'gt350' ? 1.47 : car === 'brm' ? 1.295 : 1.55; }
-  function axleOf(c, car) { return c.dist + (car === 'gt350' ? 0.9 : car === 'brm' ? 0.45 : 1.35); }
+  function carOf(id) { return id === 'gt350' ? 'gt350' : id === 'brm' ? 'brm' : id === 'p997' ? 'p997' : 'caddy'; }
+  function trackOf(car) { return car === 'gt350' ? 1.47 : car === 'brm' ? 1.295 : car === 'p997' ? 1.548 : 1.55; }   // 997 C4S rear track 1548 mm
+  function axleOf(c, car) { return c.dist + (car === 'gt350' ? 0.9 : car === 'brm' ? 0.45 : car === 'p997' ? 0.99 : 1.35); }   // 997: rear overhang ~0.99 m
     var T = ({
     A: { flat: true, face: '#1c2026', ink: '#f2ede1', ivory: '#efe5cc', ivInk: '#2b2520', line: null, lw: 0, needle: '#ff7a1a', cap: '#3a3f46', glass: 'flat', dash: '#f2c14e', dashLine: null, drag: '#f6f3ea',
          smoke: 'flat', lampOff: '#2a2e33', hud: { panel: 'rgba(22,26,32,0.88)', line: null, lw: 0, text: '#f4efe2', dim: '#9aa3ad', accent: '#ffb02e', bar: '#3a414a', thr: '#5cc46a', brk: '#ef5a48', font: '"Avenir Next", "Futura", "Century Gothic", "Trebuchet MS", Arial, sans-serif', r: 12, sh: 0, scale: 1 } },
@@ -8199,6 +8333,16 @@ var PaintedVisuals = (function () {
       }
       out.angW = sweep(50, 110, Math.PI * 0.98, Math.PI * 1.90);
       out.angO = sweep(0, 160, Math.PI * 0.81, Math.PI * 2.24);
+    } else if (car === 'p997') {
+      // v1.11.0: 997 five-dial cluster. Live faces drawn over the painted ones: rev counter in the middle (0-8, red from 7.3),
+      // speedometer left of it, oil pressure far left, fuel far right; the right-hand dial is the on-board display (gear + speed)
+      var G = m.gauges, sp = G.speedo, t = G.tach, dsp = G.display, iv0 = [[0, '#26292e'], [1, '#08090b']];
+      out.angT = face(g, t[0], t[1], t[2], { max: 8, major: 1, minor: 0.25, mid: 0.5, red: 7.3, label: 'RPM', sub: 'x 1000', numSize: 0.2 });
+      out.angS = face(g, sp[0], sp[1], sp[2], mph ? { max: 200, major: 40, minor: 10, mid: 20, label: 'MPH', numSize: 0.19, a0: Math.PI * 0.72, a1: Math.PI * 2.28 } : { max: 320, major: 40, minor: 10, mid: 20, label: 'KM/H', numSize: 0.17, a0: Math.PI * 0.72, a1: Math.PI * 2.28 });
+      out.angOil = face(g, G.oil[0], G.oil[1], G.oil[2], { max: 5, major: 1, minor: 0.5, a0: Math.PI * 0.8, a1: Math.PI * 2.2, label: 'bar', numSize: 0.3, face: iv0 });
+      out.angF = face(g, G.fuel[0], G.fuel[1], G.fuel[2], { max: 1, major: 0.5, minor: 0.25, noNums: true, a0: Math.PI * 0.8, a1: Math.PI * 2.2, label: 'FUEL', face: iv0 });
+      g.save(); ell(g, dsp[0], dsp[1], dsp[2], dsp[2]); g.fillStyle = T.flat ? '#0f1216' : rad(g, dsp[0], dsp[1] - dsp[2] * 0.3, 1, dsp[2], [[0, '#1b2026'], [1, '#05070a']]); g.fill(); g.restore();
+      if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw * 0.6; ell(g, dsp[0], dsp[1], dsp[2], dsp[2]); g.stroke(); }
     } else if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach;
       out.angS = face(g, sp[0], sp[1], sp[2], mph ? { max: 140, major: 20, minor: 5, mid: 10, label: 'MPH', numSize: 0.16 } : { max: 220, major: 40, minor: 10, mid: 20, label: 'KM/H', numSize: 0.16 });
@@ -8484,8 +8628,10 @@ var PaintedVisuals = (function () {
   // A shift runs through the gate: out of gear to neutral, across, then into gear, each leg an eased ~0.07 s throw.
   var HP = { 0: [0, 0], 1: [-1, -1], 2: [-1, 1], 3: [1, -1], 4: [1, 1], 5: [1, 1] };
   var HP5 = { 0: [0, 0], 1: [-1, -1], 2: [-1, 1], 3: [0, -1], 4: [0, 1], 5: [1, -1] }, LV = { gtDt: 0 };
+  // v1.11.0: 911 (997) 6-speed H: 1-2 left, 3-4 middle, 5-6 right (odd forward, even back)
+  var HP6 = { 0: [0, 0], 1: [-1, -1], 2: [-1, 1], 3: [0, -1], 4: [0, 1], 5: [1, -1], 6: [1, 1] };
   function hurst(g, m, s) {
-    var map = m.shiftPattern === 'h5' ? HP5 : HP;
+    var map = m.shiftPattern === 'h5' ? HP5 : m.shiftPattern === 'h6' ? HP6 : HP;
     var st = anim.gt, gear = s.gear | 0, dt = LV.gtDt;
     if (st.gear === null) { st.gear = gear; var p0 = map[gear] || [0, 0]; st.x = p0[0]; st.y = p0[1]; }
     if (gear !== st.gear) { var tp = map[gear] || [0, 0]; st.path = [[st.x, 0], [tp[0], 0], [tp[0], tp[1]]]; st.gear = gear; }
@@ -8659,6 +8805,18 @@ var PaintedVisuals = (function () {
       glass(g, m.gauges.water[0], m.gauges.water[1], m.gauges.water[2]);
       glass(g, m.gauges.oil[0], m.gauges.oil[1], m.gauges.oil[2]);
       if (m.shifter) { m._shifterSprite = 'brm-shifter'; hurst(g, m, s); }
+    } else if (car === 'p997') {
+      var G = m.gauges, sp = G.speedo, t = G.tach, dsp = G.display, isMph = units(s) === 'mph';
+      drum(g, t[0], t[1] + t[2] * 0.5, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 7, 10);
+      lamp(g, t[0] - 15, t[1] + t[2] * 0.25, 3.4, '#ff3a2a', s.brake > 0.05); lamp(g, t[0] + 15, t[1] + t[2] * 0.25, 3.4, '#ff3a2a', !running);
+      var oilP = running ? Math.min(5, 1.2 + s.rpm / 1800) : 0;
+      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : s.kmh), '#ff6a1e'); needle(g, t[0], t[1], t[2], C.angT(s.rpm / 1000), '#ff6a1e');
+      needle(g, G.oil[0], G.oil[1], G.oil[2], C.angOil(oilP), '#ff6a1e', 2.2); needle(g, G.fuel[0], G.fuel[1], G.fuel[2], C.angF(0.72), '#ff6a1e', 2.2);
+      g.save(); g.textAlign = 'center'; g.fillStyle = '#ffb02e'; g.font = 'bold ' + Math.round(dsp[2] * 0.62) + 'px ' + FONT;
+      var gl = s.gearLabel || (s.gear > 0 ? String(s.gear) : 'N'); g.fillText(gl, dsp[0], dsp[1] + dsp[2] * 0.12);
+      g.font = Math.round(dsp[2] * 0.26) + 'px ' + FONT; g.fillStyle = '#e8eef4'; g.fillText(Math.round(isMph ? mph : s.kmh) + (isMph ? ' mph' : ' km/h'), dsp[0], dsp[1] + dsp[2] * 0.58); g.restore();
+      [sp, t, G.oil, G.fuel, dsp].forEach(function (q) { glass(g, q[0], q[1], q[2]); });
+      if (m.shifter) { m._shifterSprite = 'p997-shifter'; hurst(g, m, s); }
     } else if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach, isMph = units(s) === 'mph';
       drum(g, sp[0], sp[1] + sp[2] * 0.42, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 8.5, 12);
@@ -8779,7 +8937,7 @@ var PaintedVisuals = (function () {
   }
   // ground shadows under the chase car (painting px), on the ground plane of the scenery camera SC; u = metres right of the car centre
   function carShadows(g, SC, c, car, cx, dxCar) {
-    var W2 = c.realW / 2, z0 = c.dist, z1 = c.dist + c.len, track = car === 'gt350' ? 1.47 : 1.55, tw = car === 'gt350' ? 0.24 : 0.22, axle = c.dist + (car === 'gt350' ? 0.9 : 1.35);
+    var W2 = c.realW / 2, z0 = c.dist, z1 = c.dist + c.len, track = car === 'gt350' ? 1.47 : car === 'p997' ? 1.548 : 1.55, tw = car === 'gt350' ? 0.24 : car === 'p997' ? 0.305 : 0.22, axle = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : 1.35);
     var base = SC.xOf(z0, dxCar);
     function P(u, z) { return [cx + SC.xOf(z, dxCar + u) - SC.xOf(z, dxCar), SC.yOf(z)]; }
     function quad(u0, u1, za, zb, skew) { var a = P(u0 + skew, za), b = P(u1 + skew, za), cc = P(u1, zb), d = P(u0, zb); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(cc[0], cc[1]); g.lineTo(d[0], d[1]); g.closePath(); }
@@ -8799,7 +8957,7 @@ var PaintedVisuals = (function () {
     var steer = s.steer || 0, sway = steer * 10;
     var SC = scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len }, s);
     var tpc = (360 - V.hz) / f, cpc = 1 / Math.sqrt(1 + tpc * tpc), spc = tpc * cpc;   // pitched camera: depth of the rear face at mid height
-    var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : 1.35), yc = SC.yOf(zc);
+    var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : 1.35), yc = SC.yOf(zc);
     var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + '-rear'];
     var run = s.engine === 'running', shake = run ? Math.sin(s.time * 70) * Math.min(1.2, 0.4 + s.rpm / 5000) : 0;
     var pitch = Math.max(-7, Math.min(7, (s.accel || 0) * 14)), roll = -steer * Math.min(1, s.kmh / 60) * 0.035;  // squat (+) / dive (-), body roll in turns
@@ -8864,11 +9022,12 @@ var PaintedVisuals = (function () {
   var FOCUS15 = {
     gt350: { in: { land: [150, 175, 1165, 645], port: [292, 30, 870, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
     caddy: { in: { land: [80, 150, 1140, 650], port: [205, 30, 830, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
-    brm:   { in: { land: [40, 80, 1240, 720], port: [340, 120, 940, 720] }, out: { land: [200, 80, 1080, 760], port: [240, 40, 1040, 720] } } };
+    brm:   { in: { land: [40, 80, 1240, 720], port: [340, 120, 940, 720] }, out: { land: [200, 80, 1080, 760], port: [240, 40, 1040, 720] } },
+    p997:  { in: { land: [120, 160, 1180, 660], port: [200, 30, 780, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } } };
   var FOCUS16 = {
     gt350: { in: { land: [0, 165, 1280, 720], port: [240, 150, 690, 720] }, out: FOCUS15.gt350.out },
     caddy: { in: { land: [0, 165, 1280, 720], port: [212, 140, 672, 720] }, out: FOCUS15.caddy.out },
-    brm: FOCUS15.brm };
+    brm: FOCUS15.brm, p997: FOCUS15.p997 };
   function focus() { return V16 ? FOCUS16 : FOCUS15; }
   var LY = null, LYt = 0;
   function layout(dash) {
@@ -9016,7 +9175,7 @@ var VisualModels = (function () {
  */
 var ProjectHistory = {
   about: [
-    'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac and a 1953 BRM P30 Mk II V16.',
+    'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac, a 1953 BRM P30 Mk II V16 and a 2006 Porsche 911 Carrera 4S (997.1).',
     'The V8 sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, exhaust pipes and muffler.',
     'Physics (gearbox, weight, tyres, brakes) uses the cars\u2019 real specs.'
   ],
@@ -9057,6 +9216,7 @@ var ProjectHistory = {
       { v: 'v1.10.8', date: '2026-11-13', status: 'done', text: 'The 3D engine bay now runs at real engine speed when you open it. Slow motion is still in the bay\u2019s speed menu (auto, 1/10, 1/50, 1/200) and the game remembers what you picked. At real speed the screen cannot keep up with the crank, so the pistons can seem to jump or turn backwards (the wagon-wheel effect); slow motion shows the movement properly. Sound is unchanged.' },
       { v: 'v1.10.9', date: '2026-11-13', status: 'done', text: 'Only two picture styles are left: Ink (the default) and Flat. The old drawn, painted and 3D driving views are gone, together with the pictures only they used. Ink is the closest to the old drawn look. If you had picked one of the removed styles, the game switches to Ink by itself, and old links still work. The 3D engine bay, the sound, the driving and the gearbox are unchanged; v8 stays the BRM sound default and v2 the GT350 and Cadillac default.' },
       { v: 'v1.10.10', date: '2026-11-13', status: 'done', text: 'The 3D engine bay now looks more like each real car under the bonnet. On the GT350: the Cobra valve covers, the round chrome air cleaner on the Holley, the distributor at the front, the alternator on the right-hand side, the shock towers with the Monte Carlo bar and the export brace, the battery at the right front, the brake booster on the left of the firewall and the radiator. On the Cadillac: blue valve covers, the distributor at the back, the 1959 oil-filter can, the power-steering pump at the front, the battery at the left front, the big brake booster and a wide radiator. On the BRM: the SU carburettor feeding the supercharger, a short intake pipe to every cylinder, the four magnetos and the radiator in the nose. The body panels are see-through so the engine stays easy to see, and the Parts panel can switch the new bits off and lists where they come from. All engine sizes stay exactly as the sound model has them; where the real car differs (the GT350\u2019s headers, the Cadillac\u2019s oil-bath air cleaner, the size of the BRM\u2019s supercharger wheels) the model\u2019s version is kept. Sound and driving are unchanged.' },
+      { v: 'v1.11.0', date: '2026-11-13', status: 'done', text: 'New car: a 2006 Porsche 911 Carrera 4S (997.1) in Cobalt Blue Metallic. It has its own computed flat-six sound (3.8 litre boxer behind the rear axle, its own firing order and exhaust), an electric starter, the six-speed manual gearbox with the rev-match option, four-wheel drive and its real weight, power and gearing (0-100 km/h in about 4.8 s in the game, the factory says 4.8 s). Inside and outside pictures in Ink and Flat, real-looking gauges, and a 3D view of the rear engine bay. The sound was checked against recordings of standard cars only; cars with the optional sport exhaust are scored separately. The other cars are unchanged.' },
     ] }
   ]
 };
@@ -9064,8 +9224,8 @@ var ProjectHistory = {
 <script>/* js/main.js */
 /* main.js: input (keyboard + multitouch), game loop, physics -> audio + UI */
 (function () {
-  var OUT_GAIN = { GT350: 0.8, CADDY: 0.85, BRM: 0.8 };
-  var ODO_START = { gt350: 38412.0, caddy: 61905.3, brm: 2847.0 };
+  var OUT_GAIN = { GT350: 0.8, CADDY: 0.85, BRM: 0.8, P997: 0.8 };
+  var ODO_START = { gt350: 38412.0, caddy: 61905.3, brm: 2847.0, p997: 87240.6 };
   var params = new URLSearchParams(location.search);
   // touch UI: phones and tablets. v1.8.1: iPadOS Safari (desktop mode is its default) reports itself as a Mac; it is recognised by
   // maxTouchPoints > 1 (Macs report 0), not by the user agent, and stays a touch device when a trackpad / keyboard is attached.
@@ -9164,6 +9324,7 @@ var ProjectHistory = {
   // stays for the GT350 and Cadillac.
   function soundId() {
     if (spec().engineKey === 'BRM') return brmEntry(state.brmSound).id;
+    if (spec().engineKey === 'P997') return 'v9p';   // job 8 (v1.11.0): the 911 has one sound model, its own flat-six on the v9.11 kernel
     var m = SoundModels.get(state.model);
     return m.hidden ? 'v2' : state.model;
   }
@@ -9224,7 +9385,7 @@ var ProjectHistory = {
       '<tr><td>1/8 mile</td><td>' + fmt(r.eighth) + ' s @ ' + sp(r.eighthMph) + '</td></tr><tr><td>1000 ft</td><td>' + fmt(r.ft1000) + ' s</td></tr>' +
       '<tr class="et"><td>1/4 mile</td><td>' + fmt(r.quarter) + ' s @ ' + sp(r.quarterMph) + '</td></tr></table>' +
       '<p class="best">' + (isBest ? 'New best for this car!' : best ? 'Best: ' + fmt(best.quarter) + ' s @ ' + sp(best.mph) + ' (' + best.date + ')' : 'Red light: no time recorded') + '</p>' +
-      '<p class="note">Reaction 0.500 = perfect on a full tree (measured from the last amber). Period road tests: GT350 \u2248 15 s, \u201959 Cadillac \u2248 17\u201318 s.</p>' +
+      '<p class="note">Reaction 0.500 = perfect on a full tree (measured from the last amber). Period road tests: GT350 \u2248 15 s, \u201959 Cadillac \u2248 17\u201318 s, 911 Carrera 4S (997) \u2248 12.9\u201313.2 s.</p>' +
       '<div class="row"><button class="tb" data-act2="again">Run again</button><button class="tb" data-act2="exit">Exit drag strip</button></div>';
     var el = document.getElementById('dragCard'); el.innerHTML = h; el.classList.remove('hidden');
     window.__lastDrag = r;
@@ -9273,6 +9434,7 @@ var ProjectHistory = {
     state.model = m.id; lsSet('streetrod.sound', state.model);
     if (audio.ctx) ensureAudio();   // live crossfade to the new model (no restart)
     if (spec().engineKey === 'BRM') flash('BRM: use the BRM sound picker (v8 / v9.x)', 1.5);
+    else if (spec().engineKey === 'P997') flash('911: its own flat-six physics model (v9.11 kernel)', 1.5);
     else flash('Sound model ' + SoundModels.get(state.model).label, 1.5);
     updatePanel();
   }
@@ -9329,6 +9491,7 @@ var ProjectHistory = {
       case '1': selectCar('gt350'); break;
       case '2': selectCar('caddy'); break;
       case '3': selectCar('brm'); break;
+      case '4': selectCar('p997'); break;
       case 's': case 'S': case 'i': case 'I': ignition(); break;
       case 'm': case 'M': toggleMute(); break;
       case 'v': case 'V': setView(state.view === 1 ? 0 : 1); break;
@@ -9429,6 +9592,7 @@ var ProjectHistory = {
     document.getElementById('segBrmSound').classList.toggle('hidden', v.engineKey !== 'BRM');
     selB.value = state.brmSound;
     selS.value = state.model; selV.value = state.visual;
+    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997');   // v1.11.0: the 911 has one sound model (its own flat-six on the v9.11 kernel)
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
     document.getElementById('bDrag').classList.toggle('on', !!drag);
     document.getElementById('bMute').textContent = state.muted ? 'Unmute' : 'Mute';
@@ -9440,7 +9604,7 @@ var ProjectHistory = {
     document.getElementById('bDown').innerHTML = auto ? '&#9664;<small>back to N</small>' : '&#9660;<small>' + (rmOn ? 'down \u00b7 blip' : 'shift down') + '</small>';
     var b = v.brakes;
     document.getElementById('specs').innerHTML = '<b>' + v.label + '</b><br>' + v.engineText + '<br>' + v.transText + ': ' + v.gears.join(' / ') + ', final drive ' + v.finalDrive.toFixed(2) +
-      '<br>Mass ' + v.curbText + '<br>Tyres ' + v.tyreText + '<br>Brakes: ' + b.text;
+      (v.awd ? '<br>All-wheel drive: ' + v.awd.text : '') + '<br>Mass ' + v.curbText + '<br>Tyres ' + v.tyreText + '<br>Brakes: ' + b.text;
   }
   applyTheme(); updatePanel();
   var lastIgnLabel = '', astatusEl = document.createElement('span');

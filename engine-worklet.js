@@ -3533,7 +3533,7 @@ function engineModuleBrm9(core) {
   },
 function engineModuleV8p(core) {
     // ---- model data (tools/export_v8p_params.py: engine-sound v8phys.CARS + PHYS merged with fitted_params_v8phys.json)
-    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.141082763671875,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.9620153485230031,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.345489501953125,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0}}}/*END_V8P_DATA*/;
+    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.141082763671875,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.9620153485230031,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.345489501953125,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252.0,"lsa":116.0,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1.0,"lifters":"hydraulic","idle_rpm":670.0,"redline":7300.0,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1.0,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0.0,"inter_len":0.6,"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["chamber",0.22,10.0,0.5],["pipe",0.12,0.045,0.0],["chamber",0.22,10.0,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0.0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1.0],"cabin_len":1.9,"cabin_h":1.0,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000.0,"st_i_free":70.0,"st_i_lock":850.0,"st_v_test":11.5,"st_v_lock":6.0,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000.0,"spark0":10.0},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.001324638794939649,"hf":0.0016656077186669369,"ro_loss":0.98,"t_prim0":678.3541752286684,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":0.0,"k_jet":0.27672619972869567,"f_floor":180.0,"f_fw":320.0,"k_cab":0.35,"cab_q":4.0,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.531341552734375,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.8,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":40.0,"pack":2.227712131406225,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0}}}/*END_V8P_DATA*/;
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     var DL = 1024, DLM = DL - 1, HB = 4096, NSRC = 6;
     // Q
@@ -3605,7 +3605,7 @@ function engineModuleV8p(core) {
     }
 
     function kv8(n, fs, K, Q, S, CY, PF, NPI, NODE, NN, NW, AB, BB, AT, NA, out) {
-      var dt = 1.0 / fs, rad = Math.PI / 180.0, g = G_EX, k, i, p, j, knl = Q[Q_KNL];
+      var dt = 1.0 / fs, rad = Math.PI / 180.0, g = G_EX, k, i, p, j, knl = Q[Q_KNL], NCY = (CY.length / NC) | 0;   // job 8: 8 (V8) or 6 (flat-six) cylinders
       for (k = 0; k < n; k++) {
         var u = (k + 1.0) / n, ko = k * NO;
         var thr = K[K_THR0] + (K[K_THR1] - K[K_THR0]) * u;
@@ -3693,7 +3693,7 @@ function engineModuleV8p(core) {
         var qin = 0.0, tick0 = 0.0, tick1 = 0.0, tpr = S[S_TPRIM], rho_e = P_ATM / (R_GAS * tpr);
         var npol = Q[Q_NP] - (Q[Q_NP] - 1.12) * Math.exp(-rpm / 250.0), leak = Math.exp(-dt / 3.0);
         var hk = dt / 0.03 * Math.exp(-rpm / 100.0);   // burnt-charge wall heat transfer at near-standstill (v8phys.py)
-        for (i = 0; i < 8; i++) {
+        for (i = 0; i < NCY; i++) {
           var c = i * NC, phi0 = CY[c + C_PHI], phi = th - CY[c + C_OFF];
           if (phi < 0.0) phi += 720.0;
           CY[c + C_PHI] = phi;
@@ -3918,7 +3918,7 @@ function engineModuleV8p(core) {
       function node(t, x, ports) { nodes.push([t, x, ports]); }
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0;
-        for (i = 1; i <= 8; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
+        for (i = 1; i <= c.fire_order.length; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
         if (c.exhaust === 'tri-y') {
           var secs = [];
           c.tri_pairs.forEach(function (pr) {
@@ -3930,6 +3930,14 @@ function engineModuleV8p(core) {
           });
           head = pipe(c.head_len, c.pipe_d, 1);
           node(0, 0, [[secs[0], 1], [secs[1], 1], [head, 0]]);
+        } else if (c.exhaust === '3-1') {   // job 8: flat-six, three primaries per bank into a 3-1 collector (997.1 S)
+          var prims = [];
+          for (var j3 = 0; j3 < cyls.length; j3++) {
+            var p3 = pipe(c.prim_len * c.prim_x[j3], c.prim_d, 0);
+            node(1, cyls[j3] - 1, [[p3, 0]]); prims.push([p3, 1]);
+          }
+          head = pipe(c.head_len, c.pipe_d, 1);
+          node(0, 0, prims.concat([[head, 0]]));
         } else {
           prev = null;
           for (var jj = 0; jj < cyls.length; jj++) {
@@ -3942,9 +3950,10 @@ function engineModuleV8p(core) {
           }
           head = prev;
         }
-        if (bank === 0) xp = pipe(c.x_len, c.x_d, 1);
+        var hx = (c.x_len || 0) > 0;   // job 8: the 997.1 has no balance pipe, the banks stay separate
+        if (bank === 0 && hx) xp = pipe(c.x_len, c.x_d, 1);
         var inter = pipe(c.inter_len + dl, c.pipe_d, 1);
-        node(0, 0, [[head, 1], [xp, bank], [inter, 0]]);
+        node(0, 0, hx ? [[head, 1], [xp, bank], [inter, 0]] : [[head, 1], [inter, 0]]);
         prev = inter;
         c.muf.forEach(function (mf) {
           var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
@@ -3952,7 +3961,7 @@ function engineModuleV8p(core) {
         });
         var tail = pipe(c.tail_len, c.pipe_d, 2);
         node(0, 0, [[prev, 1], [tail, 0]]);
-        node(2, bank, [[tail, 1]]);
+        node(2, c.cross_mouth ? 1 - bank : bank, [[tail, 1]]);   // 997.1: each bank's cat pipe crosses to the other side
       }
       var NW = 0; nodes.forEach(function (n) { NW = Math.max(NW, 3 + 2 * n[2].length); });
       var NODE = new Int32Array(nodes.length * NW);
@@ -3966,7 +3975,7 @@ function engineModuleV8p(core) {
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
     function V8pSynth(spec, listener, fs, opts) {
       opts = opts || {};
-      var key = spec.car_key || (spec.engineKey === 'CADDY' ? 'cadillac59' : 'gt350');
+      var key = spec.car_key || (spec.engineKey === 'CADDY' ? 'cadillac59' : spec.engineKey === 'P997' ? 'p997' : 'gt350');   // v1.11.0: P997 = the 911's flat-six
       var D = DATA[key];
       if (!D) throw new Error('v8p: no data for ' + key);
       this.key = key; this.c = D.car; this.P = Object.assign({}, D.phys, opts.phys || {}); this.fs = fs;
@@ -3975,17 +3984,17 @@ function engineModuleV8p(core) {
       var N = buildNet(this.c);
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
       this.Q = this._q();
-      this.S = new Float64Array(NS); this.CY = new Float64Array(8 * NC); this.PF = new Float64Array(this.NP * NF);
+      this.S = new Float64Array(NS); this.NCY = this.c.fire_order.length; this.CY = new Float64Array(this.NCY * NC); this.PF = new Float64Array(this.NP * NF);
       this.AB = new Float64Array(this.NP * DL); this.BB = new Float64Array(this.NP * DL); this.AT = new Float64Array(this.NP * DL); this.NA = new Float64Array(this.NN * 2);
       var seed = opts.seed === undefined ? 1 : opts.seed;
       this.S[S_RNG] = (Math.imul(0x9E3779B9 | 0, seed + 1) >>> 0) || 1;
       this.S[S_PMAN] = P_ATM; this.S[S_TPRIM] = T_AMB; this.S[S_TTAIL] = T_AMB;
       var fo = this.c.fire_order, off = [], i, left = {};
       this.c.left_bank.forEach(function (x) { left[x] = 1; });
-      for (i = 0; i < 8; i++) off[fo[i] - 1] = 90.0 * i;
-      for (i = 0; i < 8; i++) { this.CY[i * NC + C_OFF] = off[i]; this.CY[i * NC + C_BANK] = left[i + 1] ? 0.0 : 1.0; }
+      for (i = 0; i < this.NCY; i++) off[fo[i] - 1] = 720.0 / this.NCY * i;   // even firing (V8 90 deg, flat-six 120 deg)
+      for (i = 0; i < this.NCY; i++) { this.CY[i * NC + C_OFF] = off[i]; this.CY[i * NC + C_BANK] = left[i + 1] ? 0.0 : 1.0; }
       for (var nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 1) this.CY[this.NODE[nd * this.NW + 1] * NC + C_PIPE] = this.NODE[nd * this.NW + 3];
-      for (i = 0; i < 8; i++) { var v0 = (0.0 - off[i]) % 720.0; this.CY[i * NC + C_PHI] = v0 < 0 ? v0 + 720.0 : v0; }
+      for (i = 0; i < this.NCY; i++) { var v0 = (0.0 - off[i]) % 720.0; this.CY[i * NC + C_PHI] = v0 < 0 ? v0 + 720.0 : v0; }
       this.pw = 0.0; this.load = 0.0;
       this.K = new Float64Array(NK);
       this.out = new Float64Array(256 * NO);
@@ -4004,10 +4013,10 @@ function engineModuleV8p(core) {
       Q[Q_DV] = c.ev_d; Q[Q_LMAX] = c.ev_lift; Q[Q_CAMX] = c.camx; Q[Q_CD] = P.cd;
       Q[Q_QC] = P.q_comb; Q[Q_HL] = P.heat_loss; Q[Q_NP] = P.n_poly; Q[Q_BURN] = P.burn;
       Q[Q_XR0] = P.xr0; Q[Q_XROV] = P.xr_ov; Q[Q_COV] = P.cov; Q[Q_COVR] = P.cov_res; Q[Q_MISR] = P.mis_res;
-      Q[Q_ETAV] = P.eta_v; Q[Q_VD] = 8 * vd1; Q[Q_VMAN] = c.v_man; Q[Q_ATHW] = c.th_area_wot;
+      Q[Q_ETAV] = P.eta_v; Q[Q_VD] = c.fire_order.length * vd1; Q[Q_VMAN] = c.v_man; Q[Q_ATHW] = c.th_area_wot;
       Q[Q_AIDLE] = P.a_idle > 0 ? P.a_idle : 2.0e-5; Q[Q_FIDLE] = P.fast_idle; Q[Q_ROL] = P.ro_loss;
       Q[Q_J] = c.inertia; Q[Q_F0] = P.fric0; Q[Q_F1] = P.fric1; Q[Q_F2] = P.fric2; Q[Q_FCOLD] = P.fric_cold;
-      var vlock = c.st_kind === 'ford_pe' ? 5.0 : 3.5, Rm = vlock / c.st_i_lock, wfree = c.st_free_rpm * 2 * Math.PI / 60;
+      var vlock = c.st_v_lock !== undefined ? c.st_v_lock : c.st_kind === 'ford_pe' ? 5.0 : 3.5, Rm = vlock / c.st_i_lock, wfree = c.st_free_rpm * 2 * Math.PI / 60;
       Q[Q_STG] = c.st_ratio; Q[Q_STRM] = Rm; Q[Q_STRB] = c.r_batt;
       Q[Q_STKE] = (c.st_v_test - c.st_i_free * Rm) / wfree; Q[Q_STIF] = c.st_i_free; Q[Q_STJM] = 2.5e-4; Q[Q_STIS] = c.st_i_sat;
       Q[Q_TEETH] = c.st_teeth; Q[Q_VBAT] = c.v_batt; Q[Q_NSEG] = 22; Q[Q_SOLID] = c.lifters === 'solid' ? 1.0 : 0.0;
@@ -4043,7 +4052,7 @@ function engineModuleV8p(core) {
         var ear = pr.ears[e], pos = srcs[s], front = s >= 2, r = dist(ear, pos);
         if (pr.outside) {
           var sh = 1.0;
-          if (front && !pr.bay) sh = pr.shadow;
+          if (front && !pr.bay) sh = c.eng_shadow !== undefined ? c.eng_shadow : pr.shadow;   // job 8: rear engine behind the lid grille
           if (!front && pr.bay) sh = P.bay_exh;
           rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
           var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
