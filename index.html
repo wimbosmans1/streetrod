@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.2)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.3)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -6120,7 +6120,7 @@ var SoundModels = (function () {
     gainDb: { GT350: { rear: 10.1, in_cabin: 3.9 }, CADDY: { rear: 3.0, in_cabin: 1.2 } },     // test/level_match_v34.js
   });
   // job 4 (local draft, not released): the GT350 and the Cadillac on the latest physics kernel approach (BRM v9.11), each with
-  // its own V8, refit on the gated recordings, with an electric starter (js/engine-v8p.js). Selectable; v2 stays the default.
+  // its own V8, refit on the gated recordings, with an electric starter (js/engine-v8p.js). Selectable; from v1.11.3 the GT350 default is v9p, the Cadillac stays on v2.
   // startup: the model plays cranking / catch / choke idle / run-down and reports them (main.js startupLink), like v3 / v4.
   if (typeof ENGINE_MODULES !== 'undefined') register({
     id: 'v9p', label: 'v9.11 physics + starter', note: 'engine-sound v9.11-V8: each car\'s own V8 on the v9.11 physics kernel approach (blow-down cylinders, its own exhaust network, carb intake, valve train), electric starter and crank torque balance; refit on the gated recordings',
@@ -9305,6 +9305,7 @@ var ProjectHistory = {
       { v: 'v1.11.0', date: '2026-11-13', status: 'done', text: 'New car: a 2006 Porsche 911 Carrera 4S (997.1) in Cobalt Blue Metallic. It has its own computed flat-six sound (3.8 litre boxer behind the rear axle, its own firing order and exhaust), an electric starter, the six-speed manual gearbox with the rev-match option, four-wheel drive and its real weight, power and gearing (0-100 km/h in about 4.8 s in the game, the factory says 4.8 s). Inside and outside pictures in Ink and Flat, real-looking gauges, and a 3D view of the rear engine bay. The sound was checked against recordings of standard cars only; cars with the optional sport exhaust are scored separately. The other cars are unchanged.' },
       { v: 'v1.11.1', date: '2026-11-13', status: 'done', text: 'BRM, inside view: the front wheels now steer with the steering wheel. Turning the wheel to full lock turns the front tyres by about 11 degrees (a steering ratio of 11 to 1, normal for a 1950s Grand Prix car), and the tread keeps rolling while you steer. Driving straight looks exactly as before.' },
       { v: 'v1.11.2', date: '2026-11-13', status: 'done', text: 'Inside-the-car sound of the newer computed engine models (GT350 and Cadillac "v9p" option, and the Porsche): it was far too muffled, as if the body cut away everything above a low hum. It now lets the engine through the way real cabin recordings do: the floor and bulkhead block more as the pitch rises, sound also leaks through seals and vents, intake noise comes in through the air vents, and the trim softens the top end. Fitted to filtered in-car recordings of each car. The GT350 and Cadillac still start on their usual sound (v2); the Porsche outside sound is unchanged. Porsche top speed is now about 280 km/h in sixth like the factory figure (was 295 on the limiter), from tyre rolling resistance that grows with speed and the four-wheel-drive losses; 0-100 km/h is still about 4.9 s.' },
+      { v: 'v1.11.3', date: '2026-11-13', status: 'done', text: 'GT350 default sound is now the latest physics model, best fit on scorecard. The Cadillac still starts on v2, and the BRM still starts on v8. A saved sound choice or a link with ?sound= still works as before.' },
     ] }
   ]
 };
@@ -9345,6 +9346,9 @@ var ProjectHistory = {
   // v1.9.1: the BRM has its own sound switch; v1.9.2: v8 (shipped, default) or any of the v9.x physics models (v9.1 ... v9.9; v9.10 from v1.10.2, v9.11 from v1.10.3).
   // ?sound=v8|v9.1|...|v9.11 (or the ids v9_1 ... v9_11) sets it (v9 = v9.6, the v1.9.1 name; a v9.x value alone opens the BRM); it is not stored, so every fresh
   // visit starts on v8.
+  // v1.11.3: GT350 default is v9p (best scorecard fit); Cadillac stays on v2. A ?sound= URL or a saved streetrod.sound
+  // choice still applies to both V8 cars, as before. With no saved choice, each V8 car uses its own default.
+  function defaultV8Sound(id) { return id === 'gt350' ? 'v9p' : 'v2'; }
   function brmName(v) {
     if (v === 'v9') return 'v9.6';
     var L = SoundModels.brmList;
@@ -9354,8 +9358,11 @@ var ProjectHistory = {
   function brmEntry(name) { var L = SoundModels.brmList; for (var i = 0; i < L.length; i++) if (L[i].brm === name) return L[i]; return L[0]; }
   var soundParam = params.get('sound'), brmParam = soundParam ? brmName(soundParam) : null;
   var startCar = params.get('car') || (brmParam && brmParam !== 'v8' ? 'brm' : null);
-  var state = { carId: (startCar && cars[startCar]) ? startCar : 'gt350', units: 'kmh', view: params.get('view') === 'inside' ? 1 : 0,
-    model: SoundModels.get((brmParam ? null : soundParam) || lsGet('streetrod.sound', 'v2')).id, brmSound: brmParam || 'v8',
+  var startId = (startCar && cars[startCar]) ? startCar : 'gt350';
+  var soundChoice = brmParam ? null : soundParam;
+  if (!soundChoice) soundChoice = lsGet('streetrod.sound', null);
+  var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : 0,
+    model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || 'v8',
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   state.viewBlend = state.view === 1 ? 1 : 0;
@@ -9444,7 +9451,9 @@ var ProjectHistory = {
   function selectCar(id) {
     if (state.carId === id) return;
     var wasRunning = car().engine !== 'off';
-    state.carId = id; ensureAudio();
+    state.carId = id;
+    if (!soundChoice) state.model = defaultV8Sound(id);
+    ensureAudio();
     if (wasRunning && car().engine === 'off') car().ignition();
     if (radio && radio.on && !spec().radio) radio.stop();
     flash(spec().label, 1.5); updatePanel();
@@ -9520,6 +9529,7 @@ var ProjectHistory = {
     var m = SoundModels.get(id);
     if (m.hidden) return;
     state.model = m.id; lsSet('streetrod.sound', state.model);
+    soundChoice = state.model;
     if (audio.ctx) ensureAudio();   // live crossfade to the new model (no restart)
     if (spec().engineKey === 'BRM') flash('BRM: use the BRM sound picker (v8 / v9.x)', 1.5);
     else if (spec().engineKey === 'P997') flash('911: its own flat-six physics model (v9.11 kernel)', 1.5);
