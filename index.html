@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.11)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.12)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -272,9 +272,8 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 .nogap #bayBar .bayRow > * { margin: 0 6px 6px 0; }
 @media (min-width: 600px) and (min-height: 600px) { .touch #bayBar .bayRow .tb { min-height: 40px; } .touch #bayBar input[type=range] { height: 40px; } }
 /* v1.10: the Engine bay button must not wrap the touch top bar (iPad portrait); shorten the view labels on narrower touch screens */
-@media (max-width: 1000px) { .touch #segView .lx { display: none; } }
-@media (max-width: 700px) and (orientation: landscape) { .touch #segView .lx2 { display: none; } }
-@media (min-width: 760px) and (max-width: 1000px) and (min-height: 600px) { .touch #segView .tb { padding-left: 9px; padding-right: 9px; } }
+#segCar select, #segView select { max-width: 160px; }
+.touch #segCar select, .touch #segView select { max-width: 140px; }
 </style>
 <script>
 /* v1.8.2: self-reporting on real devices. Any uncaught error or rejected promise is shown in a red box at the bottom of the page
@@ -321,9 +320,9 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <canvas id="dash"></canvas>
     <div id="topbar">
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
-      <div class="seg" id="segCar"><button class="tb" data-act="car" data-v="gt350">GT350</button><button class="tb" data-act="car" data-v="caddy">Cadillac</button><button class="tb" data-act="car" data-v="brm">BRM</button><button class="tb" data-act="car" data-v="p997">911</button></div>
+      <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v8 (default) or a v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
-      <div class="seg" id="segView"><button class="tb" data-act="view" data-v="1">Inside<span class="lx"> car</span></button><button class="tb" data-act="view" data-v="0">Outside<span class="lx"> (rear)</span></button><button class="tb" id="bBay" data-act="view" data-v="2" title="Engine bay: 3D engine from the sound model's parameters (key E)">Engine<span class="lx2"> bay</span></button></div>
+      <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option></select></label>
       <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
@@ -351,8 +350,8 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>&darr;</td><td>Brake (hold; ramps to full pedal, can lock the wheels)</td></tr>
       <tr><td>&rarr; / &larr;</td><td>GT350: shift up / down (automatic clutch).<br>BRM: shift up / down, 5-speed H (automatic clutch).<br>911: shift up / down, 6-speed H (automatic clutch, AWD).<br>Cadillac: selector N &rarr; D &rarr; S &rarr; L (Hydra-Matic shifts itself)</td></tr>
       <tr><td>S or I</td><td>Ignition: start / stop engine</td></tr>
-      <tr><td>1 / 2 / 3 / 4</td><td>Select car (GT350 / Cadillac / BRM / Porsche 911)</td></tr>
-      <tr><td>V</td><td>Inside car / Outside (rear)</td></tr>
+      <tr><td>1 / 2 / 3 / 4</td><td>Select car (GT350 / Cadillac / BRM / Porsche 911), also the Car menu</td></tr>
+      <tr><td>V</td><td>Inside the car / Outside (rear), also the Position menu</td></tr>
       <tr><td>E</td><td>Engine bay (3D engine from the sound model’s parameters; drag to turn, pinch / wheel to zoom, double-tap to reset)</td></tr>
       <tr><td>X</td><td>Next sound model (v1 – v4; v3/v4 play the real start-up and shutdown)</td></tr>
       <tr><td>B</td><td>BRM: next engine sound (v8 &rarr; v9.1 &rarr; &hellip; &rarr; v9.6 &rarr; v9.8 &rarr; v9.9 &rarr; v9.10 &rarr; v9.11 physics models &rarr; v8); also the picker next to the cars</td></tr>
@@ -9375,6 +9374,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.11.12", date: "2026-11-14", status: "done", headline: "Car and listening position are now drop-down lists", text: "The car list and the listening position (inside the car, outside from behind, or the engine bay) are now drop-down menus, like Sound and Visuals. They use the browser's own menus, so they work in the Tesla in-car browser. The number keys 1 to 4 still pick a car, and V and E still change the view." },
       { v: "v1.11.9", date: "2026-11-13", status: "done", headline: "911 top speed is now the official 288 km/h in sixth", text: "The Carrera 4S manual now reaches about 288 km/h in sixth, the official top speed (the earlier tune had aimed at 280 km/h, which is the Tiptronic S and Carrera 4 manual figure). 0\u2013100 km/h is still about 4.8 s, in line with the press kit. Rolling resistance was retuned so sixth balances at 288 km/h, below the limiter. The other cars are unchanged." },
             { v: "v1.10.5", date: "2026-11-13", status: "done", headline: "Rev-match downshifts for the GT350 and the BRM", text: "A manual-gearbox option for the GT350 and the BRM: Rev-match. On a downshift it blips the throttle and on an upshift it lifts and waits, so the engine is at the right speed for the new gear before the clutch goes back in; what is left over is taken up by a clutch that can slip, so you hear the engine’s own weight against the car’s. The drivetrain behind it is physical: engine inertia, a dry clutch that grips or slips, the real gear ratios and final drive of each car. Turn it on with the Rev-match button in the top bar (in the ☰ menu on small screens), key G or ?gearbox=revmatch. The Cadillac’s Hydra-Matic shifts itself as before. The plain lift-shift stays the default and drives exactly as in v1.10.4." },
       { v: "v1.10.1", date: "2026-11-12", status: "done", headline: "On-screen pedals and shift buttons on desktop and Tesla", text: "The brake and gas pedals and the shift up / down buttons are now on screen in the desktop browser too, not only on phones and iPads, so the game can be driven on a touchscreen that presents itself as a desktop, such as a Tesla’s in-car browser, or with a mouse. Brake on the left, gas on the right, shift buttons next to the gas, a little larger than on a phone. Fingers, the mouse and several fingers at once all work, a pedal lights up as you press it, and dragging sideways on the road steers. The keyboard still works as before, the desktop page keeps its side panel and top bar, and phones and iPads are unchanged. In the engine bay the bar sits between the pedals. ?pedals=0 hides them. v8 stays the BRM sound default." },
@@ -9619,7 +9619,7 @@ var ProjectHistory = {
   // 0 outside (rear), 1 inside; v1.10: 2 = Engine bay (3D, js/engine-bay.js). The bay keeps the last driving view's sound position.
   function setView(v) {
     if (+v === 2) {
-      if (typeof EngineBay === 'undefined' || !EngineBay.available()) { flash('Engine bay needs WebGL 2 (iOS / Safari 15 or newer)', 2.5); return; }
+      if (typeof EngineBay === 'undefined' || !EngineBay.available()) { flash('Engine bay needs WebGL 2 (iOS / Safari 15 or newer)', 2.5); updatePanel(); return; }
       state.bay = true; audio.control({ bay: 1 }); flash('Engine bay: drag to turn, pinch to zoom', 2); updatePanel(); return;
     }
     if (state.bay) { state.bay = false; audio.control({ bay: 0 }); if (typeof EngineBay !== 'undefined') EngineBay.hide(); }
@@ -9787,11 +9787,15 @@ var ProjectHistory = {
   SoundModels.brmList.forEach(function (b) { var o = document.createElement('option'); o.value = b.brm; o.textContent = 'Sound ' + b.brm; var m = SoundModels.get(b.id); o.title = b.id === 'v8' ? 'engine-sound v8 (shipped, default)' : (m.note || ''); selB.appendChild(o); });
   selB.addEventListener('change', function () { setBrmSound(selB.value); selB.blur(); });
   selV.addEventListener('change', function () { setVisual(selV.value); selV.blur(); });
+  // v1.11.12: Car and Position are native <select> lists (same pattern as Sound / Visuals), so they work in the Tesla in-car browser.
+  var selCar = document.getElementById('selCar'), selView = document.getElementById('selView');
+  selCar.addEventListener('change', function () { selectCar(selCar.value); selCar.blur(); });
+  selView.addEventListener('change', function () { setView(+selView.value); selView.blur(); });
 
   function updatePanel() {
     var v = spec(), auto = v.trans === 'auto';
-    document.querySelectorAll('#segCar .tb').forEach(function (b) { b.classList.toggle('on', b.dataset.v === state.carId); });
-    document.querySelectorAll('#segView .tb').forEach(function (b) { b.classList.toggle('on', state.bay ? +b.dataset.v === 2 : +b.dataset.v === state.view); });
+    selCar.value = state.carId;
+    selView.value = state.bay ? '2' : String(state.view);
     document.getElementById('segBrmSound').classList.toggle('hidden', v.engineKey !== 'BRM');
     selB.value = state.brmSound;
     selS.value = state.model; selV.value = state.visual;
