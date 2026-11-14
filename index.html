@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.23)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.24)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -8132,7 +8132,19 @@ var EngineBay = (function () {
     } else {   // no audio yet (sound not enabled): the game's rpm, integrated here
       rpm = s.engine === 'off' ? 0 : s.rpm; st.thFree = pmod((st.thFree || 0) + 6 * rpm * dt, 720); th = st.thFree; st.src = 'game rpm (sound off)'; st.autoLite = false;
     }
-    if (!info.running) rpm = 0;
+    // v1.11.24: the audio thread is still fed a floor rpm (see main.js) even when the engine
+    // is off, so S[1] / S[7] can look "live". The bay must follow the game: only crank,
+    // belts, fan and pulleys move while cranking or running, at the actual rpm.
+    var live = s.engine === 'running' || s.engine === 'cranking';
+    info.running = s.engine === 'running';
+    info.cranking = s.engine === 'cranking';
+    if (!live) {
+      rpm = 0;
+      th = st.th;
+      info.blowerDeg = null;
+      st.src = 'engine off (still)';
+    }
+    st.rpm = rpm; st.still = !live;
     // (re)build when car / sound model / detail / parts change
     var lite = liteNow(s), key = s.engineKey + '/' + s.soundId + '/' + (lite ? 'L' : 'F') + '/' + JSON.stringify(opt.over);
     if (key !== st.key) {
@@ -8183,7 +8195,7 @@ var EngineBay = (function () {
   function hide() { if (st) { st.cv.style.display = 'none'; st.bar.classList.add('hidden'); st.last = 0; } }
   function stats() {
     if (!st || !R) return null;
-    return { fps: +st.fps.toFixed(1), lite: !!st.lite, pr: st.pr, size: [st.w, st.h], calls: R.info.render.calls, tris: R.info.render.triangles, th: +st.th.toFixed(1), src: st.src, drawMs: +st.drawT.toFixed(2),
+    return { fps: +st.fps.toFixed(1), lite: !!st.lite, pr: st.pr, size: [st.w, st.h], calls: R.info.render.calls, tris: R.info.render.triangles, th: +st.th.toFixed(1), thUn: +(st.thUn || 0).toFixed(2), rpm: +(st.rpm || 0).toFixed(1), still: !!st.still, src: st.src, drawMs: +st.drawT.toFixed(2),
       car: st.bay && st.bay.up.P.car, parts: st.bay && st.bay.up.parts, autoLite: st.autoLite, perfLite: st.perfLite,
       valves: st.bay ? (st.bay.up.vEx ? st.bay.up.vEx.count : 0) + (st.bay.up.vIn ? st.bay.up.vIn.count : 0) : 0, cams: st.bay ? st.bay.up.cams.length : 0,
       blades: st.bay ? st.bay.up.bladeCount || 0 : 0, bayItems: st.bay ? (st.bay.up.bayItems || []).slice() : [], stubs: stubInfo(), housings: st.bay ? st.bay.up.housings || 0 : 0, opt: JSON.parse(JSON.stringify(opt)) };
@@ -9487,6 +9499,8 @@ var ProjectHistory = {
       { v: "v1", date: "2026-11-11", status: "done", headline: "Driving demo: gearbox, weight, brakes and gauges", text: "Driving demo: gearbox and Hydra-Matic, weight, brakes with lock-up and fade, rev counter and odometer." },
     ] },
     { title: "Visuals and engine bay", items: [
+      { v: "v1.11.24", date: "2026-11-14", status: "done", headline: "911 bonnet restored to the previous drawing", text: "The 911 bonnet, as you see it from the driver's seat, is back to the drawing from before v1.11.23." },
+      { v: "v1.11.24", date: "2026-11-14", status: "done", headline: "The engine bay now sits still when the engine is off", text: "With the engine off, the 3D engine bay no longer turns. The crank, belts, fan, pulleys and other rpm-driven parts only move while the engine is cranking or running, and they follow the actual engine speed. This is the case for all four cars." },
       { v: "v1.11.23", date: "2026-11-14", status: "done", headline: "911 bonnet is now a long 997.1 lid from the driver's seat", text: "The 911 bonnet, as you see it from the driver's seat, was still too short: the front edge sat only a sliver above the cowl, so the lid looked like a thin W and the headlights sat too close. It is now a long, almost-flat 997.1 Carrera 4S lid, drawn against driver's-eye photographs and the official 2005–2008 coupe dimensions (length 4,427 mm, width 1,852 mm, height 1,300 mm): a shallow centre crease, the front fenders a little higher than the lid, small foreshortened oval lamps at the far front corners, and a sharp leading edge closer to the horizon. The cowl, wipers, dash and road camera are unchanged. Ink and Flat." },
       { v: "v1.11.10", date: "2026-11-13", status: "done", headline: "The 911 steering wheel now sits on the steering column", text: "The 911 Carrera 4S steering wheel now sits on the end of the steering column in the cockpit picture, as it does in a real 997. Before, the wheel sat too low — down by the pedals — so you could see the empty column opening in the dashboard through the wheel, and the two did not meet. The crest is now on the column housing under the gauges, and the wheel turns about that point. The size of the wheel is unchanged. Ink and Flat." },
       { v: "v1.11.8", date: "2026-11-13", status: "done", headline: "Steering columns now follow the real cars, and the wheel sits at the end", text: "The painted steering column of each car now follows the real cockpit — its direction, tilt and length — and the steering wheel sits at the end of that column, facing the right way. On the Cadillac the painted shaft had been pointing at the floor while the wheel faced you; that long downward tube is gone, and the short column comes out of the dash toward the driver, as on a real Series 62. The BRM had no painted column; it now has a short metal tube from the wheel into the scuttle, slightly to the right of centre, as on the Type 15 at Beaulieu. The GT350 and 911 columns were already short and aimed at the driver; the GT350 wheel is tilted a little so it stays square to the column. Wheel sizes are the same. The Cadillac column shifter and the BRM's front wheels still work as before." },
