@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.12)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.13)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -107,7 +107,7 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 #about.hidden { display: none; }
 .aboutBox { position: relative; background: #f3e9d2; color: #2a2016; border-radius: 12px; max-width: 640px; width: 100%; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 20px 18px; font: 15px/1.4 Georgia, serif; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
 .aboutBox h2 { margin: 0 40px 8px 0; font-size: 20px; }
-#about .aboutBox h3 { margin: 14px 0 6px; font-size: 16px; color: #8a3b12 !important; }
+#about .aboutBox h3, #specsDlg .aboutBox h3 { margin: 14px 0 6px; font-size: 16px; color: #8a3b12 !important; }
 .aboutBox p { margin: 0 0 6px; }
 .aboutBox ul { list-style: none; margin: 0; padding: 0; }
 .aboutBox li { margin: 0 0 2px; padding-left: 0; }
@@ -124,6 +124,42 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 .aboutBox .st { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; vertical-align: 1px; color: #fff; }
 .aboutBox .st.prog { background: #c27a12; } .aboutBox .st.plan { background: #5b6f8a; }
 .aboutX { position: absolute; top: 8px; right: 8px; min-width: 40px; min-height: 40px; font: bold 26px/1 Georgia, serif !important; color: #2a2016; }
+
+/* Engine specifications overlay (v1.11.13) */
+#specsDlg { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 31; background: rgba(8,5,3,.72); display: flex; align-items: center; justify-content: center; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); touch-action: pan-y; }
+#specsDlg.hidden { display: none; }
+#specsDlg .aboutBox { max-width: 720px; }
+#specsDlg .lede { margin: 0 0 10px; }
+#specsDlg h4 { margin: 10px 0 4px; font-size: 14px; }
+#specsDlg table.spec { width: 100%; border-collapse: collapse; margin: 0 0 8px; font-size: 14px; }
+#specsDlg table.spec th, #specsDlg table.spec td { padding: 5px 8px; vertical-align: top; border-bottom: 1px solid rgba(42,32,22,.12); }
+#specsDlg table.spec th { text-align: left; width: 34%; font-weight: normal; color: #5a4a32; }
+#specsDlg table.spec .pk { font-family: 'Courier New', ui-monospace, monospace; font-size: 13px; }
+#specsDlg table.spec .pv { font-weight: bold; white-space: nowrap; }
+#specsDlg .specNotes { list-style: disc; margin: 0 0 8px 1.2em; padding: 0; }
+#specsDlg .specNotes li { margin: 0 0 6px; }
+#specsDlg .ass { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 8px; background: #5b6f8a; color: #fff; margin-right: 4px; }
+#specsDlg .specCurve { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
+#specsDlg .specCurve .grid { stroke: rgba(42,32,22,.12); stroke-width: 1; }
+#specsDlg .specCurve .axis { stroke: #2a2016; stroke-width: 1.2; }
+#specsDlg .specCurve .t { fill: none; stroke: #c45c12; stroke-width: 2.2; }
+#specsDlg .specCurve .p { fill: none; stroke: #2a5a8c; stroke-width: 2.2; }
+#specsDlg .specCurve .ax { fill: #5a4a32; font: 11px Georgia, serif; }
+#specsDlg .specCurve .leg { font: 12px Georgia, serif; }
+#specsDlg .specCurve .leg.t { fill: #c45c12; }
+#specsDlg .specCurve .leg.p { fill: #2a5a8c; }
+#bSpecsAside { margin: 8px 0 4px; }
+html.vis-flat #specsDlg table.spec th, html.vis-flat #specsDlg .specCurve .ax { color: #8a93a0; }
+html.vis-flat #specsDlg table.spec th, html.vis-flat #specsDlg table.spec td { border-bottom-color: rgba(255,255,255,.12); }
+html.vis-flat #specsDlg .specCurve .grid { stroke: rgba(255,255,255,.12); }
+html.vis-flat #specsDlg .specCurve .axis { stroke: #dfe3ea; }
+html.vis-flat #specsDlg .specCurve .t, html.vis-flat #specsDlg .specCurve .leg.t { stroke: #ffb23e; fill: #ffb23e; }
+html.vis-flat #specsDlg .specCurve .p, html.vis-flat #specsDlg .specCurve .leg.p { stroke: #7eb8ff; fill: #7eb8ff; }
+html.vis-flat #specsDlg .specCurve .leg.t { stroke: none; }
+html.vis-flat #specsDlg .specCurve .leg.p { stroke: none; }
+html.vis-ink #specsDlg table.spec th { color: #3a2e22; }
+.touch #bSpecs { min-width: 44px; }
+
 
 /* drag strip: Christmas tree + results card */
 #tree { position: absolute; z-index: 12; top: 50%; left: 25%; transform: translate(-50%, -40%); background: #1b1b1b; border: 2px solid #555; border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.6); }
@@ -174,7 +210,7 @@ html.vis-flat .tb.big { border-radius: 10px; }
 @media (orientation: portrait) { html.vis-flat.touch #stage, html.vis-flat.touch #topbar, html.vis-flat.touch #touch { background: #14171c; } }
 @media (orientation: portrait) { html.vis-flat.touch #touch { border-top-color: #2d333d; } }
 html.vis-flat .aboutBox, html.vis-flat #dragCard { background: #1f242c; color: #dfe3ea; font-family: system-ui, sans-serif; border-radius: 10px; }
-html.vis-flat #about .aboutBox h3, html.vis-flat #dragCard h3 { color: #ffb23e !important; }
+html.vis-flat #about .aboutBox h3, html.vis-flat #specsDlg .aboutBox h3, html.vis-flat #dragCard h3 { color: #ffb23e !important; }
 html.vis-flat .aboutBox summary::before { color: #ffb23e; }
 html.vis-flat .aboutBox details { border-bottom-color: rgba(255,255,255,.12); }
 html.vis-flat .aboutBox .detail { color: #dfe3ea; }
@@ -201,7 +237,7 @@ html.vis-ink .astatus span { background: #f6eedb; color: #1c1a17; border: 2px so
 @media (orientation: portrait) { html.vis-ink.touch #stage, html.vis-ink.touch #topbar, html.vis-ink.touch #touch { background: #e9dfc8; } }
 html.vis-ink.touch #stage { border: 0; box-shadow: none; } @media (orientation: portrait) { html.vis-ink.touch #touch { border-top: 3px solid #1c1a17; } }
 html.vis-ink .aboutBox, html.vis-ink #dragCard { background: #f6eedb; border: 3px solid #1c1a17; border-radius: 6px; box-shadow: 6px 6px 0 #1c1a17; font-family: 'Trebuchet MS', sans-serif; }
-html.vis-ink #about .aboutBox h3, html.vis-ink #dragCard h3 { color: #c8321f !important; }
+html.vis-ink #about .aboutBox h3, html.vis-ink #specsDlg .aboutBox h3, html.vis-ink #dragCard h3 { color: #c8321f !important; }
 html.vis-ink .aboutBox summary::before { color: #c8321f; }
 
 /* v1.8.1 tablets (iPad): the layout is chosen by aspect ratio and size, not by phone breakpoints.
@@ -330,6 +366,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <button class="tb more" id="bGearbox" data-act="gearbox" title="Manual gearbox: rev-match (clutch dip, blip on downshifts, rev-match on upshifts) or classic lift-shift (key G)">Rev-match</button>
       <button class="tb more" id="bUnits" data-act="units">km/h</button>
       <button class="tb more" id="bMute" data-act="mute">Mute</button>
+      <button class="tb more" id="bSpecs" data-act="specs" aria-label="Engine specifications" title="Engine specifications">Specs</button>
       <button class="tb more" id="bAbout" data-act="about" aria-label="About and history" title="About / History">i</button>
       <button class="tb" id="bMenu" data-act="menu" aria-label="More controls" title="More controls">&#9776;</button>
       <div id="astatus" class="astatus more">Sound: tap to enable</div>
@@ -342,6 +379,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
     <div id="dragCard" class="hidden"></div>
     <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
+    <div id="specsDlg" class="hidden" role="dialog" aria-modal="true" aria-labelledby="specsTitle"><div class="aboutBox"><button class="tb aboutX" data-act="specsClose" aria-label="Close">&times;</button><h2 id="specsTitle">Engine specifications</h2><div id="specsBody"></div></div></div>
   </div>
   <aside>
     <h3>Controls (keyboard)</h3>
@@ -363,11 +401,13 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>T</td><td>Reset trip meter</td></tr>
       <tr><td>M</td><td>Mute</td></tr>
       <tr><td>H</td><td>About / History</td></tr>
+      <tr><td></td><td>Engine specifications (Specs button, or the link under Car)</td></tr>
     </table>
     <h3>Touch / mouse</h3>
     <p class="note">Brake pedal left, gas right: press higher up the pedal for more. Shift buttons next to the gas. Works with several fingers at once, and with a mouse. Steer by dragging sideways on the road.</p>
     <h3>Car</h3>
     <div id="specs"></div>
+    <p><button class="tb" id="bSpecsAside" data-act="specs">Engine specifications</button></p>
     <p class="note">Engine sound is synthesised live in the browser (no recordings). The inside sound is a model (exhaust through the body, intake and mechanical noise through the firewall, cabin boom, road and wind noise), not a measured cabin.</p>
   </aside>
 </div>
@@ -9369,6 +9409,7 @@ var ProjectHistory = {
       { v: "v1", date: "2026-11-11", status: "done", headline: "First live V8 synth: firing order, pipes and mufflers", text: "First procedural V8 synth: firing pulses, headers, H-pipe crossover, mufflers and tailpipes." },
     ] },
     { title: "Cars", items: [
+      { v: "v1.11.13", date: "2026-11-14", status: "done", headline: "Each car now has a full engine specifications page", text: "A Specs button (also a link under Car) opens a page for the car you have selected. It lists the engine figures — bore, stroke, displacement, compression, firing order, valves and cam, intake, exhaust, gearbox ratios, final drive, mass, drag, and the power and torque curve — together with the parameters of that car’s default sound model, each with a short plain explanation. The numbers are the same ones the driving physics and the live sound already use. When the sound is fitted to a recording, engine sizes stay fixed and only the sound-model parameters are tuned. Switching car updates the page. The BRM page describes its default v8 sound; the GT350, Cadillac and 911 pages describe the latest physics model." },
       { v: "v1.11.9", date: "2026-11-13", status: "done", headline: "911 Carrera 4S specs now follow the official 997.1 figures", text: "The 911 Carrera 4S now uses the official 2007 press-kit drag figures (Cd 0.29 and a frontal area of 2.04 m\u00b2), the C4S gearbox name Aisin G97/31 (the G97/01 is the rear-wheel-drive box), a 3.33 front final drive (the rear stays 3.44), and 40.2 mm intake valves in the engine-bay view. The throttle body stays 76 mm, as in Porsche\u2019s technical information. No sound change. The other cars are unchanged." },
             { v: "v1.11.0", date: "2026-11-13", status: "done", headline: "New car: 2006 Porsche 911 Carrera 4S (997.1)", text: "New car: a 2006 Porsche 911 Carrera 4S (997.1) in Cobalt Blue Metallic. It has its own computed flat-six sound (3.8 litre boxer behind the rear axle, its own firing order and exhaust), an electric starter, the six-speed manual gearbox with the rev-match option, four-wheel drive and its real weight, power and gearing (0-100 km/h in about 4.8 s in the game, the factory says 4.8 s). Inside and outside pictures in Ink and Flat, real-looking gauges, and a 3D view of the rear engine bay. The sound was checked against recordings of standard cars only; cars with the optional sport exhaust are scored separately. The other cars are unchanged." },
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
@@ -9409,6 +9450,420 @@ var ProjectHistory = {
     ] }
   ]
 };
+</script>
+<script>/* js/engine-specs.js */
+/*
+ * engine-specs.js: per-car engine, chassis and default sound-model specifications panel.
+ * Numbers are read from the live Vehicles table, EngineParams (bay / geometry) and the
+ * v9p / v8 sound-model data already in the page — the same figures the synth uses.
+ * ES2017.
+ */
+var EngineSpecs = (function () {
+  'use strict';
+  var IN = 0.0254, LBFT = 1.35582;
+  var V8P_KEY = { gt350: 'gt350', caddy: 'cadillac59', p997: 'p997' };
+  var DEFAULT_SOUND = { gt350: 'v9p', caddy: 'v9p', p997: 'v9p', brm: 'v8' };
+  var SOUND_LABEL = {
+    v9p: 'Latest physics model (v9.11 kernel)',
+    v8: 'v8 order-table model (default for the BRM)'
+  };
+  // Compact BRM v8 calibration (cal_v8.json), without the large correction tables.
+  var BRM_V8_CAL = {
+    onboard:  { noise_db: [-30.7, -12.2, -16.7, -17.1], jit_db: [1.0, 2.0, 3.0, 4.0], eq_db: [0.4, 0.1, -3.2, -4.5, -4.5], fill_db: -18.18, skirt: 0.15, whine_db: [-21.0, -19.9, -26.3, -21.9, -32.0, -35.0] },
+    paddock:  { noise_db: [-21.3, -2.8, -27.7, -17.7], jit_db: [1.5, 2.5, 3.5, 4.0], eq_db: [0.5, -13.2, -18.7, -6.8, -6.8], fill_db: -18.18, skirt: 0.20, whine_db: [-35.0, -33.9, -40.3, -35.9, -46.0, -49.0] },
+    outside:  { noise_db: [-6.9, -14.6, -22.5, -4.8], jit_db: [1.0, 2.0, 3.0, 4.0], eq_db: [-22.9, 0.8, 7.5, 3.0, 3.0], fill_db: -2.04, skirt: 0.35, whine_db: [-47.0, -45.9, -52.3, -55.9, -66.0, -69.0] },
+    distant:  { noise_db: [8.6, -9.6, -14.5, -40.0], jit_db: [1.0, 2.0, 3.0, 4.0], eq_db: [-17.7, 1.7, 0.0, -22.7, -22.7], fill_db: -2.88, skirt: 0.35, whine_db: [-35.0, -33.9, -40.3, -35.9, -46.0, -49.0] },
+    air_k: 1.0
+  };
+  var PHYS_HELP = {
+    q_comb: 'How much the pressure in the cylinder rises when a full charge of fuel burns.',
+    heat_loss: 'Pressure lost to the walls and past the rings as the piston comes up to top dead centre with no burn.',
+    n_poly: 'How gas pressure changes as it is compressed and expanded in a warm engine.',
+    burn: 'Crank degrees for the main part of the burn (10–90 %).',
+    xr0: 'Leftover exhaust gas still in the cylinder at full throttle.',
+    xr_ov: 'Extra leftover gas from valve-overlap back-flow when the throttle is closed.',
+    cov: 'How much the burn strength varies from one cycle to the next.',
+    cov_res: 'Extra variation when more leftover exhaust is present (the idle “lope”).',
+    mis_res: 'Chance of a misfire when leftover exhaust gas is high.',
+    cd: 'How freely the valves flow (discharge coefficient).',
+    eta_v: 'How completely the cylinders fill (volumetric efficiency).',
+    wall: 'Broadband sound lost in the pipe walls.',
+    hf: 'Extra high-frequency loss in the pipes.',
+    ro_loss: 'Energy lost when a pressure wave reflects at the valve.',
+    t_prim0: 'Exhaust-gas temperature in the primary pipes at no load (kelvin).',
+    t_prima: 'Extra primary-pipe temperature with load (kelvin).',
+    k_int: 'How loud the intake (snorkel or air cleaner) is, relative to a simple source.',
+    r_th: 'Acoustic resistance of the throttle bore.',
+    k_tick: 'Valve-train tick — cam and lifter impact.',
+    k_jet: 'Jet noise at the tailpipe mouths.',
+    f_floor: 'Floor-pan frequency above which exhaust sound in the cabin starts to fall.',
+    f_fw: 'Firewall frequency above which engine-side sound in the cabin starts to fall.',
+    k_cab: 'Overall how much sound comes through the body into the cabin.',
+    cab_q: 'How ringing the cabin is (trim absorption).',
+    cab_model: 'Cabin path: 1 is the transmission-loss model now in use; 0 is the older path.',
+    leak_floor: 'Sound leaking through floor seals and apertures.',
+    leak_fw: 'Sound leaking through firewall seals and apertures.',
+    k_floor: 'Floor route level, relative to the firewall route.',
+    k_ind: 'Fresh-air vent path for intake sound into the cabin.',
+    f_abs: 'Frequency where cabin trim starts to swallow the high end.',
+    k_win: 'How much outside sound comes in with a window open.',
+    fric0: 'Warm engine friction, constant term (bar).',
+    fric1: 'Warm engine friction, rises with rpm.',
+    fric2: 'Warm engine friction, rises with rpm squared.',
+    fric_cold: 'Extra friction from cold oil while cranking.',
+    a_idle: 'Idle air past the throttle plate (sets warm idle speed).',
+    fast_idle: 'Extra idle air when cold (choke / fast-idle cam).',
+    prime_rev: 'Crank revolutions to fuel the first firings when cold.',
+    catch_x: 'The engine catches when cranking speed exceeds this multiple of the cranking rate.',
+    react: 'How long the key stays on after the catch (seconds).',
+    k_st: 'Starter motor sound level.',
+    k_hiss: 'Throttle-gap hiss (carburettor or throttle body).',
+    pack: 'Muffler packing — how much it damps high frequencies.',
+    bay_exh: 'How much exhaust is heard in the engine bay, relative to outside.',
+    k_nl: 'Wave steepening in the pipes (the bark of a hard pulse).',
+    dw_tau: 'How quickly the crank’s own speed wander is pulled back to the mean rpm.',
+    gain: 'Overall output level (used only to match loudness).'
+  };
+  var PHYS_GROUP = [
+    { title: 'Combustion', keys: ['q_comb', 'heat_loss', 'n_poly', 'burn', 'xr0', 'xr_ov', 'cov', 'cov_res', 'mis_res'] },
+    { title: 'Gas exchange', keys: ['cd', 'eta_v', 'a_idle', 'fast_idle'] },
+    { title: 'Exhaust and muffler', keys: ['t_prim0', 't_prima', 'wall', 'hf', 'ro_loss', 'pack', 'k_jet', 'k_nl', 'bay_exh'] },
+    { title: 'Intake and valve train', keys: ['k_int', 'r_th', 'k_tick', 'k_hiss'] },
+    { title: 'Cabin path', keys: ['cab_model', 'k_cab', 'cab_q', 'f_floor', 'f_fw', 'leak_floor', 'leak_fw', 'k_floor', 'k_ind', 'f_abs', 'k_win'] },
+    { title: 'Friction, starter and level', keys: ['fric0', 'fric1', 'fric2', 'fric_cold', 'prime_rev', 'catch_x', 'react', 'k_st', 'dw_tau', 'gain'] }
+  ];
+  var v8pCache = null;
+  function v8pDATA() {
+    if (v8pCache) return v8pCache;
+    var mods = typeof ENGINE_MODULES !== 'undefined' ? ENGINE_MODULES : [];
+    for (var i = 0; i < mods.length; i++) {
+      if (mods[i].name === 'engineModuleV8p') {
+        try { v8pCache = mods[i]({}).DATA || null; } catch (e) { v8pCache = null; }
+        return v8pCache;
+      }
+    }
+    return null;
+  }
+  function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function fmt(n, d) { return (Math.abs(n) >= 100 && d > 0) ? n.toFixed(Math.min(d, 1)) : n.toFixed(d); }
+  function mm(m, inchDig) {
+    if (!(m > 0)) return '—';
+    return (m * 1000).toFixed(m >= 0.08 ? 1 : 2) + ' mm (' + (m / IN).toFixed(inchDig == null ? 2 : inchDig) + ' in)';
+  }
+  function litres(m3) { return (m3 * 1000).toFixed(2) + ' L'; }
+  function area(m2) { return (m2 * 1e4).toFixed(1) + ' cm\u00b2'; }
+  function list(a) { return a.join('\u2013'); }
+  function fire(a) { return a.join('\u2013'); }
+  function numList(a, d) { return a.map(function (x) { return typeof x === 'number' ? x.toFixed(d) : String(x); }).join(', '); }
+  function displacement(bore, stroke, n) {
+    var cc = n * Math.PI * 0.25 * bore * bore * stroke * 1e6;
+    return Math.round(cc).toLocaleString('en-GB') + ' cc (' + (cc / 16.387064).toFixed(1) + ' ci)';
+  }
+  function row(label, value) { return '<tr><th>' + esc(label) + '</th><td>' + value + '</td></tr>'; }
+  function table(rows) { return '<table class="spec">' + rows.join('') + '</table>'; }
+  function muffler(muf) {
+    if (!muf || !muf.length) return 'none';
+    return muf.map(function (s, i) {
+      var kind = s[0], a = s[1], b = s[2], c = s[3];
+      if (kind === 'chamber') return (i + 1) + '. Chamber ' + fmt(a, 2) + ' m long, area ratio ' + fmt(b, 1) + (c ? ', packing ' + fmt(c, 2) : '');
+      if (kind === 'pipe') return (i + 1) + '. Pipe ' + fmt(a, 2) + ' m long, \u00d8 ' + mm(b);
+      return (i + 1) + '. ' + kind + ' ' + [a, b, c].filter(function (x) { return x != null; }).join(', ');
+    }).join('<br>');
+  }
+  function peaks(v) {
+    var pts = v.torque, i, t, pW, bestT = pts[0], bestP = pts[0], pBest = -1;
+    var usePS = v.id === 'p997';
+    var unit = usePS ? 735.49875 : 745.69987;
+    for (i = 0; i < pts.length; i++) {
+      t = pts[i][1];
+      pW = t * pts[i][0] * 2 * Math.PI / 60;
+      if (t >= bestT[1]) bestT = pts[i];
+      if (pW >= pBest) { pBest = pW; bestP = pts[i]; }
+    }
+    return {
+      tNm: bestT[1], tRpm: bestT[0],
+      p: pBest / unit, pRpm: bestP[0],
+      pUnit: usePS ? 'PS' : 'hp',
+      tLbft: bestT[1] / LBFT
+    };
+  }
+  function curveSvg(v) {
+    var pts = v.torque, i, t, pW, p, maxT = 0, maxP = 0, maxR = pts[pts.length - 1][0];
+    var usePS = v.id === 'p997';
+    var unit = usePS ? 735.49875 : 745.69987;
+    var pows = [];
+    for (i = 0; i < pts.length; i++) {
+      t = pts[i][1];
+      pW = t * pts[i][0] * 2 * Math.PI / 60;
+      p = pW / unit;
+      pows.push(p);
+      if (t > maxT) maxT = t;
+      if (p > maxP) maxP = p;
+    }
+    maxT *= 1.08; maxP *= 1.08;
+    var W = 640, H = 220, L = 44, R = 44, T = 16, B = 28;
+    var iw = W - L - R, ih = H - T - B;
+    function x(r) { return L + (r / maxR) * iw; }
+    function yT(n) { return T + ih - (n / maxT) * ih; }
+    function yP(n) { return T + ih - (n / maxP) * ih; }
+    var tPath = pts.map(function (pt, k) { return (k ? 'L' : 'M') + x(pt[0]).toFixed(1) + ',' + yT(pt[1]).toFixed(1); }).join(' ');
+    var pPath = pts.map(function (pt, k) { return (k ? 'L' : 'M') + x(pt[0]).toFixed(1) + ',' + yP(pows[k]).toFixed(1); }).join(' ');
+    var xt = '', r, ticks = [];
+    for (r = 0; r <= maxR + 1; r += (maxR > 8000 ? 2000 : 1000)) ticks.push(Math.min(r, maxR));
+    if (ticks[ticks.length - 1] !== maxR) ticks.push(maxR);
+    for (i = 0; i < ticks.length; i++) {
+      r = ticks[i];
+      xt += '<line class="grid" x1="' + x(r).toFixed(1) + '" y1="' + T + '" x2="' + x(r).toFixed(1) + '" y2="' + (T + ih) + '"/>';
+      xt += '<text class="ax" x="' + x(r).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + Math.round(r) + '</text>';
+    }
+    return '<svg class="specCurve" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Torque and power curve">' +
+      xt +
+      '<line class="axis" x1="' + L + '" y1="' + (T + ih) + '" x2="' + (L + iw) + '" y2="' + (T + ih) + '"/>' +
+      '<path class="t" d="' + tPath + '"/>' +
+      '<path class="p" d="' + pPath + '"/>' +
+      '<text class="leg t" x="' + (L + 8) + '" y="' + (T + 14) + '">Torque (N\u00b7m)</text>' +
+      '<text class="leg p" x="' + (L + 8) + '" y="' + (T + 30) + '">Power (' + (usePS ? 'PS' : 'hp') + ')</text>' +
+      '<text class="ax" x="' + (W / 2) + '" y="' + H + '" text-anchor="middle">rpm</text>' +
+      '</svg>';
+  }
+  function engineBlock(v, P, car) {
+    var n = P && P.nCyl ? P.nCyl : (v.id === 'p997' ? 6 : v.id === 'brm' ? 16 : 8);
+    var bore = (car && car.bore) || (P && P.bore);
+    var stroke = (car && car.stroke) || (P && P.stroke);
+    var rod = (car && car.rod) || (P && P.conrod);
+    var cr = (car && car.cr) || (P && P.cr);
+    var layout = v.id === 'p997' ? 'Flat-six (180\u00b0 boxer)' : v.id === 'brm' ? '135\u00b0 V16' : '90\u00b0 V8';
+    var rows = [
+      row('Engine', esc((P && P.label) || v.engineText)),
+      row('Layout', layout + ', ' + n + ' cylinders'),
+      row('Bore', mm(bore, 2)),
+      row('Stroke', mm(stroke, 3)),
+      row('Displacement', displacement(bore, stroke, n)),
+      row('Connecting rod', mm(rod, 3)),
+      row('Compression', cr ? cr.toFixed(1) + ' : 1' : '\u2014'),
+      row('Firing order', esc(fire((car && car.fire_order) || (P && P.firingOrder) || [])))
+    ];
+    if (P && P.rotation) rows.push(row('Rotation', 'Clockwise, viewed from the front'));
+    var idleV = v.idleRpm, idleS = car && car.idle_rpm, redV = v.limiterRpm, redS = car && car.redline;
+    rows.push(row('Idle / limiter (driving)', Math.round(idleV) + ' / ' + Math.round(redV) + ' rpm'));
+    if (idleS && (Math.round(idleS) !== Math.round(idleV) || Math.round(redS) !== Math.round(redV))) {
+      rows.push(row('Idle / redline (sound model)', Math.round(idleS) + ' / ' + Math.round(redS) + ' rpm'));
+    }
+    if (car && car.inertia) rows.push(row('Engine inertia', fmt(car.inertia, 2) + ' kg\u00b7m\u00b2 (crank, flywheel and clutch)'));
+    else if (v.engineInertia) rows.push(row('Engine inertia', fmt(v.engineInertia, 2) + ' kg\u00b7m\u00b2'));
+    if (v.id === 'brm' && P && P.blower) {
+      rows.push(row('Supercharger', 'Two-stage centrifugal, ' + P.blower.ratio + '\u00d7 crank, ' + P.blower.lobes + ' lobes, ' + P.blower.z.join(' + ') + ' impeller vanes'));
+    }
+    return table(rows);
+  }
+  function valveBlock(v, P, car) {
+    if (!P && !car) return '<p class="note">No valve data for this sound model.</p>';
+    var ex = P && P.exValve, inn = P && P.inValve;
+    var rows = [];
+    if (v.id === 'p997') {
+      rows.push(row('Valves', 'Four per cylinder, double overhead cams'));
+      rows.push(row('Intake valves', '2 \u00d7 40.2 mm (Porsche / LN Engineering head data); high lift 11.0 mm'));
+      rows.push(row('Exhaust valves', '2 \u00d7 34.4 mm (the sound model treats the pair as one equivalent curtain)'));
+    } else if (inn || ex) {
+      rows.push(row('Valve layout', (P.cam === 'dohc' ? 'Double overhead cam' : 'Pushrod') + (P.valveLayout === 'across' ? ', across the head' : ', in-line')));
+      if (inn) rows.push(row('Intake valve', '\u00d8 ' + mm(inn.d) + ', lift ' + mm(inn.lift, 3)));
+      if (ex) rows.push(row('Exhaust valve', '\u00d8 ' + mm(ex.d) + ', lift ' + mm(ex.lift, 3)));
+    }
+    if (car && car.adv_dur) rows.push(row('Cam duration', fmt(car.adv_dur, 0) + '\u00b0 advertised' + (car.lifters ? ' (' + car.lifters + ' lifters)' : '')));
+    if (car && car.lsa) rows.push(row('Lobe separation', fmt(car.lsa, 0) + '\u00b0'));
+    if (car && car.camx) rows.push(row('Lift-law exponent', fmt(car.camx, 2) + ' (shape of the lift curve)'));
+    if (car && car.spark0 != null) rows.push(row('Initial timing', fmt(car.spark0, 0) + '\u00b0 BTDC'));
+    if (ex && ex.dur && v.id !== 'p997') rows.push(row('Model opening', 'Exhaust opens ' + fmt(ex.open, 0) + '\u00b0 after firing TDC, open for ' + fmt(ex.dur, 0) + '\u00b0'));
+    return table(rows);
+  }
+  function intakeBlock(v, car, P) {
+    var rows = [];
+    if (car && car.carb) rows.push(row('Induction', esc(car.carb)));
+    if (car && car.th_area_wot) {
+      var d = 2 * Math.sqrt(car.th_area_wot / Math.PI);
+      rows.push(row('Throttle area (wide open)', area(car.th_area_wot) + ' (equivalent \u00d8 ' + mm(d, 2) + ')'));
+    }
+    if (car && car.v_man) rows.push(row('Manifold / plenum volume', litres(car.v_man)));
+    if (car && car.v_ac) rows.push(row('Air cleaner / air-box volume', litres(car.v_ac)));
+    if (car && car.sn_len) rows.push(row('Snorkel', fmt(car.sn_len, 2) + ' m long, \u00d8 ' + mm(car.sn_d)));
+    if (car && car.th_len) rows.push(row('Throttle-body length', fmt(car.th_len, 2) + ' m'));
+    if (!rows.length) return '<p class="note">The BRM draws through the two-stage supercharger; there is no carburettor model in the default v8 sound.</p>';
+    return table(rows);
+  }
+  function exhaustBlock(v, car, P) {
+    var rows = [];
+    if (v.id === 'brm') {
+      rows.push(row('Exhaust', 'Open stubs, no collector or muffler (eight stubs per side)'));
+      if (P && P.stubs) rows.push(row('Stub bore', 'Mean length ' + fmt(P.stubs.lenMean, 2) + ' m, \u00d8 ' + mm(P.stubs.d)));
+      return table(rows);
+    }
+    if (!car) return '<p class="note">No exhaust network in this sound model.</p>';
+    var typ = car.exhaust === 'tri-y' ? 'Tri-Y headers (one per bank)' : car.exhaust === 'log' ? 'Cast-iron log manifolds' : car.exhaust === '3-1' ? '3-into-1 headers (one per bank)' : esc(car.exhaust || '');
+    rows.push(row('System', typ));
+    if (car.prim_len) rows.push(row('Primaries', fmt(car.prim_len, 2) + ' m long, \u00d8 ' + mm(car.prim_d)));
+    if (car.prim_x) rows.push(row('Primary length factors', numList(car.prim_x, 2) + ' (per branch)'));
+    if (car.sec_len) rows.push(row('Secondaries', fmt(car.sec_len, 2) + ' m long, \u00d8 ' + mm(car.sec_d)));
+    if (car.port_len) rows.push(row('Ports', fmt(car.port_len, 2) + ' m long, \u00d8 ' + mm(car.port_d)));
+    if (car.log_seg) rows.push(row('Log segments', fmt(car.log_seg, 2) + ' m, \u00d8 ' + mm(car.log_d)));
+    if (car.head_len) rows.push(row('Head runners / collector', fmt(car.head_len, 2) + ' m'));
+    if (car.pipe_d) rows.push(row('Intermediate pipe', fmt(car.inter_len, 2) + ' m long, \u00d8 ' + mm(car.pipe_d)));
+    if (car.x_len) rows.push(row('H-pipe / balance', fmt(car.x_len, 2) + ' m, \u00d8 ' + mm(car.x_d)));
+    else if (car.x_len === 0) rows.push(row('Balance pipe', 'None (each bank has its own silencer)'));
+    if (car.muf) rows.push(row('Muffler / catalyst', muffler(car.muf)));
+    if (car.tail_len) rows.push(row('Tailpipes', fmt(car.tail_len, 2) + ' m'));
+    if (car.bank_dl) rows.push(row('Bank length difference', fmt(car.bank_dl, 2) + ' m'));
+    return table(rows);
+  }
+  function driveBlock(v) {
+    var rows = [
+      row('Gearbox', esc(v.transText)),
+      row('Ratios', v.gears.map(function (g, i) { return (i + 1) + ': ' + g.toFixed(2); }).join(' \u00b7 ')),
+      row('Final drive', v.finalDrive.toFixed(2) + ':1' + (v.awd && v.awd.finalDriveFront ? ' rear; front ' + v.awd.finalDriveFront.toFixed(2) + ':1' : ''))
+    ];
+    if (v.awd) rows.push(row('Driveline', 'All-wheel drive: ' + esc(v.awd.text)));
+    rows.push(row('Driveline efficiency', Math.round(v.drivelineEff * 100) + ' %'));
+    if (v.clutchMax) rows.push(row('Clutch capacity', Math.round(v.clutchMax) + ' N\u00b7m'));
+    if (v.couplingK) rows.push(row('Fluid coupling', 'Hydra-Matic controlled coupling, k = ' + v.couplingK.toFixed(4) + ' N\u00b7m/(rad/s)\u00b2'));
+    return table(rows);
+  }
+  function chassisBlock(v) {
+    var rows = [
+      row('Mass', esc(v.curbText)),
+      row('Wheelbase', (v.wheelbase / IN).toFixed(1) + ' in (' + v.wheelbase.toFixed(2) + ' m)'),
+      row('Weight distribution', 'Rear ' + Math.round(v.rearFrac * 100) + ' %'),
+      row('Drag', 'Cd ' + v.cd.toFixed(2) + ', frontal area ' + v.area.toFixed(2) + ' m\u00b2 (CdA ' + (v.cd * v.area).toFixed(2) + ' m\u00b2)'),
+      row('Tyres', esc(v.tyreText)),
+      row('Rolling radius', mm(v.tyreRadius, 2) + (v.tyreRadiusFront ? ' rear; front ' + mm(v.tyreRadiusFront, 2) : '')),
+      row('Brakes', esc(v.brakes.text))
+    ];
+    return table(rows);
+  }
+  function ratingNote(v) {
+    if (v.id === 'p997') return 'Manufacturer figures are DIN / ECE net: 355 PS (261 kW) at 6,600 rpm and 400 N\u00b7m at 4,600 rpm. The driving model uses this curve as-is (net factor 1.00).';
+    if (v.id === 'brm') return 'Period figures are sparse. The curve is shaped around about 240 lb-ft in the mid-high range and ~460 hp at 11,000 rpm (1951, as sourced). The driving model applies a net factor of ' + v.netFactor.toFixed(2) + '.';
+    if (v.id === 'gt350') return 'Factory figures are SAE gross: 306 hp at 6,000 rpm and 329 lb-ft at 4,200 rpm. The driving model multiplies the curve by a net factor of ' + v.netFactor.toFixed(2) + ' for installed (net) output, then applies driveline losses.';
+    return 'Factory figures are SAE gross: 325 hp at 4,800 rpm and 430 lb-ft at 3,100 rpm. The driving model multiplies the curve by a net factor of ' + v.netFactor.toFixed(2) + ' for installed (net) output, then applies driveline losses.';
+  }
+  function powerBlock(v) {
+    var pk = peaks(v);
+    var official = v.engineText;
+    return '<p>' + esc(official) + '</p>' +
+      '<p class="note">' + esc(ratingNote(v)) + '</p>' +
+      curveSvg(v) +
+      table([
+        row('Curve peak torque', Math.round(pk.tNm) + ' N\u00b7m (' + Math.round(pk.tLbft) + ' lb-ft) at ' + Math.round(pk.tRpm) + ' rpm'),
+        row('Curve peak power', pk.p.toFixed(0) + ' ' + pk.pUnit + ' at ' + Math.round(pk.pRpm) + ' rpm')
+      ]);
+  }
+  function fmtPhys(n) {
+    if (typeof n !== 'number' || !isFinite(n)) return String(n);
+    var a = Math.abs(n);
+    if (a === 0) return '0';
+    if (a >= 100) return n.toFixed(n % 1 ? 1 : 0);
+    if (a >= 10) return n.toFixed(n % 1 ? 2 : 0);
+    if (a >= 1) return n.toFixed(3).replace(/\.?0+$/, '');
+    if (a >= 0.01) return n.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+    return n.toExponential(2);
+  }
+  function physBlock(phys) {
+    var html = '', g, k, i, rows;
+    for (g = 0; g < PHYS_GROUP.length; g++) {
+      rows = [];
+      for (i = 0; i < PHYS_GROUP[g].keys.length; i++) {
+        k = PHYS_GROUP[g].keys[i];
+        if (!phys || phys[k] == null) continue;
+        rows.push('<tr><th><span class="pk">' + esc(k) + '</span> <span class="pv">' + fmtPhys(phys[k]) + '</span></th><td>' + esc(PHYS_HELP[k] || '') + '</td></tr>');
+      }
+      if (rows.length) html += '<h4>' + esc(PHYS_GROUP[g].title) + '</h4>' + table(rows);
+    }
+    return html;
+  }
+  function brmSoundBlock() {
+    var html = '<p>The BRM’s default sound is the v8 order-table model: half-order tones (0.5\u00d7 to 48\u00d7 crank) fitted to recordings, plus the two-stage supercharger whine at <b>8.3\u00d7</b> crank speed. It is not the later physics model (that one is selectable as v9.1–v9.11). The tables below are the compact calibration for each listening position (levels in dB).</p>';
+    var pos, labels = { onboard: 'On board (cockpit)', paddock: 'Paddock', outside: 'Outside', distant: 'Distant' };
+    var help = { noise_db: 'Background / residual noise, four bands', jit_db: 'Cycle jitter, four bands', eq_db: 'Equaliser, five bands', fill_db: 'Broadband fill level', skirt: 'How wide each order’s skirt is', whine_db: 'Supercharger-whine harmonics' };
+    for (pos in labels) {
+      if (!BRM_V8_CAL[pos]) continue;
+      var c = BRM_V8_CAL[pos], rows = [];
+      rows.push(row('Noise', numList(c.noise_db, 1) + ' dB \u2014 ' + help.noise_db));
+      rows.push(row('Jitter', numList(c.jit_db, 1) + ' dB \u2014 ' + help.jit_db));
+      rows.push(row('Equaliser', numList(c.eq_db, 1) + ' dB \u2014 ' + help.eq_db));
+      rows.push(row('Fill', c.fill_db.toFixed(1) + ' dB \u2014 ' + help.fill_db));
+      rows.push(row('Skirt', fmt(c.skirt, 2) + ' \u2014 ' + help.skirt));
+      rows.push(row('Whine', numList(c.whine_db, 1) + ' dB \u2014 ' + help.whine_db));
+      html += '<h4>' + labels[pos] + '</h4>' + table(rows);
+    }
+    html += '<p class="note">Air constant ' + BRM_V8_CAL.air_k + '. The full order-level tables (by rpm) stay in the sound engine; they are not listed here.</p>';
+    return html;
+  }
+  function soundBlock(id, car, playing) {
+    var def = DEFAULT_SOUND[id];
+    var note = '<p>When the sound is fitted to a recording, <b>engine sizes and gearing stay fixed</b>. Only the model parameters below are tuned, then scored on an rpm \u00d7 throttle card.</p>';
+    if (playing && playing !== def) {
+      note += '<p class="note">You are listening to ' + esc(playing) + '. The figures below are the <b>default</b> model (' + esc(SOUND_LABEL[def] || def) + ').</p>';
+    } else {
+      note += '<p>Default sound: <b>' + esc(SOUND_LABEL[def] || def) + '</b>.</p>';
+    }
+    if (id === 'brm') return note + brmSoundBlock();
+    var data = v8pDATA(), key = V8P_KEY[id], pack = data && data[key];
+    if (!pack) return note + '<p class="note">Could not read the physics-model data for this car.</p>';
+    return note + physBlock(pack.phys);
+  }
+  function render(ctx) {
+    var id = ctx.carId, v = null, list = (typeof Vehicles !== 'undefined' && Vehicles.list) || [];
+    var i;
+    for (i = 0; i < list.length; i++) if (list[i].id === id) v = list[i];
+    if (!v) return '<p>No car selected.</p>';
+    var def = DEFAULT_SOUND[id];
+    var ekey = v.engineKey;
+    var P = (typeof EngineParams !== 'undefined' && EngineParams.forCar) ? EngineParams.forCar(ekey, def) : null;
+    var pack = null, car = null;
+    if (id !== 'brm') {
+      pack = v8pDATA();
+      car = pack && pack[V8P_KEY[id]] && pack[V8P_KEY[id]].car;
+    }
+    var html = '<p class="lede">Figures are taken from the car and sound-model data built into this page \u2014 the same numbers the driving physics and the live sound use. Switch car with the Car menu; this panel follows.</p>';
+    html += '<h3>Engine</h3>' + engineBlock(v, P, car);
+    html += '<h3>Valves and cam</h3>' + valveBlock(v, P, car);
+    html += '<h3>Intake</h3>' + intakeBlock(v, car, P);
+    html += '<h3>Exhaust</h3>' + exhaustBlock(v, car, P);
+    html += '<h3>Gearbox and driveline</h3>' + driveBlock(v);
+    html += '<h3>Chassis</h3>' + chassisBlock(v);
+    html += '<h3>Power and torque</h3>' + powerBlock(v);
+    html += '<h3>Default sound-model parameters</h3>' + soundBlock(id, car, ctx.soundId);
+    if (P && P.notes && P.notes.length) {
+      html += '<h3>Notes on the figures</h3><ul class="specNotes">';
+      for (i = 0; i < P.notes.length; i++) {
+        if (/Bay layout|Assumed: plenum|Assumed: tower|Assumed: battery/.test(P.notes[i].text)) continue; // bay drawing notes stay in the 3D view
+        html += '<li>' + (P.notes[i].assumed ? '<span class="ass">Assumed</span> ' : '') + esc(P.notes[i].text) + '</li>';
+      }
+      html += '</ul>';
+    }
+    return html;
+  }
+  var openState = false, lastCtx = null;
+  function open(on, ctx) {
+    var el = document.getElementById('specsDlg');
+    if (!el) return;
+    if (on) {
+      lastCtx = ctx || lastCtx;
+      document.getElementById('specsTitle').textContent = lastCtx && lastCtx.label ? ('Engine specifications \u2014 ' + lastCtx.label) : 'Engine specifications';
+      document.getElementById('specsBody').innerHTML = render(lastCtx || {});
+      el.classList.remove('hidden');
+      openState = true;
+    } else {
+      el.classList.add('hidden');
+      openState = false;
+    }
+  }
+  function refresh(ctx) {
+    if (!openState) { lastCtx = ctx || lastCtx; return; }
+    open(true, ctx);
+  }
+  function isOpen() { return openState; }
+  return { open: open, refresh: refresh, isOpen: isOpen, render: render };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpecs;
 </script>
 <script>/* js/main.js */
 /* main.js: input (keyboard + multitouch), game loop, physics -> audio + UI */
@@ -9682,6 +10137,18 @@ var ProjectHistory = {
   }
   document.getElementById('about').addEventListener('pointerup', function (e) { if (e.target.id === 'about') openAbout(false); });
 
+  function specsCtx() {
+    var v = spec();
+    return { carId: state.carId, soundId: soundId(), label: v.label };
+  }
+  function openSpecs(on) {
+    if (typeof EngineSpecs === 'undefined') return;
+    if (on) openAbout(false);
+    EngineSpecs.open(!!on, specsCtx());
+  }
+  document.getElementById('specsDlg').addEventListener('pointerup', function (e) { if (e.target.id === 'specsDlg') openSpecs(false); });
+
+
   // ---- keyboard ----
   var HANDLED = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
   window.addEventListener('keydown', function (e) {
@@ -9706,8 +10173,8 @@ var ProjectHistory = {
       case 'q': case 'Q': if (drag) dragExit(); else dragEnter(); break;
       case 'r': case 'R': toggleRadio(); break;
       case 'g': case 'G': if (spec().trans !== 'auto') toggleGearbox(); break;
-      case 'h': case 'H': openAbout(document.getElementById('about').classList.contains('hidden')); break;
-      case 'Escape': openAbout(false); break;
+      case 'h': case 'H': openSpecs(false); openAbout(document.getElementById('about').classList.contains('hidden')); break;
+      case 'Escape': openSpecs(false); openAbout(false); break;
       case 't': case 'T': car().trip = 0; flash('Trip reset', 1); break;
     }
   });
@@ -9740,7 +10207,8 @@ var ProjectHistory = {
   var ACTIONS = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); }, brmsound: function (b) { setBrmSound(b.dataset.v); },
     units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox,
-    about: function () { openAbout(true); }, aboutClose: function () { openAbout(false); },
+    about: function () { openSpecs(false); openAbout(true); }, aboutClose: function () { openAbout(false); },
+    specs: function () { openSpecs(true); }, specsClose: function () { openSpecs(false); },
     menu: function () { document.getElementById('topbar').classList.toggle('open'); },
   };
   document.querySelectorAll('[data-act]').forEach(function (b) {
@@ -9812,6 +10280,7 @@ var ProjectHistory = {
     var b = v.brakes;
     document.getElementById('specs').innerHTML = '<b>' + v.label + '</b><br>' + v.engineText + '<br>' + v.transText + ': ' + v.gears.join(' / ') + ', final drive ' + v.finalDrive.toFixed(2) +
       (v.awd ? '<br>All-wheel drive: ' + v.awd.text : '') + '<br>Mass ' + v.curbText + '<br>Tyres ' + v.tyreText + '<br>Brakes: ' + b.text;
+    if (typeof EngineSpecs !== 'undefined' && EngineSpecs.isOpen()) EngineSpecs.refresh(specsCtx());
   }
   applyTheme(); updatePanel();
   var lastIgnLabel = '', astatusEl = document.createElement('span');
@@ -9901,7 +10370,7 @@ var ProjectHistory = {
   }
   if (params.get('view') === 'bay') setView(2);   // v1.10: open straight into the engine bay
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
+  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
 })();
 </script>
 </body>
