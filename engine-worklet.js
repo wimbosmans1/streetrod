@@ -3541,7 +3541,7 @@ function engineModuleV8p(core) {
       Q_CD = 11, Q_QC = 12, Q_HL = 13, Q_NP = 14, Q_BURN = 15, Q_XR0 = 16, Q_XROV = 17, Q_OVL = 18, Q_COV = 19, Q_COVR = 20, Q_MISR = 21,
       Q_ETAV = 22, Q_VD = 23, Q_VMAN = 24, Q_ATHW = 25, Q_AIDLE = 26, Q_FIDLE = 27, Q_ROL = 28, Q_J = 29, Q_F0 = 30, Q_F1 = 31, Q_F2 = 32,
       Q_FCOLD = 33, Q_STG = 34, Q_STKE = 35, Q_STRM = 36, Q_STRB = 37, Q_STIF = 38, Q_STJM = 39, Q_TEETH = 40, Q_VBAT = 41, Q_SOLID = 42,
-      Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, NQ = 56;
+      Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, NQ = 56;
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
       S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, NS = 32;
@@ -3776,7 +3776,7 @@ function engineModuleV8p(core) {
               pcy = CY[c + C_PIVC] * Math.pow(vr, npol) * (1.0 + (CY[c + C_RP] - 1.0) * xb2);
             } else pcy = pman;
           }
-          if (phi >= Q[Q_IVO] && phi < Q[Q_IVC]) qin += dvd * w;
+          if (phi >= Q[Q_IVO] && phi < Q[Q_IVC]) qin += dvd * w * Q[Q_INSCALE];
           CY[c + C_Q] = q; CY[c + C_P] = pcy;
           AB[pp * DL + wi] = z0 * q + rv * pin;
           if (knl > 0.0) arr(AB, AT, PF, pp, wi, nt, knl);
@@ -3919,9 +3919,35 @@ function engineModuleV8p(core) {
       return [b[0] / a[0], b[1] / a[0], b[2] / a[0], a[1] / a[0], a[2] / a[0]];
     }
     function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
-    function camEvents(c) {
+    function camEvents(c, intakeLsa, intakeDur) {
       var d = c.adv_dur / 2.0;
-      return [360.0 + (c.lsa - d), 360.0 + (c.lsa + d), 360.0 - (c.lsa + d), 360.0 - (c.lsa - d)];
+      var dIn = ((intakeDur == null) ? c.adv_dur : intakeDur) / 2.0;
+      var lsaIn = (intakeLsa == null) ? c.lsa : intakeLsa;
+      return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (c.lsa + d), 360.0 - (c.lsa - d)];
+    }
+    /** Non-default 911 option. Official 997.1: intake phasing (40° crank vane range) + 3.6/11.0 mm lift switch, exhaust fixed, idle = small cam and low overlap. (3/10 mm is the 996 Turbo.)
+     *  Flap closed under load ~3000-5500 rpm is 997.2-confirmed, probable for 997.1. Phasing map and closed-plenum scale are model rules. */
+    function applyVariocamPlus(Q, c, rpm, thr, st) {
+      st = st || {};
+      var idle = c.idle_rpm, red = c.redline;
+      rpm = Math.max(idle * 0.5, Math.min(red * 1.05, rpm));
+      thr = Math.max(0, Math.min(1, thr));
+      var high = !!st.high;
+      if (high) { if (rpm < 2500 || thr < 0.18) high = false; }
+      else { if (rpm > 3000 && thr > 0.28) high = true; }
+      st.high = high;
+      Q[Q_INSCALE] = high ? 1.0 : (3.6 / 11.0);
+      var x = (rpm - idle) / Math.max(1, 4600 - idle);
+      if (x < 0) x = 0; if (x > 1) x = 1;
+      x *= 0.35 + 0.65 * Math.max(thr, 0.15);
+      if (rpm > 6000) x *= Math.max(0.55, 1 - (rpm - 6000) / 2500);
+      var adv = 40 * x;  // 997.1 VarioCam Plus vane range, crank degrees
+      var ev = camEvents(c, c.lsa - adv);
+      Q[Q_IVO] = ev[0]; Q[Q_IVC] = ev[1]; Q[Q_EVO] = ev[2]; Q[Q_EVC] = ev[3]; Q[Q_OVL] = ev[3] - ev[0];
+      var closed = (rpm >= 3000 && rpm <= 5500 && thr >= 0.35);
+      Q[Q_VMAN] = c.v_man * (closed ? 0.55 : 1);
+      st.flap_closed = closed; st.advance = adv;
+      return st;
     }
     function perspective(c, name) {
       var m = c.mouth[0], x, z;
@@ -4016,6 +4042,8 @@ function engineModuleV8p(core) {
       if (!D) throw new Error('v8p: no data for ' + key);
       this.key = key; this.c = D.car; this.P = Object.assign({}, D.phys, opts.phys || {}); this.fs = fs;
       this.spec = { idle_rpm: this.c.idle_rpm, redline: this.c.redline, name: this.c.name, car_key: key };
+      this.variocamPlus = key === 'p997' && !!(spec.variocam_plus || opts.variocam_plus);
+      this._vc = {};
       this.selfGated = opts.mode !== 'run' && opts.mode !== 'raw';
       var N = buildNet(this.c);
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
@@ -4060,6 +4088,7 @@ function engineModuleV8p(core) {
       var asn = Math.PI * c.sn_d * c.sn_d / 4;
       Q[Q_SNM] = RHO_AIR * (c.sn_len + 0.85 * c.sn_d) / asn; Q[Q_SNR] = 0.1 * RHO_AIR * C_AIR / asn;
       Q[Q_SPARK0] = c.spark0; Q[Q_TAILA] = Math.PI * c.pipe_d * c.pipe_d / 4; Q[Q_DWT] = P.dw_tau; Q[Q_KNL] = P.k_nl;
+      Q[Q_INSCALE] = 1.0;
       return Q;
     };
     V8pSynth.prototype._pipes = function () {
@@ -4144,6 +4173,7 @@ function engineModuleV8p(core) {
     };
     /** one block (n <= 256) -> L/R at off; game = { running, starter, warm, gear } or null (offline 'run' mode) */
     V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {
+      if (this.variocamPlus) this._vc = applyVariocamPlus(this.Q, this.c, rpm, thr, this._vc);
       var dtb = n / this.fs, K = this.ctlr.step(dtb, rpm, thr, game), out = this.out, i;
       for (i = 0; i < n * NO; i++) out[i] = 0.0;
       if (this.ctlr.click) { out[O_ST] += this.ctlr.click; this.ctlr.click = 0.0; }

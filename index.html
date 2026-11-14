@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.15)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.16)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -364,7 +364,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v8 (default) or a v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
-      <label class="sel brmsel hidden" id="segP997Sound" title="911 sound: fixed cam (default) or VarioCam Plus + intake flap"><select id="selP997" aria-label="911 engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segP997Sound" title="911 sound: fixed cam (default) or VarioCam Plus (3.6/11.0 mm, 40°) + intake flap"><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option></select></label>
       <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
@@ -4454,7 +4454,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var lsaIn = (intakeLsa == null) ? c.lsa : intakeLsa;
       return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (c.lsa + d), 360.0 - (c.lsa - d)];
     }
-    /** Non-default 911 option. Official: intake phasing + 3/10 mm lift switch, exhaust fixed, idle = small cam and low overlap.
+    /** Non-default 911 option. Official 997.1: intake phasing (40° crank vane range) + 3.6/11.0 mm lift switch, exhaust fixed, idle = small cam and low overlap. (3/10 mm is the 996 Turbo.)
      *  Flap closed under load ~3000-5500 rpm is 997.2-confirmed, probable for 997.1. Phasing map and closed-plenum scale are model rules. */
     function applyVariocamPlus(Q, c, rpm, thr, st) {
       st = st || {};
@@ -4465,12 +4465,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (high) { if (rpm < 2500 || thr < 0.18) high = false; }
       else { if (rpm > 3000 && thr > 0.28) high = true; }
       st.high = high;
-      Q[Q_INSCALE] = high ? 1.0 : 0.3;
+      Q[Q_INSCALE] = high ? 1.0 : (3.6 / 11.0);
       var x = (rpm - idle) / Math.max(1, 4600 - idle);
       if (x < 0) x = 0; if (x > 1) x = 1;
       x *= 0.35 + 0.65 * Math.max(thr, 0.15);
       if (rpm > 6000) x *= Math.max(0.55, 1 - (rpm - 6000) / 2500);
-      var adv = 22 * x;
+      var adv = 40 * x;  // 997.1 VarioCam Plus vane range, crank degrees
       var ev = camEvents(c, c.lsa - adv);
       Q[Q_IVO] = ev[0]; Q[Q_IVC] = ev[1]; Q[Q_EVO] = ev[2]; Q[Q_EVC] = ev[3]; Q[Q_OVL] = ev[3] - ev[0];
       var closed = (rpm >= 3000 && rpm <= 5500 && thr >= 0.35);
@@ -7455,7 +7455,7 @@ var EngineParams = (function () {
     var cx = c.camx || 1, dur = c.adv_dur, lsa = c.lsa, dEx = c.ev_d / Math.SQRT2;
     P.exValve = { d: dEx, lift: c.ev_lift, open: pmod(360 - lsa - dur / 2, 720), dur: dur, camx: cx };
     P.inValve = { d: 0.0402, lift: 0.011, open: pmod(360 + lsa - dur / 2, 720), dur: dur, camx: cx };
-    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration, ' + lsa + '\u00b0 lobe separation, ' + (c.ev_lift * 1000).toFixed(1) + ' mm exhaust lift; intake valve 40.2 mm (LN Engineering / Hamheads 3.8 heads), high lift 11.0 mm drawn (workshop figure). The default sound is still this fixed cam. VarioCam Plus (official intake phasing, 3 mm / 10 mm intake lift switch) plus the two-stage intake flap is a non-default 911 sound option; the 3,000–5,500 rpm flap switch is 997.2-confirmed and treated as probable for the 997.1.', true);
+    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration, ' + lsa + '\u00b0 lobe separation, ' + (c.ev_lift * 1000).toFixed(1) + ' mm exhaust lift; intake valve 40.2 mm (LN Engineering / Hamheads 3.8 heads), high lift 11.0 mm drawn (workshop figure). The default sound is still this fixed cam. VarioCam Plus (official 997.1 intake phasing, 40° vane range, 3.6 mm / 11.0 mm intake lift; 3/10 mm is the 996 Turbo) plus the two-stage intake flap is a non-default 911 sound option; the 3,000–5,500 rpm flap switch is 997.2-confirmed and treated as probable for the 997.1.', true);
     note(P, 'dims', 'Bore ' + (c.bore * 1000).toFixed(0) + ' mm, stroke ' + (c.stroke * 1000).toFixed(1) + ' mm, rods ' + (c.rod * 1000).toFixed(0) + ' mm, CR ' + c.cr + ' (model data); bore spacing 118 mm (M97 data); 4 valves per cylinder, one of each pair drawn (exhaust \u00d8 = the model\u2019s two-valve curtain / \u221a2).', false);
     P.headers = { type: '3-1', len: +(c.prim_len * c.prim_x[1] + c.head_len).toFixed(3), primD: c.prim_d, pipeD: c.pipe_d, pipeLen: c.inter_len, crossover: 'none', toNose: true };
     note(P, 'headers', '3-1 headers per bank to the catalysts and one rear silencer each side (model exhaust \u20183-1\u2019, no balance pipe), primaries \u00d8 ' + (c.prim_d * 1000).toFixed(0) + ' mm, pipe \u00d8 ' + (c.pipe_d * 1000).toFixed(0) + ' mm; drawn length = model primary + head runner.', false);
@@ -9444,6 +9444,7 @@ var ProjectHistory = {
   },
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.11.16", date: "2026-11-14", status: "done", headline: "VarioCam Plus and the intake flap are now a non-default 911 option", text: "The 911 keeps its current default sound (the v1.11.11 joint cabin and outside fit, a fixed cam). Next to the car menu you can now also pick VarioCam Plus: official 997.1 intake phasing (40° vane range), the 3.6 mm / 11.0 mm intake-lift switch (3 mm / 10 mm is the 996 Turbo figure, not used here), and the two-stage intake resonance flap. At idle it stays on the small cam with low overlap. The flap closes under load between about 3,000 and 5,500 rpm — that switch is confirmed on the 997.2 3.8 DFI and treated as probable for this 997.1. Engine sizes, the 76 mm throttle body and the default sound are unchanged. A link with ?car=p997&p997=variocam opens the option directly." },
       { v: "v1.11.11", date: "2026-11-14", status: "done", headline: "911 default sound is now the joint cabin and outside fit", text: "The 911 Carrera 4S now starts on a new joint fit of the cabin and outside sound, scored on the corrected stock recordings (engine only, rpm from the audio). It is closer on that scorecard than the previous default (overall 3.41 against 3.67; cabin 3.00 against 3.20, outside 4.09 against 4.40, tailpipe 4.56 against 5.40 — lower is closer), so it becomes the default. Engine sizes and gearing are unchanged. The GT350 and Cadillac stay on their latest physics sound; the BRM stays on v8." },
       { v: "v1.11.4", date: "2026-11-13", status: "done", headline: "Cadillac starts on the latest physics sound, after a muffler fix", text: "The Cadillac now starts on the latest physics sound, which is the better fit on the scorecard after a fix to the stock muffler. The earlier version of that model had left the reverse-flow muffler almost undamped, so the sound was a low boom with a hole in the midrange; it now has packing in the chambers and a resonator for the firing-order drone (around 825 rpm). It beats the previous default (v2) on the overall score (3.60 against 4.07) and in the cabin and far outside; it is just behind at the tailpipe and still behind in the engine bay. A saved sound choice or a link with ?sound= still works as before. The GT350 stays on the latest model, the BRM stays on v8. The Porsche outside sound is unchanged." },
       { v: "v1.11.3", date: "2026-11-13", status: "done", headline: "GT350 default sound is now the latest physics model", text: "GT350 default sound is now the latest physics model, best fit on scorecard. The Cadillac still starts on v2, and the BRM still starts on v8. A saved sound choice or a link with ?sound= still works as before." },
@@ -10339,7 +10340,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var selP997 = document.getElementById('selP997');
   [['fixed', 'Sound fixed cam (default)'], ['variocam', 'Sound VarioCam Plus']].forEach(function (it) {
     var o = document.createElement('option'); o.value = it[0]; o.textContent = it[1];
-    o.title = it[0] === 'variocam' ? 'VarioCam Plus: intake phasing, 3/10 mm lift switch, and the two-stage intake flap (non-default)' : 'Fixed cam (the v1.11.11 default)';
+    o.title = it[0] === 'variocam' ? 'VarioCam Plus: intake phasing (40° vane range), 3.6/11.0 mm lift switch, and the two-stage intake flap (non-default)' : 'Fixed cam (the v1.11.11 default)';
     selP997.appendChild(o);
   });
   selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
