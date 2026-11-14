@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.13)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.14)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -131,6 +131,11 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 #specsDlg .aboutBox { max-width: 720px; }
 #specsDlg .lede { margin: 0 0 10px; }
 #specsDlg h4 { margin: 10px 0 4px; font-size: 14px; }
+#about .aboutBox h4, #specsDlg .aboutBox h4 { margin: 10px 0 4px; font-size: 14px; }
+#howSound { margin: 8px 0 16px; padding-bottom: 8px; border-bottom: 1px solid rgba(42,32,22,.18); }
+html.vis-flat #howSound { border-bottom-color: rgba(255,255,255,.12); }
+#bHowSound { margin: 0 0 10px; }
+
 #specsDlg table.spec { width: 100%; border-collapse: collapse; margin: 0 0 8px; font-size: 14px; }
 #specsDlg table.spec th, #specsDlg table.spec td { padding: 5px 8px; vertical-align: top; border-bottom: 1px solid rgba(42,32,22,.12); }
 #specsDlg table.spec th { text-align: left; width: 34%; font-weight: normal; color: #5a4a32; }
@@ -400,7 +405,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>R</td><td>Radio (Cadillac)</td></tr>
       <tr><td>T</td><td>Reset trip meter</td></tr>
       <tr><td>M</td><td>Mute</td></tr>
-      <tr><td>H</td><td>About / History</td></tr>
+      <tr><td>H</td><td>About / History, including how the sound model works</td></tr>
       <tr><td></td><td>Engine specifications (Specs button, or the link under Car)</td></tr>
     </table>
     <h3>Touch / mouse</h3>
@@ -9389,6 +9394,18 @@ var ProjectHistory = {
     'The V8 sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, exhaust pipes and muffler.',
     'Physics (gearbox, weight, tyres, brakes) uses the cars\u2019 real specs.'
   ],
+  howSound: {
+    title: 'How the sound model works',
+    intro: 'The GT350, the Cadillac and the 911 use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and inside the car. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The BRM\u2019s default sound is an earlier model, built from the strength of each engine order in recordings, plus the supercharger whine; a physics model for the BRM is there in the Sound menu if you want to try it.',
+    sections: [
+      { title: 'Combustion pulses', text: 'Each cylinder fires in its place in the firing order. When the spark comes, the charge burns and the pressure in the cylinder rises sharply \u2014 that pulse is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss.' },
+      { title: 'Gas exchange', text: 'The valves open and close on the cam\u2019s timing. Fresh mixture is drawn in; exhaust is blown out. For a moment both valves are a little open at once (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take.' },
+      { title: 'Exhaust and muffler', text: 'The blow-down pulse travels down the headers and pipes as a pressure wave. It reflects at junctions and at the open tailpipe and comes back, so later pulses meet earlier ones. The muffler is a set of chambers and packed sections that soak up some of the energy, especially the high frequencies. A hard pulse can steepen as it travels, which is part of the bark. Each car has its own pipe lengths, diameters and muffler (or, on the BRM, open stubs and no muffler at all).' },
+      { title: 'Intake and valve train', text: 'Air rushing through the carburettor or the throttle body, and through the air cleaner or air box, makes its own sound \u2014 the hiss and the snorkel note. The cam and lifters tick as the valves seat. Those sources are quieter than the exhaust outside, but they matter in the engine bay and inside the car.' },
+      { title: 'The cabin path', text: 'Inside the car you do not hear the tailpipes directly. Exhaust sound comes in through the floor; mechanical and intake sound come through the firewall and the fresh-air vents. The cabin has a boom of its own (its first resonances), and the seats, headliner and carpet swallow some of the high end. A little sound leaks through seals and apertures. With a window open, some of the outside sound comes in as well.' },
+      { title: 'How the sound is fitted', text: 'When the model is matched to a recording of a standard car, the engine\u2019s real sizes stay as they are: bore, stroke, compression, firing order, cam timing, pipe lengths, gear ratios. What is adjusted are the model parameters \u2014 how hard the burn is, how much leftover gas there is, how much the muffler damps, how much comes through the body, and so on. Those knobs are tuned so the synthetic sound is as close as possible to the recording, judged on a scorecard of engine speed against throttle opening (a grid of rpm bands and throttle levels). A lower score is closer. When a new fit is clearly better on that card, it becomes the car\u2019s default sound. The Specs page lists every one of those figures for the car you have selected.' }
+    ]
+  },
   tracks: [
     { title: "Sound models", items: [
       { v: "v1.11.11", date: "2026-11-14", status: "done", headline: "911 default sound is now the joint cabin and outside fit", text: "The 911 Carrera 4S now starts on a new joint fit of the cabin and outside sound, scored on the corrected stock recordings (engine only, rpm from the audio). It is closer on that scorecard than the previous default (overall 3.41 against 3.67; cabin 3.00 against 3.20, outside 4.09 against 4.40, tailpipe 4.56 against 5.40 — lower is closer), so it becomes the default. Engine sizes and gearing are unchanged. The GT350 and Cadillac stay on their latest physics sound; the BRM stays on v8." },
@@ -9443,6 +9460,7 @@ var ProjectHistory = {
       { v: "v1.1", date: "2026-11-11", status: "done", headline: "Inside and outside views, period interiors, touch controls", text: "Sound on iPhone fixed; inside / outside view; period interiors for both cars; touch controls." },
     ] },
     { title: "Site and fixes", items: [
+      { v: "v1.11.14", date: "2026-11-14", status: "done", headline: "The info button now explains how the sound model works", text: "The i button (About / History) now opens with a plain-language explanation of how the sound model works: combustion pulses, gas exchange, the exhaust and muffler, intake and valve train, and the path into the cabin — and how the sound is fitted. Engine sizes and gearing stay fixed; only the model parameters are tuned, then scored on an rpm-by-throttle card. The same explanation is linked from the Specs page. No sound or physics changes." },
       { v: "v1.11.6", date: "2026-11-13", status: "done", headline: "History panel grouped by area, with headlines and details", text: "The About / History panel is grouped by area (sound models, cars, driving and controls, visuals and engine bay, site and fixes). Each release has a one-line headline; tap it to open the full note. Versions and dates are unchanged. The panel still works on a Tesla browser and on older iPads." },
       { v: "v1.8.2", date: "2026-11-11", status: "done", headline: "Works on older iPads and iPhones again", text: "Works on older iPads and iPhones again (Wim’s iPad showed only the buttons and a black screen). Older Safari (before iOS 14.5) did not understand one page-layout instruction, so the picture area had no size; the page now uses instructions that iOS 12 and later understand, touch controls work without Pointer Events, the 3D preview is left out where it cannot run, and the sound runs without AudioWorklet (all sound models, with the start-up). If anything still goes wrong, the page shows the error in a red box at the bottom." },
       { v: "v1.8.1", date: "2026-11-11", status: "done", headline: "iPad-friendly layout, including desktop-mode Safari", text: "iPad friendly. iPads are recognised even in Safari’s desktop mode. In landscape the full-width interior fills the screen at its true shape and the pedals and shift buttons sit on a deck below it, in thumb reach at the bottom corners; in portrait the dashboard crop stays with a smaller control deck. Bigger buttons, no zooming, scrolling or text selection, smooth turning, Split View and Slide Over, several fingers at once, and the keyboard works when one is attached. On big screens the picture resolution can drop further to keep the frame rate up. The 3D view (v3) now fits the picture area in portrait." },
@@ -9823,6 +9841,7 @@ var EngineSpecs = (function () {
       car = pack && pack[V8P_KEY[id]] && pack[V8P_KEY[id]].car;
     }
     var html = '<p class="lede">Figures are taken from the car and sound-model data built into this page \u2014 the same numbers the driving physics and the live sound use. Switch car with the Car menu; this panel follows.</p>';
+    html += '<p><button type="button" class="tb" id="bHowSound">How the sound model works</button></p>';
     html += '<h3>Engine</h3>' + engineBlock(v, P, car);
     html += '<h3>Valves and cam</h3>' + valveBlock(v, P, car);
     html += '<h3>Intake</h3>' + intakeBlock(v, car, P);
@@ -9849,6 +9868,10 @@ var EngineSpecs = (function () {
       lastCtx = ctx || lastCtx;
       document.getElementById('specsTitle').textContent = lastCtx && lastCtx.label ? ('Engine specifications \u2014 ' + lastCtx.label) : 'Engine specifications';
       document.getElementById('specsBody').innerHTML = render(lastCtx || {});
+      var bHow = document.getElementById('bHowSound');
+      if (bHow) bHow.addEventListener('click', function () {
+        if (window.__game && window.__game.openAboutHow) window.__game.openAboutHow();
+      });
       el.classList.remove('hidden');
       openState = true;
     } else {
@@ -10114,10 +10137,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 
   // ---- About / History overlay (content from js/history.js) ----
   function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
-  function openAbout(on) {
+  function openAbout(on, scrollTo) {
     var el = document.getElementById('about');
     if (on && !el.dataset.built && typeof ProjectHistory !== 'undefined') {
       var h = ProjectHistory.about.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
+      var hs = ProjectHistory.howSound;
+      if (hs) {
+        h += '<div id="howSound"><h3>' + esc(hs.title) + '</h3><p>' + esc(hs.intro) + '</p>';
+        (hs.sections || []).forEach(function (s) { h += '<h4>' + esc(s.title) + '</h4><p>' + esc(s.text) + '</p>'; });
+        h += '</div>';
+      }
       ProjectHistory.tracks.forEach(function (t) {
         h += '<h3>' + esc(t.title) + '</h3><ul>';
         t.items.forEach(function (it) {
@@ -10134,7 +10163,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       document.getElementById('aboutBody').innerHTML = h; el.dataset.built = '1';
     }
     el.classList.toggle('hidden', !on);
+    if (on && scrollTo) {
+      var target = document.getElementById(scrollTo);
+      if (target) { try { target.scrollIntoView({ block: 'start' }); } catch (e) { target.scrollIntoView(true); } }
+    }
   }
+  function openAboutHow() { openSpecs(false); openAbout(true, 'howSound'); }
   document.getElementById('about').addEventListener('pointerup', function (e) { if (e.target.id === 'about') openAbout(false); });
 
   function specsCtx() {
@@ -10207,7 +10241,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var ACTIONS = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); }, brmsound: function (b) { setBrmSound(b.dataset.v); },
     units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox,
-    about: function () { openSpecs(false); openAbout(true); }, aboutClose: function () { openAbout(false); },
+    about: function () { openSpecs(false); openAbout(true); }, aboutClose: function () { openAbout(false); }, aboutHow: function () { openAboutHow(); },
     specs: function () { openSpecs(true); }, specsClose: function () { openSpecs(false); },
     menu: function () { document.getElementById('topbar').classList.toggle('open'); },
   };
@@ -10370,7 +10404,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   if (params.get('view') === 'bay') setView(2);   // v1.10: open straight into the engine bay
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
+  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openAboutHow: openAboutHow, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
 })();
 </script>
 </body>
