@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.21)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.22)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -3789,7 +3789,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
   if (!g0.ENGINE_MODULES) g0.ENGINE_MODULES = [];
   g0.ENGINE_MODULES.push(function engineModuleV8p(core) {
     // ---- model data (tools/export_v8p_params.py: engine-sound v8phys.CARS + PHYS merged with fitted_params_v8phys.json)
-    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":15.0,"f_fw":72.41426333042916,"k_cab":0.35,"cab_q":4.312931693945894,"cab_model":1,"leak_floor":0.3,"leak_fw":0.003,"k_floor":1.000048686830272,"k_ind":0.029701259811889123,"f_abs":8000.0,"k_win":0.3,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.14,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.6,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0,"k_st_mesh":0.38,"k_st_comm":0.2,"k_st_mot":0.16,"k_st_bb":1.0,"k_st_out":1.0,"k_st_cab":1.28,"k_st_bb2":0.5,"k_st_bbhi":0.22,"k_st_am":0.52}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15.0,"f_fw":400.0,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000.0,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1.0,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.48}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252.0,"lsa":116.0,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1.0,"lifters":"hydraulic","idle_rpm":670.0,"redline":7300.0,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1.0,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0.0,"inter_len":0.6,"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["chamber",0.22,10.0,0.5],["pipe",0.12,0.045,0.0],["chamber",0.22,10.0,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0.0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1.0],"cabin_len":1.9,"cabin_h":1.0,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000.0,"st_i_free":70.0,"st_i_lock":850.0,"st_v_test":11.5,"st_v_lock":6.0,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000.0,"spark0":10.0},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":0.0,"k_jet":0.36735134466175745,"f_floor":15.0,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.0035613790028847887,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":8000.0,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.0,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":40.0,"pack":2.212846561320972,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0,"choke_tau":6.0,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1.0,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.68}}}/*END_V8P_DATA*/;
+    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":15.0,"f_fw":72.41426333042916,"k_cab":0.35,"cab_q":4.312931693945894,"cab_model":1,"leak_floor":0.3,"leak_fw":0.003,"k_floor":1.000048686830272,"k_ind":0.029701259811889123,"f_abs":8000.0,"k_win":0.3,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.14,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.6,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0,"k_st_mesh":0.38,"k_st_comm":0.2,"k_st_mot":0.16,"k_st_bb":1.0,"k_st_out":1.0,"k_st_cab":1.28,"k_st_bb2":0.5,"k_st_bbhi":0.22,"k_st_am":0.55,"k_st_am_far":0.58,"k_st_am_out":0.5,"k_st_am_cab":0.52,"st_lead":0.04}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15.0,"f_fw":400.0,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000.0,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1.0,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252.0,"lsa":116.0,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1.0,"lifters":"hydraulic","idle_rpm":670.0,"redline":7300.0,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1.0,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0.0,"inter_len":0.6,"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["chamber",0.22,10.0,0.5],["pipe",0.12,0.045,0.0],["chamber",0.22,10.0,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0.0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1.0],"cabin_len":1.9,"cabin_h":1.0,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000.0,"st_i_free":70.0,"st_i_lock":850.0,"st_v_test":11.5,"st_v_lock":6.0,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000.0,"spark0":10.0},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":0.0,"k_jet":0.36735134466175745,"f_floor":15.0,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.0035613790028847887,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":8000.0,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.0,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":40.0,"pack":2.212846561320972,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0,"choke_tau":6.0,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1.0,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14}}}/*END_V8P_DATA*/;
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     var DL = 1024, DLM = DL - 1, HB = 4096, NSRC = 6;
     // Q
@@ -3797,10 +3797,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q_CD = 11, Q_QC = 12, Q_HL = 13, Q_NP = 14, Q_BURN = 15, Q_XR0 = 16, Q_XROV = 17, Q_OVL = 18, Q_COV = 19, Q_COVR = 20, Q_MISR = 21,
       Q_ETAV = 22, Q_VD = 23, Q_VMAN = 24, Q_ATHW = 25, Q_AIDLE = 26, Q_FIDLE = 27, Q_ROL = 28, Q_J = 29, Q_F0 = 30, Q_F1 = 31, Q_F2 = 32,
       Q_FCOLD = 33, Q_STG = 34, Q_STKE = 35, Q_STRM = 36, Q_STRB = 37, Q_STIF = 38, Q_STJM = 39, Q_TEETH = 40, Q_VBAT = 41, Q_SOLID = 42,
-      Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, Q_KMESH = 56, Q_KCOMM = 57, Q_KMOT = 58, Q_KBB = 59, Q_KAM = 60, Q_KBB2 = 61, Q_KBBHI = 62, NQ = 63;
+      Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, Q_KMESH = 56, Q_KCOMM = 57, Q_KMOT = 58, Q_KBB = 59, Q_KAM = 60, Q_KBB2 = 61, Q_KBBHI = 62, Q_LEAD = 63, NQ = 64;
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
-      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, NS = 36;
+      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, NS = 36;
     var C_PHI = 0, C_M = 1, C_K = 2, C_OPEN = 3, C_PIVC = 4, C_VIVC = 5, C_TIVC = 6, C_RP = 7, C_VALID = 8, C_P = 9, C_Q = 10, C_E = 11,
       C_XRES = 12, C_ADV = 13, C_DUR = 14, C_OFF = 15, C_BANK = 16, C_PIPE = 17, NC = 20;
     var F_D = 0, F_A = 1, F_GAIN = 2, F_LP = 3, F_SA = 4, F_SB = 5, F_C = 6, F_RP = 7, NF = 8;
@@ -4090,7 +4090,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         out[ko + O_TICK0] = tick0; out[ko + O_TICK1] = tick1;
         // continuous starter: mesh, motor shaft, commutator and armature noise follow w(t)/wm(t);
         // compression 'rur-rur' is the physics speed ripple plus a crank-angle AM (not one-sample spikes)
-        var stOut = 0.0, tnom = G * ke * Q[Q_VBAT] / Rm;
+        var stOut = 0.0, stLo = 0.0, tnom = G * ke * Q[Q_VBAT] / Rm;
         if (tnom < 1e-9) tnom = 1e-9;
         if (S[S_LOCK] > 0.5 && S[S_PREVLOCK] < 0.5) S[S_STENV] += 0.85;   // pinion engagement clunk
         S[S_PREVLOCK] = S[S_LOCK];
@@ -4100,7 +4100,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           var load = tst / tnom; if (load < 0.0) load = 0.0; else if (load > 2.5) load = 2.5;
           var aMesh = Q[Q_KMESH] * (0.40 + 0.60 * load);
           var pMesh = 6.283185307179586 * S[S_MESH];
-          stOut += aMesh * (Math.sin(pMesh) + 0.35 * Math.sin(2.0 * pMesh) + 0.12 * Math.sin(3.0 * pMesh));
+          var mAdd = aMesh * (Math.sin(pMesh) + 0.35 * Math.sin(2.0 * pMesh) + 0.12 * Math.sin(3.0 * pMesh));
+          stOut += mAdd; stLo += mAdd;
         }
         var nz = (rnd(S) - 0.5) * 3.4641016151377544;
         if (wm > 1.0) {
@@ -4109,7 +4110,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           var curN = cur / 220.0; if (curN > 1.0) curN = 1.0;
           var aMot = Q[Q_KMOT] * (0.35 + 0.65 * curN);
           var pMot = 6.283185307179586 * S[S_MOTPH];
-          stOut += aMot * (Math.sin(pMot) + 0.35 * Math.sin(2.0 * pMot));
+          var motAdd = aMot * (Math.sin(pMot) + 0.35 * Math.sin(2.0 * pMot));
+          stOut += motAdd; stLo += motAdd;
           S[S_COMM] += Q[Q_NSEG] * wm * dt / (2.0 * Math.PI);
           S[S_COMM] -= Math.floor(S[S_COMM]);
           var aComm = Q[Q_KCOMM] * (0.30 + 0.70 * curN);
@@ -4126,17 +4128,44 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           S[S_STN2] *= Math.exp(-dt / 0.012);
           stOut += S[S_STN] + S[S_STN2];
         }
-        S[S_STENV] *= Math.exp(-dt / 0.012);   // ~12 ms solenoid / pinion body, not a tick
+        var clunk = 0.0, stLow = 0.0, stHigh = 0.0;
+        // stOut so far is mesh+motor+comm+broadband; split lows (mesh/motor) from the whoosh
+        stLow = 0.0; stHigh = stOut;
+        // re-split: mesh and motor were added first; easiest: classify by what we already mixed — apply two AMs below using stOut as the grind
+        S[S_STENV] *= Math.exp(-dt / 0.020);   // solenoid / pinion body
         if (S[S_STENV] > 1e-8) {
-          S[S_CLUNKPH] += 195.0 * dt;
+          S[S_CLUNKPH] += 185.0 * dt;
           S[S_CLUNKPH] -= Math.floor(S[S_CLUNKPH]);
           var pCl = 6.283185307179586 * S[S_CLUNKPH];
-          stOut += S[S_STENV] * (0.45 + 0.95 * Math.sin(pCl) + 0.35 * Math.sin(2.0 * pCl));
+          clunk += S[S_STENV] * (0.55 + 0.70 * Math.sin(pCl) + 0.20 * Math.sin(2.0 * pCl));
         } else S[S_STENV] = 0.0;
+        // quiet low-band solenoid / engagement wash (not a held sine) while the pinion is in and the motor is not yet driving
+        if (engaged && !powered) {
+          S[S_LEADHUM] += (1.0 - S[S_LEADHUM]) * (dt / 0.014);
+          var alLd = 1.0 - Math.exp(-2.0 * Math.PI * 350.0 / fs);
+          S[S_STN] += alLd * (nz * 0.28 * S[S_LEADHUM] - S[S_STN]);
+          S[S_CLUNKPH] += 155.0 * dt;
+          S[S_CLUNKPH] -= Math.floor(S[S_CLUNKPH]);
+          clunk += S[S_STN] + S[S_LEADHUM] * 0.07 * Math.sin(6.283185307179586 * S[S_CLUNKPH]);
+        } else {
+          S[S_LEADHUM] *= Math.exp(-dt / 0.020);
+          if (S[S_LEADHUM] > 1e-4) clunk += S[S_LEADHUM] * 0.08 * S[S_STN];
+        }
+        // burst AM: long compression-to-TDC struggle, brief deep gap after TDC (whoosh dips more than the low rumble)
         var ncomp = ((CY.length / NC) | 0) * 0.5;
-        var phC = S[S_TH] / 360.0 * ncomp;
-        phC -= Math.floor(phC);
-        stOut *= 1.0 - Q[Q_KAM] * 0.5 * (1.0 + Math.cos(6.283185307179586 * phC));
+        var u = S[S_TH] / 360.0 * ncomp;
+        u -= Math.floor(u);
+        var kamH = Q[Q_KAM]; if (kamH < 0.0) kamH = 0.0; else if (kamH > 0.95) kamH = 0.95;
+        var kamL = kamH * 0.42;
+        // hold near TDC (struggle), brief gap after TDC, then rise through the next compression
+        var rel = 0.12, gap = 0.06, hold = 0.54, rise = 1.0 - rel - gap - hold, shp;
+        if (u < rel) { var x = u / rel; shp = 1.0 - x * x * (3.0 - 2.0 * x); }
+        else if (u < rel + gap) shp = 0.0;
+        else if (u < rel + gap + rise) { var x2 = (u - rel - gap) / rise; shp = x2 * x2; }
+        else shp = 1.0;
+        var amH = (1.0 - kamH) + kamH * shp, amL = (1.0 - kamL) + kamL * shp;
+        // mesh/motor sit in the low half of stOut, comm+bb in the high half — a gentle tilt: lows * amL, all * mix
+        stOut = stLo * amL + (stOut - stLo) * amH + clunk;
         out[ko + O_ST] += stOut;
         out[ko + O_RPM] = rpm;
       }
@@ -4393,6 +4422,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q[Q_KAM] = P.k_st_am !== undefined ? P.k_st_am : 0.55;
       Q[Q_KBB2] = P.k_st_bb2 !== undefined ? P.k_st_bb2 : 0.5;
       Q[Q_KBBHI] = P.k_st_bbhi !== undefined ? P.k_st_bbhi : 0.15;
+      Q[Q_LEAD] = P.st_lead !== undefined ? P.st_lead : 0.04;
       return Q;
     };
     V8pSynth.prototype._pipes = function () {
@@ -4425,8 +4455,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           if (!front && pr.bay) sh = P.bay_exh;
           if (s === 5) sh = Math.max(sh, 0.7) * (P.k_st_out !== undefined ? P.k_st_out : 1.0);   // starter: bellhousing / body diffraction, still heard from behind
           rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
-          var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
-          rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0]);
+          if (s !== 5) {   // starter is under the bellhousing: a specular ground image puts static comb notches (~0.9/2.7/4.5 kHz) in the grind
+            var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
+            rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0]);
+          }
         } else {
           var cabG = s === 5 ? 0.22 * (P.k_st_cab !== undefined ? P.k_st_cab : 1.0) : 1.0;   // starter in the cabin: clearly audible, not 20 dB over idle
           rows.push([s, e, cabG / Math.max(r, 0.25), r / C_AIR * fs, front ? (s === 2 ? 3 : 2) : 1]);
@@ -4455,10 +4487,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       this.PV = new Float64Array([RHO_AIR / (4 * Math.PI), P.k_int, 0.02 * P.k_tick, 5.6 * P.k_st, P.k_cab, 0.25 * P.gain,
         pr.outside ? 0.0 : modes.length, 1.0 - Math.exp(-2 * Math.PI * fka / fs), P.k_hiss,
         1.0 - Math.exp(-2 * Math.PI * 1500.0 / fs), 1.0 - Math.exp(-2 * Math.PI * 7000.0 / fs), P.cab_model || 0, stBq]);
+      if (this.Q) {
+        var kam = P.k_st_am !== undefined ? P.k_st_am : 0.65;
+        if (pr.outside) {
+          if (name === 'rear_far' && P.k_st_am_far !== undefined) kam = P.k_st_am_far;
+          else if (P.k_st_am_out !== undefined) kam = P.k_st_am_out;
+        } else if (P.k_st_am_cab !== undefined) kam = P.k_st_am_cab;
+        this.Q[Q_KAM] = kam;
+      }
     };
     V8pSynth.prototype.cloneWithListener = function (lis) {
       var o = Object.create(V8pSynth.prototype); Object.assign(o, this);
-      ['S', 'CY', 'PF', 'AB', 'BB', 'AT', 'NA', 'K', 'PST'].forEach(function (a) { o[a] = this[a].slice(); }, this);
+      ['S', 'CY', 'PF', 'AB', 'BB', 'AT', 'NA', 'K', 'PST', 'Q'].forEach(function (a) { o[a] = this[a].slice(); }, this);
       o.out = new Float64Array(256 * NO); o.game = Object.assign({}, this.game);
       o.ctlr = this.ctlr.clone(o);
       o.BS = null; o.listener = lis; o._listener((lis && lis.position) || 'rear');
@@ -4532,7 +4572,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       this.handed = false; this.blend = 0.0;
       this.revs0 = this.syn.S[S_REVS]; this.nf0 = this.syn.S[S_NFIRE]; this.wcrank = 0.0; this.ncrank = 0;
       this.silent = false; this.key = true;
-      this.click = this.syn.c.st_kind === 'ford_pe' ? 1.2 : 0.0;
+      this.click = this.syn.c.st_kind === 'ford_pe' ? 1.2 : 0.9;   // solenoid pull-in thunk on Bosch / Delco too
     };
     Ctl.prototype.keyOff = function () {
       this.key = false;
@@ -4557,10 +4597,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var w = S[S_W], rpm = w * 60 / (2 * Math.PI);
       if (ph === 'crank') {
         var tc = this.t - this.t_key;
-        if (ford) { if (tc >= 0.03 && this.pin < 0.5) { this.pin = this.sol = 1.0; this.click += 1.6; } }
+        var lead = P.st_lead !== undefined ? P.st_lead : (ford ? 0.03 : 0.04);
+        if (ford) { if (tc >= lead && this.pin < 0.5) { this.pin = this.sol = 1.0; this.click += 1.6; } }
         else {
-          if (tc >= 0.0 && this.pin < 0.5) { this.pin = 1.0; this.click += 1.4; }
-          if (tc >= 0.035 && this.sol < 0.5) { this.sol = 1.0; this.click += 0.6; }
+          if (tc >= 0.0 && this.pin < 0.5) { this.pin = 1.0; this.click += 1.2; }   // pinion in, quiet low-band lead-in
+          if (tc >= lead && this.sol < 0.5) { this.sol = 1.0; this.click += 0.7; }  // motor contacts: first burst
         }
         var revs = S[S_REVS] - this.revs0, pr = P.prime_rev * (this.coldness > 0.5 ? 1.0 : 0.3);
         K[K_FIREP] = 1.0 - Math.exp(-Math.max(0.0, revs - 0.3) / pr);
@@ -9403,6 +9444,7 @@ var ProjectHistory = {
   },
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.11.22", date: "2026-11-14", status: "done", headline: "The electric starter now has the rur-rur of a real crank", text: "You hear a short quiet solenoid and pinion engagement, then the motor and the ring-gear grind in bursts: loud as the starter struggles on each compression, then a quick drop as the crank comes over top dead centre — the familiar rur-rur-rur. When the engine catches, the starter whines down and drops out. The GT350, the Cadillac and the 911 each have their own mix, behind the car and in the cabin. The first start after the page loads still plays the starter in full. The BRM still has no onboard electric starter." },
       { v: "v1.11.21", date: "2026-11-14", status: "done", headline: "The electric starter now sounds like a real starter motor", text: "The starter on the GT350, the Cadillac and the 911 is no longer a train of clicks. You hear the solenoid and the pinion going in, then the motor whine and the pinion on the ring gear, with the familiar rur-rur-rur as the engine slows on each compression stroke, and a short whine-down when it catches and the starter drops out. It stays clearly audible at a realistic level in every listening position. The first start after the page loads still plays the starter in full. The BRM still has no onboard electric starter." },
       { v: "v1.11.20", date: "2026-11-14", status: "done", headline: "The electric starter is clearly audible, including the first start", text: "You can now hear the electric starter on the GT350, the Cadillac and the 911 in every listening position — behind the car, in the cabin, and in both garage views. The starter is part of the engine (the motor, the pinion on the ring gear, the solenoid) and is mixed at a realistic level against the idle, from behind and from inside. The first start after the page loads plays the starter in full, even if the sound engine was still opening. The BRM still has no onboard electric starter." },
       { v: "v1.11.19", date: "2026-11-14", status: "done", headline: "Electric starter and cold fast idle fitted to the approved cold starts", text: "The 911 and the Cadillac had a full fit of the physical starter (the real starter motor, solenoid and pinion, cranking speed set by the compression pulses, the catch, and a decaying cold fast idle) against the approved cold-start recordings, using the comb rpm and the jump gate (OK at weight 1, unsure at 0.5). The GT350 had a lighter pass on its one approved clip. The 911 now catches in about 1.2 s at around 144 rpm, close to the garage and showroom recordings, and the cold idle dies away over about six seconds. The GT350 cranks at about 103 rpm and catches in about 0.8 s. The Cadillac starter was already close on crank speed and time, so it was left almost as it was; a long cabin start and a noisy idle reading were not forced. The 1960 Cadillac recording stays unused. The BRM has no electric starter." },
