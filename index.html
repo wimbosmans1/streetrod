@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.19)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.20)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -316,6 +316,9 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 /* v1.10: the Engine bay button must not wrap the touch top bar (iPad portrait); shorten the view labels on narrower touch screens */
 #segCar select, #segView select { max-width: 200px; }
 .touch #segCar select, .touch #segView select { max-width: 180px; }
+
+/* garage: shift up/down is disabled (the car stays in N / the auto's N; throttle still free-revs) */
+.shifts.disabled, .tb.big:disabled, .tb.big.disabled { opacity: 0.4; filter: grayscale(0.35); cursor: default; pointer-events: none; }
 </style>
 <script>
 /* v1.8.2: self-reporting on real devices. Any uncaught error or rejected promise is shown in a red box at the bottom of the page
@@ -3797,7 +3800,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, NQ = 56;
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
-      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, NS = 32;
+      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, NS = 32;
     var C_PHI = 0, C_M = 1, C_K = 2, C_OPEN = 3, C_PIVC = 4, C_VIVC = 5, C_TIVC = 6, C_RP = 7, C_VALID = 8, C_P = 9, C_Q = 10, C_E = 11,
       C_XRES = 12, C_ADV = 13, C_DUR = 14, C_OFF = 15, C_BANK = 16, C_PIPE = 17, NC = 20;
     var F_D = 0, F_A = 1, F_GAIN = 2, F_LP = 3, F_SA = 4, F_SB = 5, F_C = 6, F_RP = 7, NF = 8;
@@ -4085,16 +4088,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         out[ko + O_INT] = S[S_QSN];
         if (S[S_PMAN] < 0.528 * P_ATM) out[ko + O_HISS] = (rnd(S) - 0.5) * 3.4641016151377544 * m_th * Math.pow(1.0 - S[S_PMAN] / (0.528 * P_ATM), 0.5);
         out[ko + O_TICK0] = tick0; out[ko + O_TICK1] = tick1;
-        var sst = 0.0;
         if (S[S_LOCK] > 0.5) {
           S[S_MESH] += Q[Q_TEETH] * w * dt / (2.0 * Math.PI);
-          if (S[S_MESH] >= 1.0) { S[S_MESH] -= Math.floor(S[S_MESH]); sst += 0.3 + tst / (G * ke * Q[Q_VBAT] / Rm); }
+          if (S[S_MESH] >= 1.0) { S[S_MESH] -= Math.floor(S[S_MESH]); S[S_STENV] += 0.3 + tst / (G * ke * Q[Q_VBAT] / Rm); }
         }
         if (wm > 1.0) {
           S[S_COMM] += Q[Q_NSEG] * wm * dt / (2.0 * Math.PI);
-          if (S[S_COMM] >= 1.0) { S[S_COMM] -= Math.floor(S[S_COMM]); sst += 0.1 + cur / 400.0; }
+          if (S[S_COMM] >= 1.0) { S[S_COMM] -= Math.floor(S[S_COMM]); S[S_STENV] += 0.1 + cur / 400.0; }
         }
-        out[ko + O_ST] += sst;
+        S[S_STENV] *= Math.exp(-dt / 0.003);   // ~3 ms pulse so mesh / commutator / solenoid clicks have body, not a 1-sample spike
+        if (S[S_STENV] < 1e-8) S[S_STENV] = 0.0;
+        out[ko + O_ST] += S[S_STENV];
         out[ko + O_RPM] = rpm;
       }
     }
@@ -4124,6 +4128,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var x4 = bq(t1, BQ, 0, BS, 4) + 0.6 * bq(t1, BQ, 5, BS, 6);
         var sv = out[ko + O_ST] * PV[3];
         var x5 = bq(sv, BQ, 10, BS, 8) + 0.7 * bq(sv, BQ, 15, BS, 10);
+        var st = PV[12] | 0; if (st > 0) x5 += 1.6 * bq(sv, BQ, st, BS, 64) + 0.9 * bq(sv, BQ, st + 5, BS, 66);
         H[hi] = x0; H[HB + hi] = x1; H[2 * HB + hi] = x2; H[3 * HB + hi] = x3; H[4 * HB + hi] = x4; H[5 * HB + hi] = x5;
         for (e = 0; e < 2; e++) {
           var r0 = 0.0, r1 = 0.0, r2 = 0.0, r3 = 0.0;
@@ -4372,16 +4377,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           var sh = 1.0;
           if (front && !pr.bay) sh = c.eng_shadow !== undefined ? c.eng_shadow : pr.shadow;   // job 8: rear engine behind the lid grille
           if (!front && pr.bay) sh = P.bay_exh;
+          if (s === 5) sh = Math.max(sh, 0.7);   // starter: bellhousing / body diffraction, still heard from behind
           rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
           var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
           rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0]);
         } else {
-          rows.push([s, e, 1.0 / Math.max(r, 0.25), r / C_AIR * fs, front ? (s === 2 ? 3 : 2) : 1]);
+          var cabG = s === 5 ? 0.22 : 1.0;   // starter in the cabin: clearly audible, not 20 dB over idle
+          rows.push([s, e, cabG / Math.max(r, 0.25), r / C_AIR * fs, front ? (s === 2 ? 3 : 2) : 1]);
           if (pr.window && (P.cab_model || 0) >= 1) {   // open window: outside free field through the opening
             var sw = front ? P.k_win * (c.eng_shadow !== undefined ? c.eng_shadow : 0.3) : P.k_win;
-            rows.push([s, e, sw / Math.max(r, 0.25), r / C_AIR * fs, 0]);
+            rows.push([s, e, cabG * sw / Math.max(r, 0.25), r / C_AIR * fs, 0]);
             var rw = dist(ear, [pos[0], pos[1], -pos[2]]);
-            rows.push([s, e, 0.8 * sw / Math.max(rw, 0.25), rw / C_AIR * fs, 0]);
+            rows.push([s, e, cabG * 0.8 * sw / Math.max(rw, 0.25), rw / C_AIR * fs, 0]);
           }
         }
       }
@@ -4392,14 +4399,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if ((P.cab_model || 0) >= 1) { var cr = cabinRows(P, fs); for (var q = 0; q < 4; q++) BQ[4 + q] = cr[q]; }
       var modes = [C_AIR / (2 * c.cabin_len), C_AIR / (2 * c.cabin_h)];
       modes.forEach(function (f) { var b = rbj('bp', f, P.cab_q, fs), h = P.cab_q * 0.5; BQ.push([b[0] * h, b[1] * h, b[2] * h, b[3], b[4]]); });
+      var stBq = BQ.length * 5;
+      BQ.push(rbj('bp', 400.0, 0.9, fs), rbj('lp', 1800.0, 0.7, fs));   // starter grind / body, after cabin modes so the indices do not collide
       this.BQ = new Float64Array(BQ.length * 5);
       BQ.forEach(function (b, j) { for (var t = 0; t < 5; t++) this.BQ[j * 5 + t] = b[t]; }, this);
-      if (!keepState || !this.BS) { this.BS = new Float64Array(80); this.H = new Float64Array(NSRC * HB); }
+      if (!keepState || !this.BS) { this.BS = new Float64Array(96); this.H = new Float64Array(NSRC * HB); }
       if (!this.PST) this.PST = new Float64Array(8);
       var fka = C_AIR / (2 * Math.PI * c.pipe_d / 2);
-      this.PV = new Float64Array([RHO_AIR / (4 * Math.PI), P.k_int, 0.02 * P.k_tick, 0.05 * P.k_st, P.k_cab, 0.25 * P.gain,
+      this.PV = new Float64Array([RHO_AIR / (4 * Math.PI), P.k_int, 0.02 * P.k_tick, 2.0 * P.k_st, P.k_cab, 0.25 * P.gain,
         pr.outside ? 0.0 : modes.length, 1.0 - Math.exp(-2 * Math.PI * fka / fs), P.k_hiss,
-        1.0 - Math.exp(-2 * Math.PI * 1500.0 / fs), 1.0 - Math.exp(-2 * Math.PI * 7000.0 / fs), P.cab_model || 0]);
+        1.0 - Math.exp(-2 * Math.PI * 1500.0 / fs), 1.0 - Math.exp(-2 * Math.PI * 7000.0 / fs), P.cab_model || 0, stBq]);
     };
     V8pSynth.prototype.cloneWithListener = function (lis) {
       var o = Object.create(V8pSynth.prototype); Object.assign(o, this);
@@ -4429,7 +4438,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (this.variocamPlus) this._vc = applyVariocamPlus(this.Q, this.c, rpm, thr, this._vc);
       var dtb = n / this.fs, K = this.ctlr.step(dtb, rpm, thr, game), out = this.out, i;
       for (i = 0; i < n * NO; i++) out[i] = 0.0;
-      if (this.ctlr.click) { out[O_ST] += this.ctlr.click; this.ctlr.click = 0.0; }
+      if (this.ctlr.click) { this.S[29] += this.ctlr.click; this.ctlr.click = 0.0; }   // S_STENV: solenoid / pinion clunk
       if (this.ctlr.silent) { for (i = 0; i < n; i++) { L[off + i] = 0; R[off + i] = 0; } return; }
       var nf0 = this.S[S_NFIRE];
       kv8(n, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
@@ -9348,6 +9357,7 @@ var ProjectHistory = {
   },
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.11.20", date: "2026-11-14", status: "done", headline: "The electric starter is clearly audible, including the first start", text: "You can now hear the electric starter on the GT350, the Cadillac and the 911 in every listening position — behind the car, in the cabin, and in both garage views. The starter is part of the engine (the motor, the pinion on the ring gear, the solenoid) and is mixed at a realistic level against the idle, from behind and from inside. The first start after the page loads plays the starter in full, even if the sound engine was still opening. The BRM still has no onboard electric starter." },
       { v: "v1.11.19", date: "2026-11-14", status: "done", headline: "Electric starter and cold fast idle fitted to the approved cold starts", text: "The 911 and the Cadillac had a full fit of the physical starter (the real starter motor, solenoid and pinion, cranking speed set by the compression pulses, the catch, and a decaying cold fast idle) against the approved cold-start recordings, using the comb rpm and the jump gate (OK at weight 1, unsure at 0.5). The GT350 had a lighter pass on its one approved clip. The 911 now catches in about 1.2 s at around 144 rpm, close to the garage and showroom recordings, and the cold idle dies away over about six seconds. The GT350 cranks at about 103 rpm and catches in about 0.8 s. The Cadillac starter was already close on crank speed and time, so it was left almost as it was; a long cabin start and a noisy idle reading were not forced. The 1960 Cadillac recording stays unused. The BRM has no electric starter." },
       { v: "v1.11.18", date: "2026-11-14", status: "done", headline: "The BRM v8 sound is retired; v9.11 is now the default", text: "The BRM\u2019s old v8 order-table sound (half-order tones fitted to recordings, plus a fixed supercharger whine) has been retired: it is no longer in the Sound menu or in the sound engine. The BRM now starts on v9.11, the closest remaining physics model on the official Mason scorecard (onboard mean 0.88, against 1.00 for v9.10). The earlier physics fits (v9.1\u2013v9.10) stay in the picker. An old link with ?sound=v8 falls back to v9.11 and does not change the GT350 or Cadillac sound. The 911 stays on VarioCam Plus (the v1.11.17 default)." },
       { v: "v1.11.17", date: "2026-11-14", status: "done", headline: "VarioCam Plus is now the 911 default sound", text: "The 911 default sound is now VarioCam Plus \u2014 the official 997.1 intake phasing (40\u00b0 vane range), the 3.6 mm / 11.0 mm intake-lift switch, and the two-stage intake flap that were added as an option in v1.11.16. On the same official stock recordings used for the v1.11.11 joint fit, it scored closer than the fixed-cam default (overall 3.31 against 3.41; cabin 2.95 against 3.00, outside 3.89 against 4.09, tailpipe 4.44 against 4.56 \u2014 lower is closer), so it becomes the default. Engine sizes, the 76 mm throttle body and the fitted sound parameters are unchanged. The fixed-cam sound stays in the picker; a link with ?car=p997&p997=fixed opens it. The BRM stayed on v8 in this release." },
@@ -9376,6 +9386,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.11.20", date: "2026-11-14", status: "done", headline: "In the garage you can rev the engine; shifts stay locked", text: "In both garage positions the car stays parked in neutral (N on the Cadillac’s Hydra-Matic). The gas pedal, the up arrow and the on-screen GAS button free-rev the engine against its own inertia, up to the rev limiter; the car does not move. Shift up and down (the keys, the on-screen buttons and the selector) are disabled and greyed out while you are in the garage." },
       { v: "v1.11.19", date: "2026-11-14", status: "done", headline: "A garage start-up view, with a short garage reverb", text: "From the Position menu you can now put the car in a one-car garage, heard from behind or from the cabin (V switches between those two while you stay in the garage). The garage is an acoustic chamber: early reflections from the walls, floor and ceiling, and a short reverb (about 0.6 s). The GT350, the Cadillac and the 911 show their brake lights while they sit there; the BRM, which had no onboard electric starter, is already running and has no brake lights. A link with ?view=garage opens it. The desert road views are unchanged. The reverb uses a short native impulse, so it stays light in the Tesla in-car browser." },
       { v: "v1.11.15", date: "2026-11-14", status: "done", headline: "911 power curve no longer exceeds the official 355 PS peak", text: "Each car’s modelled power and torque was checked against the factory figures. The GT350 and the Cadillac match their SAE gross ratings (306 hp and 329 lb-ft, and 325 hp and 430 lb-ft) at the official engine speeds. The BRM is within about one horsepower of the sourced figure of around 460 hp at 11,000 rpm. The 911 already met the official DIN figures of 355 PS at 6,600 rpm and 400 N·m at 4,600, but past 6,600 rpm the curve had been a little high, so power rose to about 359 PS at 7,000. Those two points were lowered so power does not go above 355 PS after the rated peak. 0–100 km/h is still 4.8 s, and top speed in sixth is still the official 288 km/h." },
       { v: "v1.11.12", date: "2026-11-14", status: "done", headline: "Car and listening position are now drop-down lists", text: "The car list and the listening position (inside the car, outside from behind, or the engine bay) are now drop-down menus, like Sound and Visuals. They use the browser's own menus, so they work in the Tesla in-car browser. The number keys 1 to 4 still pick a car, and V and E still change the view." },
@@ -10167,9 +10178,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   // 0 outside (rear), 1 inside; v1.10: 2 = Engine bay. 3 / 4 = in the garage (rear / cabin).
   function inGarageView(v) { return v === 3 || v === 4; }
+  function applyGaragePark() {
+    var c = car(), v = c.c;
+    c.v = 0; c.ww = 0; c.a = 0;
+    if (v.trans === 'auto') { if (c.range !== 'N') c.setRange('N'); }
+    else { c.gear = 0; c.shift = null; c.clutchLocked = false; c.engage = 0; }
+  }
   function applyGarageCar() {
     var c = car();
-    c.v = 0; c.ww = 0; c.a = 0;
+    applyGaragePark();
     if (state.carId === 'brm' && c.engine !== 'running') {
       c.startRunning();
       if (audio.ctx) {
@@ -10220,14 +10237,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   function toggleMute() { state.muted = !state.muted; audio.setMuted(state.muted); updatePanel(); }
   function toggleUnits() { state.units = state.units === 'kmh' ? 'mph' : 'kmh'; updatePanel(); }
-  function shiftUp() { car().shiftUp(); }
+  function shiftUp() { if (state.garage) return; car().shiftUp(); }
   function toggleGearbox() {
     gearbox = gearbox === 'revmatch' ? 'lift' : 'revmatch'; lsSet('streetrod.gearbox', gearbox);
     for (var id in cars) cars[id].setGearbox(gearbox);
     flash(gearbox === 'revmatch' ? 'Rev-match gearbox: blip on downshifts, rev-match on upshifts' : 'Lift-shift gearbox (classic)', 2);
     updatePanel();
   }
-  function shiftDown() { var c = car(); c.shiftDown(); if (c.lastShiftMsg && c.msgT > 1.9) flash(c.lastShiftMsg, 1.5); }
+  function shiftDown() { if (state.garage) return; var c = car(); c.shiftDown(); if (c.lastShiftMsg && c.msgT > 1.9) flash(c.lastShiftMsg, 1.5); }
 
   // ---- About / History overlay (content from js/history.js) ----
   function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
@@ -10422,6 +10439,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     document.getElementById('bGearbox').textContent = rmOn ? 'Rev-match \u2713' : 'Rev-match';
     document.getElementById('bUp').innerHTML = auto ? '&#9654;<small>N\u2192D\u2192S\u2192L</small>' : '&#9650;<small>' + (rmOn ? 'up \u00b7 match' : 'shift up') + '</small>';
     document.getElementById('bDown').innerHTML = auto ? '&#9664;<small>back to N</small>' : '&#9660;<small>' + (rmOn ? 'down \u00b7 blip' : 'shift down') + '</small>';
+    document.getElementById('bUp').disabled = !!state.garage; document.getElementById('bDown').disabled = !!state.garage;
+    document.getElementById('bUp').classList.toggle('disabled', !!state.garage); document.getElementById('bDown').classList.toggle('disabled', !!state.garage);
+    document.querySelector('.shifts').classList.toggle('disabled', !!state.garage);
     var b = v.brakes;
     document.getElementById('specs').innerHTML = '<b>' + v.label + '</b><br>' + v.engineText + '<br>' + v.transText + ': ' + v.gears.join(' / ') + ', final drive ' + v.finalDrive.toFixed(2) +
       (v.awd ? '<br>All-wheel drive: ' + v.awd.text : '') + '<br>Mass ' + v.curbText + '<br>Tyres ' + v.tyreText + '<br>Brakes: ' + b.text;
@@ -10459,12 +10479,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     state.brake = tgtB >= state.brake ? (kBrk ? tgtB : Math.min(tgtB, state.brake + dt / 0.2)) : Math.max(tgtB, state.brake - dt / 0.15);
     var brk = Math.max(state.brake, dragHold());
     var thr = state.throttle;
-    if (state.garage) {   // parked: hold the brakes (cars that have lamps show them), no driving out
-      thr = 0;
+    if (state.garage) {   // parked in N (or the auto's N): hold the brakes for the lamps, no driving out; throttle still free-revs
+      applyGaragePark();
       if (state.carId !== 'brm') brk = 1;
-      c.v = 0; c.ww = 0;
     }
     c.update(dt, { throttle: thr, brake: brk });
+    if (state.garage) { c.v = 0; c.ww = 0; c.a = 0; }
     dragTick(dt, c);
     for (var id in cars) if (id !== state.carId) cars[id].update(dt, { throttle: 0, brake: 0 });
     state.dist += c.v * dt;
@@ -10488,9 +10508,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // physics waits for the catch it reports, follows its (choke) idle, and the tach shows its rpm until hand-over ----
   function startupLink(dt, c) {
     // ext: the audio (still loading on the first tap, or already playing this model) owns the start-up
-    var mid = soundId(), m = SoundModels.get(mid), r = audio.eng, ext = !!(m.startup && audio.ctx && (!audio.ready || !audio.activeModel || audio.activeModel === mid));
-    if (c.engine === 'cranking' && ext) { c.crankNoRep = (c.crankNoRep || 0) + dt; if (!r && c.crankNoRep > 2.5) ext = false; }   // no reports (audio suspended / failed): plain start
-    else c.crankNoRep = 0;
+    var mid = soundId(), m = SoundModels.get(mid), r = audio.eng;
+    var audioLive = !!(audio.ctx && audio.ready && audio.ctx.state === 'running' && (audio.blocks > 0 || r || audio.workletAlive));
+    if (c.engine === 'cranking' && audio.ctx && audio.ctx.state !== 'running') { try { audio.ctx.resume(); } catch (e) {} }
+    var ext = !!(m.startup && audio.ctx && (audioLive ? (!audio.activeModel || audio.activeModel === mid) : true));
+    if (c.engine === 'cranking' && ext) {
+      if (!audioLive) c.crankNoRep = 0;   // wait for the worklet / context (first start after page load, Tesla)
+      else { c.crankNoRep = (c.crankNoRep || 0) + dt; if (!r && c.crankNoRep > 4.0) ext = false; }
+    } else c.crankNoRep = 0;
     c.extStart = ext;
     if (ext && c.engine === 'cranking' && r && r.phase === 'run') c.extCaught = true;
     c.idleOverride = ext && c.engine === 'running' && r && r.phase === 'run' && r.idle ? r.idle : 0;

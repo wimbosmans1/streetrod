@@ -3281,7 +3281,7 @@ function engineModuleV8p(core) {
       Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, NQ = 56;
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
-      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, NS = 32;
+      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, NS = 32;
     var C_PHI = 0, C_M = 1, C_K = 2, C_OPEN = 3, C_PIVC = 4, C_VIVC = 5, C_TIVC = 6, C_RP = 7, C_VALID = 8, C_P = 9, C_Q = 10, C_E = 11,
       C_XRES = 12, C_ADV = 13, C_DUR = 14, C_OFF = 15, C_BANK = 16, C_PIPE = 17, NC = 20;
     var F_D = 0, F_A = 1, F_GAIN = 2, F_LP = 3, F_SA = 4, F_SB = 5, F_C = 6, F_RP = 7, NF = 8;
@@ -3569,16 +3569,17 @@ function engineModuleV8p(core) {
         out[ko + O_INT] = S[S_QSN];
         if (S[S_PMAN] < 0.528 * P_ATM) out[ko + O_HISS] = (rnd(S) - 0.5) * 3.4641016151377544 * m_th * Math.pow(1.0 - S[S_PMAN] / (0.528 * P_ATM), 0.5);
         out[ko + O_TICK0] = tick0; out[ko + O_TICK1] = tick1;
-        var sst = 0.0;
         if (S[S_LOCK] > 0.5) {
           S[S_MESH] += Q[Q_TEETH] * w * dt / (2.0 * Math.PI);
-          if (S[S_MESH] >= 1.0) { S[S_MESH] -= Math.floor(S[S_MESH]); sst += 0.3 + tst / (G * ke * Q[Q_VBAT] / Rm); }
+          if (S[S_MESH] >= 1.0) { S[S_MESH] -= Math.floor(S[S_MESH]); S[S_STENV] += 0.3 + tst / (G * ke * Q[Q_VBAT] / Rm); }
         }
         if (wm > 1.0) {
           S[S_COMM] += Q[Q_NSEG] * wm * dt / (2.0 * Math.PI);
-          if (S[S_COMM] >= 1.0) { S[S_COMM] -= Math.floor(S[S_COMM]); sst += 0.1 + cur / 400.0; }
+          if (S[S_COMM] >= 1.0) { S[S_COMM] -= Math.floor(S[S_COMM]); S[S_STENV] += 0.1 + cur / 400.0; }
         }
-        out[ko + O_ST] += sst;
+        S[S_STENV] *= Math.exp(-dt / 0.003);   // ~3 ms pulse so mesh / commutator / solenoid clicks have body, not a 1-sample spike
+        if (S[S_STENV] < 1e-8) S[S_STENV] = 0.0;
+        out[ko + O_ST] += S[S_STENV];
         out[ko + O_RPM] = rpm;
       }
     }
@@ -3608,6 +3609,7 @@ function engineModuleV8p(core) {
         var x4 = bq(t1, BQ, 0, BS, 4) + 0.6 * bq(t1, BQ, 5, BS, 6);
         var sv = out[ko + O_ST] * PV[3];
         var x5 = bq(sv, BQ, 10, BS, 8) + 0.7 * bq(sv, BQ, 15, BS, 10);
+        var st = PV[12] | 0; if (st > 0) x5 += 1.6 * bq(sv, BQ, st, BS, 64) + 0.9 * bq(sv, BQ, st + 5, BS, 66);
         H[hi] = x0; H[HB + hi] = x1; H[2 * HB + hi] = x2; H[3 * HB + hi] = x3; H[4 * HB + hi] = x4; H[5 * HB + hi] = x5;
         for (e = 0; e < 2; e++) {
           var r0 = 0.0, r1 = 0.0, r2 = 0.0, r3 = 0.0;
@@ -3856,16 +3858,18 @@ function engineModuleV8p(core) {
           var sh = 1.0;
           if (front && !pr.bay) sh = c.eng_shadow !== undefined ? c.eng_shadow : pr.shadow;   // job 8: rear engine behind the lid grille
           if (!front && pr.bay) sh = P.bay_exh;
+          if (s === 5) sh = Math.max(sh, 0.7);   // starter: bellhousing / body diffraction, still heard from behind
           rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
           var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
           rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0]);
         } else {
-          rows.push([s, e, 1.0 / Math.max(r, 0.25), r / C_AIR * fs, front ? (s === 2 ? 3 : 2) : 1]);
+          var cabG = s === 5 ? 0.22 : 1.0;   // starter in the cabin: clearly audible, not 20 dB over idle
+          rows.push([s, e, cabG / Math.max(r, 0.25), r / C_AIR * fs, front ? (s === 2 ? 3 : 2) : 1]);
           if (pr.window && (P.cab_model || 0) >= 1) {   // open window: outside free field through the opening
             var sw = front ? P.k_win * (c.eng_shadow !== undefined ? c.eng_shadow : 0.3) : P.k_win;
-            rows.push([s, e, sw / Math.max(r, 0.25), r / C_AIR * fs, 0]);
+            rows.push([s, e, cabG * sw / Math.max(r, 0.25), r / C_AIR * fs, 0]);
             var rw = dist(ear, [pos[0], pos[1], -pos[2]]);
-            rows.push([s, e, 0.8 * sw / Math.max(rw, 0.25), rw / C_AIR * fs, 0]);
+            rows.push([s, e, cabG * 0.8 * sw / Math.max(rw, 0.25), rw / C_AIR * fs, 0]);
           }
         }
       }
@@ -3876,14 +3880,16 @@ function engineModuleV8p(core) {
       if ((P.cab_model || 0) >= 1) { var cr = cabinRows(P, fs); for (var q = 0; q < 4; q++) BQ[4 + q] = cr[q]; }
       var modes = [C_AIR / (2 * c.cabin_len), C_AIR / (2 * c.cabin_h)];
       modes.forEach(function (f) { var b = rbj('bp', f, P.cab_q, fs), h = P.cab_q * 0.5; BQ.push([b[0] * h, b[1] * h, b[2] * h, b[3], b[4]]); });
+      var stBq = BQ.length * 5;
+      BQ.push(rbj('bp', 400.0, 0.9, fs), rbj('lp', 1800.0, 0.7, fs));   // starter grind / body, after cabin modes so the indices do not collide
       this.BQ = new Float64Array(BQ.length * 5);
       BQ.forEach(function (b, j) { for (var t = 0; t < 5; t++) this.BQ[j * 5 + t] = b[t]; }, this);
-      if (!keepState || !this.BS) { this.BS = new Float64Array(80); this.H = new Float64Array(NSRC * HB); }
+      if (!keepState || !this.BS) { this.BS = new Float64Array(96); this.H = new Float64Array(NSRC * HB); }
       if (!this.PST) this.PST = new Float64Array(8);
       var fka = C_AIR / (2 * Math.PI * c.pipe_d / 2);
-      this.PV = new Float64Array([RHO_AIR / (4 * Math.PI), P.k_int, 0.02 * P.k_tick, 0.05 * P.k_st, P.k_cab, 0.25 * P.gain,
+      this.PV = new Float64Array([RHO_AIR / (4 * Math.PI), P.k_int, 0.02 * P.k_tick, 2.0 * P.k_st, P.k_cab, 0.25 * P.gain,
         pr.outside ? 0.0 : modes.length, 1.0 - Math.exp(-2 * Math.PI * fka / fs), P.k_hiss,
-        1.0 - Math.exp(-2 * Math.PI * 1500.0 / fs), 1.0 - Math.exp(-2 * Math.PI * 7000.0 / fs), P.cab_model || 0]);
+        1.0 - Math.exp(-2 * Math.PI * 1500.0 / fs), 1.0 - Math.exp(-2 * Math.PI * 7000.0 / fs), P.cab_model || 0, stBq]);
     };
     V8pSynth.prototype.cloneWithListener = function (lis) {
       var o = Object.create(V8pSynth.prototype); Object.assign(o, this);
@@ -3913,7 +3919,7 @@ function engineModuleV8p(core) {
       if (this.variocamPlus) this._vc = applyVariocamPlus(this.Q, this.c, rpm, thr, this._vc);
       var dtb = n / this.fs, K = this.ctlr.step(dtb, rpm, thr, game), out = this.out, i;
       for (i = 0; i < n * NO; i++) out[i] = 0.0;
-      if (this.ctlr.click) { out[O_ST] += this.ctlr.click; this.ctlr.click = 0.0; }
+      if (this.ctlr.click) { this.S[29] += this.ctlr.click; this.ctlr.click = 0.0; }   // S_STENV: solenoid / pinion clunk
       if (this.ctlr.silent) { for (i = 0; i < n; i++) { L[off + i] = 0; R[off + i] = 0; } return; }
       var nf0 = this.S[S_NFIRE];
       kv8(n, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
