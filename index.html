@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.14)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.15)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -186,6 +186,7 @@ html.vis-ink #specsDlg table.spec th { color: #3a2e22; }
 #dragCard .row { display: flex; gap: 8px; justify-content: center; }
 #bRadio.hidden { display: none; }
 #segBrmSound.hidden { display: none; }
+#segP997Sound.hidden { display: none; }
 #segSound.hidden { display: none; }   /* v1.11.0: the 911 has one sound model */
 .sel.brmsel { padding: 0 4px; position: relative; }   /* v1.9.2 BRM sound picker: no caption, the options say "Sound v8" ... "Sound v9.9" */
 .sel.brmsel select, .touch .sel.brmsel select { -webkit-appearance: none; appearance: none; box-sizing: border-box; height: 27px; line-height: 17px; padding: 4px 17px 4px 6px; margin: 3px 0; }
@@ -363,6 +364,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v8 (default) or a v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
+      <label class="sel brmsel hidden" id="segP997Sound" title="911 sound: fixed cam (default) or VarioCam Plus + intake flap"><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option></select></label>
       <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
@@ -4068,7 +4070,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q_CD = 11, Q_QC = 12, Q_HL = 13, Q_NP = 14, Q_BURN = 15, Q_XR0 = 16, Q_XROV = 17, Q_OVL = 18, Q_COV = 19, Q_COVR = 20, Q_MISR = 21,
       Q_ETAV = 22, Q_VD = 23, Q_VMAN = 24, Q_ATHW = 25, Q_AIDLE = 26, Q_FIDLE = 27, Q_ROL = 28, Q_J = 29, Q_F0 = 30, Q_F1 = 31, Q_F2 = 32,
       Q_FCOLD = 33, Q_STG = 34, Q_STKE = 35, Q_STRM = 36, Q_STRB = 37, Q_STIF = 38, Q_STJM = 39, Q_TEETH = 40, Q_VBAT = 41, Q_SOLID = 42,
-      Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, NQ = 56;
+      Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, NQ = 56;
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
       S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, NS = 32;
@@ -4303,7 +4305,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
               pcy = CY[c + C_PIVC] * Math.pow(vr, npol) * (1.0 + (CY[c + C_RP] - 1.0) * xb2);
             } else pcy = pman;
           }
-          if (phi >= Q[Q_IVO] && phi < Q[Q_IVC]) qin += dvd * w;
+          if (phi >= Q[Q_IVO] && phi < Q[Q_IVC]) qin += dvd * w * Q[Q_INSCALE];
           CY[c + C_Q] = q; CY[c + C_P] = pcy;
           AB[pp * DL + wi] = z0 * q + rv * pin;
           if (knl > 0.0) arr(AB, AT, PF, pp, wi, nt, knl);
@@ -4446,9 +4448,35 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       return [b[0] / a[0], b[1] / a[0], b[2] / a[0], a[1] / a[0], a[2] / a[0]];
     }
     function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
-    function camEvents(c) {
+    function camEvents(c, intakeLsa, intakeDur) {
       var d = c.adv_dur / 2.0;
-      return [360.0 + (c.lsa - d), 360.0 + (c.lsa + d), 360.0 - (c.lsa + d), 360.0 - (c.lsa - d)];
+      var dIn = ((intakeDur == null) ? c.adv_dur : intakeDur) / 2.0;
+      var lsaIn = (intakeLsa == null) ? c.lsa : intakeLsa;
+      return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (c.lsa + d), 360.0 - (c.lsa - d)];
+    }
+    /** Non-default 911 option. Official: intake phasing + 3/10 mm lift switch, exhaust fixed, idle = small cam and low overlap.
+     *  Flap closed under load ~3000-5500 rpm is 997.2-confirmed, probable for 997.1. Phasing map and closed-plenum scale are model rules. */
+    function applyVariocamPlus(Q, c, rpm, thr, st) {
+      st = st || {};
+      var idle = c.idle_rpm, red = c.redline;
+      rpm = Math.max(idle * 0.5, Math.min(red * 1.05, rpm));
+      thr = Math.max(0, Math.min(1, thr));
+      var high = !!st.high;
+      if (high) { if (rpm < 2500 || thr < 0.18) high = false; }
+      else { if (rpm > 3000 && thr > 0.28) high = true; }
+      st.high = high;
+      Q[Q_INSCALE] = high ? 1.0 : 0.3;
+      var x = (rpm - idle) / Math.max(1, 4600 - idle);
+      if (x < 0) x = 0; if (x > 1) x = 1;
+      x *= 0.35 + 0.65 * Math.max(thr, 0.15);
+      if (rpm > 6000) x *= Math.max(0.55, 1 - (rpm - 6000) / 2500);
+      var adv = 22 * x;
+      var ev = camEvents(c, c.lsa - adv);
+      Q[Q_IVO] = ev[0]; Q[Q_IVC] = ev[1]; Q[Q_EVO] = ev[2]; Q[Q_EVC] = ev[3]; Q[Q_OVL] = ev[3] - ev[0];
+      var closed = (rpm >= 3000 && rpm <= 5500 && thr >= 0.35);
+      Q[Q_VMAN] = c.v_man * (closed ? 0.55 : 1);
+      st.flap_closed = closed; st.advance = adv;
+      return st;
     }
     function perspective(c, name) {
       var m = c.mouth[0], x, z;
@@ -4543,6 +4571,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (!D) throw new Error('v8p: no data for ' + key);
       this.key = key; this.c = D.car; this.P = Object.assign({}, D.phys, opts.phys || {}); this.fs = fs;
       this.spec = { idle_rpm: this.c.idle_rpm, redline: this.c.redline, name: this.c.name, car_key: key };
+      this.variocamPlus = key === 'p997' && !!(spec.variocam_plus || opts.variocam_plus);
+      this._vc = {};
       this.selfGated = opts.mode !== 'run' && opts.mode !== 'raw';
       var N = buildNet(this.c);
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
@@ -4587,6 +4617,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var asn = Math.PI * c.sn_d * c.sn_d / 4;
       Q[Q_SNM] = RHO_AIR * (c.sn_len + 0.85 * c.sn_d) / asn; Q[Q_SNR] = 0.1 * RHO_AIR * C_AIR / asn;
       Q[Q_SPARK0] = c.spark0; Q[Q_TAILA] = Math.PI * c.pipe_d * c.pipe_d / 4; Q[Q_DWT] = P.dw_tau; Q[Q_KNL] = P.k_nl;
+      Q[Q_INSCALE] = 1.0;
       return Q;
     };
     V8pSynth.prototype._pipes = function () {
@@ -4671,6 +4702,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     };
     /** one block (n <= 256) -> L/R at off; game = { running, starter, warm, gear } or null (offline 'run' mode) */
     V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {
+      if (this.variocamPlus) this._vc = applyVariocamPlus(this.Q, this.c, rpm, thr, this._vc);
       var dtb = n / this.fs, K = this.ctlr.step(dtb, rpm, thr, game), out = this.out, i;
       for (i = 0; i < n * NO; i++) out[i] = 0.0;
       if (this.ctlr.click) { out[O_ST] += this.ctlr.click; this.ctlr.click = 0.0; }
@@ -6360,9 +6392,11 @@ var Vehicles = (function () {
   var P997 = {
     id: 'p997', label: '2006 Porsche 911 Carrera 4S (997)', engineKey: 'P997',
     engineText: '3.8 M97.01 flat-six, 355 PS @ 6600, 400 Nm @ 4600 (DIN)',
-    // Nm (net) at the flywheel, shaped on the published 997 C4S / Carrera S power / torque chart; 261 kW @ 6600 = 378 Nm
+    // Nm (net) at the flywheel, shaped on the published 997 C4S / Carrera S power / torque chart; 261 kW @ 6600 = 378 Nm.
+    // v1.11.15: 7000 / 7300 were 360 / 345 Nm, which made 358.8 PS at 7000, above the official 355 PS peak. They are now
+    // 356 / 338 Nm so power does not rise after 6,600 rpm (355 PS at 7,000, then a fall toward 7,500).
     torque: [[0, 150], [600, 220], [1000, 260], [1500, 290], [2000, 320], [2500, 340], [3000, 355], [3500, 370], [4000, 385],
-             [4600, 400], [5000, 398], [5500, 393], [6000, 388], [6600, 378], [7000, 360], [7300, 345], [7500, 300]],
+             [4600, 400], [5000, 398], [5500, 393], [6000, 388], [6600, 378], [7000, 356], [7300, 338], [7500, 300]],
     netFactor: 1.0, idleRpm: 670, limiterRpm: 7300, tachMax: 8000, tachRed: 7300,
     engineInertia: 0.16,                        // kg m^2 dual-mass flywheel + clutch + crank (same as the sound model)
     friction: [14, 6.0, 0.6],
@@ -6382,7 +6416,9 @@ var Vehicles = (function () {
     // Tiptronic S / C4 manual number). drivelineEff 0.85 already includes transaxle + AWD average loss, so spinDrag is 0
     // to avoid double-counting. crr 0.012 is kept; crr2 is set so sixth balances at 288 km/h (~7116 rpm), below the limiter.
     // SAE J2452 crr2 at 2.7 bar (4.56e-6) plus the old spinDrag overshot 288 even with official CdA.
-    crr2: 3.52e-6, spinDrag: 0,
+    // v1.11.15: after capping post-peak torque so power does not exceed 355 PS, crr2 is 3.00e-6 so sixth
+    // still balances at 288 km/h (~7150 rpm), below the limiter.
+    crr2: 3.00e-6, spinDrag: 0,
     awd: { frontMax: 0.40, frontMin: 0.05, finalDriveFront: 3.33, text: 'viscous coupling, 5-40 % front; front final drive 3.33 (rear 3.44)' },
     brakes: {
       text: '330 mm cross-drilled vented discs, 4-piston monobloc calipers, ABS 8.0 / PSM',
@@ -7419,7 +7455,7 @@ var EngineParams = (function () {
     var cx = c.camx || 1, dur = c.adv_dur, lsa = c.lsa, dEx = c.ev_d / Math.SQRT2;
     P.exValve = { d: dEx, lift: c.ev_lift, open: pmod(360 - lsa - dur / 2, 720), dur: dur, camx: cx };
     P.inValve = { d: 0.0402, lift: 0.011, open: pmod(360 + lsa - dur / 2, 720), dur: dur, camx: cx };
-    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration, ' + lsa + '\u00b0 lobe separation, ' + (c.ev_lift * 1000).toFixed(1) + ' mm exhaust lift; intake valve 40.2 mm (LN Engineering / Hamheads 3.8 heads), high lift 11.0 mm (VarioCam Plus high-lift figure from the 997 Carrera cylinder-head workshop description). The default sound is still a fixed cam; low lift 3.6 mm is not drawn.', true);
+    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration, ' + lsa + '\u00b0 lobe separation, ' + (c.ev_lift * 1000).toFixed(1) + ' mm exhaust lift; intake valve 40.2 mm (LN Engineering / Hamheads 3.8 heads), high lift 11.0 mm drawn (workshop figure). The default sound is still this fixed cam. VarioCam Plus (official intake phasing, 3 mm / 10 mm intake lift switch) plus the two-stage intake flap is a non-default 911 sound option; the 3,000–5,500 rpm flap switch is 997.2-confirmed and treated as probable for the 997.1.', true);
     note(P, 'dims', 'Bore ' + (c.bore * 1000).toFixed(0) + ' mm, stroke ' + (c.stroke * 1000).toFixed(1) + ' mm, rods ' + (c.rod * 1000).toFixed(0) + ' mm, CR ' + c.cr + ' (model data); bore spacing 118 mm (M97 data); 4 valves per cylinder, one of each pair drawn (exhaust \u00d8 = the model\u2019s two-valve curtain / \u221a2).', false);
     P.headers = { type: '3-1', len: +(c.prim_len * c.prim_x[1] + c.head_len).toFixed(3), primD: c.prim_d, pipeD: c.pipe_d, pipeLen: c.inter_len, crossover: 'none', toNose: true };
     note(P, 'headers', '3-1 headers per bank to the catalysts and one rear silencer each side (model exhaust \u20183-1\u2019, no balance pipe), primaries \u00d8 ' + (c.prim_d * 1000).toFixed(0) + ' mm, pipe \u00d8 ' + (c.pipe_d * 1000).toFixed(0) + ' mm; drawn length = model primary + head runner.', false);
@@ -9432,6 +9468,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.11.15", date: "2026-11-14", status: "done", headline: "911 power curve no longer exceeds the official 355 PS peak", text: "Each car’s modelled power and torque was checked against the factory figures. The GT350 and the Cadillac match their SAE gross ratings (306 hp and 329 lb-ft, and 325 hp and 430 lb-ft) at the official engine speeds. The BRM is within about one horsepower of the sourced figure of around 460 hp at 11,000 rpm. The 911 already met the official DIN figures of 355 PS at 6,600 rpm and 400 N·m at 4,600, but past 6,600 rpm the curve had been a little high, so power rose to about 359 PS at 7,000. Those two points were lowered so power does not go above 355 PS after the rated peak. 0–100 km/h is still 4.8 s, and top speed in sixth is still the official 288 km/h." },
       { v: "v1.11.12", date: "2026-11-14", status: "done", headline: "Car and listening position are now drop-down lists", text: "The car list and the listening position (inside the car, outside from behind, or the engine bay) are now drop-down menus, like Sound and Visuals. They use the browser's own menus, so they work in the Tesla in-car browser. The number keys 1 to 4 still pick a car, and V and E still change the view." },
       { v: "v1.11.9", date: "2026-11-13", status: "done", headline: "911 top speed is now the official 288 km/h in sixth", text: "The Carrera 4S manual now reaches about 288 km/h in sixth, the official top speed (the earlier tune had aimed at 280 km/h, which is the Tiptronic S and Carrera 4 manual figure). 0\u2013100 km/h is still about 4.8 s, in line with the press kit. Rolling resistance was retuned so sixth balances at 288 km/h, below the limiter. The other cars are unchanged." },
             { v: "v1.10.5", date: "2026-11-13", status: "done", headline: "Rev-match downshifts for the GT350 and the BRM", text: "A manual-gearbox option for the GT350 and the BRM: Rev-match. On a downshift it blips the throttle and on an upshift it lifts and waits, so the engine is at the right speed for the new gear before the clutch goes back in; what is left over is taken up by a clutch that can slip, so you hear the engine’s own weight against the car’s. The drivetrain behind it is physical: engine inertia, a dry clutch that grips or slips, the real gear ratios and final drive of each car. Turn it on with the Rev-match button in the top bar (in the ☰ menu on small screens), key G or ?gearbox=revmatch. The Cadillac’s Hydra-Matic shifts itself as before. The plain lift-shift stays the default and drives exactly as in v1.10.4." },
@@ -9935,12 +9972,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   function brmEntry(name) { var L = SoundModels.brmList; for (var i = 0; i < L.length; i++) if (L[i].brm === name) return L[i]; return L[0]; }
   var soundParam = params.get('sound'), brmParam = soundParam ? brmName(soundParam) : null;
+  var p997Param = (params.get('p997') || '').toLowerCase();
+  if (!p997Param && soundParam && /variocam/.test(soundParam.toLowerCase())) p997Param = 'variocam';
   var startCar = params.get('car') || (brmParam && brmParam !== 'v8' ? 'brm' : null);
   var startId = (startCar && cars[startCar]) ? startCar : 'gt350';
   var soundChoice = brmParam ? null : soundParam;
   if (!soundChoice) soundChoice = lsGet('streetrod.sound', null);
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || 'v8',
+    p997Sound: (p997Param === 'variocam' || p997Param === 'variocamplus') ? 'variocam' : 'fixed',
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   state.viewBlend = state.view === 1 ? 1 : 0;
@@ -9997,9 +10037,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // stays for the GT350 and Cadillac.
   function soundId() {
     if (spec().engineKey === 'BRM') return brmEntry(state.brmSound).id;
-    if (spec().engineKey === 'P997') return 'v9p';   // job 8 (v1.11.0): the 911 has one sound model, its own flat-six on the v9.11 kernel
+    if (spec().engineKey === 'P997') return 'v9p';   // still the v9.11 kernel; VarioCam Plus is a flag on this model, not a new kernel
     var m = SoundModels.get(state.model);
     return m.hidden ? 'v2' : state.model;
+  }
+  function setP997Sound(v) {
+    state.p997Sound = v === 'variocam' ? 'variocam' : 'fixed';
+    if (audio.ctx) ensureAudio();
+    if (spec().engineKey === 'P997') flash(state.p997Sound === 'variocam' ? '911 sound: VarioCam Plus + intake flap (non-default)' : '911 sound: fixed cam (default)', 1.5);
+    updatePanel();
   }
   function setBrmSound(v) {
     state.brmSound = brmName(v) || 'v8';
@@ -10016,9 +10062,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     audio.unlock();
     var mid = soundId();
     var key = mid + '/' + spec().engineKey;
+    if (spec().engineKey === 'P997') key += '/' + state.p997Sound;
     if (carSent !== key) {
       var msg = SoundModels.specMsg(mid, spec().engineKey);
       if (/^v9/.test(mid) && params.get('bq')) msg.spec = Object.assign({}, msg.spec, { quality: params.get('bq') });   // v9 resolution: hq | lite | auto (default)
+      if (spec().engineKey === 'P997') msg.spec = Object.assign({}, msg.spec, { variocam_plus: state.p997Sound === 'variocam' });
       audio.setCar(msg); carSent = key;
     }
   }
@@ -10110,7 +10158,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     soundChoice = state.model;
     if (audio.ctx) ensureAudio();   // live crossfade to the new model (no restart)
     if (spec().engineKey === 'BRM') flash('BRM: use the BRM sound picker (v8 / v9.x)', 1.5);
-    else if (spec().engineKey === 'P997') flash('911: its own flat-six physics model (v9.11 kernel)', 1.5);
+    else if (spec().engineKey === 'P997') flash(state.p997Sound === 'variocam' ? '911 sound: VarioCam Plus + intake flap (non-default)' : '911: its own flat-six physics model (v9.11 kernel, fixed cam default)', 1.5);
     else flash('Sound model ' + SoundModels.get(state.model).label, 1.5);
     updatePanel();
   }
@@ -10288,6 +10336,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var selB = document.getElementById('selBrm');
   SoundModels.brmList.forEach(function (b) { var o = document.createElement('option'); o.value = b.brm; o.textContent = 'Sound ' + b.brm; var m = SoundModels.get(b.id); o.title = b.id === 'v8' ? 'engine-sound v8 (shipped, default)' : (m.note || ''); selB.appendChild(o); });
   selB.addEventListener('change', function () { setBrmSound(selB.value); selB.blur(); });
+  var selP997 = document.getElementById('selP997');
+  [['fixed', 'Sound fixed cam (default)'], ['variocam', 'Sound VarioCam Plus']].forEach(function (it) {
+    var o = document.createElement('option'); o.value = it[0]; o.textContent = it[1];
+    o.title = it[0] === 'variocam' ? 'VarioCam Plus: intake phasing, 3/10 mm lift switch, and the two-stage intake flap (non-default)' : 'Fixed cam (the v1.11.11 default)';
+    selP997.appendChild(o);
+  });
+  selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
   selV.addEventListener('change', function () { setVisual(selV.value); selV.blur(); });
   // v1.11.12: Car and Position are native <select> lists (same pattern as Sound / Visuals), so they work in the Tesla in-car browser.
   var selCar = document.getElementById('selCar'), selView = document.getElementById('selView');
@@ -10300,8 +10355,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     selView.value = state.bay ? '2' : String(state.view);
     document.getElementById('segBrmSound').classList.toggle('hidden', v.engineKey !== 'BRM');
     selB.value = state.brmSound;
+    document.getElementById('segP997Sound').classList.toggle('hidden', v.engineKey !== 'P997');
+    selP997.value = state.p997Sound;
     selS.value = state.model; selV.value = state.visual;
-    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997');   // v1.11.0: the 911 has one sound model (its own flat-six on the v9.11 kernel)
+    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997');   // v1.11.0: generic v1–v9p picker stays hidden; the 911 has its own option picker
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
     document.getElementById('bDrag').classList.toggle('on', !!drag);
     document.getElementById('bMute').textContent = state.muted ? 'Unmute' : 'Mute';
@@ -10404,7 +10461,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   if (params.get('view') === 'bay') setView(2);   // v1.10: open straight into the engine bay
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openAboutHow: openAboutHow, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
+  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openAboutHow: openAboutHow, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, setP997Sound: setP997Sound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
 })();
 </script>
 </body>
