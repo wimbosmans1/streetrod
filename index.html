@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.25)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.26)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -367,7 +367,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v9.11 physics (default) or an earlier v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
-      <label class="sel brmsel hidden" id="segP997Sound" title="911 sound: v10 valve-flow noise (default; VarioCam Plus plus exhaust-valve flow noise), or VarioCam Plus, or the previous fixed cam"><select id="selP997" aria-label="911 engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segP997Sound" title="911 sound: VarioCam Plus (default; 3.6/11.0 mm, 40°) + intake flap, or v10 valve-flow noise, or the previous fixed cam"><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
@@ -7394,7 +7394,7 @@ var EngineParams = (function () {
     var cx = c.camx || 1, dur = c.adv_dur, lsa = c.lsa, dEx = c.ev_d / Math.SQRT2;
     P.exValve = { d: dEx, lift: c.ev_lift, open: pmod(360 - lsa - dur / 2, 720), dur: dur, camx: cx };
     P.inValve = { d: 0.0402, lift: 0.011, open: pmod(360 + lsa - dur / 2, 720), dur: dur, camx: cx };
-    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration, ' + lsa + '\u00b0 lobe separation, ' + (c.ev_lift * 1000).toFixed(1) + ' mm exhaust lift; intake valve 40.2 mm (LN Engineering / Hamheads 3.8 heads), high lift 11.0 mm drawn (workshop figure). The default 911 sound (v10) keeps VarioCam Plus (official 997.1 intake phasing, 40° vane range, 3.6 mm / 11.0 mm intake lift; 3/10 mm is the 996 Turbo) plus the two-stage intake flap, and adds exhaust-valve flow noise with a flat hydraulic valve-train law. VarioCam Plus alone and this fixed cam stay in the picker; the 3,000–5,500 rpm flap switch is 997.2-confirmed and treated as probable for the 997.1.', true);
+    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration, ' + lsa + '\u00b0 lobe separation, ' + (c.ev_lift * 1000).toFixed(1) + ' mm exhaust lift; intake valve 40.2 mm (LN Engineering / Hamheads 3.8 heads), high lift 11.0 mm drawn (workshop figure). The default 911 sound is VarioCam Plus (official 997.1 intake phasing, 40° vane range, 3.6 mm / 11.0 mm intake lift; 3/10 mm is the 996 Turbo) plus the two-stage intake flap. v10 valve-flow noise (the same plus exhaust-valve flow noise and a flat hydraulic valve-train law) and this fixed cam stay in the picker; the 3,000–5,500 rpm flap switch is 997.2-confirmed and treated as probable for the 997.1.', true);
     note(P, 'dims', 'Bore ' + (c.bore * 1000).toFixed(0) + ' mm, stroke ' + (c.stroke * 1000).toFixed(1) + ' mm, rods ' + (c.rod * 1000).toFixed(0) + ' mm, CR ' + c.cr + ' (model data); bore spacing 118 mm (M97 data); 4 valves per cylinder, one of each pair drawn (exhaust \u00d8 = the model\u2019s two-valve curtain / \u221a2).', false);
     P.headers = { type: '3-1', len: +(c.prim_len * c.prim_x[1] + c.head_len).toFixed(3), primD: c.prim_d, pipeD: c.pipe_d, pipeLen: c.inter_len, crossover: 'none', toNose: true };
     note(P, 'headers', '3-1 headers per bank to the catalysts and one rear silencer each side (model exhaust \u20183-1\u2019, no balance pipe), primaries \u00d8 ' + (c.prim_d * 1000).toFixed(0) + ' mm, pipe \u00d8 ' + (c.pipe_d * 1000).toFixed(0) + ' mm; drawn length = model primary + head runner.', false);
@@ -9453,7 +9453,7 @@ var ProjectHistory = {
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and inside the car. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The 911\u2019s default is v10 valve-flow noise \u2014 VarioCam Plus plus exhaust-valve flow noise and a flat hydraulic valve-train law \u2014 with VarioCam Plus and the earlier fixed-cam sound still in the picker. The BRM\u2019s default is v9.11, the closest of the remaining physics models on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM physics fits (v9.1\u2013v9.10) stay in the Sound menu.',
+    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and inside the car. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The 911\u2019s default is VarioCam Plus \u2014 official 997.1 intake phasing, the 3.6/11.0 mm lift switch and the two-stage intake flap \u2014 with v10 valve-flow noise and the earlier fixed-cam sound still in the picker. The BRM\u2019s default is v9.11, the closest of the remaining physics models on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM physics fits (v9.1\u2013v9.10) stay in the Sound menu.',
     sections: [
       { title: 'Combustion pulses', text: 'Each cylinder fires in its place in the firing order. When the spark comes, the charge burns and the pressure in the cylinder rises sharply \u2014 that pulse is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss.' },
       { title: 'Gas exchange', text: 'The valves open and close on the cam\u2019s timing. Fresh mixture is drawn in; exhaust is blown out. For a moment both valves are a little open at once (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take.' },
@@ -9465,6 +9465,7 @@ var ProjectHistory = {
   },
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.11.26", date: "2026-11-15", status: "done", headline: "VarioCam Plus is again the 911 default sound", text: "The 911 default sound is back to VarioCam Plus, the v1.11.17 default, after v10 valve-flow noise did not sound right as the starting model. v10 stays in the picker; a link with ?car=p997&p997=v10 opens it. The earlier fixed-cam sound stays too (?p997=fixed). Engine sizes and the 76 mm throttle body are unchanged. The GT350, Cadillac and BRM sounds are unchanged." },
       { v: "v1.11.25", date: "2026-11-14", status: "done", headline: "v10 valve-flow noise is now the 911 default sound", text: "The 911 default sound is now v10: VarioCam Plus plus exhaust-valve flow noise and a flat hydraulic valve-train law, which fills in the high-frequency rasp the previous model was missing below 5,000 rpm. On the official stock recordings it scores closer than VarioCam Plus (overall 2.37 against 3.31; cabin 2.32 against 2.95, outside 2.47 against 3.89, tailpipe 2.13 against 4.44 \u2014 lower is closer). A two-fold held-out check, which never scores a recording the fit has seen, gives 2.48 against 3.31. A few low-rpm cabin full-throttle cells were slightly worse on that held-out check; they are accepted. Engine sizes and the 76 mm throttle body are unchanged. VarioCam Plus and the earlier fixed-cam sound stay in the picker; a link with ?car=p997&p997=variocam or ?p997=fixed opens them. The GT350, Cadillac and BRM sounds are unchanged." },
       { v: "v1.11.22", date: "2026-11-14", status: "done", headline: "The electric starter now has the rur-rur of a real crank", text: "You hear a short quiet solenoid and pinion engagement, then the motor and the ring-gear grind in bursts: loud as the starter struggles on each compression, then a quick drop as the crank comes over top dead centre — the familiar rur-rur-rur. When the engine catches, the starter whines down and drops out. The GT350, the Cadillac and the 911 each have their own mix, behind the car and in the cabin. The first start after the page loads still plays the starter in full. The BRM still has no onboard electric starter." },
       { v: "v1.11.21", date: "2026-11-14", status: "done", headline: "The electric starter now sounds like a real starter motor", text: "The starter on the GT350, the Cadillac and the 911 is no longer a train of clicks. You hear the solenoid and the pinion going in, then the motor whine and the pinion on the ring gear, with the familiar rur-rur-rur as the engine slows on each compression stroke, and a short whine-down when it catches and the starter drops out. It stays clearly audible at a realistic level in every listening position. The first start after the page loads still plays the starter in full. The BRM still has no onboard electric starter." },
@@ -9982,7 +9983,7 @@ var EngineSpecs = (function () {
     } else {
       note += '<p>Default sound: <b>' + esc(SOUND_LABEL[def] || def) + '</b>.</p>';
     }
-    if (id === 'p997') note += '<p>The 911 starts on <b>v10 valve-flow noise</b> (VarioCam Plus plus exhaust-valve flow noise and a flat hydraulic valve-train law). VarioCam Plus and the earlier fixed-cam sound stay in the picker; a link with ?p997=variocam or ?p997=fixed opens them. The tables below are the physics-model parameters (the same kernel either way).</p>';
+    if (id === 'p997') note += '<p>The 911 starts on <b>VarioCam Plus</b> (official 997.1 intake phasing, the 3.6/11.0 mm lift switch and the two-stage intake flap). v10 valve-flow noise and the earlier fixed-cam sound stay in the picker; a link with ?p997=v10 or ?p997=fixed opens them. The tables below are the physics-model parameters (the same kernel either way).</p>';
     if (id === 'brm') return note + brmSoundBlock();
     var data = v8pDATA(), key = V8P_KEY[id], pack = data && data[key];
     if (!pack) return note + '<p class="note">Could not read the physics-model data for this car.</p>';
@@ -10088,7 +10089,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // to v9.11. The BRM choice is not stored, so every fresh visit starts on v9.11.
   // v1.11.4: GT350 and Cadillac defaults are v9p (best scorecard fit). A ?sound= URL or a saved streetrod.sound
   // choice still applies to both V8 cars, as before. With no saved choice, each V8 car uses its own default.
-  // v1.11.25: the 911 default is v10 valve-flow noise (on VarioCam Plus); ?p997=variocam or ?p997=fixed (or ?p997=fixedcam) selects an earlier model.
+  // v1.11.26: the 911 default is VarioCam Plus again (the v1.11.17 default). ?p997=v10 selects v10 valve-flow noise; ?p997=fixed (or ?p997=fixedcam) selects the earlier fixed-cam fit.
   function defaultV8Sound(id) { return (id === 'gt350' || id === 'caddy') ? 'v9p' : 'v2'; }
   function defaultBrmSound() { return (typeof SoundModels !== 'undefined' && SoundModels.defaultBrm) || 'v9.11'; }
   function brmName(v) {
@@ -10114,7 +10115,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (!soundChoice) soundChoice = lsGet('streetrod.sound', null);
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
-    p997Sound: (p997Param === 'fixed' || p997Param === 'fixedcam') ? 'fixed' : (p997Param === 'variocam' ? 'variocam' : 'v10'),
+    p997Sound: (p997Param === 'fixed' || p997Param === 'fixedcam') ? 'fixed' : (p997Param === 'v10' ? 'v10' : 'variocam'),
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   state.viewBlend = (state.view === 1 || state.view === 4) ? 1 : 0;
@@ -10176,7 +10177,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var m = SoundModels.get(state.model);
     return m.hidden ? 'v2' : state.model;
   }
-  var P997_LABEL = { v10: '911 sound: v10 valve-flow noise (default)', variocam: '911 sound: VarioCam Plus + intake flap', fixed: '911 sound: fixed cam' };
+  var P997_LABEL = { variocam: '911 sound: VarioCam Plus + intake flap (default)', v10: '911 sound: v10 valve-flow noise', fixed: '911 sound: fixed cam' };
   function setP997Sound(v) {
     state.p997Sound = (v === 'variocam' || v === 'v10') ? v : 'fixed';
     if (audio.ctx) ensureAudio();
@@ -10524,9 +10525,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   selB.addEventListener('change', function () { setBrmSound(selB.value); selB.blur(); });
   var selP997 = document.getElementById('selP997');
-  [['v10', 'Sound v10 valve-flow noise (default)'], ['variocam', 'Sound VarioCam Plus'], ['fixed', 'Sound fixed cam']].forEach(function (it) {
+  [['variocam', 'Sound VarioCam Plus (default)'], ['v10', 'Sound v10 valve-flow noise'], ['fixed', 'Sound fixed cam']].forEach(function (it) {
     var o = document.createElement('option'); o.value = it[0]; o.textContent = it[1];
-    o.title = it[0] === 'v10' ? 'v10: VarioCam Plus plus exhaust-valve flow noise and a flat hydraulic valve-train law (default since v1.11.25)' : it[0] === 'variocam' ? 'VarioCam Plus: intake phasing (40° vane range), 3.6/11.0 mm lift switch, and the two-stage intake flap (the v1.11.17 default)' : 'Fixed cam (the v1.11.11 default)';
+    o.title = it[0] === 'variocam' ? 'VarioCam Plus: intake phasing (40° vane range), 3.6/11.0 mm lift switch, and the two-stage intake flap (default; restored in v1.11.26)' : it[0] === 'v10' ? 'v10: VarioCam Plus plus exhaust-valve flow noise and a flat hydraulic valve-train law (the v1.11.25 default)' : 'Fixed cam (the v1.11.11 default)';
     selP997.appendChild(o);
   });
   selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
