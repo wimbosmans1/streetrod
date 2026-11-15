@@ -2,6 +2,55 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.1 (tag `v1.12.1`), 2026-11-15 (911 listening test: v12 · 911 p7 = p4 with internal packing)
+
+* New, **non-default** option **Sound v12 · 911 p7** (`?p997=p7`, also `v12.911.p7` / `v11.911.p7`). The owner approved it as the last try at the low and mid-range grunt.
+* **What is packed, and where:** a 996 side-box gut job (Rennlist forum, 996 "gut job for sound / performance" thread) describes a steel-wool-packed primary silencer can, then a large perforated chamber lined with fibreglass, then a perforated top chamber and the exit tube. Mapped onto the p4 box:
+  * the 62 mm inlet tube, as the primary can, gets packing 0.2;
+  * the middle chamber B, the large chamber where both bellmouths sit, is lined with packing 0.3;
+  * chambers A and C, and the end-cap wool, are unchanged.
+  * Only existing generic packing parameters are used (`pipe` / `cavity`). Both values are estimates.
+  * Caveat: the 997 cut-away photo and the Fabspeed video show wool only on the end cap.
+* **Variants tried (4 renders):**
+
+  | Variant | Packing | Result |
+  |---|---|---|
+  | k1 | B 0.3, inlet 0.2 | Chosen |
+  | k2 | B 0.5, inlet 0.3 | Cabin order 4.5 drops by 15 dB at 6,800 rpm, so the high note is lost in the cabin |
+  | k3 | B 0.3 only | Darkens less |
+  | k4 | B 0.5, inlet 0.2 | Note weaker than k1, no better tilt |
+
+  p7 = k1.
+* **Results**, steady renders against the recordings (per clip, then the median over clips). Tilt is 1–4 kHz minus 40–300 Hz; real cabin / outside values from Round 10.
+  * **Tilt at 2,000–4,000 rpm, cabin:**
+
+    | Point | p4 | p7 | Real |
+    |---|---|---|---|
+    | 2k full | −21.5 | −25.4 | −34.7 |
+    | 3k part | −10.1 | −15.7 | −22.6 |
+    | 3k full | −10.9 | −14.1 | −31.4 |
+    | 4k part | −17.2 | −26.1 | −25.0 |
+    | 4k full | −19.3 | −24.7 | −23.8 |
+
+  * **Tilt, outside:**
+
+    | Point | p4 | p7 | Real |
+    |---|---|---|---|
+    | 2k part | −15.4 | −14.1 | −11.1 |
+    | 3k part | −5.7 | −9.9 | −18.0 |
+
+  * Every cell moves toward the recordings, by 1–9 dB, except cabin 4k (part and full), where p7 now passes the recordings by about 1 dB. The balance is still brighter than the recordings at 2,000–3,000 rpm.
+  * 2–8 kHz (harshness) is 10–12 dB lower than p4 everywhere.
+  * Order 3 relative to the total is unchanged to +1 dB.
+  * **Not fixed:** the level against rpm. The 40–4,000 Hz level at idle to 4,000 rpm is the same as p4 in the cabin (−2 to +0.2 dB) and 1–3 dB lower outside. So the low end is not louder, only less masked.
+  * **High note:** outside, order 4.5 at 6,800–7,200 rpm holds its level relative to the total, but the total is 3–5 dB lower. In the cabin, order 4.5 is about 3 dB weaker relative to the total.
+  * No new narrow tones: the strongest non-order line is 6 dB lower than in p4.
+* **Checks:**
+  * The GT350, Cadillac and 911 default / p1–p6 are bit-identical to v1.12.0 (54 renders); the BRM is untouched.
+  * Python v8phys p7 matches JS: the p7 − p4 order deltas agree within 0.8 dB (2,500–6,500 rpm, both views, full throttle).
+  * Safari-engine (JSC, full-worklet harness) cost per block: mean 19.0–19.2 % for p7 against 18.9 % for p4 and 21.9 % for the GT350. The worst block is at key-on (about 2.5 quanta of work, the same as p4). One run showed a single 351 % block mid-run; two repeat runs did not, so I take it for a JIT / GC blip, not p7.
+  * Cold start with 6× CPU throttling in headless Chrome works; p7 starts and runs without errors.
+
 ## v1.12.0 (tag `v1.12.0`), 2026-11-15 (sound model renamed v12; sound bit-identical; 911 low-end diagnosis, no p7)
 
 * **Sound model v11 is renamed v12** for every car, because the kernel has new parts since v1.11.39: the `par` (parallel paths) and `cavity` (side cavity, with an optional absorbent end-cap layer) muffler blocks, and the v1.11.43 kernel split.
