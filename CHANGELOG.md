@@ -2,6 +2,14 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.11.42 (tag `v1.11.42`), 2026-11-15 (911 default is now p4; listening test v11 · 911 p6)
+
+* **The 911 default is now v11 · 911 p4** (`?car=p997` opens p4), chosen by the owner by ear: he preferred p4 over p5 and hears its high-rpm note as a gradual shift in a real recording too. p1 stays selectable (`?p997=p1` and its old aliases v10.1, v10itq, variocam, …); unknown `?p997=` values now fall back to p4. The scorecard did not pick p4: its known failures (harsher outside than p3, outside order-3 peak at 5,500 rpm, idle about 10 dB quieter than p1) still stand.
+* New, **non-default** option **Sound v11 · 911 p6** (`?p997=p6`): p4 with that note brought in earlier. Diagnosis (steady full-throttle renders): the note is order 4.5 at about 515 Hz, strongest outside, peaking about 6,800–7,000 rpm in steady renders (the owner hears it peak at 7,200 rpm in the game). Ablations show it comes from a **pipe resonance on the inlet side of the box** (the run from the cat pipe through the connecting pipe and inlet tube to the bellmouth): a longer inlet tube moved it down, while the outlet pipe length (which moves the ~410 Hz outlet-side resonance instead) and the middle-chamber length did not.
+* p6 changes **one dimension**: the 50 mm connecting pipe in front of the box, 0.20 → 0.32 m (whole cat-to-box crossing 0.80 → 0.92 m, inside the 0.9–1.1 m estimate; no sourced figure). The order-4.5 hump outside moves from about 6,800–7,000 to about 5,800–6,200 rpm (about −13 %; the target was −17 %, from 7,200 to 6,000). Everything else is p4.
+* p6 checks: the note stays gradual (a broad hump over about 1,000 rpm; outside order 4.5 minus order 3 at 6,000 rpm −4.8 dB, recordings about −5 dB); no new 2,000–3,000 rpm dip (cabin order 6 minus order 3 at 2,500 rpm −2.7 dB, p4 −4.7); idle unchanged vs p4 (within 0.5 dB). **Fails / regressions:** 2–8 kHz is about 2–3 dB harsher than p4; the cabin order 3 dips at 5,200–5,600 rpm (−16 dB at 5,500 rel. 3,500, p4 −10) and order 4.5 there stands about 23 dB above the recordings relative to order 3 (p4 about 9 dB). All dimensions remain estimates.
+* The GT350, Cadillac, BRM and 911 p1 / p2 / p3 / p4 / p5 parameter sets and sounds are bit-identical to v1.11.41. JS matches Python on p6 (order deltas within about 0.5 dB). CPU about +14 % over p1 (same as p4).
+
 ## v1.11.41 (tag `v1.11.41`), 2026-11-15 (911 listening test: v11 · 911 p5 with series 3-chamber side boxes)
 
 * New, **non-default** 911 option **Sound v11 · 911 p5** (`?p997=p5`, also `v11.p5`). p1 stays the default; p2, p3 and p4 are unchanged.
