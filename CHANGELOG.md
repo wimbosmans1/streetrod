@@ -2,6 +2,30 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.11.43 (tag `v1.11.43`), 2026-11-15 (sound dropouts on iPhone: kernel reaches Safari's top JIT tier; 911 start-up spike removed)
+
+* **Symptom (owner, iPhone / Safari):** the sound cut out while playing the 911 (p4 / p6), not with the GT350.
+* **Cause 1, all v11 cars, worst for the 911 sets with side boxes:** in JavaScriptCore, the JavaScript engine in Safari, the per-sample kernel `kv8` was one function of about 38,000 bytecode units. It never left the middle compiler tier (DFG) for the top tier (FTL); bun / JSC reports this. The cost per 128-sample block, as a share of the 2.67 ms real-time budget, in a full worklet harness on this box (`deploy/engine-worklet.js`, game controls at 60 Hz, start, 4 pulls with gear changes, a view switch):
+
+  | Engine | GT350 | 911 p1 | 911 p4 | 911 p6 | BRM |
+  |---|---|---|---|---|---|
+  | JSC | 61 % | 57 % | 81 % | 81 % | 3 % |
+  | V8 / Chrome | 23 % | 16 % | 18 % | 18 % | 5 % |
+
+  p4 / p6 have 42 waveguide pipes against 22 for p1 and 21 for the GT350, and the pipe loops ran about 10× slower in DFG. On a phone that meant no headroom.
+* **Fix 1:** the kernel body is split into five helpers: arrivals, cylinders, exhaust nodes, intake and starter. The code is verbatim, in the same operation order. Every piece now reaches FTL. New mean / p99 per block:
+
+  | Engine | GT350 | 911 p1 | 911 p4 | 911 p6 |
+  |---|---|---|---|---|
+  | JSC | 22 % / 48 % | 17 % / 38 % | 19 % / 42 % | 19 % / 42 % |
+  | V8 | 22 % | 15 % | 18 % | 18 % |
+
+  The 911 p4 is now no more expensive than the GT350.
+* **Cause 2, 911 only (`int_res`):** the 0.25 s silent intake pre-roll (`int_settle`) ran in one go inside the first audible block, at key-on, at a car or sound switch while running, and at cold start. That is about 12,000 samples of kernel work in one quantum. It measured 64 quanta of work in JSC and 15–19 quanta in V8: a guaranteed dropout.
+* **Fix 2:** the pre-roll now runs one 256-sample chunk per block. The chunks, controls and order are the same, and the controller is held. The block outputs silence until the pre-roll is done, then the held block plays. Key-on worst block in JSC is 64 quanta of work before and 2.5 after. A sound switch holds its crossfade until the new source has finished its pre-roll, so there is no level dip.
+* **Sound:** bit-identical to v1.11.42 for the GT350, the Cadillac and 911 p1–p6, rear and cabin, idle / pull / game start (54 renders, `test` harness in the work tree). For the 911 the identical output starts 46 blocks later (about 0.12 s at 48 kHz) after the key or a switch. The BRM is untouched.
+* Not changed: `latencyHint` stays 'interactive' because a larger output buffer would delay throttle response; the per-block cost is fixed at the source instead. The worklet still posts a small `meter` / `eng` object every 32 / 8 blocks, the same for every car.
+
 ## v1.11.42 (tag `v1.11.42`), 2026-11-15 (911 default is now p4; listening test v11 · 911 p6)
 
 * **The 911 default is now v11 · 911 p4** (`?car=p997` opens p4), chosen by the owner by ear: he preferred p4 over p5 and hears its high-rpm note as a gradual shift in a real recording too. p1 stays selectable (`?p997=p1` and its old aliases v10.1, v10itq, variocam, …); unknown `?p997=` values now fall back to p4. The scorecard did not pick p4: its known failures (harsher outside than p3, outside order-3 peak at 5,500 rpm, idle about 10 dB quieter than p1) still stand.

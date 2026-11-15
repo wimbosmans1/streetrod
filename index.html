@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.42)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.43)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -1003,6 +1003,7 @@ function engineWorkletMain(modules) {
     ctl(m) { if (this.cur.ctl) this.cur.ctl(m); if (this.next && this.next.ctl) this.next.ctl(m); }
     initRunning(on) { if (this.cur.initRunning) this.cur.initRunning(on); }
     report() { return this.cur.report ? this.cur.report() : null; }
+    settling() { return !!(this.cur.settling && this.cur.settling()); }   // v1.11.43: silent pre-roll still running
     bay(o) { return this.cur.bay ? this.cur.bay(o) : false; }   // v1.10 engine bay: kernel crank state if the model has one
     gainOf(pos) { const l = this.listeners[pos]; return Math.pow(10, ((l && l.gain_db) || 0) / 20); }
     setView(v) {
@@ -1121,6 +1122,9 @@ function engineWorkletMain(modules) {
       for (let k = 0; k < n; k++) { const g = this.outGain * (sgA ? 1 : ge[k]); tL[k] *= g; tR[k] *= g; }
       if (this.nsrc) {
         this.nsrc.render(n, rpm, thr, this.tL2, this.tR2, wv, false);
+        // v1.11.43: hold the crossfade while the new source is still in its silent pre-roll (no level dip)
+      }
+      if (this.nsrc && !(this.nsrc.settling && this.nsrc.settling())) {
         const g2 = this.nsrc.outGain, step = 1 / (0.25 * this.fs), sgB = !!this.nsrc.selfGated;
         for (let k = 0; k < n; k++) {
           this.xfade = Math.min(1, this.xfade + step);
@@ -3861,6 +3865,316 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       AT[p * DL + wi] = ta;
     }
 
+    // v1.11.43: the per-sample kernel body is split into four helpers (verbatim code, same operation order, so the
+    // output is bit-identical). One 38k-bytecode kv8 never reached JavaScriptCore's top tier (FTL; Safari / iPhone),
+    // the pieces do. KX: scalar hand-over between kv8 and the helpers (no allocation).
+    var KX = new Float64Array(8);
+    function kArr(PF, AB, BB, AT, NPI, wi, nt, knl) {
+      var p;
+    for (p = 0; p < NPI; p++) {
+      var pf = p * NF, D = PF[pf + F_D], i0 = D | 0, fr = D - i0, j0 = (wi - i0) & DLM, j1 = (wi - i0 - 1) & DLM, pb = p * DL;
+      var xb = (1.0 - fr) * BB[pb + j0] + fr * BB[pb + j1], xa;
+      if (knl > 0.0) {
+        var rp = PF[pf + F_RP] | 0, nx;
+        for (;;) { nx = (rp + 1) & DLM; if (nx === wi || AT[pb + nx] > nt) break; rp = nx; }
+        PF[pf + F_RP] = rp;
+        nx = (rp + 1) & DLM;
+        var t0a = AT[pb + rp], t1a = AT[pb + nx];
+        if (nx === wi || t1a <= t0a) xa = AB[pb + rp];
+        else { var fr0 = (nt - t0a) / (t1a - t0a); if (fr0 < 0.0) fr0 = 0.0; else if (fr0 > 1.0) fr0 = 1.0; xa = AB[pb + rp] + fr0 * (AB[pb + nx] - AB[pb + rp]); }
+      } else xa = (1.0 - fr) * AB[pb + j0] + fr * AB[pb + j1];
+      var al = PF[pf + F_LP];
+      PF[pf + F_SA] += (1.0 - al) * (PF[pf + F_GAIN] * xa - PF[pf + F_SA]);
+      PF[pf + F_SB] += (1.0 - al) * (PF[pf + F_GAIN] * xb - PF[pf + F_SB]);
+    }
+    }
+    function kCyl(Q, S, CY, PF, AB, AT, K, NCY, th, w, rpm, pman, fs, dt, knl, wi, nt, tpr, rho_e, npol, leak, hk, vf_g, vf_w) {
+      var g = G_EX, i, tg = 0.0, qin = 0.0, qinL = 0.0, qinR = 0.0, tick0 = 0.0, tick1 = 0.0;
+    for (i = 0; i < NCY; i++) {
+      var c = i * NC, phi0 = CY[c + C_PHI], phi = th - CY[c + C_OFF];
+      if (phi < 0.0) phi += 720.0;
+      CY[c + C_PHI] = phi;
+      var V = vol(Q, phi), dvd = dvdth(Q, phi), tk = 0.0, m, pcy, vr;
+      if (crossed(phi0, phi, Q[Q_IVC])) {
+        var piv = pman;
+        CY[c + C_PIVC] = piv; CY[c + C_VIVC] = vol(Q, Q[Q_IVC]);
+        var xres = Q[Q_XR0] * Math.pow(P_ATM / piv, 1.0 / g) + Q[Q_XROV] * Q[Q_OVL] / 100.0 * (P_ATM / piv - 1.0) * Math.sqrt(1000.0 / (rpm > 100.0 ? rpm : 100.0));
+        if (xres > 0.6) xres = 0.6;
+        CY[c + C_XRES] = xres; CY[c + C_TIVC] = T_AMB + 30.0 + 500.0 * xres;
+        var r1 = rnd(S), r2 = rnd(S);
+        var gs = (rnd(S) + rnd(S) + rnd(S) + rnd(S) - 2.0) * 1.7320508075688772;
+        var pm = xres > 0.25 ? Q[Q_MISR] * (xres - 0.25) : 0.0, e = 0.0;
+        if (K[K_IGN] > 0.5 && r1 < K[K_FIREP] && r2 >= pm) {
+          e = 1.0 + (Q[Q_COV] + Q[Q_COVR] * xres) * gs; if (e < 0.0) e = 0.0;
+          S[S_NFIRE] += 1.0;
+        }
+        S[S_NEVT] += 1.0;
+        CY[c + C_E] = e;
+        var rc = 400.0 / (rpm > 50.0 ? rpm : 50.0); if (rc > 1.0) rc = 1.0;
+        CY[c + C_RP] = 1.0 - Q[Q_HL] * (0.5 + 0.5 * rc) + e * Q[Q_QC] * (1.0 - xres);
+        CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * (1.0 - piv / P_ATM);
+        CY[c + C_DUR] = Q[Q_BURN] * (1.0 + 0.8 * xres);
+        CY[c + C_VALID] = 1.0;
+        tk += 0.6;
+      }
+      if (crossed(phi0, phi, Q[Q_EVO])) {
+        var ve = vol(Q, Q[Q_EVO]), pe, te;
+        if (CY[c + C_VALID] > 0.5) {
+          vr = CY[c + C_VIVC] / ve;
+          pe = CY[c + C_PIVC] * Math.pow(vr, npol) * CY[c + C_RP];
+          te = CY[c + C_TIVC] * CY[c + C_RP] * Math.pow(vr, npol - 1.0);
+        } else { pe = pman; te = T_AMB; }
+        m = pe * ve / (R_GAS * te);
+        CY[c + C_M] = m; CY[c + C_K] = pe / Math.pow(m / ve, g); CY[c + C_OPEN] = 1.0; CY[c + C_VALID] = 0.0;
+        tk += 1.0;
+      }
+      if (crossed(phi0, phi, Q[Q_EVC])) { CY[c + C_OPEN] = 0.0; tk += 0.8; }
+      if (crossed(phi0, phi, Q[Q_IVO])) tk += 0.4;
+      if (tk > 0.0) {
+        var law = Q[Q_TICKA] < 0.0 ? (0.15 + rpm / 1000.0) : Math.pow(Math.max(rpm, 1.0) / 1000.0, Q[Q_TICKA]);   // v10: flat hydraulic law (p997)
+        var amp = tk * law * (Q[Q_SOLID] > 0.5 ? 1.0 : 0.35);
+        if (CY[c + C_BANK] < 0.5) tick0 += amp; else tick1 += amp;
+      }
+      var pp = CY[c + C_PIPE] | 0, ppf = pp * NF, pin = PF[ppf + F_SB];
+      var aeff = CY[c + C_OPEN] > 0.5 ? aeffOf(Q, phi) : 0.0, ap = PF[ppf + F_A];
+      var rv = (ap - aeff) / (ap + aeff) * Q[Q_ROL], z0 = rho_e * PF[ppf + F_C] / ap, q = 0.0;
+      if (CY[c + C_OPEN] > 0.5) {
+        m = CY[c + C_M];
+        pcy = CY[c + C_K] * Math.pow(m / V, g);
+        var tc = pcy * V / (m * R_GAS), base = P_ATM + (1.0 + rv) * pin, Kc = CY[c + C_K];
+        var q0 = vq(0.0, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt);
+        if (q0 === 0.0) q = 0.0;
+        else {
+          var a_ = 0.0, fa = q0, b_ = q0, fb = vq(q0, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt) - q0, side = 0;
+          q = b_;
+          for (var it = 0; it < 8; it++) {
+            if (fb === fa) break;
+            q = b_ - fb * (b_ - a_) / (fb - fa);
+            var fq = vq(q, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt) - q;
+            if (fq * fb < 0.0) { a_ = b_; fa = fb; if (side === -1) fa *= 0.5; side = -1; }
+            else { if (side === 1) fa *= 0.5; side = 1; }
+            b_ = q; fb = fq;
+            if (Math.abs(fq) < 1e-7) break;
+          }
+        }
+        var dm = q * rho_e / fs;
+        if (dm >= 0.0) { m -= dm; CY[c + C_M] = m; pcy = CY[c + C_K] * Math.pow(m / V, g); }
+        else {
+          m -= dm; pcy = pcy - g * R_GAS * tpr * dm / V; CY[c + C_M] = m; CY[c + C_K] = pcy / Math.pow(m / V, g);
+        }
+        q = dm * fs / rho_e;
+      } else {
+        var psi_ = phi >= Q[Q_IVC] ? phi - 720.0 : phi;
+        if (CY[c + C_VALID] > 0.5 && psi_ < Q[Q_EVO]) {
+          vr = CY[c + C_VIVC] / V;
+          var z = (psi_ + CY[c + C_ADV]) / CY[c + C_DUR], xb2 = 0.0;
+          if (z > 0.0) { var zz = z < 1.6 ? z : 1.6; xb2 = 1.0 - Math.exp(-5.0 * zz * zz * zz); }
+          CY[c + C_PIVC] *= leak;
+          if (xb2 > 0.0) CY[c + C_RP] += ((1.0 - Q[Q_HL]) - CY[c + C_RP]) * hk * xb2;
+          pcy = CY[c + C_PIVC] * Math.pow(vr, npol) * (1.0 + (CY[c + C_RP] - 1.0) * xb2);
+        } else pcy = pman;
+      }
+      var dq = 0.0;
+      if (phi >= Q[Q_IVO] && phi < Q[Q_IVC]) {
+        dq = dvd * w * Q[Q_INSCALE];
+        if (Q[Q_INTRUN] <= 0.0) {   // generic intake runners (v11 int_run): the runner pipes carry the flow instead
+          qin += dq;
+          if (CY[c + C_BANK] < 0.5) qinL += dq; else qinR += dq;
+        }
+      }
+      CY[c + C_QLP] = dq;
+      CY[c + C_Q] = q; CY[c + C_P] = pcy;
+      var pv = 0.0;
+      if (Q[Q_KVF] > 0.0 && CY[c + C_OPEN] > 0.5 && aeff > 0.0 && q > 0.0) {
+        // v10 exhaust-valve flow noise (v8phys.py): turbulent curtain jet, ~ rho c^2 (u/c)^n, differenced white noise
+        var ce = Math.sqrt(g * R_GAS * tpr), uu = Math.min(q / aeff, ce), rn = (rnd(S) - 0.5) * 3.4641016151377544;
+        pv = Q[Q_KVF] * rho_e * ce * ce * Math.pow(uu / ce, Q[Q_VFN]) * (rn - CY[c + C_VN]) * 0.5;
+        if (vf_w > 0.0) {
+          // short half-Hann after EVO, near-zero floor between pulses (vf_width=0 keeps v10-off identical)
+          var dphi = phi - Q[Q_EVO]; if (dphi < 0.0) dphi += 720.0;
+          pv *= (dphi < vf_w) ? 0.5 * (1.0 + Math.cos(Math.PI * dphi / vf_w)) : Q[Q_VFF];
+        }
+        if (vf_g !== 1.0) pv *= vf_g;
+        CY[c + C_VN] = rn;
+      }
+      var q_ac = q;
+      if (Q[Q_PSH] > 0.0 && CY[c + C_OPEN] > 0.5) {
+        // acoustic-only: boost first 40 crank deg after EVO, ease later pumping (mass flow unchanged)
+        var dphi_s = phi - Q[Q_EVO]; if (dphi_s < 0.0) dphi_s += 720.0;
+        q_ac = (dphi_s < 40.0)
+          ? q * (1.0 + Q[Q_PSH] * 0.5 * (1.0 + Math.cos(Math.PI * dphi_s / 40.0)))
+          : q * (1.0 / (1.0 + 0.5 * Q[Q_PSH]));
+      }
+      if (Q[Q_CYV] > 0.0) q_ac *= 1.0 + Q[Q_CYV] * (((c / NC) | 0) % 3 - 1);
+      AB[pp * DL + wi] = z0 * q_ac + rv * pin + pv;
+      if (knl > 0.0) arr(AB, AT, PF, pp, wi, nt, knl);
+      tg += (pcy - P_ATM) * dvd;
+    }
+      KX[0] = tg; KX[1] = qin; KX[2] = qinL; KX[3] = qinR; KX[4] = tick0; KX[5] = tick1;
+    }
+    function kNodes(NODE, NN, NW, PF, AB, BB, AT, NA, CY, S, Q, out, ko, wi, nt, knl, fs) {
+      var j, qin = KX[1], qinL = KX[2], qinR = KX[3];
+    for (var nd = 0; nd < NN; nd++) {
+      var nb = nd * NW, typ = NODE[nb];
+      if (typ === 0) {
+        var npt = NODE[nb + 2], sy = 0.0, sp = 0.0, p_, pin_;
+        for (j = 0; j < npt; j++) {
+          p_ = NODE[nb + 3 + 2 * j];
+          var y = PF[p_ * NF + F_A] * PF[p_ * NF + F_C];
+          pin_ = NODE[nb + 4 + 2 * j] === 0 ? PF[p_ * NF + F_SB] : PF[p_ * NF + F_SA];
+          sy += y; sp += y * pin_;
+        }
+        var pj = 2.0 * sp / sy;
+        for (j = 0; j < npt; j++) {
+          p_ = NODE[nb + 3 + 2 * j];
+          if (NODE[nb + 4 + 2 * j] === 0) { AB[p_ * DL + wi] = pj - PF[p_ * NF + F_SB]; if (knl > 0.0) arr(AB, AT, PF, p_, wi, nt, knl); }
+          else BB[p_ * DL + wi] = pj - PF[p_ * NF + F_SA];
+        }
+      } else if (typ === 2) {
+        var mo = NODE[nb + 1], pq = NODE[nb + 3], pinm = PF[pq * NF + F_SA];
+        var st = NA[nd * 2] + NA[nd * 2 + 1] * (pinm - NA[nd * 2]);
+        NA[nd * 2] = st;
+        BB[pq * DL + wi] = -st;
+        var rho_t = P_ATM / (R_GAS * S[S_TTAIL]);
+        var U = (pinm + st) * PF[pq * NF + F_A] / (rho_t * PF[pq * NF + F_C]);
+        out[ko + O_U0 + mo] = U;
+        var uu = U / Q[Q_TAILA]; if (uu < 0.0) uu = 0.0;
+        var nz = (rnd(S) - 0.5) * 3.4641016151377544;
+        var fj = uu / Math.sqrt(4.0 * Q[Q_TAILA] / Math.PI) + 150.0, aj = 1.0 - Math.exp(-2.0 * Math.PI * fj / fs);
+        var r4 = (uu / 30.0) * (uu / 30.0);
+        S[S_JET0 + mo] += aj * (nz * 7e-4 * Q[Q_KJET] * r4 * r4 - S[S_JET0 + mo]);
+        out[ko + O_JET0 + mo] = S[S_JET0 + mo];
+      } else if (typ === 3) {
+        // closed / rigid end: pressure reflection +1, no radiation (Helmholtz cavity)
+        var pc = NODE[nb + 3];
+        BB[pc * DL + wi] = PF[pc * NF + F_SA];
+      } else if (typ === 4) {
+        // intake valve (v11 int_run): prescribed volume flow into the cylinder while IVO-IVC, closed end otherwise
+        var pr4 = NODE[nb + 3], cy4 = NODE[nb + 1], z04 = RHO_AIR * PF[pr4 * NF + F_C] / PF[pr4 * NF + F_A];
+        AB[pr4 * DL + wi] = PF[pr4 * NF + F_SB] - z04 * CY[cy4 * NC + C_QLP];
+        if (knl > 0.0) arr(AB, AT, PF, pr4, wi, nt, knl);
+      } else if (typ === 5) {
+        // runner opens into a lumped plenum: p_pipe = p_plenum; U5 is flow out of the runner into the volume
+        var pr5 = NODE[nb + 3], pin5 = PF[pr5 * NF + F_SA], bk5 = NODE[nb + 1], ppl5;
+        if (Q[Q_INTRES] > 0.0 && bk5 !== 2) ppl5 = bk5 === 0 ? S[S_PL] : S[S_PR];
+        else ppl5 = S[S_PPL];
+        BB[pr5 * DL + wi] = ppl5 - pin5;
+        var U5 = (2.0 * pin5 - ppl5) * PF[pr5 * NF + F_A] / (RHO_AIR * PF[pr5 * NF + F_C]);
+        if (Q[Q_INTRES] > 0.0 && bk5 !== 2) { if (bk5 === 0) qinL -= U5; else qinR -= U5; }
+        qin -= U5;
+      }
+    }
+      KX[1] = qin; KX[2] = qinL; KX[3] = qinR;
+    }
+    function kStarter(Q, S, CY, out, ko, w, wm, cur, tst, G, ke, Rm, engaged, powered, dt, fs) {
+    // continuous starter: mesh, motor shaft, commutator and armature noise follow w(t)/wm(t);
+    // compression 'rur-rur' is the physics speed ripple plus a crank-angle AM (not one-sample spikes)
+    var stOut = 0.0, stLo = 0.0, tnom = G * ke * Q[Q_VBAT] / Rm;
+    if (tnom < 1e-9) tnom = 1e-9;
+    if (S[S_LOCK] > 0.5 && S[S_PREVLOCK] < 0.5) S[S_STENV] += 0.85;   // pinion engagement clunk
+    S[S_PREVLOCK] = S[S_LOCK];
+    if (S[S_LOCK] > 0.5) {
+      S[S_MESH] += Q[Q_TEETH] * w * dt / (2.0 * Math.PI);
+      S[S_MESH] -= Math.floor(S[S_MESH]);
+      var load = tst / tnom; if (load < 0.0) load = 0.0; else if (load > 2.5) load = 2.5;
+      var aMesh = Q[Q_KMESH] * (0.40 + 0.60 * load);
+      var pMesh = 6.283185307179586 * S[S_MESH];
+      var mAdd = aMesh * (Math.sin(pMesh) + 0.35 * Math.sin(2.0 * pMesh) + 0.12 * Math.sin(3.0 * pMesh));
+      stOut += mAdd; stLo += mAdd;
+    }
+    var nz = (rnd(S) - 0.5) * 3.4641016151377544;
+    if (wm > 1.0) {
+      S[S_MOTPH] += wm * dt / (2.0 * Math.PI);
+      S[S_MOTPH] -= Math.floor(S[S_MOTPH]);
+      var curN = cur / 220.0; if (curN > 1.0) curN = 1.0;
+      var aMot = Q[Q_KMOT] * (0.35 + 0.65 * curN);
+      var pMot = 6.283185307179586 * S[S_MOTPH];
+      var motAdd = aMot * (Math.sin(pMot) + 0.35 * Math.sin(2.0 * pMot));
+      stOut += motAdd; stLo += motAdd;
+      S[S_COMM] += Q[Q_NSEG] * wm * dt / (2.0 * Math.PI);
+      S[S_COMM] -= Math.floor(S[S_COMM]);
+      var aComm = Q[Q_KCOMM] * (0.30 + 0.70 * curN);
+      var pComm = 6.283185307179586 * S[S_COMM];
+      stOut += aComm * (Math.sin(pComm) + 0.22 * Math.sin(2.0 * pComm)) * (1.0 + 0.28 * nz);
+      var curA = 0.22 + 0.78 * (0.35 + 0.65 * curN);
+      var alBb = 1.0 - Math.exp(-2.0 * Math.PI * 2000.0 / fs);
+      var alBb2 = 1.0 - Math.exp(-2.0 * Math.PI * 800.0 / fs);
+      S[S_STN] += alBb * (nz * Q[Q_KBB] * curA - S[S_STN]);
+      S[S_STN2] += alBb2 * (nz * Q[Q_KBB2] * curA - S[S_STN2]);
+      stOut += S[S_STN] + S[S_STN2] + (nz - S[S_STN]) * Q[Q_KBBHI] * curA;
+    } else {
+      S[S_STN] *= Math.exp(-dt / 0.010);
+      S[S_STN2] *= Math.exp(-dt / 0.012);
+      stOut += S[S_STN] + S[S_STN2];
+    }
+    var clunk = 0.0, stLow = 0.0, stHigh = 0.0;
+    // stOut so far is mesh+motor+comm+broadband; split lows (mesh/motor) from the whoosh
+    stLow = 0.0; stHigh = stOut;
+    // re-split: mesh and motor were added first; easiest: classify by what we already mixed — apply two AMs below using stOut as the grind
+    S[S_STENV] *= Math.exp(-dt / 0.020);   // solenoid / pinion body
+    if (S[S_STENV] > 1e-8) {
+      S[S_CLUNKPH] += 185.0 * dt;
+      S[S_CLUNKPH] -= Math.floor(S[S_CLUNKPH]);
+      var pCl = 6.283185307179586 * S[S_CLUNKPH];
+      clunk += S[S_STENV] * (0.55 + 0.70 * Math.sin(pCl) + 0.20 * Math.sin(2.0 * pCl));
+    } else S[S_STENV] = 0.0;
+    // quiet low-band solenoid / engagement wash (not a held sine) while the pinion is in and the motor is not yet driving
+    if (engaged && !powered) {
+      S[S_LEADHUM] += (1.0 - S[S_LEADHUM]) * (dt / 0.014);
+      var alLd = 1.0 - Math.exp(-2.0 * Math.PI * 350.0 / fs);
+      S[S_STN] += alLd * (nz * 0.28 * S[S_LEADHUM] - S[S_STN]);
+      S[S_CLUNKPH] += 155.0 * dt;
+      S[S_CLUNKPH] -= Math.floor(S[S_CLUNKPH]);
+      clunk += S[S_STN] + S[S_LEADHUM] * 0.07 * Math.sin(6.283185307179586 * S[S_CLUNKPH]);
+    } else {
+      S[S_LEADHUM] *= Math.exp(-dt / 0.020);
+      if (S[S_LEADHUM] > 1e-4) clunk += S[S_LEADHUM] * 0.08 * S[S_STN];
+    }
+    // burst AM: long compression-to-TDC struggle, brief deep gap after TDC (whoosh dips more than the low rumble)
+    var ncomp = ((CY.length / NC) | 0) * 0.5;
+    var u = S[S_TH] / 360.0 * ncomp;
+    u -= Math.floor(u);
+    var kamH = Q[Q_KAM]; if (kamH < 0.0) kamH = 0.0; else if (kamH > 0.95) kamH = 0.95;
+    var kamL = kamH * 0.42;
+    // hold near TDC (struggle), brief gap after TDC, then rise through the next compression
+    var rel = 0.12, gap = 0.06, hold = 0.54, rise = 1.0 - rel - gap - hold, shp;
+    if (u < rel) { var x = u / rel; shp = 1.0 - x * x * (3.0 - 2.0 * x); }
+    else if (u < rel + gap) shp = 0.0;
+    else if (u < rel + gap + rise) { var x2 = (u - rel - gap) / rise; shp = x2 * x2; }
+    else shp = 1.0;
+    var amH = (1.0 - kamH) + kamH * shp, amL = (1.0 - kamL) + kamL * shp;
+    // mesh/motor sit in the low half of stOut, comm+bb in the high half — a gentle tilt: lows * amL, all * mix
+    stOut = stLo * amL + (stOut - stLo) * amH + clunk;
+    out[ko + O_ST] += stOut;
+    }
+
+    function kIntake(Q, S, out, ko, a_th, m_th, rpm, thr, qin, qinL, qinR, dt) {
+      var gp = G_AIR * P_ATM;
+      if (Q[Q_INTRES] > 0.0) {
+        // v10: two bank distributors joined by a resonance tube and flap (off by default)
+        var vb = Q[Q_VBANK];
+        S[S_PL] += gp / vb * (0.5 * S[S_QTH] - qinL - S[S_QC]) * dt;
+        S[S_PR] += gp / vb * (0.5 * S[S_QTH] - qinR + S[S_QC]) * dt;
+        S[S_PPL] = 0.5 * (S[S_PL] + S[S_PR]);
+      } else {
+        S[S_PPL] += gp / Q[Q_VMAN] * (S[S_QTH] - qin) * dt;
+      }
+      var ath = a_th > 2e-6 ? a_th : 2e-6, mth = RHO_AIR * Q[Q_LTH] / ath, rth = Q[Q_RTH] * RHO_AIR * C_AIR / ath;
+      S[S_QTH] = (S[S_QTH] + (S[S_PAC] - S[S_PPL]) / mth * dt) / (1.0 + rth / mth * dt);
+      S[S_PAC] += gp / Q[Q_VAC] * (S[S_QSN] - S[S_QTH]) * dt;
+      S[S_QSN] = (S[S_QSN] - S[S_PAC] / Q[Q_SNM] * dt) / (1.0 + Q[Q_SNR] / Q[Q_SNM] * dt);
+      if (Q[Q_INTRES] > 0.0) {
+        var closedIR = (rpm >= Q[Q_F0RPM] && rpm <= Q[Q_F1RPM] && thr >= Q[Q_FTHR]) ? 1.0 : 0.0;
+        var rcp = Q[Q_RCLOSE] * closedIR + Q[Q_ROPEN] * (1.0 - closedIR);
+        var inert = RHO_AIR * Q[Q_LTUBE] / Q[Q_ATUBE];
+        S[S_QC] = (S[S_QC] + (S[S_PL] - S[S_PR]) / inert * dt) / (1.0 + rcp / inert * dt);
+        out[ko + O_INT] = S[S_QSN] + Q[Q_KRES] * closedIR * (S[S_PL] - S[S_PR]);
+      } else {
+        out[ko + O_INT] = S[S_QSN];
+      }
+      if (S[S_PMAN] < 0.528 * P_ATM) out[ko + O_HISS] = (rnd(S) - 0.5) * 3.4641016151377544 * m_th * Math.pow(1.0 - S[S_PMAN] / (0.528 * P_ATM), 0.5);
+    }
+
     function kv8(n, fs, K, Q, S, CY, PF, NPI, NODE, NN, NW, AB, BB, AT, NA, out) {
       var dt = 1.0 / fs, rad = Math.PI / 180.0, g = G_EX, k, i, p, j, knl = Q[Q_KNL], NCY = (CY.length / NC) | 0;   // job 8: 8 (V8) or 6 (flat-six) cylinders
       for (k = 0; k < n; k++) {
@@ -3929,22 +4243,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var rpm = w * 60.0 / (2.0 * Math.PI);
         // delay-line arrivals
         var wi = S[S_WI] | 0, nt = S[S_NT];
-        for (p = 0; p < NPI; p++) {
-          var pf = p * NF, D = PF[pf + F_D], i0 = D | 0, fr = D - i0, j0 = (wi - i0) & DLM, j1 = (wi - i0 - 1) & DLM, pb = p * DL;
-          var xb = (1.0 - fr) * BB[pb + j0] + fr * BB[pb + j1], xa;
-          if (knl > 0.0) {
-            var rp = PF[pf + F_RP] | 0, nx;
-            for (;;) { nx = (rp + 1) & DLM; if (nx === wi || AT[pb + nx] > nt) break; rp = nx; }
-            PF[pf + F_RP] = rp;
-            nx = (rp + 1) & DLM;
-            var t0a = AT[pb + rp], t1a = AT[pb + nx];
-            if (nx === wi || t1a <= t0a) xa = AB[pb + rp];
-            else { var fr0 = (nt - t0a) / (t1a - t0a); if (fr0 < 0.0) fr0 = 0.0; else if (fr0 > 1.0) fr0 = 1.0; xa = AB[pb + rp] + fr0 * (AB[pb + nx] - AB[pb + rp]); }
-          } else xa = (1.0 - fr) * AB[pb + j0] + fr * AB[pb + j1];
-          var al = PF[pf + F_LP];
-          PF[pf + F_SA] += (1.0 - al) * (PF[pf + F_GAIN] * xa - PF[pf + F_SA]);
-          PF[pf + F_SB] += (1.0 - al) * (PF[pf + F_GAIN] * xb - PF[pf + F_SB]);
-        }
+        kArr(PF, AB, BB, AT, NPI, wi, nt, knl);
         // cylinders
         tg = 0.0;
         var qin = 0.0, qinL = 0.0, qinR = 0.0, tick0 = 0.0, tick1 = 0.0, tpr = S[S_TPRIM], rho_e = P_ATM / (R_GAS * tpr);
@@ -3956,285 +4255,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           if (Q[Q_VFX] > 0.0) vf_g = Math.pow(rat, Q[Q_VFX]);
           if (Q[Q_VWX] > 0.0 && vf_w > 0.0) vf_w = vf_w * Math.pow(rat, Q[Q_VWX]);
         }
-        for (i = 0; i < NCY; i++) {
-          var c = i * NC, phi0 = CY[c + C_PHI], phi = th - CY[c + C_OFF];
-          if (phi < 0.0) phi += 720.0;
-          CY[c + C_PHI] = phi;
-          var V = vol(Q, phi), dvd = dvdth(Q, phi), tk = 0.0, m, pcy, vr;
-          if (crossed(phi0, phi, Q[Q_IVC])) {
-            var piv = pman;
-            CY[c + C_PIVC] = piv; CY[c + C_VIVC] = vol(Q, Q[Q_IVC]);
-            var xres = Q[Q_XR0] * Math.pow(P_ATM / piv, 1.0 / g) + Q[Q_XROV] * Q[Q_OVL] / 100.0 * (P_ATM / piv - 1.0) * Math.sqrt(1000.0 / (rpm > 100.0 ? rpm : 100.0));
-            if (xres > 0.6) xres = 0.6;
-            CY[c + C_XRES] = xres; CY[c + C_TIVC] = T_AMB + 30.0 + 500.0 * xres;
-            var r1 = rnd(S), r2 = rnd(S);
-            var gs = (rnd(S) + rnd(S) + rnd(S) + rnd(S) - 2.0) * 1.7320508075688772;
-            var pm = xres > 0.25 ? Q[Q_MISR] * (xres - 0.25) : 0.0, e = 0.0;
-            if (K[K_IGN] > 0.5 && r1 < K[K_FIREP] && r2 >= pm) {
-              e = 1.0 + (Q[Q_COV] + Q[Q_COVR] * xres) * gs; if (e < 0.0) e = 0.0;
-              S[S_NFIRE] += 1.0;
-            }
-            S[S_NEVT] += 1.0;
-            CY[c + C_E] = e;
-            var rc = 400.0 / (rpm > 50.0 ? rpm : 50.0); if (rc > 1.0) rc = 1.0;
-            CY[c + C_RP] = 1.0 - Q[Q_HL] * (0.5 + 0.5 * rc) + e * Q[Q_QC] * (1.0 - xres);
-            CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * (1.0 - piv / P_ATM);
-            CY[c + C_DUR] = Q[Q_BURN] * (1.0 + 0.8 * xres);
-            CY[c + C_VALID] = 1.0;
-            tk += 0.6;
-          }
-          if (crossed(phi0, phi, Q[Q_EVO])) {
-            var ve = vol(Q, Q[Q_EVO]), pe, te;
-            if (CY[c + C_VALID] > 0.5) {
-              vr = CY[c + C_VIVC] / ve;
-              pe = CY[c + C_PIVC] * Math.pow(vr, npol) * CY[c + C_RP];
-              te = CY[c + C_TIVC] * CY[c + C_RP] * Math.pow(vr, npol - 1.0);
-            } else { pe = pman; te = T_AMB; }
-            m = pe * ve / (R_GAS * te);
-            CY[c + C_M] = m; CY[c + C_K] = pe / Math.pow(m / ve, g); CY[c + C_OPEN] = 1.0; CY[c + C_VALID] = 0.0;
-            tk += 1.0;
-          }
-          if (crossed(phi0, phi, Q[Q_EVC])) { CY[c + C_OPEN] = 0.0; tk += 0.8; }
-          if (crossed(phi0, phi, Q[Q_IVO])) tk += 0.4;
-          if (tk > 0.0) {
-            var law = Q[Q_TICKA] < 0.0 ? (0.15 + rpm / 1000.0) : Math.pow(Math.max(rpm, 1.0) / 1000.0, Q[Q_TICKA]);   // v10: flat hydraulic law (p997)
-            var amp = tk * law * (Q[Q_SOLID] > 0.5 ? 1.0 : 0.35);
-            if (CY[c + C_BANK] < 0.5) tick0 += amp; else tick1 += amp;
-          }
-          var pp = CY[c + C_PIPE] | 0, ppf = pp * NF, pin = PF[ppf + F_SB];
-          var aeff = CY[c + C_OPEN] > 0.5 ? aeffOf(Q, phi) : 0.0, ap = PF[ppf + F_A];
-          var rv = (ap - aeff) / (ap + aeff) * Q[Q_ROL], z0 = rho_e * PF[ppf + F_C] / ap, q = 0.0;
-          if (CY[c + C_OPEN] > 0.5) {
-            m = CY[c + C_M];
-            pcy = CY[c + C_K] * Math.pow(m / V, g);
-            var tc = pcy * V / (m * R_GAS), base = P_ATM + (1.0 + rv) * pin, Kc = CY[c + C_K];
-            var q0 = vq(0.0, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt);
-            if (q0 === 0.0) q = 0.0;
-            else {
-              var a_ = 0.0, fa = q0, b_ = q0, fb = vq(q0, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt) - q0, side = 0;
-              q = b_;
-              for (var it = 0; it < 8; it++) {
-                if (fb === fa) break;
-                q = b_ - fb * (b_ - a_) / (fb - fa);
-                var fq = vq(q, pcy, m, V, Kc, tc, tpr, aeff, base, z0, rho_e, fs, dt) - q;
-                if (fq * fb < 0.0) { a_ = b_; fa = fb; if (side === -1) fa *= 0.5; side = -1; }
-                else { if (side === 1) fa *= 0.5; side = 1; }
-                b_ = q; fb = fq;
-                if (Math.abs(fq) < 1e-7) break;
-              }
-            }
-            var dm = q * rho_e / fs;
-            if (dm >= 0.0) { m -= dm; CY[c + C_M] = m; pcy = CY[c + C_K] * Math.pow(m / V, g); }
-            else {
-              m -= dm; pcy = pcy - g * R_GAS * tpr * dm / V; CY[c + C_M] = m; CY[c + C_K] = pcy / Math.pow(m / V, g);
-            }
-            q = dm * fs / rho_e;
-          } else {
-            var psi_ = phi >= Q[Q_IVC] ? phi - 720.0 : phi;
-            if (CY[c + C_VALID] > 0.5 && psi_ < Q[Q_EVO]) {
-              vr = CY[c + C_VIVC] / V;
-              var z = (psi_ + CY[c + C_ADV]) / CY[c + C_DUR], xb2 = 0.0;
-              if (z > 0.0) { var zz = z < 1.6 ? z : 1.6; xb2 = 1.0 - Math.exp(-5.0 * zz * zz * zz); }
-              CY[c + C_PIVC] *= leak;
-              if (xb2 > 0.0) CY[c + C_RP] += ((1.0 - Q[Q_HL]) - CY[c + C_RP]) * hk * xb2;
-              pcy = CY[c + C_PIVC] * Math.pow(vr, npol) * (1.0 + (CY[c + C_RP] - 1.0) * xb2);
-            } else pcy = pman;
-          }
-          var dq = 0.0;
-          if (phi >= Q[Q_IVO] && phi < Q[Q_IVC]) {
-            dq = dvd * w * Q[Q_INSCALE];
-            if (Q[Q_INTRUN] <= 0.0) {   // generic intake runners (v11 int_run): the runner pipes carry the flow instead
-              qin += dq;
-              if (CY[c + C_BANK] < 0.5) qinL += dq; else qinR += dq;
-            }
-          }
-          CY[c + C_QLP] = dq;
-          CY[c + C_Q] = q; CY[c + C_P] = pcy;
-          var pv = 0.0;
-          if (Q[Q_KVF] > 0.0 && CY[c + C_OPEN] > 0.5 && aeff > 0.0 && q > 0.0) {
-            // v10 exhaust-valve flow noise (v8phys.py): turbulent curtain jet, ~ rho c^2 (u/c)^n, differenced white noise
-            var ce = Math.sqrt(g * R_GAS * tpr), uu = Math.min(q / aeff, ce), rn = (rnd(S) - 0.5) * 3.4641016151377544;
-            pv = Q[Q_KVF] * rho_e * ce * ce * Math.pow(uu / ce, Q[Q_VFN]) * (rn - CY[c + C_VN]) * 0.5;
-            if (vf_w > 0.0) {
-              // short half-Hann after EVO, near-zero floor between pulses (vf_width=0 keeps v10-off identical)
-              var dphi = phi - Q[Q_EVO]; if (dphi < 0.0) dphi += 720.0;
-              pv *= (dphi < vf_w) ? 0.5 * (1.0 + Math.cos(Math.PI * dphi / vf_w)) : Q[Q_VFF];
-            }
-            if (vf_g !== 1.0) pv *= vf_g;
-            CY[c + C_VN] = rn;
-          }
-          var q_ac = q;
-          if (Q[Q_PSH] > 0.0 && CY[c + C_OPEN] > 0.5) {
-            // acoustic-only: boost first 40 crank deg after EVO, ease later pumping (mass flow unchanged)
-            var dphi_s = phi - Q[Q_EVO]; if (dphi_s < 0.0) dphi_s += 720.0;
-            q_ac = (dphi_s < 40.0)
-              ? q * (1.0 + Q[Q_PSH] * 0.5 * (1.0 + Math.cos(Math.PI * dphi_s / 40.0)))
-              : q * (1.0 / (1.0 + 0.5 * Q[Q_PSH]));
-          }
-          if (Q[Q_CYV] > 0.0) q_ac *= 1.0 + Q[Q_CYV] * (((c / NC) | 0) % 3 - 1);
-          AB[pp * DL + wi] = z0 * q_ac + rv * pin + pv;
-          if (knl > 0.0) arr(AB, AT, PF, pp, wi, nt, knl);
-          tg += (pcy - P_ATM) * dvd;
-        }
+        kCyl(Q, S, CY, PF, AB, AT, K, NCY, th, w, rpm, pman, fs, dt, knl, wi, nt, tpr, rho_e, npol, leak, hk, vf_g, vf_w);
+        tg = KX[0]; qin = KX[1]; qinL = KX[2]; qinR = KX[3]; tick0 = KX[4]; tick1 = KX[5];
         S[S_TGAS] = tg;
         // exhaust network nodes
-        for (var nd = 0; nd < NN; nd++) {
-          var nb = nd * NW, typ = NODE[nb];
-          if (typ === 0) {
-            var npt = NODE[nb + 2], sy = 0.0, sp = 0.0, p_, pin_;
-            for (j = 0; j < npt; j++) {
-              p_ = NODE[nb + 3 + 2 * j];
-              var y = PF[p_ * NF + F_A] * PF[p_ * NF + F_C];
-              pin_ = NODE[nb + 4 + 2 * j] === 0 ? PF[p_ * NF + F_SB] : PF[p_ * NF + F_SA];
-              sy += y; sp += y * pin_;
-            }
-            var pj = 2.0 * sp / sy;
-            for (j = 0; j < npt; j++) {
-              p_ = NODE[nb + 3 + 2 * j];
-              if (NODE[nb + 4 + 2 * j] === 0) { AB[p_ * DL + wi] = pj - PF[p_ * NF + F_SB]; if (knl > 0.0) arr(AB, AT, PF, p_, wi, nt, knl); }
-              else BB[p_ * DL + wi] = pj - PF[p_ * NF + F_SA];
-            }
-          } else if (typ === 2) {
-            var mo = NODE[nb + 1], pq = NODE[nb + 3], pinm = PF[pq * NF + F_SA];
-            var st = NA[nd * 2] + NA[nd * 2 + 1] * (pinm - NA[nd * 2]);
-            NA[nd * 2] = st;
-            BB[pq * DL + wi] = -st;
-            var rho_t = P_ATM / (R_GAS * S[S_TTAIL]);
-            var U = (pinm + st) * PF[pq * NF + F_A] / (rho_t * PF[pq * NF + F_C]);
-            out[ko + O_U0 + mo] = U;
-            var uu = U / Q[Q_TAILA]; if (uu < 0.0) uu = 0.0;
-            var nz = (rnd(S) - 0.5) * 3.4641016151377544;
-            var fj = uu / Math.sqrt(4.0 * Q[Q_TAILA] / Math.PI) + 150.0, aj = 1.0 - Math.exp(-2.0 * Math.PI * fj / fs);
-            var r4 = (uu / 30.0) * (uu / 30.0);
-            S[S_JET0 + mo] += aj * (nz * 7e-4 * Q[Q_KJET] * r4 * r4 - S[S_JET0 + mo]);
-            out[ko + O_JET0 + mo] = S[S_JET0 + mo];
-          } else if (typ === 3) {
-            // closed / rigid end: pressure reflection +1, no radiation (Helmholtz cavity)
-            var pc = NODE[nb + 3];
-            BB[pc * DL + wi] = PF[pc * NF + F_SA];
-          } else if (typ === 4) {
-            // intake valve (v11 int_run): prescribed volume flow into the cylinder while IVO-IVC, closed end otherwise
-            var pr4 = NODE[nb + 3], cy4 = NODE[nb + 1], z04 = RHO_AIR * PF[pr4 * NF + F_C] / PF[pr4 * NF + F_A];
-            AB[pr4 * DL + wi] = PF[pr4 * NF + F_SB] - z04 * CY[cy4 * NC + C_QLP];
-            if (knl > 0.0) arr(AB, AT, PF, pr4, wi, nt, knl);
-          } else if (typ === 5) {
-            // runner opens into a lumped plenum: p_pipe = p_plenum; U5 is flow out of the runner into the volume
-            var pr5 = NODE[nb + 3], pin5 = PF[pr5 * NF + F_SA], bk5 = NODE[nb + 1], ppl5;
-            if (Q[Q_INTRES] > 0.0 && bk5 !== 2) ppl5 = bk5 === 0 ? S[S_PL] : S[S_PR];
-            else ppl5 = S[S_PPL];
-            BB[pr5 * DL + wi] = ppl5 - pin5;
-            var U5 = (2.0 * pin5 - ppl5) * PF[pr5 * NF + F_A] / (RHO_AIR * PF[pr5 * NF + F_C]);
-            if (Q[Q_INTRES] > 0.0 && bk5 !== 2) { if (bk5 === 0) qinL -= U5; else qinR -= U5; }
-            qin -= U5;
-          }
-        }
+        KX[1] = qin; KX[2] = qinL; KX[3] = qinR;
+        kNodes(NODE, NN, NW, PF, AB, BB, AT, NA, CY, S, Q, out, ko, wi, nt, knl, fs);
+        qin = KX[1]; qinL = KX[2]; qinR = KX[3];
         S[S_WI] = (wi + 1) & DLM;
         S[S_NT] = nt + 1.0;
-        // intake
-        var gp = G_AIR * P_ATM;
-        if (Q[Q_INTRES] > 0.0) {
-          // v10: two bank distributors joined by a resonance tube and flap (off by default)
-          var vb = Q[Q_VBANK];
-          S[S_PL] += gp / vb * (0.5 * S[S_QTH] - qinL - S[S_QC]) * dt;
-          S[S_PR] += gp / vb * (0.5 * S[S_QTH] - qinR + S[S_QC]) * dt;
-          S[S_PPL] = 0.5 * (S[S_PL] + S[S_PR]);
-        } else {
-          S[S_PPL] += gp / Q[Q_VMAN] * (S[S_QTH] - qin) * dt;
-        }
-        var ath = a_th > 2e-6 ? a_th : 2e-6, mth = RHO_AIR * Q[Q_LTH] / ath, rth = Q[Q_RTH] * RHO_AIR * C_AIR / ath;
-        S[S_QTH] = (S[S_QTH] + (S[S_PAC] - S[S_PPL]) / mth * dt) / (1.0 + rth / mth * dt);
-        S[S_PAC] += gp / Q[Q_VAC] * (S[S_QSN] - S[S_QTH]) * dt;
-        S[S_QSN] = (S[S_QSN] - S[S_PAC] / Q[Q_SNM] * dt) / (1.0 + Q[Q_SNR] / Q[Q_SNM] * dt);
-        if (Q[Q_INTRES] > 0.0) {
-          var closedIR = (rpm >= Q[Q_F0RPM] && rpm <= Q[Q_F1RPM] && thr >= Q[Q_FTHR]) ? 1.0 : 0.0;
-          var rcp = Q[Q_RCLOSE] * closedIR + Q[Q_ROPEN] * (1.0 - closedIR);
-          var inert = RHO_AIR * Q[Q_LTUBE] / Q[Q_ATUBE];
-          S[S_QC] = (S[S_QC] + (S[S_PL] - S[S_PR]) / inert * dt) / (1.0 + rcp / inert * dt);
-          out[ko + O_INT] = S[S_QSN] + Q[Q_KRES] * closedIR * (S[S_PL] - S[S_PR]);
-        } else {
-          out[ko + O_INT] = S[S_QSN];
-        }
-        if (S[S_PMAN] < 0.528 * P_ATM) out[ko + O_HISS] = (rnd(S) - 0.5) * 3.4641016151377544 * m_th * Math.pow(1.0 - S[S_PMAN] / (0.528 * P_ATM), 0.5);
+        kIntake(Q, S, out, ko, a_th, m_th, rpm, thr, qin, qinL, qinR, dt);
         out[ko + O_TICK0] = tick0; out[ko + O_TICK1] = tick1;
-        // continuous starter: mesh, motor shaft, commutator and armature noise follow w(t)/wm(t);
-        // compression 'rur-rur' is the physics speed ripple plus a crank-angle AM (not one-sample spikes)
-        var stOut = 0.0, stLo = 0.0, tnom = G * ke * Q[Q_VBAT] / Rm;
-        if (tnom < 1e-9) tnom = 1e-9;
-        if (S[S_LOCK] > 0.5 && S[S_PREVLOCK] < 0.5) S[S_STENV] += 0.85;   // pinion engagement clunk
-        S[S_PREVLOCK] = S[S_LOCK];
-        if (S[S_LOCK] > 0.5) {
-          S[S_MESH] += Q[Q_TEETH] * w * dt / (2.0 * Math.PI);
-          S[S_MESH] -= Math.floor(S[S_MESH]);
-          var load = tst / tnom; if (load < 0.0) load = 0.0; else if (load > 2.5) load = 2.5;
-          var aMesh = Q[Q_KMESH] * (0.40 + 0.60 * load);
-          var pMesh = 6.283185307179586 * S[S_MESH];
-          var mAdd = aMesh * (Math.sin(pMesh) + 0.35 * Math.sin(2.0 * pMesh) + 0.12 * Math.sin(3.0 * pMesh));
-          stOut += mAdd; stLo += mAdd;
-        }
-        var nz = (rnd(S) - 0.5) * 3.4641016151377544;
-        if (wm > 1.0) {
-          S[S_MOTPH] += wm * dt / (2.0 * Math.PI);
-          S[S_MOTPH] -= Math.floor(S[S_MOTPH]);
-          var curN = cur / 220.0; if (curN > 1.0) curN = 1.0;
-          var aMot = Q[Q_KMOT] * (0.35 + 0.65 * curN);
-          var pMot = 6.283185307179586 * S[S_MOTPH];
-          var motAdd = aMot * (Math.sin(pMot) + 0.35 * Math.sin(2.0 * pMot));
-          stOut += motAdd; stLo += motAdd;
-          S[S_COMM] += Q[Q_NSEG] * wm * dt / (2.0 * Math.PI);
-          S[S_COMM] -= Math.floor(S[S_COMM]);
-          var aComm = Q[Q_KCOMM] * (0.30 + 0.70 * curN);
-          var pComm = 6.283185307179586 * S[S_COMM];
-          stOut += aComm * (Math.sin(pComm) + 0.22 * Math.sin(2.0 * pComm)) * (1.0 + 0.28 * nz);
-          var curA = 0.22 + 0.78 * (0.35 + 0.65 * curN);
-          var alBb = 1.0 - Math.exp(-2.0 * Math.PI * 2000.0 / fs);
-          var alBb2 = 1.0 - Math.exp(-2.0 * Math.PI * 800.0 / fs);
-          S[S_STN] += alBb * (nz * Q[Q_KBB] * curA - S[S_STN]);
-          S[S_STN2] += alBb2 * (nz * Q[Q_KBB2] * curA - S[S_STN2]);
-          stOut += S[S_STN] + S[S_STN2] + (nz - S[S_STN]) * Q[Q_KBBHI] * curA;
-        } else {
-          S[S_STN] *= Math.exp(-dt / 0.010);
-          S[S_STN2] *= Math.exp(-dt / 0.012);
-          stOut += S[S_STN] + S[S_STN2];
-        }
-        var clunk = 0.0, stLow = 0.0, stHigh = 0.0;
-        // stOut so far is mesh+motor+comm+broadband; split lows (mesh/motor) from the whoosh
-        stLow = 0.0; stHigh = stOut;
-        // re-split: mesh and motor were added first; easiest: classify by what we already mixed — apply two AMs below using stOut as the grind
-        S[S_STENV] *= Math.exp(-dt / 0.020);   // solenoid / pinion body
-        if (S[S_STENV] > 1e-8) {
-          S[S_CLUNKPH] += 185.0 * dt;
-          S[S_CLUNKPH] -= Math.floor(S[S_CLUNKPH]);
-          var pCl = 6.283185307179586 * S[S_CLUNKPH];
-          clunk += S[S_STENV] * (0.55 + 0.70 * Math.sin(pCl) + 0.20 * Math.sin(2.0 * pCl));
-        } else S[S_STENV] = 0.0;
-        // quiet low-band solenoid / engagement wash (not a held sine) while the pinion is in and the motor is not yet driving
-        if (engaged && !powered) {
-          S[S_LEADHUM] += (1.0 - S[S_LEADHUM]) * (dt / 0.014);
-          var alLd = 1.0 - Math.exp(-2.0 * Math.PI * 350.0 / fs);
-          S[S_STN] += alLd * (nz * 0.28 * S[S_LEADHUM] - S[S_STN]);
-          S[S_CLUNKPH] += 155.0 * dt;
-          S[S_CLUNKPH] -= Math.floor(S[S_CLUNKPH]);
-          clunk += S[S_STN] + S[S_LEADHUM] * 0.07 * Math.sin(6.283185307179586 * S[S_CLUNKPH]);
-        } else {
-          S[S_LEADHUM] *= Math.exp(-dt / 0.020);
-          if (S[S_LEADHUM] > 1e-4) clunk += S[S_LEADHUM] * 0.08 * S[S_STN];
-        }
-        // burst AM: long compression-to-TDC struggle, brief deep gap after TDC (whoosh dips more than the low rumble)
-        var ncomp = ((CY.length / NC) | 0) * 0.5;
-        var u = S[S_TH] / 360.0 * ncomp;
-        u -= Math.floor(u);
-        var kamH = Q[Q_KAM]; if (kamH < 0.0) kamH = 0.0; else if (kamH > 0.95) kamH = 0.95;
-        var kamL = kamH * 0.42;
-        // hold near TDC (struggle), brief gap after TDC, then rise through the next compression
-        var rel = 0.12, gap = 0.06, hold = 0.54, rise = 1.0 - rel - gap - hold, shp;
-        if (u < rel) { var x = u / rel; shp = 1.0 - x * x * (3.0 - 2.0 * x); }
-        else if (u < rel + gap) shp = 0.0;
-        else if (u < rel + gap + rise) { var x2 = (u - rel - gap) / rise; shp = x2 * x2; }
-        else shp = 1.0;
-        var amH = (1.0 - kamH) + kamH * shp, amL = (1.0 - kamL) + kamL * shp;
-        // mesh/motor sit in the low half of stOut, comm+bb in the high half — a gentle tilt: lows * amL, all * mix
-        stOut = stLo * amL + (stOut - stLo) * amH + clunk;
-        out[ko + O_ST] += stOut;
+        kStarter(Q, S, CY, out, ko, w, wm, cur, tst, G, ke, Rm, engaged, powered, dt, fs);
         out[ko + O_RPM] = rpm;
       }
     }
@@ -4711,6 +4743,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     };
     /** one block (n <= 256) -> L/R at off; game = { running, starter, warm, gear } or null (offline 'run' mode) */
     V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {
+      if (this._settleLeft > 0) { this._settleStep(n, L, R, off); return; }
       if (this.vcam) this._vc = applyVariableCam(this.Q, this.c, rpm, thr, this._vc, this.P);
       if (this.P.int_res) this.Q[Q_VMAN] = this.c.v_man;   // two-bank tube models the flap; do not also shrink volume
       var dtb = n / this.fs, K = this.ctlr.step(dtb, rpm, thr, game), out = this.out, i;
@@ -4721,19 +4754,33 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       // Duration is a parameter (int_settle, seconds); default 0.25 s when int_res is on, else 0. Uses the current K.
       var settle = (this.P.int_settle !== undefined && this.P.int_settle !== null) ? this.P.int_settle : (this.P.int_res ? 0.25 : 0);
       if (settle && !this._intSettled) {
+        // v1.11.43: the 0.25 s pre-roll used to run in one call (about 19 render quanta of work in a single quantum:
+        // an audible dropout at key-on / sound switch on a phone). It now runs one 256-sample chunk per call (same
+        // chunks, same K, same order) while the block outputs silence, then this block is rendered as before. The
+        // controller is held meanwhile, so the result is the old output started 0.125 s later.
         this._intSettled = true;
-        var left = Math.round(settle * this.fs), tmpL = new Float64Array(256), tmpR = new Float64Array(256);
-        while (left > 0) {
-          var m = left < 256 ? left : 256, j;
-          for (j = 0; j < m * NO; j++) out[j] = 0.0;
-          kv8(m, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
-          this._thermal(m / this.fs, K[K_IGN] > 0.5);
-          this._pipes();
-          post(m, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, tmpL, tmpR, 0);
-          left -= m;
-        }
-        for (j = 0; j < n * NO; j++) out[j] = 0.0;
+        this._settleLeft = Math.round(settle * this.fs);
+        this._settleStep(n, L, R, off); return;
       }
+      this._blockRun(n, K, L, R, off);
+    };
+    V8pSynth.prototype.settling = function () { return this._settleLeft > 0; };
+    V8pSynth.prototype._settleStep = function (n, L, R, off) {
+      var K = this.K, out = this.out, j, m = this._settleLeft < 256 ? this._settleLeft : 256;
+      if (!this._stL) { this._stL = new Float64Array(256); this._stR = new Float64Array(256); }
+      for (j = 0; j < m * NO; j++) out[j] = 0.0;
+      kv8(m, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
+      this._thermal(m / this.fs, K[K_IGN] > 0.5);
+      this._pipes();
+      post(m, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, this._stL, this._stR, 0);
+      this._settleLeft -= m;
+      if (this._settleLeft > 0) { for (j = 0; j < n; j++) { L[off + j] = 0; R[off + j] = 0; } return; }
+      // pre-roll done: render the held first audible block now (its K; Q is untouched since)
+      for (j = 0; j < n * NO; j++) out[j] = 0.0;
+      this._blockRun(n, K, L, R, off);
+    };
+    V8pSynth.prototype._blockRun = function (n, K, L, R, off) {
+      var out = this.out, dtb = n / this.fs;
       var nf0 = this.S[S_NFIRE];
       kv8(n, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
       var firing = K[K_IGN] > 0.5 && (this.S[S_NFIRE] > nf0 || this.ctlr.recentFire());
@@ -9678,6 +9725,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.11.43", date: "2026-11-15", status: "done", headline: "Sound dropouts on iPhone: lighter engine kernel, no start-up spike", text: "The owner heard the sound cut out while playing the 911 on an iPhone (not with the GT350). Two causes, both fixed without changing the sound. (1) In Safari\u2019s JavaScript engine the whole per-sample physics kernel was one very large function that never reached the fastest compiler tier; on a test machine it took about 81 % of the real-time budget per audio block for the 911 p4 / p6 (GT350 61 %, p1 57 %), so a phone ran out of time. The kernel is now split into five pieces of the same code, which do reach that tier: 911 p4 about 19 %, p6 19 %, p1 17 %, GT350 22 % (Chrome was already about 15\u201323 %). (2) The 911 settles its intake for 0.25 s silently when the engine starts or the sound is switched, and it did this all inside one audio block (about 64 blocks of work at once in Safari\u2019s engine): a gap at every key-on. It is now spread over about 47 blocks while the 911 stays silent, so the 911 starts about 0.12 s later after the key, and a sound switch waits for it before crossfading. Every car and parameter set produces the same samples as v1.11.42 (911: the same output, started 0.12 s later)." },
       { v: "v1.11.42", date: "2026-11-15", status: "done", headline: "911 default is now p4; listening test p6", text: "After listening, the owner made v11 \u00b7 911 p4 the 911 default; p1 stays selectable. New non-default option v11 \u00b7 911 p6 (?p997=p6) is p4 with its high-rpm note brought in earlier: the note is an inlet-side pipe resonance (about 515 Hz, heard as order 4.5), and p6 lengthens the connecting pipe in front of the box by 0.12 m (estimate), moving the note from about 7,000 to about 6,000 rpm. It is about 2 to 3 dB harsher than p4 and the cabin 3rd order dips around 5,500 rpm. Every other car and option is bit-identical." },
       { v: "v1.11.41", date: "2026-11-15", status: "done", headline: "911 listening test: v11 \u00b7 911 p5 with series 3-chamber side boxes", text: "A new, non-default 911 option, v11 \u00b7 911 p5 (?p997=p5), follows the flow path shown in a Fabspeed video of a cut-open 996 muffler (said to be the same box on the 2005\u201308 997 and 997S): crimped perforated inlet tube into chamber 1, transfer tube to chamber 2, perforated wall to chamber 3, velocity-stack outlet. Only chamber 1, where the cut-away photo shows steel wool, is damped. All dimensions are estimates. The 2,000 to 3,000 rpm range stays clean and the 2 to 8 kHz content is back in the range of the recordings, but outside the 3rd order rises with rpm unlike the recordings, and idle is about 11 dB quieter than p1. Correction: p4 also idles about 10 dB quieter than p1. p1 stays the default; every other car and option is bit-identical." },
       { v: "v1.11.40", date: "2026-11-15", status: "done", headline: "911 listening test: v11 \u00b7 911 p4 with photo-measured side boxes", text: "A new, non-default 911 option, v11 \u00b7 911 p4 (?p997=p4), re-measures the OEM cut-away photo: the gas goes in and back out through two large tubes with bellmouths in the middle chamber, and the front and rear chambers are side volumes behind perforated baffles, with steel wool only on the rear end cap. All dimensions are estimates from the photo. It removes p3\u2019s 2,000 to 3,000 rpm dip, but it is clearly harsher outside than p3 and has an order-3 peak outside at 5,500 rpm. p1 stays the default; p3 and every other car and option are bit-identical." },
