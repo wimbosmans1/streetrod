@@ -2,6 +2,20 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.6 (tag `v1.12.6`), 2026-11-15 (Cadillac diagnostic test: v12 · Cadillac p6)
+
+* **v12 · Cadillac p6 (test)** (`?caddy=p6`, `?cadillac=p6`, `?sound=v12.cadillac.p6` / `v12.caddy.p6`, or `?car=caddy&sound=p6`) is a new non-default **diagnostic** set, marked as a test in the picker. It is not a candidate default. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.5. No Cadillac-only code path, no echo EQ, no change to `ro_loss` or the open-end radiation.
+* p6 is **p5 with the Walker muffler and resonator internal chambers and perforates made strongly lossy**, using only the existing generic `pack` (cavity volume and perforate annulus) and `pack_n` (perforate-neck resistance) terms. Inlet and outlet tubes, the 3.07 m muffler-to-resonator connector, the 0.50 m tail, cabin dimensions, resonator porosity, the manifolds and idle are unchanged.
+  * On each of the three crossover / Helmholtz `cavity` blocks, the cavity-volume `pack` is raised from 0 to **2.0**.
+  * On the 21158 perforated return and the 21159 resonator `perf` blocks, annular `pack` is raised from 0 to **2.0** and `pack_n` from 0.13 to **2.0**.
+  * These values are a diagnostic choice, not sourced and not fitted. With the shipped `pack_r` = 1.0, each pass through those packed segments is attenuated by about *e*<sup>−2</sup> ≈ 0.14. The point is to hear whether the standing waves in p5 come from those internals.
+* **Impulse check** (unit pulse into cylinder 0's primary, mouth volume velocity; valves held shut; |U| relative to the first arrival, same extractor as v1.12.5). First arrival is essentially unchanged (p5 18.39 ms, p6 18.55 ms); pipe count stays 88.
+  * 2–6 ms: p5 2.20 ms 1.50, 3.51 ms 1.60, 4.90 ms **1.99** (and 6.21 ms 1.86 just outside this window). p6 2.68 ms **0.41**, 4.24 ms 0.23. Max in the window **1.99 → 0.41**.
+  * 10–20 ms: p5 up to **0.52**; p6 up to **0.25**.
+  * The strong 2–6 ms cluster collapses when only the muffler/resonator internals are made lossy, so those standing waves are confirmed as coming from the Walker chambers and perforates. A weaker residual (1.36 ms at 0.62, 2.68 ms at 0.41) remains; those lengths were not retouched (through-tubes, tees, connector, tail).
+* **Dry-target score** (same 168.9 s pipeline as v1.12.4/v1.12.5; lower is better). p6 was not fitted. Cabin 6.183, outside far 3.654, engine bay 5.620, tailpipe 3.687, **all paths 5.634** (p5 4.756, p1 3.669, p2 3.608). The cabin is worse; the tailpipe and outside-far paths are closer. Old official all 6.077 (p5 5.390); OK only 6.027 (p5 5.035). UNSURE cabins 5.826 (p5 4.574). p6 is a diagnostic, not a score candidate; p1 stays the default.
+* **CPU:** waveguide pipes still 88, same as p5 (`nseg` stays 3). Chromium desktop, 8 s at 2,000 rpm, 48 kHz, same method as v1.12.5: p1 18.0 % of real time, p5 28.0 %, p6 29.0 %. p6 sits with p5. (WebKit was not available in the build environment.)
+
 ## v1.12.5 (tag `v1.12.5`), 2026-11-15 (Cadillac listening test: v12 · Cadillac p5)
 
 * **v12 · Cadillac p5** (`?caddy=p5`, `?cadillac=p5`, `?sound=v12.cadillac.p5` / `v12.caddy.p5`, or `?car=caddy&sound=p5`) is a new non-default listening set. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.4. No Cadillac-only code path, no echo EQ, no change to `ro_loss` or the open-end radiation. Resonator porosity, the manifolds and idle are unchanged.
