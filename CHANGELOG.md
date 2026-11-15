@@ -2,6 +2,14 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.11.41 (tag `v1.11.41`), 2026-11-15 (911 listening test: v11 · 911 p5 with series 3-chamber side boxes)
+
+* New, **non-default** 911 option **Sound v11 · 911 p5** (`?p997=p5`, also `v11.p5`). p1 stays the default; p2, p3 and p4 are unchanged.
+* p5 is p1 with a side box per bank laid out after the flow path described in the Fabspeed video of a cut-open 996 muffler ("Porsche 996/997 911 Carrera (1999-2008) | Factory Exhaust Explained", Fabspeed Motorsport, 2021; Fabspeed says the 2005–08 997 and 997S use the same box with a longer outlet; the forum claim that the S box differs is unconfirmed): a 3-chamber reverse-flow box. The inlet tube (57 mm) is crimped shut, so all gas leaves through its perforated section (0.20 m, 10 % open) into chamber 1 (0.13 m), goes through a 0.30 m transfer tube (57 mm) into chamber 2 (0.12 m), through a perforated wall (10 % open) into chamber 3 (0.06 m), and out through a 0.30 m velocity-stack outlet tube to a 0.25 m outlet pipe. Box 0.32 m long at 18 × the pipe area. **All dimensions are estimates** (the video gives none). Packing: the video mentions none and the opened box shows none; the OEM cut-away photo shows steel wool on the end cap of the inlet chamber, so only chamber 1 is damped (modelled as packing on the whole chamber-1 section). Built from existing generic blocks (`par`); no new code.
+* **Listening test.** The 2,000–3,000 rpm range stays clean (cabin order 6 minus order 3 at 2,500 rpm: recordings about −12 dB, p1 −19, p3 +17, p4 −5, p5 −18). 2–8 kHz minus order 3 is back inside the range of the recordings (cabin about −63, outside about −45 dB; recordings −46…−59 / −36…−57; p4 −51 / −35; p3 −64 / −62). **Fails:** outside, the 3rd order rises with rpm (+7 / +14 / +15 dB at 4,500 / 5,500 / 6,500 rel. 3,500) where the recordings fall a few dB; the cabin 3rd order still falls above 5,000 rpm (−6 / −8 / −14 dB; recordings about −7 / −1 / +6). Idle is about 11 dB quieter than p1 (same as p4).
+* Correction to v1.11.40: **p4 also idles about 10–11 dB quieter than p1**; this was missing from its notes.
+* The GT350, Cadillac, BRM and 911 p1 / p2 / p3 / p4 sounds are bit-identical to v1.11.40. JS matches Python on p5 (order deltas within about 1 dB). CPU about +5 % over p1.
+
 ## v1.11.40 (tag `v1.11.40`), 2026-11-15 (911 listening test: v11 · 911 p4 with photo-measured side boxes)
 
 * New, **non-default** 911 option **Sound v11 · 911 p4** (`?p997=p4`, also `v11.p4`). p3 is unchanged; p1 stays the default. Each iteration now gets its own p number.
