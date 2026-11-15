@@ -2,6 +2,31 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.0 (tag `v1.12.0`), 2026-11-15 (sound model renamed v12; sound bit-identical; 911 low-end diagnosis, no p7)
+
+* **Sound model v11 is renamed v12** for every car, because the kernel has new parts since v1.11.39: the `par` (parallel paths) and `cavity` (side cavity, with an optional absorbent end-cap layer) muffler blocks, and the v1.11.43 kernel split.
+  * Labels: Sound v12 · 911 p1–p6 (p4 default), v12 · BRM p1–p11 (p11 default), v12 · p1 for the GT350 and Cadillac. Also updated: the info panel, Specs and the History intro.
+  * Every p number and parameter set is unchanged. Old query aliases (`?p997=v11.911.p4`, `v11p4`, `?sound=v11.brm.p11`, `v11.p1`, …) still work. The same forms with `v12` work too.
+  * The worklet (`engine-worklet.js`) is byte-identical to v1.11.43, so the sound is bit-identical for every car and set.
+* **911 "missing grunt" (owner, p4 at low and mid rpm): diagnosed, not fixed, so no p7.**
+  * Method: steady renders of p1 and p4 at idle and at 2,000 / 3,000 / 4,000 rpm, part (0.3) and full throttle, cabin and outside. Recordings: per clip, then the median over clips, same windows as the exhaust checkpoint. Levels are relative to 40–4,000 Hz because of YouTube AGC.
+  * p4 is 12–17 dB quieter than p1 from idle to 3,000 rpm and the same at 4,000. Its spectrum is too bright: 1–4 kHz minus 40–300 Hz at 3,000 rpm is −10 / −11 dB in the cabin (part / full) against about −23 / −31 in the recordings, and −6 dB outside (part) against −18. Its 300–1,000 Hz band is 4–9 dB too strong relative to the total.
+  * In the only two recordings with full-throttle windows at both rpm (cabin only, AGC-affected), 2,000 and 3,000 rpm full throttle sit 2 dB below 4,000. In p4 they sit 8–9 dB below.
+  * Stage trace by ablation:
+    * Removing the box raises p4 by about 20 dB at idle to 3,000 rpm and 13 dB at 4,000. At 3,000 rpm full throttle, order 3 is about 28 dB louder without it.
+    * Removing the end-cap wool raises the level 4–10 dB but makes it brighter still.
+    * In the cabin, the intake supplies about +10 dB at 4,000 rpm, the resonance-flap band, and little at 2,000–3,000.
+    * So the low/mid loss is the side box acting at low frequency as a volume (about 14 L) closed by the outlet path (0.16 + 0.25 + 0.12 m). Its corner is about 50 Hz, falling about 12 dB/oct, which hits orders 3–6 at 1,500–4,000 rpm. Meanwhile 300 Hz–4 kHz passes nearly unabsorbed.
+  * Physically justified tweaks within the photo estimates, rendered:
+    * Box depth 190 → 160 mm, i.e. the photo's m 15 and net volume after the tubes and double wall: +0–2 dB low end, but just as much brighter.
+    * Plus outlet 0.25 → 0.15 m: +2–4 dB low end, but order 4.5 jumps by 10–17 dB at 6,800–7,200 rpm, which moves the high note.
+    * Neither closes the 6–12 dB gap, so neither ships.
+  * What it would take:
+    * Sourced internal data for the 997 S box. One 996 source describes a fibreglass-lined chamber and a steel-wool primary can, which would absorb 0.3–4 kHz while passing the bass. The cut-away photo and the Fabspeed video show wool only on the end cap.
+    * Possibly the PSE bypass, if the reference cars have it.
+    * Calibrated (non-AGC) level-vs-rpm recordings.
+    * Then a 2–3 parameter p7 with packing where the source shows it.
+
 ## v1.11.43 (tag `v1.11.43`), 2026-11-15 (sound dropouts on iPhone: kernel reaches Safari's top JIT tier; 911 start-up spike removed)
 
 * **Symptom (owner, iPhone / Safari):** the sound cut out while playing the 911 (p4 / p6), not with the GT350.
