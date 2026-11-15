@@ -2,6 +2,13 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.11.39 (tag `v1.11.39`), 2026-11-15 (911 listening test: v11 · 911 p3 with 3-chamber side boxes)
+
+* New, **non-default** 911 option **Sound v11 · 911 p3** (`?p997=p3`, also `v11.p3`; the slot freed in v1.11.38, so old p3 links now open this): p1 with a different side box on each bank, laid out after a cut-away press photo of the OEM 997 muffler supplied by the owner: three chambers in a row (0.12 / 0.16 / 0.12 m, 11 × the 57 mm pipe area, about 11 L), two perforated baffle walls (3 % open area, 4 mm holes, 1.5 mm plate), a 52 mm tube through each baffle, a small 18 mm equalising tube through baffle 1, steel-wool packing in the rear end-cap chamber and a 58 mm outlet. **Every box dimension is an estimate**: no factory figures exist, and the layout comes from the photo and forum descriptions (3 chambers, perforated baffle, pipes through the baffles). Flared tube ends are not modelled.
+* New generic block `par` (Python and JS): N parallel paths (tubes, a perforated baffle's holes lumped as one short neck, a small tube) from one volume into the next chamber. Parameters only; no per-car code.
+* **Listening test, with one check failure.** Better than p1 from 3,500 to 7,000 rpm: the cabin 3rd order now roughly holds (rel. 3,500 rpm at 4,500 / 5,500 / 6,500: p1 −13.5 / −15.1 / −18.3 dB, p3 +2.0 / −6.8 / −4.5; recordings, per clip: about −7 / −1 / +6), and the full-throttle level outside rises with rpm instead of falling. 2–8 kHz stays below the recordings relative to the 3rd order (not harsh; far below p2). **Fails:** a deep dip in the 3rd order at 2,000–3,000 rpm (cabin about −17 dB vs p1 at 2,500) with the 6th order about 18 dB louder, so order 6 sits 4–19 dB above order 3 there, against about −12 dB in the recordings. Outside, the 3rd order rises a few dB at 4,500–6,000 rpm where the recordings fall a few dB.
+* p1 stays the default; p2 is unchanged. The GT350, Cadillac, BRM and 911 p1 / p2 sounds are bit-identical to v1.11.38. JS matches Python on p3 (order deltas within about 1 dB). CPU about +15 % over p1 (still below p2).
+
 ## v1.11.38 (tag `v1.11.38`), 2026-11-15 (911 p3 removed after listening)
 
 * **v11 · 911 p3 (intake runners) removed after the owner listened** ("for the bin"). It is gone from the 911 picker, the info page notes and the Specs rows. Old `?p997=p3` / `v11.p3` links fall back to the default **p1**. The generic intake-runner block (`int_run`, `int_run_l`, `int_run_d`, `int_run_nseg`, `int_run_attach`) stays in the kernel, off unless a parameter set enables it.
