@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.33)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.34)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -367,7 +367,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v9.11 physics (default) or an earlier v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
-      <label class="sel brmsel hidden" id="segP997Sound" title="911 sound: VarioCam Plus (default; 3.6/11.0 mm, 40°) + intake flap, or v10 valve-flow noise, or the previous fixed cam"><select id="selP997" aria-label="911 engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segP997Sound" title="911 sound: v10 + intake tube (quiet valvetrain). This is the only 911 sound; the picker is hidden."><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
@@ -9532,23 +9532,33 @@ var VisualModels = (function () {
 var ProjectHistory = {
   about: [
     'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac, a 1953 BRM P30 Mk II V16 and a 2006 Porsche 911 Carrera 4S (997.1).',
-    'The engine sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, exhaust (pipes and muffler, or the BRM\u2019s open stubs and two-stage supercharger). All four cars use a physics model. The BRM\u2019s older v8 order-table model has been retired.',
+    'The engine sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, intake, exhaust and \u2014 on the BRM \u2014 open stubs and a two-stage supercharger. All four cars use a physics model. The 911 has a single sound: v10 plus the two-bank intake tube, with a quieter valvetrain. The BRM\u2019s older v8 order-table model has been retired.',
     'Physics (gearbox, weight, tyres, brakes) uses the cars\u2019 real specs.'
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and inside the car. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The 911\u2019s default is VarioCam Plus \u2014 official 997.1 intake phasing, the 3.6/11.0 mm lift switch and the two-stage intake flap \u2014 with v10 (damped exhaust) and the earlier fixed-cam sound still in the picker. The BRM\u2019s default is v9.11, the closest of the remaining physics models on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM physics fits (v9.1\u2013v9.10) stay in the Sound menu.',
+    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The 911 has one sound: v10 plus the two-bank intake tube, with a quieter valvetrain. The BRM\u2019s default is v9.11, the closest of the remaining physics models on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM physics fits (v9.1\u2013v9.10) stay in the Sound menu.',
     sections: [
-      { title: 'Combustion pulses', text: 'Each cylinder fires in its place in the firing order. When the spark comes, the charge burns and the pressure in the cylinder rises sharply \u2014 that pulse is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss.' },
-      { title: 'Gas exchange', text: 'The valves open and close on the cam\u2019s timing. Fresh mixture is drawn in; exhaust is blown out. For a moment both valves are a little open at once (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take.' },
-      { title: 'Exhaust and muffler', text: 'The blow-down pulse travels down the headers and pipes as a pressure wave. It reflects at junctions and at the open tailpipe and comes back, so later pulses meet earlier ones. The muffler is a set of chambers and packed sections that soak up some of the energy, especially the high frequencies. A hard pulse can steepen as it travels, which is part of the bark. Each car has its own pipe lengths, diameters and muffler (or, on the BRM, open stubs and no muffler at all).' },
-      { title: 'Intake and valve train', text: 'Air rushing through the carburettor or the throttle body, and through the air cleaner or air box, makes its own sound \u2014 the hiss and the snorkel note. The cam and lifters tick as the valves seat. Those sources are quieter than the exhaust outside, but they matter in the engine bay and inside the car.' },
-      { title: 'The cabin path', text: 'Inside the car you do not hear the tailpipes directly. Exhaust sound comes in through the floor; mechanical and intake sound come through the firewall and the fresh-air vents. The cabin has a boom of its own (its first resonances), and the seats, headliner and carpet swallow some of the high end. A little sound leaks through seals and apertures. With a window open, some of the outside sound comes in as well.' },
-      { title: 'How the sound is fitted', text: 'When the model is matched to a recording of a standard car, the engine\u2019s real sizes stay as they are: bore, stroke, compression, firing order, cam timing, pipe lengths, gear ratios. What is adjusted are the model parameters \u2014 how hard the burn is, how much leftover gas there is, how much the muffler damps, how much comes through the body, and so on. Those knobs are tuned so the synthetic sound is as close as possible to the recording, judged on a scorecard of engine speed against throttle opening (a grid of rpm bands and throttle levels). A lower score is closer. When a new fit is clearly better on that card, it becomes the car\u2019s default sound. The Specs page lists every one of those figures for the car you have selected.' }
+      { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
+      { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. The 911 also still uses VarioCam Plus on the intake: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed.' },
+      { title: 'Headers and collector', text: 'The pulse travels down the headers as a pressure wave, reflects at junctions and comes back, so later pulses meet earlier ones. A hard pulse can steepen as it travels, which is part of the bark. The GT350 has tri-Y headers (paired primaries into secondaries, then a collector) and a balance pipe between the banks. The Cadillac has cast-iron log manifolds and a balance pipe. The 911 has 3-into-1 headers, one per bank, with slightly different primary lengths; there is no balance pipe. Each bank\u2019s pipe later crosses to the tailpipe on the other side of the car. The BRM has no headers or collector: each cylinder dumps into its own open stub (eight stubs per side).' },
+      { title: 'Catalytic converter', text: 'Only the 911 has a catalyst in the sound model. Just after each bank\u2019s collector sits a short, slightly packed chamber (the first silencer chamber, moved forward so the total pipe length stays the same). It damps some of the pulse before the intermediate pipe and the muffler. The other cars have no catalyst.' },
+      { title: 'Mufflers', text: 'A muffler is a series of chambers, and sometimes connecting pipes, with packing that soaks up energy \u2014 especially the high frequencies \u2014 and also slightly reduces the level in a packed section. The GT350 has one packed chamber per bank and a fairly long tailpipe. The Cadillac has three chambers with connecting pipes, lightly packed in the last chamber. The 911 has two packed chambers after the catalyst, with connecting pipes, then a short tailpipe. The BRM has no muffler.' },
+      { title: 'Tailpipes and radiation', text: 'At the open tailpipe (or stub mouth) the moving air radiates as sound: a simple source from how quickly the volume flow is changing, plus a jet of turbulent noise at the mouth, rolled off by the mouth diameter. You hear two mouths on the road cars, and sixteen stub mouths on the BRM.' },
+      { title: 'Intake', text: 'Air is drawn through a snorkel and an air cleaner (or air box), then a throttle, into a plenum, and from there into the cylinders. Those volumes and lengths ring like a Helmholtz resonator; the intake sound you hear is mainly the air motion at the snorkel, with a little throttle-body hiss when the throttle is almost shut and the manifold is under high vacuum. On the 911 the two banks have their own plenum sides, joined by a resonance tube with a flap. The tube is 0.30 m long and 45 mm across (those two sizes are estimates). The flap closes at throttle \u2265 0.30 between 2,600 and 5,100 rpm (997.1 Technik figures) and is open otherwise. When it is closed, the pressure difference between the banks radiates as well, which brings up the boxer half-orders in the cabin. The older trick of shrinking the plenum volume when a flap was closed is not used; the tube is the flap model. The first quarter-second of 911 audio is held silent so that tube can settle. The GT350 draws through a Holley four-barrel, the Cadillac through a Carter AFB; neither has a resonance tube. The BRM draws through a twin-choke SU carburettor into the supercharger (described below).' },
+      { title: 'Valvetrain', text: 'The cam and lifters make a tick each time a valve opens or closes, and a lighter tick when a cylinder fires. Solid lifters (the GT350) are louder than hydraulic ones (the Cadillac and the 911). That tick is heard from the valve covers, after two band-pass filters at 2.3 kHz and 4.3 kHz that stand in for the covers. On the 911 those filters are broad (a quality factor of 2) and the tick itself is kept to a realistic level, so it is only the light mechanical texture of the valve train, not a stand-in for other sound and not a fixed whistle.' },
+      { title: 'Supercharger', text: 'Only the BRM has a supercharger in the sound model. It is a two-stage centrifugal blower, geared 4.15:1 to the crank, with two lobes on the drive and 12 impeller vanes on each stage. There is no bypass valve. Boost follows a smooth map that rises with the square of engine speed, up to a peak pressure ratio of about 5.7 at redline. The SU throttles sit ahead of the blower, so load is set by the throttle, not by a wastegate. The whine has two parts, both at shaft speed: a two-per-revolution siren pulse (engine order 8.30) whose width is set by a fitted parameter, and a weaker pair of vane tones (12 times shaft speed). Those tones are sent through a band-pass from 400 Hz to 6 kHz. A share of the siren stays even when the throttle is shut (the shaft still turns with rpm), and it rises on the overrun when the throttled inlet is starved of air \u2014 that is a surge-like boost of the same tones, not a separate bypass. Separate from the tones, air rush is a broadband whoosh through a 2\u20138 kHz band-pass; that follows the through-flow and falls away when you lift off. The GT350, the Cadillac and the 911 have no supercharger.' },
+      { title: 'Starter', text: 'The GT350, the Cadillac and the 911 have an electric starter: solenoid and pinion in, then the motor, the pinion on the ring gear, and the rur-rur of the engine slowing on each compression stroke, with a short wind-down when it catches. It is filtered so the mesh, the motor and the commutator all come through, and it is heard in every listening position at a realistic level. It is silent once the engine is running. The BRM has no onboard electric starter (it is already running in the garage).' },
+      { title: 'Cabin acoustics', text: 'Inside the car you do not hear the tailpipes directly. Exhaust comes in through the floor, mechanical sound through the firewall, and intake sound through the fresh-air vents; each route has its own transmission (a mass-law roll-off, plus leaks at seals). The cabin then adds its first two resonances, from its length and height (about 90 Hz and 172 Hz in the 911, similar in the GT350, a little lower in the longer Cadillac), and the seats, headliner and carpet swallow some of the high end. The BRM has no closed cabin; its \u201cinside\u201d position is the open cockpit, listening to the stubs and the blower without those body filters. Cockpit wind and a structure-borne chassis pickup exist in the BRM code but are switched off, because they are not engine sound.' },
+      { title: 'Listener positions', text: 'In the game you can listen from inside the car (at the driver\u2019s head, with the cabin path above), from outside behind the car (about a metre behind the tailpipe mouths, with body shadow and a ground reflection), from the engine bay (near the intake, with the exhaust quieter than it is outside), or in the garage \u2014 either standing in the bay or sitting in the cabin, with the garage\u2019s own acoustics around the engine. The two tailpipe mouths are the exhaust sources; the official scorecard also compares a close recording at those mouths (the tailpipe perspective), which is not a separate item in the Position menu. A farther roadside point and an open-window cabin mix exist in the model but are not offered as game views.' },
+      { title: 'Other filters', text: 'Distance and delay (sound falls with range and arrives later from a farther source), the 911\u2019s rear lid shadow, packing and wall damping in the silencers, and a little equalisation on the radiation and on the throttle hiss, are the remaining filters. Nothing you hear is a recording, and there is no added flow-noise effect on the 911 exhaust valves.' },
+      { title: 'How the sound is fitted', text: 'When the model is matched to a recording of a standard car, the engine\u2019s real sizes stay as they are: bore, stroke, compression, firing order, cam timing, pipe lengths, gear ratios. What is adjusted are the model parameters \u2014 how hard the burn is, how much leftover gas there is, how much the muffler damps, how much comes through the body, and so on. Those knobs are tuned so the synthetic sound is as close as possible to the recording, judged on a scorecard of engine speed against throttle opening (a grid of rpm bands and throttle levels). A lower score is closer. The Specs page lists every one of those figures for the car you have selected.' }
     ]
   },
+  
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.11.34", date: "2026-11-15", status: "done", headline: "The 911 has one sound, and the info page matches the model", text: "The 911 sound picker is gone: \"v10 + intake tube (quiet valvetrain)\" is the only 911 sound. Older query values (?p997=variocam, v10, v10it, v10nf, fixed) now alias to that model. The in-game info page (About / How the sound model works, and the Specs notes) is rewritten to describe every component the code actually uses — combustion and exhaust pulses, valves and pulse shape, headers, the 911 catalyst, mufflers, tailpipes, intake (including the two-bank resonance tube and flap), the valvetrain tick and broad cover filters at a realistic level, the BRM supercharger, the starter, cabin acoustics, listening positions, and the remaining filters — and to drop outdated statements about flow noise and old 911 defaults. The sound models themselves are unchanged. The GT350, Cadillac and BRM sounds and pickers are unchanged." },
       { v: "v1.11.33", date: "2026-11-15", status: "done", headline: "The 911 default is now v10 + intake tube with a quieter valvetrain", text: "A new 911 sound option, \"Sound v10 + intake tube (quiet valvetrain)\" (?p997=v10itq), becomes the default. It is the v1.11.32 intake-tube variant with the valve-train tick turned down (k_tick × 0.03) and the 2.3 and 4.3 kHz valve-cover filters made broad (Q = 2), so the tick is texture rather than a fixed whistle that was not in the real recordings. VarioCam Plus, v10 (damped exhaust), v10 + intake tube, and the earlier fixed-cam sound stay in the picker unchanged. Official stock-OK scorecard: 3.067 (cabin 2.796, outside 3.507, tailpipe 3.840; 339 windows; lower is better) vs 2.840 for v10 + intake tube and 2.797 for v10. The GT350, Cadillac and BRM sounds are unchanged." },
       { v: "v1.11.32", date: "2026-11-15", status: "done", headline: "A 911 v10 option with a two-bank intake resonance tube", text: "The 911 sound picker has a new option, \"Sound v10 + intake tube\" (?p997=v10it): the current v10 (damped exhaust) plus a two-bank intake resonance tube with a flap, as on the 997.1 M97.01 3.8. The flap is closed at throttle ≥ 0.30 between 2,600 and 5,100 rpm (997.1 Technik figures) and open otherwise; the tube length 0.30 m and diameter 45 mm are estimates. That is to bring up the cabin boxer half-orders (1.5 and 4.5). A short silent settle on the first audible block removes a brief start-up burst from the tube. The existing v10 option is unchanged. VarioCam Plus stays the default. Official stock-OK scorecard for this variant: 2.840 (cabin 2.616, outside 3.206, tailpipe 3.415; 339 windows; lower is better) vs 2.797 for v10. The GT350, Cadillac and BRM sounds are unchanged." },
       { v: "v1.11.31", date: "2026-11-15", status: "done", headline: "The 911 v10 sound no longer has the flow noise", text: "After a short A/B (?p997=v10nf) the valve-flow noise in the 911 v10 option is turned off for good (k_vf=0). There was no audible difference, so the quieter path is now just v10. The picker label is \"Sound v10 (damped exhaust)\"; packing, cat position and the sharper blow-down pulse stay as they were in v1.11.29. A link with ?p997=v10nf still opens v10. VarioCam Plus stays the default. The GT350, Cadillac and BRM sounds are unchanged." },
@@ -9781,13 +9791,25 @@ var EngineSpecs = (function () {
     bay_exh: 'How much exhaust is heard in the engine bay, relative to outside.',
     k_nl: 'Wave steepening in the pipes (the bark of a hard pulse).',
     dw_tau: 'How quickly the crank’s own speed wander is pulled back to the mean rpm.',
-    gain: 'Overall output level (used only to match loudness).'
+    gain: 'Overall output level (used only to match loudness).',
+    pack_r: 'How much muffler packing also reduces the section\u2019s overall level, not only the high end.',
+    cat_early: '1 moves the first chamber (the cascade catalyst on the 911) to just after the collector, keeping total pipe length the same.',
+    k_psharp: 'How much the first 40 crank degrees of blow-down are emphasised acoustically (and the later pumping eased).',
+    cover_q1: 'How sharp the 2.3 kHz valve-cover band-pass is (lower is broader).',
+    cover_q2: 'How sharp the 4.3 kHz valve-cover band-pass is (lower is broader).',
+    int_res: '1 joins the two intake banks with a resonance tube and flap (911).',
+    int_kres: 'How much the closed-flap pressure difference between the banks radiates.',
+    int_tube_l: 'Resonance-tube length (metres; an estimate on the 911).',
+    int_tube_d: 'Resonance-tube diameter (metres; an estimate on the 911).',
+    int_flap_lo: 'Engine speed (rpm) where the intake-tube flap can close.',
+    int_flap_hi: 'Engine speed (rpm) where the intake-tube flap opens again.',
+    int_flap_thr: 'Minimum throttle (0–1) for the intake-tube flap to close.'
   };
   var PHYS_GROUP = [
     { title: 'Combustion', keys: ['q_comb', 'heat_loss', 'n_poly', 'burn', 'xr0', 'xr_ov', 'cov', 'cov_res', 'mis_res'] },
     { title: 'Gas exchange', keys: ['cd', 'eta_v', 'a_idle', 'fast_idle'] },
-    { title: 'Exhaust and muffler', keys: ['t_prim0', 't_prima', 'wall', 'hf', 'ro_loss', 'pack', 'k_jet', 'k_nl', 'bay_exh'] },
-    { title: 'Intake and valve train', keys: ['k_int', 'r_th', 'k_tick', 'k_hiss'] },
+    { title: 'Exhaust and muffler', keys: ['t_prim0', 't_prima', 'wall', 'hf', 'ro_loss', 'pack', 'pack_r', 'cat_early', 'k_psharp', 'k_jet', 'k_nl', 'bay_exh'] },
+    { title: 'Intake and valve train', keys: ['k_int', 'r_th', 'k_tick', 'cover_q1', 'cover_q2', 'k_hiss', 'int_res', 'int_kres', 'int_tube_l', 'int_tube_d', 'int_flap_lo', 'int_flap_hi', 'int_flap_thr'] },
     { title: 'Cabin path', keys: ['cab_model', 'k_cab', 'cab_q', 'f_floor', 'f_fw', 'leak_floor', 'leak_fw', 'k_floor', 'k_ind', 'f_abs', 'k_win'] },
     { title: 'Friction, starter and level', keys: ['fric0', 'fric1', 'fric2', 'fric_cold', 'prime_rev', 'catch_x', 'react', 'k_st', 'dw_tau', 'gain'] }
   ];
@@ -9946,6 +9968,10 @@ var EngineSpecs = (function () {
     if (car && car.v_ac) rows.push(row('Air cleaner / air-box volume', litres(car.v_ac)));
     if (car && car.sn_len) rows.push(row('Snorkel', fmt(car.sn_len, 2) + ' m long, \u00d8 ' + mm(car.sn_d)));
     if (car && car.th_len) rows.push(row('Throttle-body length', fmt(car.th_len, 2) + ' m'));
+    if (v.id === 'p997') {
+      rows.push(row('VarioCam Plus', 'Intake phasing, 40\u00b0 crank vane range; 3.6 / 11.0 mm lift switch. Exhaust cam fixed.'));
+      rows.push(row('Two-bank resonance tube', '0.30 m long, \u00d8 45 mm (estimates), with a flap that closes at throttle \u2265 0.30 between 2,600 and 5,100 rpm (997.1 Technik). When the flap is closed, the pressure difference between the banks radiates. The tube is the flap model; plenum volume is not also shrunk.'));
+    }
     if (!rows.length) {
       if (v.id === 'brm' && P && P.blower) {
         rows.push(row('Induction', 'Twin-choke SU carburettor feeding a two-stage centrifugal supercharger'));
@@ -9976,7 +10002,12 @@ var EngineSpecs = (function () {
     if (car.pipe_d) rows.push(row('Intermediate pipe', fmt(car.inter_len, 2) + ' m long, \u00d8 ' + mm(car.pipe_d)));
     if (car.x_len) rows.push(row('H-pipe / balance', fmt(car.x_len, 2) + ' m, \u00d8 ' + mm(car.x_d)));
     else if (car.x_len === 0) rows.push(row('Balance pipe', 'None (each bank has its own silencer)'));
-    if (car.muf) rows.push(row('Muffler / catalyst', muffler(car.muf)));
+    if (car.muf) {
+      var mufLabel = (v.id === 'p997') ? 'Catalyst and muffler' : 'Muffler / catalyst';
+      var mufNote = (v.id === 'p997') ? '<p class="note">The first chamber is the cascade catalyst, placed just after the collector (total path length unchanged). The remaining chambers and pipes are the muffler. Each bank\u2019s pipe crosses to the tailpipe on the other side of the car.</p>' : '';
+      rows.push(row(mufLabel, muffler(car.muf)));
+      if (mufNote) rows.push('<tr><td colspan="2">' + mufNote + '</td></tr>');
+    }
     if (car.tail_len) rows.push(row('Tailpipes', fmt(car.tail_len, 2) + ' m'));
     if (car.bank_dl) rows.push(row('Bank length difference', fmt(car.bank_dl, 2) + ' m'));
     return table(rows);
@@ -10074,11 +10105,13 @@ var EngineSpecs = (function () {
     } else {
       note += '<p>Default sound: <b>' + esc(SOUND_LABEL[def] || def) + '</b>.</p>';
     }
-    if (id === 'p997') note += '<p>The 911 starts on <b>v10 + intake tube (quiet valvetrain)</b> (the current v10 plus a two-bank resonance tube and flap, with a quieter valve-train). <b>VarioCam Plus</b>, v10 (damped exhaust), v10 + intake tube, and the earlier fixed-cam sound stay in the picker; a link with ?p997=variocam, ?p997=v10, ?p997=v10it, ?p997=v10itq or ?p997=fixed opens them. The tables below are the physics-model parameters (the same kernel either way).</p>';
+    if (id === 'p997') note += '<p>The 911 has a single sound: <b>v10 + intake tube (quiet valvetrain)</b>. That is the v10 exhaust path plus a two-bank resonance tube and flap, VarioCam Plus intake phasing and lift switch, and a quieter valve-train (broad cover filters at a realistic tick level). Older ?p997= links alias to this model. The tables below are the parameters this model actually uses.</p>';
     if (id === 'brm') return note + brmSoundBlock();
     var data = v8pDATA(), key = V8P_KEY[id], pack = data && data[key];
     if (!pack) return note + '<p class="note">Could not read the physics-model data for this car.</p>';
-    return note + physBlock(pack.phys);
+    var phys = pack.phys;
+    if (id === 'p997') phys = Object.assign({}, pack.phys, pack.phys_v10 || {}, pack.phys_v10it || {}, pack.phys_v10itq || {});
+    return note + physBlock(phys);
   }
   function render(ctx) {
     var id = ctx.carId, v = null, list = (typeof Vehicles !== 'undefined' && Vehicles.list) || [];
@@ -10180,7 +10213,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // to v9.11. The BRM choice is not stored, so every fresh visit starts on v9.11.
   // v1.11.4: GT350 and Cadillac defaults are v9p (best scorecard fit). A ?sound= URL or a saved streetrod.sound
   // choice still applies to both V8 cars, as before. With no saved choice, each V8 car uses its own default.
-  // v1.11.33: the 911 default is v10 + intake tube with a quieter valvetrain (?p997=v10itq). ?p997=variocam selects VarioCam Plus; ?p997=v10 selects v10; ?p997=v10it selects v10 plus the two-bank intake tube; ?p997=v10nf is an alias of v10; ?p997=fixed (or ?p997=fixedcam) selects the earlier fixed-cam fit.
+  // v1.11.34: the only 911 sound is v10 + intake tube with a quieter valvetrain. Old ?p997= values (variocam, v10, v10it, v10nf, v10itq, fixed, fixedcam, or anything else) alias to that model; the 911 picker is hidden.
   function defaultV8Sound(id) { return (id === 'gt350' || id === 'caddy') ? 'v9p' : 'v2'; }
   function defaultBrmSound() { return (typeof SoundModels !== 'undefined' && SoundModels.defaultBrm) || 'v9.11'; }
   function brmName(v) {
@@ -10206,7 +10239,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (!soundChoice) soundChoice = lsGet('streetrod.sound', null);
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
-    p997Sound: (p997Param === 'fixed' || p997Param === 'fixedcam') ? 'fixed' : (p997Param === 'variocam') ? 'variocam' : (p997Param === 'v10itq') ? 'v10itq' : (p997Param === 'v10it') ? 'v10it' : ((p997Param === 'v10' || p997Param === 'v10nf') ? 'v10' : 'v10itq'),
+    p997Sound: 'v10itq',   // v1.11.34: only 911 sound; old ?p997= values alias here
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   state.viewBlend = (state.view === 1 || state.view === 4) ? 1 : 0;
@@ -10268,11 +10301,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var m = SoundModels.get(state.model);
     return m.hidden ? 'v2' : state.model;
   }
-  var P997_LABEL = { v10itq: '911 sound: v10 + intake tube (quiet valvetrain) (default)', variocam: '911 sound: VarioCam Plus', v10: '911 sound: v10 (damped exhaust)', v10it: '911 sound: v10 + intake tube', fixed: '911 sound: fixed cam' };
+  var P997_LABEL = { v10itq: '911 sound: v10 + intake tube (quiet valvetrain)' };
   function setP997Sound(v) {
-    state.p997Sound = (v === 'variocam' || v === 'v10' || v === 'v10it' || v === 'v10itq') ? v : 'fixed';
+    state.p997Sound = 'v10itq';   // v1.11.34: old query values and leftover calls alias to the only 911 sound
     if (audio.ctx) ensureAudio();
-    if (spec().engineKey === 'P997') flash(P997_LABEL[state.p997Sound], 1.5);
+    if (spec().engineKey === 'P997') flash(P997_LABEL.v10itq, 1.5);
     updatePanel();
   }
   function setBrmSound(v) {
@@ -10616,12 +10649,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   selB.addEventListener('change', function () { setBrmSound(selB.value); selB.blur(); });
   var selP997 = document.getElementById('selP997');
-  [['v10itq', 'Sound v10 + intake tube (quiet valvetrain) (default)'], ['variocam', 'Sound VarioCam Plus'], ['v10', 'Sound v10 (damped exhaust)'], ['v10it', 'Sound v10 + intake tube'], ['fixed', 'Sound fixed cam']].forEach(function (it) {
-    var o = document.createElement('option'); o.value = it[0]; o.textContent = it[1];
-    o.title = it[0] === 'v10itq' ? 'v10 plus the two-bank intake tube, with a quieter valvetrain (k_tick × 0.03, broad cover filters). The 911 default from v1.11.33.' : it[0] === 'variocam' ? 'VarioCam Plus: intake phasing (40° vane range), 3.6/11.0 mm lift switch, and the two-stage intake flap (was the default through v1.11.32)' : it[0] === 'v10' ? 'v10: VarioCam Plus plus pulsed exhaust-valve flow noise that falls off at high rpm, a sharper blow-down pulse, and a less resonant cat-and-muffler path (updated in v1.11.29; was the v1.11.25 default)' : it[0] === 'v10it' ? 'v10 plus a two-bank intake resonance tube and flap (997.1 Technik: closed at throttle ≥ 0.30 between 2,600 and 5,100 rpm; tube length and diameter are estimates)' : 'Fixed cam (the v1.11.11 default)';
-    selP997.appendChild(o);
-  });
-  selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
+  // v1.11.34: only one 911 sound remains, so the picker is left empty and stays hidden.
+  if (selP997) selP997.addEventListener('change', function () { setP997Sound('v10itq'); selP997.blur(); });
   selV.addEventListener('change', function () { setVisual(selV.value); selV.blur(); });
   // v1.11.12: Car and Position are native <select> lists (same pattern as Sound / Visuals), so they work in the Tesla in-car browser.
   var selCar = document.getElementById('selCar'), selView = document.getElementById('selView');
@@ -10634,8 +10663,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     selView.value = state.bay ? '2' : String(state.view);
     document.getElementById('segBrmSound').classList.toggle('hidden', v.engineKey !== 'BRM');
     selB.value = state.brmSound;
-    document.getElementById('segP997Sound').classList.toggle('hidden', v.engineKey !== 'P997');
-    selP997.value = state.p997Sound;
+    document.getElementById('segP997Sound').classList.add('hidden');   // v1.11.34: hide the 911 picker; only one sound remains
     selS.value = state.model; selV.value = state.visual;
     document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997');   // v1.11.0: generic v1–v9p picker stays hidden; the 911 has its own option picker
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
