@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.11.35)</title>
+<title>Street Rod: engine sound + driving demo (v1.11.36)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -366,8 +366,8 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <div id="topbar">
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
-      <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound model: v9.11 physics (default) or an earlier v9.x physics model"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
-      <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v10.1 (default; v10 + intake tube, quiet valvetrain, series-chamber muffler) or v10.2 (the same with a perforated straight-through muffler)"><select id="selP997" aria-label="911 engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound: v11 · BRM p11 (default) or an earlier v11 · BRM p1–p10 set (formerly v9.1–v9.11)"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
+      <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v11 · 911 p1 (default; intake tube, quiet valvetrain, series-chamber muffler) or v11 · 911 p2 (the same with a perforated straight-through muffler)"><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
@@ -402,7 +402,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>V</td><td>Inside the car / Outside (rear), or the two garage positions; also the Position menu</td></tr>
       <tr><td>E</td><td>Engine bay (3D engine from the sound model’s parameters; drag to turn, pinch / wheel to zoom, double-tap to reset)</td></tr>
       <tr><td>X</td><td>Next sound model (v1 – v4; v3/v4 play the real start-up and shutdown)</td></tr>
-      <tr><td>B</td><td>BRM: next engine sound (v9.1 &rarr; &hellip; &rarr; v9.6 &rarr; v9.8 &rarr; v9.9 &rarr; v9.10 &rarr; v9.11 physics models, default v9.11); also the picker next to the cars. The older v8 model has been retired</td></tr>
+      <tr><td>B</td><td>BRM: next engine sound (v11 · BRM p1 &rarr; &hellip; &rarr; p11, default p11; formerly v9.1–v9.11); also the picker next to the cars. The older v8 model has been retired</td></tr>
       <tr><td>Z</td><td>Ink / Flat visuals (also the Visuals menu)</td></tr>
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
       <tr><td>A / D</td><td>Steer left / right (touch: drag sideways on the road)</td></tr>
@@ -3789,7 +3789,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
   if (!g0.ENGINE_MODULES) g0.ENGINE_MODULES = [];
   g0.ENGINE_MODULES.push(function engineModuleV8p(core) {
     // ---- model data (tools/export_v8p_params.py: engine-sound v8phys.CARS + PHYS merged with fitted_params_v8phys.json)
-    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":15.0,"f_fw":72.41426333042916,"k_cab":0.35,"cab_q":4.312931693945894,"cab_model":1,"leak_floor":0.3,"leak_fw":0.003,"k_floor":1.000048686830272,"k_ind":0.029701259811889123,"f_abs":8000.0,"k_win":0.3,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.14,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.6,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0,"k_st_mesh":0.38,"k_st_comm":0.2,"k_st_mot":0.16,"k_st_bb":1.0,"k_st_out":1.0,"k_st_cab":1.28,"k_st_bb2":0.5,"k_st_bbhi":0.22,"k_st_am":0.55,"k_st_am_far":0.58,"k_st_am_out":0.5,"k_st_am_cab":0.52,"st_lead":0.04}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15.0,"f_fw":400.0,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000.0,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1.0,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252.0,"lsa":116.0,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1.0,"lifters":"hydraulic","idle_rpm":670.0,"redline":7300.0,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1.0,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0.0,"inter_len":0.6,"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["chamber",0.22,10.0,0.5],["pipe",0.12,0.045,0.0],["chamber",0.22,10.0,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0.0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1.0],"cabin_len":1.9,"cabin_h":1.0,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000.0,"st_i_free":70.0,"st_i_lock":850.0,"st_v_test":11.5,"st_v_lock":6.0,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000.0,"spark0":10.0},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":0.0,"k_jet":0.36735134466175745,"f_floor":15.0,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.0035613790028847887,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":8000.0,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.0,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":40.0,"pack":2.212846561320972,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0,"choke_tau":6.0,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1.0,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14},"phys_v10":{"k_vf":0.0,"vf_n":2.2074897731823055,"k_tick":9833.497770411826,"k_hiss":16.19051453942309,"pack":2.325741107606418,"k_jet":0.49517551650628466,"leak_floor":0.3,"leak_fw":0.004429059907930195,"f_abs":2586.2046359831593,"tick_alpha":0.0,"vf_width":45.0,"vf_floor":0.0,"vf_rpm_ref":4500.0,"vf_rpm_exp":2.5,"k_psharp":2.0,"pack_r":0.2,"cat_early":1},"phys_v10it":{"int_res":1,"int_kres":3e-7,"int_tube_l":0.30,"int_tube_d":0.045,"int_flap_lo":2600.0,"int_flap_hi":5100.0,"int_flap_thr":0.30},"phys_v10itq":{"k_tick":295.0049331123548,"cover_q1":2.0,"cover_q2":2.0},"phys_v10_2":{"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["perf",0.44,0.057,0.44,0.18,0.12,0.5],["pipe",0.12,0.045,0.0]]}}}/*END_V8P_DATA*/;
+    var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306.0,"lsa":114.0,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850.0,"redline":6800.0,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6.0,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0.0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1.0],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800.0,"st_i_free":80.0,"st_i_lock":550.0,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200.0,"spark0":12.0},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750.0,"t_prima":420.0,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":15.0,"f_fw":72.41426333042916,"k_cab":0.35,"cab_q":4.312931693945894,"cab_model":1,"leak_floor":0.3,"leak_fw":0.003,"k_floor":1.000048686830272,"k_ind":0.029701259811889123,"f_abs":8000.0,"k_win":0.3,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.14,"a_idle":7.285542239127752e-05,"fast_idle":1.0,"prime_rev":0.6,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1.0,"k_st_mesh":0.38,"k_st_comm":0.2,"k_st_mot":0.16,"k_st_bb":1.0,"k_st_out":1.0,"k_st_cab":1.28,"k_st_bb2":0.5,"k_st_bbhi":0.22,"k_st_am":0.55,"k_st_am_far":0.58,"k_st_am_out":0.5,"k_st_am_cab":0.52,"st_lead":0.04}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264.0,"lsa":114.0,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520.0,"redline":5000.0,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.0508,0.0],["chamber",0.35,5.0,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0.0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350.0,"st_i_free":82.0,"st_i_lock":330.0,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200.0,"spark0":5.0},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15.0,"f_fw":400.0,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000.0,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1.0,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1.0,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1.0,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252.0,"lsa":116.0,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1.0,"lifters":"hydraulic","idle_rpm":670.0,"redline":7300.0,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1.0,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0.0,"inter_len":0.6,"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["chamber",0.22,10.0,0.5],["pipe",0.12,0.045,0.0],["chamber",0.22,10.0,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0.0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1.0],"cabin_len":1.9,"cabin_h":1.0,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000.0,"st_i_free":70.0,"st_i_lock":850.0,"st_v_test":11.5,"st_v_lock":6.0,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000.0,"spark0":10.0},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":0.0,"k_jet":0.36735134466175745,"f_floor":15.0,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.0035613790028847887,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":8000.0,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.0,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":40.0,"pack":2.212846561320972,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0,"choke_tau":6.0,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1.0,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14},"sets":{"p1":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15.0,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.0,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0,"choke_tau":6.0,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1.0,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0.0,"vf_n":2.2074897731823055,"tick_alpha":0.0,"vf_width":45.0,"vf_floor":0.0,"vf_rpm_ref":4500.0,"vf_rpm_exp":2.5,"k_psharp":2.0,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600.0,"int_flap_hi":5100.0,"int_flap_thr":0.3,"cover_q1":2.0,"cover_q2":2.0,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11.0,"vcam_on_rpm":3000.0,"vcam_on_thr":0.28,"vcam_off_rpm":2500.0,"vcam_off_thr":0.18,"vcam_phase_rpm":4600.0,"vcam_range":40.0,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000.0,"vcam_pull_min":0.55,"vcam_pull_span":2500.0,"vcam_flap_lo":3000.0,"vcam_flap_hi":5500.0,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25},"p2":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420.0,"k_int":2.0,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15.0,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1.0,"prime_rev":2.0,"catch_x":2.4,"react":0.3,"k_st":1.0,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1.0,"choke_tau":6.0,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1.0,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0.0,"vf_n":2.2074897731823055,"tick_alpha":0.0,"vf_width":45.0,"vf_floor":0.0,"vf_rpm_ref":4500.0,"vf_rpm_exp":2.5,"k_psharp":2.0,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600.0,"int_flap_hi":5100.0,"int_flap_thr":0.3,"cover_q1":2.0,"cover_q2":2.0,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11.0,"vcam_on_rpm":3000.0,"vcam_on_thr":0.28,"vcam_off_rpm":2500.0,"vcam_off_thr":0.18,"vcam_phase_rpm":4600.0,"vcam_range":40.0,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000.0,"vcam_pull_min":0.55,"vcam_pull_span":2500.0,"vcam_flap_lo":3000.0,"vcam_flap_hi":5500.0,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4.0,0.15],["pipe",0.2,0.05,0.0],["perf",0.44,0.057,0.44,0.18,0.12,0.5],["pipe",0.12,0.045,0.0]]}}}}/*END_V8P_DATA*/;
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     var DL = 1024, DLM = DL - 1, HB = 4096, NSRC = 6;
     // Q
@@ -4301,29 +4301,64 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var lsaIn = (intakeLsa == null) ? c.lsa : intakeLsa;
       return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (c.lsa + d), 360.0 - (c.lsa - d)];
     }
-    /** Non-default 911 option. Official 997.1: intake phasing (40° crank vane range) + 3.6/11.0 mm lift switch, exhaust fixed, idle = small cam and low overlap. (3/10 mm is the 996 Turbo.)
-     *  Flap closed under load ~3000-5500 rpm is 997.2-confirmed, probable for 997.1. Phasing map and closed-plenum scale are model rules. */
-    function applyVariocamPlus(Q, c, rpm, thr, st) {
-      st = st || {};
+    /** Generic variable-cam block: a phase map vs rpm/load and a two-step lift switch with
+     *  hysteresis thresholds, plus an optional plenum-volume flap. All numbers are parameters
+     *  (defaults reproduce the 997.1 VarioCam Plus rule that was previously hardcoded). */
+    function applyVariableCam(Q, c, rpm, thr, st, P) {
+      st = st || {}; P = P || {};
       var idle = c.idle_rpm, red = c.redline;
       rpm = Math.max(idle * 0.5, Math.min(red * 1.05, rpm));
       thr = Math.max(0, Math.min(1, thr));
+      var offRpm = P.vcam_off_rpm !== undefined ? P.vcam_off_rpm : 2500.0;
+      var offThr = P.vcam_off_thr !== undefined ? P.vcam_off_thr : 0.18;
+      var onRpm = P.vcam_on_rpm !== undefined ? P.vcam_on_rpm : 3000.0;
+      var onThr = P.vcam_on_thr !== undefined ? P.vcam_on_thr : 0.28;
+      var liftLo = P.vcam_lift_lo !== undefined ? P.vcam_lift_lo : 3.6;
+      var liftHi = P.vcam_lift_hi !== undefined ? P.vcam_lift_hi : 11.0;
       var high = !!st.high;
-      if (high) { if (rpm < 2500 || thr < 0.18) high = false; }
-      else { if (rpm > 3000 && thr > 0.28) high = true; }
+      if (high) { if (rpm < offRpm || thr < offThr) high = false; }
+      else { if (rpm > onRpm && thr > onThr) high = true; }
       st.high = high;
-      Q[Q_INSCALE] = high ? 1.0 : (3.6 / 11.0);
-      var x = (rpm - idle) / Math.max(1, 4600 - idle);
+      Q[Q_INSCALE] = high ? 1.0 : (liftLo / liftHi);
+      var phaseRpm = P.vcam_phase_rpm !== undefined ? P.vcam_phase_rpm : 4600.0;
+      var load0 = P.vcam_load0 !== undefined ? P.vcam_load0 : 0.35;
+      var load1 = P.vcam_load1 !== undefined ? P.vcam_load1 : 0.65;
+      var loadFloor = P.vcam_load_floor !== undefined ? P.vcam_load_floor : 0.15;
+      var pullRpm = P.vcam_pull_rpm !== undefined ? P.vcam_pull_rpm : 6000.0;
+      var pullMin = P.vcam_pull_min !== undefined ? P.vcam_pull_min : 0.55;
+      var pullSpan = P.vcam_pull_span !== undefined ? P.vcam_pull_span : 2500.0;
+      var rng = P.vcam_range !== undefined ? P.vcam_range : 40.0;
+      var x = (rpm - idle) / Math.max(1, phaseRpm - idle);
       if (x < 0) x = 0; if (x > 1) x = 1;
-      x *= 0.35 + 0.65 * Math.max(thr, 0.15);
-      if (rpm > 6000) x *= Math.max(0.55, 1 - (rpm - 6000) / 2500);
-      var adv = 40 * x;  // 997.1 VarioCam Plus vane range, crank degrees
+      x *= load0 + load1 * Math.max(thr, loadFloor);
+      if (rpm > pullRpm) x *= Math.max(pullMin, 1 - (rpm - pullRpm) / pullSpan);
+      var adv = rng * x;
       var ev = camEvents(c, c.lsa - adv);
       Q[Q_IVO] = ev[0]; Q[Q_IVC] = ev[1]; Q[Q_EVO] = ev[2]; Q[Q_EVC] = ev[3]; Q[Q_OVL] = ev[3] - ev[0];
-      var closed = (rpm >= 3000 && rpm <= 5500 && thr >= 0.35);
-      Q[Q_VMAN] = c.v_man * (closed ? 0.55 : 1);
+      var flapLo = P.vcam_flap_lo !== undefined ? P.vcam_flap_lo : 3000.0;
+      var flapHi = P.vcam_flap_hi !== undefined ? P.vcam_flap_hi : 5500.0;
+      var flapThr = P.vcam_flap_thr !== undefined ? P.vcam_flap_thr : 0.35;
+      var flapVol = P.vcam_flap_vol !== undefined ? P.vcam_flap_vol : 0.55;
+      var closed = (rpm >= flapLo && rpm <= flapHi && thr >= flapThr);
+      Q[Q_VMAN] = c.v_man * (closed ? flapVol : 1);
       st.flap_closed = closed; st.advance = adv;
       return st;
+    }
+    function applyVariocamPlus(Q, c, rpm, thr, st, P) { return applyVariableCam(Q, c, rpm, thr, st, P); }
+    function mufAsCavity(c, corePack) {
+      // generic topology: series muffler chambers (after the first, the catalyst) become equal-volume side-branch cavities
+      corePack = corePack || 0.0;
+      var out = [], first = true, IN = 0.0254, i, item, kind, L, ratio, pack, dCav;
+      for (i = 0; i < c.muf.length; i++) {
+        item = c.muf[i]; kind = item[0];
+        if (kind === 'chamber' && first) { out.push(item); first = false; continue; }
+        if (kind === 'chamber') {
+          L = item[1]; ratio = item[2]; pack = item[3];
+          dCav = c.pipe_d * Math.sqrt(ratio);
+          out.push(['cavity', L, dCav, pack, 0.05, 1.5 * IN, L, corePack]);
+        } else out.push(item);
+      }
+      return out;
     }
     function perspective(c, name) {
       var m = c.mouth[0], x, z;
@@ -4441,17 +4476,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
     function V8pSynth(spec, listener, fs, opts) {
       opts = opts || {};
-      var key = spec.car_key || (spec.engineKey === 'CADDY' ? 'cadillac59' : spec.engineKey === 'P997' ? 'p997' : 'gt350');   // v1.11.0: P997 = the 911's flat-six
+      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350' };
+      var key = spec.car_key || ENGINE_KEYS[spec.engineKey] || 'gt350';
       var D = DATA[key];
       if (!D) throw new Error('v8p: no data for ' + key);
-      this.key = key; this.c = D.car; this.P = Object.assign({}, D.phys, (key === 'p997' && (spec.p997_v10 || opts.p997_v10 || spec.p997_v10nf || opts.p997_v10nf || spec.p997_v10it || opts.p997_v10it || spec.p997_v10itq || opts.p997_v10itq || spec.p997_v10_2 || opts.p997_v10_2) && D.phys_v10) || {}, (key === 'p997' && (spec.p997_v10it || opts.p997_v10it || spec.p997_v10itq || opts.p997_v10itq || spec.p997_v10_2 || opts.p997_v10_2) && D.phys_v10it) || {}, (key === 'p997' && (spec.p997_v10itq || opts.p997_v10itq || spec.p997_v10_2 || opts.p997_v10_2) && D.phys_v10itq) || {}, (key === 'p997' && (spec.p997_v10_2 || opts.p997_v10_2) && D.phys_v10_2) || {}, opts.phys || {}); this.fs = fs;
+      var variant = spec.variant || opts.variant;
+      var pack = (variant && D.sets && D.sets[variant]) ? D.sets[variant] : D.phys;
+      this.key = key; this.c = D.car; this.P = Object.assign({}, pack, opts.phys || {}); this.fs = fs;
       this.spec = { idle_rpm: this.c.idle_rpm, redline: this.c.redline, name: this.c.name, car_key: key };
-      this.variocamPlus = key === 'p997' && !!(spec.variocam_plus || opts.variocam_plus);
+      this.vcam = !!(this.P.vcam || spec.variocam_plus || opts.variocam_plus);
+      this.variocamPlus = this.vcam;
       this._vc = {};
       this.selfGated = opts.mode !== 'run' && opts.mode !== 'raw';
       var netCar = Object.assign({}, this.c);
       if (this.P.cat_early) netCar.cat_early = 1;
       if (this.P.muf) netCar.muf = this.P.muf;   // generic: any car may select a muffler list via parameters
+      else if (this.P.muf_cavity) netCar.muf = mufAsCavity(netCar, this.P.muf_core_pack || 0.0);
       var N = buildNet(netCar);
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
       this.Q = this._q();
@@ -4620,17 +4660,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     };
     /** one block (n <= 256) -> L/R at off; game = { running, starter, warm, gear } or null (offline 'run' mode) */
     V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {
-      if (this.variocamPlus) this._vc = applyVariocamPlus(this.Q, this.c, rpm, thr, this._vc);
+      if (this.vcam) this._vc = applyVariableCam(this.Q, this.c, rpm, thr, this._vc, this.P);
       if (this.P.int_res) this.Q[Q_VMAN] = this.c.v_man;   // two-bank tube models the flap; do not also shrink volume
       var dtb = n / this.fs, K = this.ctlr.step(dtb, rpm, thr, game), out = this.out, i;
       for (i = 0; i < n * NO; i++) out[i] = 0.0;
       if (this.ctlr.click) { this.S[29] += this.ctlr.click; this.ctlr.click = 0.0; }   // S_STENV: solenoid / pinion clunk
       if (this.ctlr.silent) { for (i = 0; i < n; i++) { L[off + i] = 0; R[off + i] = 0; } return; }
-      // v10it: silently settle the two-bank intake for 0.25 s on the first audible block (kills a ~100 ms 1.5–6 kHz start burst).
-      // Uses the current K so the controller / starter timing is not advanced.
-      if (this.P.int_res && !this._intSettled) {
+      // Silently settle the intake on the first audible block (kills a brief start-up burst from a two-bank tube).
+      // Duration is a parameter (int_settle, seconds); default 0.25 s when int_res is on, else 0. Uses the current K.
+      var settle = (this.P.int_settle !== undefined && this.P.int_settle !== null) ? this.P.int_settle : (this.P.int_res ? 0.25 : 0);
+      if (settle && !this._intSettled) {
         this._intSettled = true;
-        var left = Math.round(0.25 * this.fs), tmpL = new Float64Array(256), tmpR = new Float64Array(256);
+        var left = Math.round(settle * this.fs), tmpL = new Float64Array(256), tmpR = new Float64Array(256);
         while (left > 0) {
           var m = left < 256 ? left : 256, j;
           for (j = 0; j < m * NO; j++) out[j] = 0.0;
@@ -6167,7 +6208,7 @@ var SoundModels = (function () {
   // its own V8, refit on the gated recordings, with an electric starter (js/engine-v8p.js). Selectable; from v1.11.4 the GT350 and Cadillac defaults are v9p (best scorecard fit). From v1.11.17 the BRM default is v9.11 (the closest remaining physics model); the v8 order-table model is retired.
   // startup: the model plays cranking / catch / choke idle / run-down and reports them (main.js startupLink), like v3 / v4.
   if (typeof ENGINE_MODULES !== 'undefined') register({
-    id: 'v9p', label: 'v9.11 physics + starter', note: 'engine-sound v9.11-V8: each car\'s own V8 on the v9.11 physics kernel approach (blow-down cylinders, its own exhaust network, carb intake, valve train), electric starter and crank torque balance; refit on the gated recordings',
+    id: 'v9p', label: 'v11 · p1', note: 'Sound model v11 (the shared physics kernel, formerly called v9.11 / v9p): each car\'s own engine on the same physics approach (blow-down cylinders, its own exhaust network, intake, valve train), electric starter and crank torque balance; refit on the gated recordings. This is parameter-set p1 for the GT350 and the Cadillac.',
     cars: { GT350: { car_key: 'gt350', idle_rpm: 850, redline: 6800, name: '1967 Shelby GT350 (289 Hi-Po)' }, CADDY: { car_key: 'cadillac59', idle_rpm: 520, redline: 5000, name: '1959 Cadillac Series 62 (390)' },
       P997: { car_key: 'p997', idle_rpm: 670, redline: 7300, name: '2006 Porsche 911 Carrera 4S (997.1, 3.8 flat-six)' } },   // v1.11.0: the 911's only sound
     outGain: { GT350: 0.8, CADDY: 0.85, P997: 0.8 },
@@ -6179,7 +6220,8 @@ var SoundModels = (function () {
   });
   // BRM v9.x physics models (js/engine-brm9.js: one kernel, one fitted parameter set each). id 'v9' = v9.6 (v1.9.1 name kept).
   // brm = the BRM sound switch value / ?sound= name. gainDb: loudness-matched to the retired v8 after the limiter (test/level_match_v9.js).
-  // v1.11.17: the v8 order-table model is retired and is no longer registered. Old ?sound=v8 links fall back to defaultBrm (v9.11).
+  // v1.11.36: one nomenclature across cars: sound model v11 (the shared physics kernel) plus a per-car parameter-set iteration (p1, p2, …).
+  // The BRM's v9.1…v9.11 history maps onto v11 · BRM p1…p11, with p11 the default. Old ?sound=v8 links fall back to defaultBrm (p11).
   var BRM9 = [
     { id: 'v9_1', brm: 'v9.1', note: 'engine-sound v9.1: real firing order, straight stubs, first refit on the original recordings', gainDb: { rear: -24.3, in_cabin: -35.9 } },
     { id: 'v9_2', brm: 'v9.2', note: 'engine-sound v9.2: gate-weighted refit, load map, body diffraction, recorder chain', gainDb: { rear: -25.1, in_cabin: -38.5 } },
@@ -6199,18 +6241,22 @@ var SoundModels = (function () {
     // v9.x set; gainDb not raised to compensate (the removed noise is not engine sound).
     { id: 'v9_11', brm: 'v9.11', note: 'engine-sound v9.11: physical reversion (the cylinder takes in the returning stub gas, its pressure rises; overrun pipe tones mostly gone), joint refit; its onboard structure-borne pickup and the cockpit wind are off since v1.10.4 (not engine sound)', gainDb: { rear: -24.0, in_cabin: -36.3 } },
   ];
+  BRM9.forEach(function (b) {
+    b.set = 'p' + b.brm.replace(/^v9\./, '');
+    b.label = 'v11 · BRM ' + b.set;
+  });
   if (typeof ENGINE_MODULES !== 'undefined') BRM9.forEach(function (b) {
     register({
-      id: b.id, brm: b.brm, hidden: true, label: b.brm + ' physics (BRM V16)', note: b.note + ' (BRM P30 Mk II V16 physics model, real-time port)',
+      id: b.id, brm: b.brm, set: b.set, hidden: true, label: b.label, note: b.note + ' (BRM P30 Mk II V16 physics model, real-time port)',
       cars: { BRM: { idle_rpm: 3800, redline: 12000, name: 'BRM P30 V16' } }, outGain: { BRM: 0.8 },
       listeners: { BRM: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } } },
       views: ['rear', 'in_cabin'],
       gainDb: { BRM: b.gainDb },
     });
   });
-  /** the BRM sound switch: v9.x physics models, oldest first. Default is v9.11 (best remaining official score). */
-  var defaultBrm = 'v9.11';
-  var brmList = BRM9.map(function (b) { return { brm: b.brm, id: b.id }; });
+  /** the BRM sound switch: v11 · BRM p1…p11 (the old v9.1…v9.11 sets), oldest first. Default is p11. */
+  var defaultBrm = 'p11';
+  var brmList = BRM9.map(function (b) { return { brm: b.brm, id: b.id, set: b.set, label: b.label }; });
   function get(id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return list[0]; }
   /** the 'spec' message for the audio engine */
   function specMsg(id, carKey) {
@@ -6222,7 +6268,7 @@ var SoundModels = (function () {
     }
     return msg;
   }
-  return { list: list, register: register, get: get, specMsg: specMsg, brmList: brmList, defaultBrm: defaultBrm };
+  return { list: list, register: register, get: get, specMsg: specMsg, brmList: brmList, defaultBrm: defaultBrm, kernelName: 'v11' };
 })();
 </script>
 <script>/* js/vehicles.js */
@@ -9555,18 +9601,18 @@ var VisualModels = (function () {
 var ProjectHistory = {
   about: [
     'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac, a 1953 BRM P30 Mk II V16 and a 2006 Porsche 911 Carrera 4S (997.1).',
-    'The engine sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, intake, exhaust and \u2014 on the BRM \u2014 open stubs and a two-stage supercharger. All four cars use a physics model. The 911\u2019s default is v10.1 (v10 plus the two-bank intake tube, with a quieter valvetrain and series-chamber muffler). v10.2 is the same except the muffler is a packed perforated straight-through can, and is in the 911 sound picker. The BRM\u2019s older v8 order-table model has been retired.',
+    'The engine sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, intake, exhaust and \u2014 on the BRM \u2014 open stubs and a two-stage supercharger. All four cars use a physics model. All four cars share sound model v11, the physics kernel, plus a per-car parameter-set iteration. The 911\u2019s default is v11 \u00b7 911 p1 (the two-bank intake tube, a quieter valvetrain and a series-chamber muffler; formerly v10.1). v11 \u00b7 911 p2 is the same except the muffler is a packed perforated straight-through can, and is in the 911 sound picker. The BRM\u2019s older v8 order-table model has been retired.',
     'Physics (gearbox, weight, tyres, brakes) uses the cars\u2019 real specs.'
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The 911\u2019s default is v10.1 \u2014 v10 plus the two-bank intake tube, with a quieter valvetrain and a series-chamber muffler. v10.2 is in the 911 sound picker: the same model, except the muffler is a packed perforated straight-through can. The BRM\u2019s default is v9.11, the closest of the remaining physics models on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM physics fits (v9.1\u2013v9.10) stay in the Sound menu.',
+    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. All four cars share sound model v11, the physics kernel, plus a per-car parameter-set iteration. The 911\u2019s default is v11 \u00b7 911 p1 \u2014 the two-bank intake tube, a quieter valvetrain and a series-chamber muffler (formerly v10.1). v11 \u00b7 911 p2 is in the 911 sound picker: the same set, except the muffler is a packed perforated straight-through can (formerly v10.2). The BRM\u2019s default is v11 \u00b7 BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v11 \u00b7 BRM p1\u2013p10, formerly v9.1\u2013v9.10) stay in the BRM sound picker. The GT350 and Cadillac defaults are v11 \u00b7 GT350 p1 and v11 \u00b7 Cadillac p1 (formerly v9.11 physics / v9p); earlier v1\u2013v4 kernels stay in their Sound menu.',
     sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
-      { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. The 911 also still uses VarioCam Plus on the intake: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed.' },
+      { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
       { title: 'Headers and collector', text: 'The pulse travels down the headers as a pressure wave, reflects at junctions and comes back, so later pulses meet earlier ones. A hard pulse can steepen as it travels, which is part of the bark. The GT350 has tri-Y headers (paired primaries into secondaries, then a collector) and a balance pipe between the banks. The Cadillac has cast-iron log manifolds and a balance pipe. The 911 has 3-into-1 headers, one per bank, with slightly different primary lengths; there is no balance pipe. Each bank\u2019s pipe later crosses to the tailpipe on the other side of the car. The BRM has no headers or collector: each cylinder dumps into its own open stub (eight stubs per side).' },
       { title: 'Catalytic converter', text: 'Only the 911 has a catalyst in the sound model. Just after each bank\u2019s collector sits a short, slightly packed chamber (the first silencer chamber, moved forward so the total pipe length stays the same). It damps some of the pulse before the intermediate pipe and the muffler. The other cars have no catalyst.' },
-      { title: 'Mufflers', text: 'A muffler is built from chambers, connecting pipes, or a perforated straight-through can, with packing that soaks up energy \u2014 especially the high frequencies \u2014 and also slightly reduces the level in a packed section. A series-chamber muffler is a row of expansion chambers and pipes. A perforated straight-through muffler is a through-pipe inside a packed outer shell, coupled along the pipe by a perforated wall; porosity and packing resistance are parameters, so any car can use this block. The GT350 has one packed chamber per bank and a fairly long tailpipe. The Cadillac has three chambers with connecting pipes, lightly packed in the last chamber. The 911\u2019s default, v10.1, has two packed chambers after the catalyst, with connecting pipes, then a short tailpipe. v10.2 keeps the cascade catalyst and uses a perforated straight-through can in place of those two chambers (can 0.44 m, shell \u00d7180 mm, core \u00d757 mm, porosity 0.12, packing 0.5; those can dimensions are estimates). The BRM has no muffler.' },
+      { title: 'Mufflers', text: 'A muffler is built from chambers, connecting pipes, or a perforated straight-through can, with packing that soaks up energy \u2014 especially the high frequencies \u2014 and also slightly reduces the level in a packed section. A series-chamber muffler is a row of expansion chambers and pipes. A perforated straight-through muffler is a through-pipe inside a packed outer shell, coupled along the pipe by a perforated wall; porosity and packing resistance are parameters, so any car can use this block. The GT350 has one packed chamber per bank and a fairly long tailpipe. The Cadillac has three chambers with connecting pipes, lightly packed in the last chamber. The 911\u2019s default, v11 \u00b7 911 p1, has two packed chambers after the catalyst, with connecting pipes, then a short tailpipe. v11 \u00b7 911 p2 keeps the cascade catalyst and uses a perforated straight-through can in place of those two chambers (can 0.44 m, shell \u00d7180 mm, core \u00d757 mm, porosity 0.12, packing 0.5; those can dimensions are estimates). The BRM has no muffler.' },
       { title: 'Tailpipes and radiation', text: 'At the open tailpipe (or stub mouth) the moving air radiates as sound: a simple source from how quickly the volume flow is changing, plus a jet of turbulent noise at the mouth, rolled off by the mouth diameter. You hear two mouths on the road cars, and sixteen stub mouths on the BRM.' },
       { title: 'Intake', text: 'Air is drawn through a snorkel and an air cleaner (or air box), then a throttle, into a plenum, and from there into the cylinders. Those volumes and lengths ring like a Helmholtz resonator; the intake sound you hear is mainly the air motion at the snorkel, with a little throttle-body hiss when the throttle is almost shut and the manifold is under high vacuum. On the 911 the two banks have their own plenum sides, joined by a resonance tube with a flap. The tube is 0.30 m long and 45 mm across (those two sizes are estimates). The flap closes at throttle \u2265 0.30 between 2,600 and 5,100 rpm (997.1 Technik figures) and is open otherwise. When it is closed, the pressure difference between the banks radiates as well, which brings up the boxer half-orders in the cabin. The older trick of shrinking the plenum volume when a flap was closed is not used; the tube is the flap model. The first quarter-second of 911 audio is held silent so that tube can settle. The GT350 draws through a Holley four-barrel, the Cadillac through a Carter AFB; neither has a resonance tube. The BRM draws through a twin-choke SU carburettor into the supercharger (described below).' },
       { title: 'Valvetrain', text: 'The cam and lifters make a tick each time a valve opens or closes, and a lighter tick when a cylinder fires. Solid lifters (the GT350) are louder than hydraulic ones (the Cadillac and the 911). That tick is heard from the valve covers, after two band-pass filters at 2.3 kHz and 4.3 kHz that stand in for the covers. On the 911 those filters are broad (a quality factor of 2) and the tick itself is kept to a realistic level, so it is only the light mechanical texture of the valve train, not a stand-in for other sound and not a fixed whistle.' },
@@ -9581,6 +9627,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.11.36", date: "2026-11-15", status: "done", headline: "One sound-model name (v11) across all cars, and a fully generic physics model", text: "The current physics kernel is now called sound model v11 on every car, with a per-car parameter-set iteration: v11 \u00b7 911 p1 (default; formerly v10.1 / v10itq) and v11 \u00b7 911 p2 (formerly v10.2, perforated muffler); v11 \u00b7 BRM p1\u2013p11 (the old v9.1\u2013v9.11 sets, default p11); v11 \u00b7 GT350 p1 and v11 \u00b7 Cadillac p1 (formerly v9.11 physics / v9p). Old picker labels and query values alias to the new names. The physics code itself no longer branches on car==\"p997\": VarioCam Plus is a generic variable-cam block (phase map vs rpm/load and a two-step lift switch, enabled by parameters); the intake flap, plenum shrink, int_res settle, muffler topology (muf list, muf_as_cavity, cat_early) and tick_alpha are all parameters; JS engineKey maps and the phys_v10* overlays are ordinary per-car parameter sets (p1 / p2). Output is bit-identical to v1.11.35 for every car and every picker option." },
       { v: "v1.11.35", date: "2026-11-15", status: "done", headline: "The 911 picker returns with v10.1 and a perforated-muffler v10.2", text: "The 911 sound picker is back, numbered like the BRM\u2019s: v10.1 (default) is the previous v10 + intake tube with a quieter valvetrain and the series-chamber muffler; v10.2 is the same except the muffler is a packed perforated straight-through can (can 0.44 m, shell \u00d7180 mm, core \u00d757 mm, porosity 0.12, packing 0.5; estimates). Query values are ?p997=v10.1 and ?p997=v10.2 (or v10_1 / v10_2). Older values (variocam, v10, v10it, v10nf, v10itq, fixed, fixedcam) alias to v10.1. The perforated can is a generic building block any car can select by parameters; there is no 911-only muffler code. The info page mentions both versions and describes the perf muffler. The GT350, Cadillac and BRM sounds stay bit-identical." },
       { v: "v1.11.34", date: "2026-11-15", status: "done", headline: "The 911 has one sound, and the info page matches the model", text: "The 911 sound picker is gone: \"v10 + intake tube (quiet valvetrain)\" is the only 911 sound. Older query values (?p997=variocam, v10, v10it, v10nf, fixed) now alias to that model. The in-game info page (About / How the sound model works, and the Specs notes) is rewritten to describe every component the code actually uses — combustion and exhaust pulses, valves and pulse shape, headers, the 911 catalyst, mufflers, tailpipes, intake (including the two-bank resonance tube and flap), the valvetrain tick and broad cover filters at a realistic level, the BRM supercharger, the starter, cabin acoustics, listening positions, and the remaining filters — and to drop outdated statements about flow noise and old 911 defaults. The sound models themselves are unchanged. The GT350, Cadillac and BRM sounds and pickers are unchanged." },
       { v: "v1.11.33", date: "2026-11-15", status: "done", headline: "The 911 default is now v10 + intake tube with a quieter valvetrain", text: "A new 911 sound option, \"Sound v10 + intake tube (quiet valvetrain)\" (?p997=v10itq), becomes the default. It is the v1.11.32 intake-tube variant with the valve-train tick turned down (k_tick × 0.03) and the 2.3 and 4.3 kHz valve-cover filters made broad (Q = 2), so the tick is texture rather than a fixed whistle that was not in the real recordings. VarioCam Plus, v10 (damped exhaust), v10 + intake tube, and the earlier fixed-cam sound stay in the picker unchanged. Official stock-OK scorecard: 3.067 (cabin 2.796, outside 3.507, tailpipe 3.840; 339 windows; lower is better) vs 2.840 for v10 + intake tube and 2.797 for v10. The GT350, Cadillac and BRM sounds are unchanged." },
@@ -9672,7 +9719,7 @@ var ProjectHistory = {
 /*
  * engine-specs.js: per-car engine, chassis and default sound-model specifications panel.
  * Numbers are read from the live Vehicles table, EngineParams (bay / geometry) and the
- * v9p / BRM v9.11 sound-model data already in the page — the same figures the synth uses.
+ * v9p / BRM sound-model data already in the page — the same figures the synth uses.
  * ES2017.
  */
 var EngineSpecs = (function () {
@@ -9681,10 +9728,10 @@ var EngineSpecs = (function () {
   var V8P_KEY = { gt350: 'gt350', caddy: 'cadillac59', p997: 'p997' };
   var DEFAULT_SOUND = { gt350: 'v9p', caddy: 'v9p', p997: 'v9p', brm: 'v9_11' };
   var SOUND_LABEL = {
-    v9p: 'Latest physics model (v9.11 kernel)',
-    v9_11: 'v9.11 physics model (default for the BRM)'
+    v9p: 'Sound model v11, parameter set p1',
+    v9_11: 'Sound model v11 \u00b7 BRM p11 (default)'
   };
-  // v9.11 kernel parameter help (plain language). Only the fitted / audible knobs are listed; diagnostic mic geometry is omitted.
+  // v11 kernel parameter help (plain language). Only the fitted / audible knobs are listed; diagnostic mic geometry is omitted.
   var BRM_PHYS_HELP = {
     k_evo: 'How strong the blow-down pulse is when the exhaust valve opens.',
     k_mot: 'How much piston motion adds to that pulse.',
@@ -10029,7 +10076,7 @@ var EngineSpecs = (function () {
     else if (car.x_len === 0) rows.push(row('Balance pipe', 'None (each bank has its own silencer)'));
     if (car.muf) {
       var mufLabel = (v.id === 'p997') ? 'Catalyst and muffler' : 'Muffler / catalyst';
-      var mufNote = (v.id === 'p997') ? '<p class="note">The first chamber is the cascade catalyst, placed just after the collector (total path length unchanged). v10.1 (the default) then uses two packed series chambers and connecting pipes. v10.2 keeps the catalyst and uses a packed perforated straight-through can in place of those two chambers. Each bank\u2019s pipe crosses to the tailpipe on the other side of the car. The table below is the default (v10.1) path.</p>' : '';
+      var mufNote = (v.id === 'p997') ? '<p class="note">The first chamber is the cascade catalyst, placed just after the collector (total path length unchanged). v11 \u00b7 911 p1 (the default) then uses two packed series chambers and connecting pipes. v11 \u00b7 911 p2 keeps the catalyst and uses a packed perforated straight-through can in place of those two chambers. Each bank\u2019s pipe crosses to the tailpipe on the other side of the car. The table below is the default (p1) path.</p>' : '';
       rows.push(row(mufLabel, muffler(car.muf)));
       if (mufNote) rows.push('<tr><td colspan="2">' + mufNote + '</td></tr>');
     }
@@ -10112,14 +10159,14 @@ var EngineSpecs = (function () {
       }
       if (rows.length) html += '<h4>' + esc(BRM_PHYS_GROUP[g].title) + '</h4>' + table(rows);
     }
-    return html || '<p class="note">Could not read the v9.11 physics-model data for the BRM.</p>';
+    return html || '<p class="note">Could not read the v11 physics-model data for the BRM.</p>';
   }
   function brmPhys() {
     var m = (typeof EngineParams !== 'undefined' && EngineParams.brm9) ? EngineParams.brm9('v9_11') : null;
     return m && m.P && m.P.phys;
   }
   function brmSoundBlock() {
-    var html = '<p>The BRM’s default sound is the <b>v9.11 physics model</b>: combustion pulses travel down the open exhaust stubs, and the two-stage supercharger adds its shaft-speed siren and air rush. It was fitted to the Mason onboard and fly-by recordings. The older v8 order-table model (half-order tones plus a fixed supercharger whine) has been retired. The earlier physics fits (v9.1–v9.10) stay in the Sound menu. The tables below are the v9.11 model parameters.</p>';
+    var html = '<p>The BRM’s default sound is <b>v11 · BRM p11</b> (formerly v9.11): combustion pulses travel down the open exhaust stubs, and the two-stage supercharger adds its shaft-speed siren and air rush. It was fitted to the Mason onboard and fly-by recordings. The older v8 order-table model (half-order tones plus a fixed supercharger whine) has been retired. Earlier sets (v11 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The tables below are the p11 model parameters.</p>';
     return html + physBlockBrm(brmPhys());
   }
   function soundBlock(id, car, playing) {
@@ -10130,12 +10177,12 @@ var EngineSpecs = (function () {
     } else {
       note += '<p>Default sound: <b>' + esc(SOUND_LABEL[def] || def) + '</b>.</p>';
     }
-    if (id === 'p997') note += '<p>The 911 sound picker has two versions, numbered like the BRM\u2019s. The default is <b>v10.1</b> (?p997=v10.1): the v10 exhaust path plus a two-bank resonance tube and flap, VarioCam Plus intake phasing and lift switch, a quieter valve-train (broad cover filters at a realistic tick level), and the series-chamber muffler. <b>v10.2</b> (?p997=v10.2) is the same except the muffler is a packed perforated straight-through can (can 0.44 m, shell \u00d7180 mm, core \u00d757 mm, porosity 0.12, packing 0.5; estimates). Older ?p997= links (variocam, v10, v10it, v10nf, v10itq, fixed, fixedcam) alias to v10.1. The tables below are the v10.1 parameters.</p>';
+    if (id === 'p997') note += '<p>All four cars share <b>sound model v11</b> (the physics kernel) plus a per-car parameter set. The 911 picker has <b>v11 \u00b7 911 p1</b> (default, ?p997=p1 or ?p997=v11.p1; formerly v10.1): the v10 exhaust path plus a two-bank resonance tube and flap, the variable-cam block with the 997.1 VarioCam Plus figures, a quieter valve-train (broad cover filters at a realistic tick level), and the series-chamber muffler. <b>v11 \u00b7 911 p2</b> (?p997=p2 or ?p997=v11.p2; formerly v10.2) is the same except the muffler is a packed perforated straight-through can (can 0.44 m, shell \u00d7180 mm, core \u00d757 mm, porosity 0.12, packing 0.5; estimates). Older ?p997= links (v10.1, v10.2, v10itq, variocam, v10, v10it, v10nf, fixed, fixedcam) alias to these. The tables below are the p1 parameters.</p>';
     if (id === 'brm') return note + brmSoundBlock();
     var data = v8pDATA(), key = V8P_KEY[id], pack = data && data[key];
     if (!pack) return note + '<p class="note">Could not read the physics-model data for this car.</p>';
     var phys = pack.phys;
-    if (id === 'p997') phys = Object.assign({}, pack.phys, pack.phys_v10 || {}, pack.phys_v10it || {}, pack.phys_v10itq || {});
+    if (id === 'p997') phys = Object.assign({}, (pack.sets && pack.sets.p1) || pack.phys);
     return note + physBlock(phys);
   }
   function render(ctx) {
@@ -10232,34 +10279,52 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var gbParam = params.get('gearbox'), gearbox = (gbParam === 'revmatch' || gbParam === 'lift') ? gbParam : lsGet('streetrod.gearbox', 'lift');
   if (gearbox !== 'revmatch') gearbox = 'lift';
   for (var gid in cars) cars[gid].setGearbox(gearbox);
-  // v1.9.1: the BRM has its own sound switch; v1.9.2–v1.11.16: v8 (shipped, default) or any of the v9.x physics models (v9.1 ... v9.9; v9.10 from v1.10.2, v9.11 from v1.10.3).
+  // v1.11.36: one nomenclature: sound model v11 (shared physics kernel) plus a per-car parameter-set iteration. The BRM picker is v11 · BRM p1…p11 (the old v9.1…v9.11 sets); default p11.
   // v1.11.18: the v8 order-table model is retired. The default is v9.11 (best remaining official score). ?sound=v9.1|...|v9.11 (or the ids v9_1 ... v9_11)
   // sets it (v9 = v9.6, the v1.9.1 name; a v9.x value alone opens the BRM). An old ?sound=v8 link is ignored for the V8 cars and the BRM falls back
   // to v9.11. The BRM choice is not stored, so every fresh visit starts on v9.11.
   // v1.11.4: GT350 and Cadillac defaults are v9p (best scorecard fit). A ?sound= URL or a saved streetrod.sound
   // choice still applies to both V8 cars, as before. With no saved choice, each V8 car uses its own default.
-  // v1.11.35: the 911 picker has two sounds, numbered like the BRM's: v10.1 (default; the v10 + intake tube, quiet valvetrain, series-chamber muffler, formerly v10itq) and v10.2 (the same, with a perforated straight-through muffler). ?p997=v10.1|v10.2 (or v10_1 / v10_2). Old values (variocam, v10, v10it, v10nf, v10itq, fixed, fixedcam, or anything else) alias to v10.1.
+  // v1.11.36: the 911 picker is v11 · 911 p1 (default; formerly v10.1 / v10itq: intake tube, quiet valvetrain, series-chamber muffler) and v11 · 911 p2 (formerly v10.2: perforated straight-through muffler). ?p997=p1|p2 (or v11.p1 / v11.p2 / v10.1 / v10.2 / v10_1 / v10_2). Older values (variocam, v10, v10it, v10nf, v10itq, fixed, fixedcam, or anything else) alias to p1.
   function defaultV8Sound(id) { return (id === 'gt350' || id === 'caddy') ? 'v9p' : 'v2'; }
-  function defaultBrmSound() { return (typeof SoundModels !== 'undefined' && SoundModels.defaultBrm) || 'v9.11'; }
+  function defaultBrmSound() { return (typeof SoundModels !== 'undefined' && SoundModels.defaultBrm) || 'p11'; }
   function brmName(v) {
     if (!v || v === 'v8') return null;   // v8 retired: callers fall back to defaultBrmSound()
-    if (v === 'v9') return 'v9.6';
-    var L = SoundModels.brmList;
-    for (var i = 0; i < L.length; i++) if (L[i].brm === v || L[i].id === v) return L[i].brm;
+    v = String(v);
+    if (v === 'v9') return 'p6';         // historic ?sound=v9 = v9.6 = v11 · BRM p6
+    var L = SoundModels.brmList, i, m, set;
+    // v11.brm.p11 (preferred new query)
+    m = /^v11\.brm\.p(\d+)$/i.exec(v);
+    if (m) set = 'p' + (+m[1]);
+    // v9.11 / v9_11
+    if (!set && (m = /^v9[._](\d+)$/.exec(v))) set = 'p' + (+m[1]);
+    // v11p11 / v11.p11 / bare p11 — not p1, which is also the V8 default alias
+    if (!set && (m = /^(?:v11\.?p|p)(\d+)$/i.exec(v)) && +m[1] !== 1) set = 'p' + (+m[1]);
+    if (set) {
+      for (i = 0; i < L.length; i++) if (L[i].set === set) return L[i].set;
+      return null;
+    }
+    for (i = 0; i < L.length; i++) if (L[i].set === v || L[i].brm === v || L[i].id === v || L[i].label === v) return L[i].set;
     return null;
   }
   function brmEntry(name) {
     var L = SoundModels.brmList, def = defaultBrmSound(), i;
-    for (i = 0; i < L.length; i++) if (L[i].brm === name) return L[i];
-    for (i = 0; i < L.length; i++) if (L[i].brm === def) return L[i];
+    for (i = 0; i < L.length; i++) if (L[i].set === name || L[i].brm === name || L[i].id === name) return L[i];
+    for (i = 0; i < L.length; i++) if (L[i].set === def) return L[i];
     return L[0];
   }
-  function defaultP997Sound() { return 'v10.1'; }
+  function v8Name(v) {
+    if (!v) return null;
+    v = String(v).toLowerCase();
+    if (v === 'v9p' || v === 'v11.p1' || v === 'v11p1' || v === 'v11.gt350.p1' || v === 'v11.cadillac.p1' || v === 'v11.caddy.p1' || v === 'v11.v8.p1') return 'v9p';
+    return v;
+  }
+  function defaultP997Sound() { return 'p1'; }
   function p997Name(v) {
     if (!v) return defaultP997Sound();
     v = String(v).toLowerCase();
-    if (v === 'v10.2' || v === 'v10_2') return 'v10.2';
-    return defaultP997Sound();   // v10.1, v10_1, v10itq, v10it, v10, v10nf, variocam, fixed, fixedcam, or anything else
+    if (v === 'p2' || v === 'v10.2' || v === 'v10_2' || v === 'v11p2' || v === 'v11.p2' || v === 'v11.911.p2') return 'p2';
+    return defaultP997Sound();   // p1, v11.p1, v10.1, v10_1, v10itq, v10it, v10, v10nf, variocam, fixed, fixedcam, or anything else
   }
   var soundParam = params.get('sound'), retiredBrmV8 = soundParam === 'v8';
   var brmParam = (soundParam && !retiredBrmV8) ? brmName(soundParam) : null;
@@ -10267,11 +10332,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (!p997Param && soundParam && /variocam/.test(soundParam.toLowerCase())) p997Param = 'variocam';
   var startCar = params.get('car') || (brmParam ? 'brm' : null);
   var startId = (startCar && cars[startCar]) ? startCar : 'gt350';
-  var soundChoice = (brmParam || retiredBrmV8) ? null : soundParam;
-  if (!soundChoice) soundChoice = lsGet('streetrod.sound', null);
+  var soundChoice = (brmParam || retiredBrmV8) ? null : v8Name(soundParam);
+  if (!soundChoice) soundChoice = v8Name(lsGet('streetrod.sound', null));
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
-    p997Sound: p997Name(p997Param),   // v1.11.35: default v10.1; ?p997=v10.2 selects the perforated-muffler iteration
+    p997Sound: p997Name(p997Param),   // v1.11.36: default p1 (v11 · 911 p1); ?p997=p2 selects the perforated-muffler set
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   state.viewBlend = (state.view === 1 || state.view === 4) ? 1 : 0;
@@ -10334,8 +10399,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     return m.hidden ? 'v2' : state.model;
   }
   var P997_LABEL = {
-    'v10.1': '911 sound: v10.1 (default)',
-    'v10.2': '911 sound: v10.2'
+    p1: '911 sound: v11 · 911 p1 (default)',
+    p2: '911 sound: v11 · 911 p2'
   };
   function setP997Sound(v) {
     state.p997Sound = p997Name(v);
@@ -10347,15 +10412,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     state.brmSound = brmName(v) || defaultBrmSound();
     if (audio.ctx) ensureAudio();   // live crossfade (0.25 s), no restart
     if (spec().engineKey === 'BRM') {
-      var extra = state.brmSound === 'v9.9' ? ' (with overrun pops)' : state.brmSound === 'v9.10' ? ' (overrun pops + blower whine)' : state.brmSound === 'v9.11' ? ' (reversion: overrun pipe tones gone)' : '';
-      flash('BRM sound: ' + state.brmSound + ' physics model' + (state.brmSound === defaultBrmSound() ? ' (default)' : '') + extra, 1.5);
+      var extra = state.brmSound === 'p9' ? ' (with overrun pops)' : state.brmSound === 'p10' ? ' (overrun pops + blower whine)' : state.brmSound === 'p11' ? ' (reversion: overrun pipe tones gone)' : '';
+      flash('BRM sound: ' + brmEntry(state.brmSound).label + (state.brmSound === defaultBrmSound() ? ' (default)' : '') + extra, 1.5);
     }
     updatePanel();
   }
   function nextBrmSound() {
     var L = SoundModels.brmList, i = 0;
-    while (i < L.length && L[i].brm !== state.brmSound) i++;
-    setBrmSound(L[(i + 1) % L.length].brm);
+    while (i < L.length && L[i].set !== state.brmSound) i++;
+    setBrmSound(L[(i + 1) % L.length].set);
   }
   function ensureAudio() {
     audio.unlock();
@@ -10365,7 +10430,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (carSent !== key) {
       var msg = SoundModels.specMsg(mid, spec().engineKey);
       if (/^v9/.test(mid) && params.get('bq')) msg.spec = Object.assign({}, msg.spec, { quality: params.get('bq') });   // v9 resolution: hq | lite | auto (default)
-      if (spec().engineKey === 'P997') msg.spec = Object.assign({}, msg.spec, { variocam_plus: true, p997_v10: true, p997_v10it: true, p997_v10itq: true, p997_v10_2: state.p997Sound === 'v10.2' });
+      if (spec().engineKey === 'P997') msg.spec = Object.assign({}, msg.spec, { variant: state.p997Sound });
       audio.setCar(msg); carSent = key;
     }
   }
@@ -10496,7 +10561,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     state.model = m.id; lsSet('streetrod.sound', state.model);
     soundChoice = state.model;
     if (audio.ctx) ensureAudio();   // live crossfade to the new model (no restart)
-    if (spec().engineKey === 'BRM') flash('BRM: use the BRM sound picker (v9.x physics models, default v9.11)', 1.5);
+    if (spec().engineKey === 'BRM') flash('BRM: use the BRM sound picker (v11 · BRM p1–p11, default p11)', 1.5);
     else if (spec().engineKey === 'P997') flash(P997_LABEL[state.p997Sound], 1.5);
     else flash('Sound model ' + SoundModels.get(state.model).label, 1.5);
     updatePanel();
@@ -10677,15 +10742,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // v1.9.2: BRM sound picker (every v9.x physics model; v8 retired in v1.11.18): a compact select, so it fits an iPhone top bar
   var selB = document.getElementById('selBrm');
   SoundModels.brmList.forEach(function (b) {
-    var o = document.createElement('option'); o.value = b.brm;
-    o.textContent = 'Sound ' + b.brm + (b.brm === defaultBrmSound() ? ' (default)' : '');
+    var o = document.createElement('option'); o.value = b.set;
+    o.textContent = 'Sound ' + b.label + (b.set === defaultBrmSound() ? ' (default)' : '');
     var m = SoundModels.get(b.id); o.title = m.note || '';
     selB.appendChild(o);
   });
   selB.addEventListener('change', function () { setBrmSound(selB.value); selB.blur(); });
   var selP997 = document.getElementById('selP997');
-  // v1.11.35: two 911 sounds, labelled like the BRM picker (Sound v10.1 (default) / Sound v10.2).
-  [['v10.1', 'Sound v10.1 (default)'], ['v10.2', 'Sound v10.2']].forEach(function (row) {
+  // v1.11.36: two 911 parameter sets on sound model v11.
+  [['p1', 'Sound v11 · 911 p1 (default)'], ['p2', 'Sound v11 · 911 p2']].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selP997.appendChild(o);
   });
   if (selP997) selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
@@ -10704,7 +10769,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     document.getElementById('segP997Sound').classList.toggle('hidden', v.engineKey !== 'P997');
     if (selP997) selP997.value = state.p997Sound;
     selS.value = state.model; selV.value = state.visual;
-    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997');   // v1.11.0: generic v1–v9p picker stays hidden; the 911 has its own option picker
+    (function () {
+      var opt = selS.querySelector('option[value="v9p"]');
+      if (opt) {
+        var who = v.engineKey === 'CADDY' ? 'Cadillac' : 'GT350';
+        opt.textContent = 'Sound v11 · ' + who + ' p1 (default)';
+      }
+    })();
+    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997');   // 911 has its own parameter-set picker; earlier v1–v4 kernels stay in the V8 Sound menu
+
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
     document.getElementById('bDrag').classList.toggle('on', !!drag);
     document.getElementById('bMute').textContent = state.muted ? 'Unmute' : 'Mute';
