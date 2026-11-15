@@ -2,6 +2,54 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.4 (tag `v1.12.4`), 2026-11-15 (Cadillac listening test: v12 · Cadillac p4; retargeted scorecard)
+
+* **v12 · Cadillac p4** (`?caddy=p4`, `?cadillac=p4`, `?sound=v12.cadillac.p4` / `v12.caddy.p4`, or `?car=caddy&sound=p4`) is a new non-default listening set. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.3. No Cadillac-only code path, no echo EQ, no change to `ro_loss` or the open-end radiation.
+* p4 keeps **p3's Walker 21158 TriFlow + 21159 Direct Flow geometry** (sourced shells, equal-quarter partition **estimate**, porosity 0.20 **estimate**, Helmholtz neck **estimate**, 0.35 m connector and 0.60 m tail as p1 length carry-overs — all as in v1.12.3) and adds damping taken from how those mufflers are built, using only the existing generic `pack` / `pack_r` / perforate / cavity terms.
+  * **No fibrous packing.** Tenneco/Walker US 3,841,435 and US 3,498,406 describe a reactive three-tube TriFlow (partitions, one perforated return, optional tuning tube) and do not mention packing. Walker's "Containing Sound" page classifies louvered tubes as reactive devices and packing as a separate absorptive class (glasspacks). Some later Quiet-Flow listings mention CRF (Continuous Roving Fiberglass); 21158 is catalogued as TriFlow, 21159 as Direct Flow, so CRF is not applied. Annular `pack` stays 0.
+  * **Perforate / louver neck resistance (`pack_n` = 0.13, estimate).** p3 left the generic perforate necks lossless (`pack_n` = 0). The necks already use a Munjal-type length `t_wall + 0.85 d_hole`. `pack_n` is the existing resistive term on those necks, in nepers per pass (`pack_r` stays the shipped 1.0). The number is converted from Bauer (1977) grazing-flow resistance 0.3 *M / σ, plus a nonlinear orifice term at 165 dB (the mid-point of the commonly cited 160–170 dB in-duct exhaust range), porosity 0.20, *C<sub>d</sub>* = 0.7, 2,000 rpm through one 1¾ in pipe, *c* = 450 m/s: open-area resistance θ ≈ 0.28, amplitude transmission 2/(2+θ), pack_n = −ln(T) ≈ 0.13. It was not fitted to the impulse or the score.
+  * **Wall and hole estimates** on the perforate items, now stated explicitly (they were already the generic defaults): *t_wall* = 1.5 mm (16–18 ga muffler tube). *d_hole* = ⅛ in (3.175 mm), a typical perforation / louver width; the patent says only “perforate.”
+  * **Crossover volumes as generic cavities, not series chambers.** The two p3 series chambers (same sourced length 5.06 in and equivalent diameter 127.5 mm) are recast as `cavity` blocks — a through tube with the can teed off it, the kernel's existing model for a reverse-flow / crossover volume (already used for the p3 Helmholtz end chamber). US 3,841,435 has the inlet opening into a crossover chamber that also feeds the return path. A series chamber is a two-port expansion with *R* = (*m*−1)/(*m*+1) = 0.73, which pack terms cannot remove and which was the first 0.84 impulse peak on p3. Neck diameter is the tube that opens into that chamber (2 in, then 1¾ in). Neck length 2 in and through-pipe 2 cm are the same estimates already used for the p3 Helmholtz cavity (no 21158 cutaway). The cavity through-pipe still uses the kernel's `pipe_d` (2 in), as in p3. Cavity packing remains 0.
+* **Impulse check** (unit pulse into cylinder 0's primary, mouth volume velocity; valves held shut; not a fitting target). Early reflection amplitudes relative to the first arrival:
+  * p3: 2.13 ms **0.84**, 3.67 ms 0.75, 5.26 ms 0.66, 7.17 ms 0.51, and a 11.86 ms revival at 0.51 (five peaks ≥ 0.50).
+  * p4: 2.00 ms **0.36**, 3.74 ms 0.63, 5.60 ms 0.41, 7.28 ms 0.44, 12.65 ms revival **0.18** (one peak ≥ 0.50). The long flutter is in the GT350's range (12.81 ms at 0.16). The remaining 3.74 ms peak at 0.63 is still higher than the GT350's strongest early peak (0.38); it was not tuned away.
+  * p1 (unchanged): strongest early 8.84 ms at 0.46. GT350: 4.15 ms at 0.38. p4 pipe count is 88 against p3 80 and p1 31 (`nseg` stays 3).
+* **Retargeted Cadillac scorecard.** Same comb-recut windows and engine-only, duration × source-weight pipeline as v1.12.3. The new **dry** target drops qrEDQsa1hQg (owner description: left exhaust pipe cut/broken, fumes escaping mid-pipe), and excludes garage/showroom clips bAACfEqe0UM, 49daHSndAho and IoaRMvA-q-c as reverberant recordings. It keeps TaRrrTHbA7Y and fQibKpC2FQw (outdoor Fleetwood / Sixty Special cabins), vH2GqPSC0bE and MC-3iBZsXL4 (Swiss Veteran tailpipe, factory bumper-pod exits), vGGagYHqzfU (club Sedan DeVille, 390 / 325 hp, outside far) and ADXzj7xFcnk (outdoor stock-looking 390 bay, 0.5 s). The two UNSURE cabins (4M0RfqxLmIk, a CPR convertible with “much maintenance”; T-hP31fKwOY, undescribed) are reported separately at their official 0.5 weight and are not in the dry headline. F_Vt2OraBBI (weak/unknown outdoor) is also out of the dry target. The 3,600–5,000 rpm band remains empty and was not tuned. p1, p2, p3 and p4 were scored on both the old official windows and the new dry target; those figures are in the Scorecard Page and below. The published v1.12.2 v9p headlines (all 3.008 / OK 2.557) stay as the historical official v9p vs v2 card; this pipeline is for comparing the Cadillac p-sets with each other.
+  *   * Old official windows (same 326-window pipeline as v1.12.3; raw seconds shown, means are duration × source-weight). Lower is better.
+
+    All (422.2 s raw / 316.1 s weighted):
+    | Path | p1 | p2 | p3 | p4 |
+    |---|---:|---:|---:|---:|
+    | Cabin (264.6 s / 209.3 s wtd) | 3.435 | 3.419 | 4.496 | 4.928 |
+    | Outside far (118.9 s / 68.0 s wtd) | 7.086 | 6.873 | 7.996 | 7.840 |
+    | Engine bay (19.2 s) | 5.189 | 5.704 | 6.575 | 7.463 |
+    | Tailpipe (19.7 s) | 4.647 | 4.299 | 5.870 | 5.986 |
+    | All paths | 4.402 | 4.355 | 5.460 | 5.774 |
+
+    OK only (210.0 s):
+    | Path | p1 | p2 | p3 | p4 |
+    |---|---:|---:|---:|---:|
+    | Cabin (154.1 s) | 3.462 | 3.440 | 4.548 | 4.985 |
+    | Outside far (17.1 s) | 4.760 | 4.543 | 5.780 | 5.549 |
+    | Engine bay (19.2 s) | 5.189 | 5.704 | 6.575 | 7.463 |
+    | Tailpipe (19.7 s) | 4.647 | 4.299 | 5.870 | 5.986 |
+    | All paths | 3.836 | 3.817 | 4.957 | 5.351 |
+
+  * New dry target (168.9 s; TaRrr + fQib cabins, vH2G + MC tailpipe, vGGag outside far, ADX bay):
+    | Path | p1 | p2 | p3 | p4 |
+    |---|---:|---:|---:|---:|
+    | Cabin (131.6 s) | 3.375 | 3.376 | 4.465 | 4.903 |
+    | Outside far (17.1 s) | 4.760 | 4.543 | 5.780 | 5.549 |
+    | Engine bay (0.5 s) | 5.350 | 5.355 | 5.201 | 5.395 |
+    | Tailpipe (19.7 s) | 4.647 | 4.299 | 5.870 | 5.986 |
+    | All paths | 3.669 | 3.608 | 4.764 | 5.096 |
+
+  * UNSURE cabins only, reported separately at official weight 0.5 (4M0 + T-hP, 110.5 s raw / 55.2 s weighted): p1 3.358, p2 3.359, p3 4.352, p4 4.768. These are not in the dry headline.
+
+  * p4 is not closer than p1 or p2 on either target. It was not fitted to the score; the point is the sourced damping and a less echoey impulse. p1 stays the default until the owner listens.
+* A Cadillac sound picker line **Sound v12 · Cadillac p4** is added. Those `?sound=` / `?caddy=` / `?cadillac=` links open the Cadillac on p4. p1 stays the default.
+* **CPU:** waveguide pipes p1 31, p2 30, p3 80, p4 88 (`nseg` stays 3). Chromium desktop, 8 s at 2,000 rpm, 48 kHz, same method as v1.12.3: p1 19.6 % of real time, p2 19.9 %, p3 27.9 %, p4 28.2 %. p4 sits essentially with p3 (88 pipes against 80). (WebKit was not available in the build environment.) The p1–p3 percentages on this later run are a few tenths higher than the v1.12.3 figures; the pipe counts are unchanged.
+
 ## v1.12.3 (tag `v1.12.3`), 2026-11-15 (Cadillac listening tests: v12 · Cadillac p2 and p3)
 
 * **Two new, non-default Cadillac listening sets.** p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.2. The kernel changes are generic (a parameter set may overlay car geometry; optional intake/exhaust cam fields; optional `tail_d`) and do nothing unless a set uses them.
