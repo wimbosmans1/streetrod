@@ -2,6 +2,14 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.11.40 (tag `v1.11.40`), 2026-11-15 (911 listening test: v11 · 911 p4 with photo-measured side boxes)
+
+* New, **non-default** 911 option **Sound v11 · 911 p4** (`?p997=p4`, also `v11.p4`). p3 is unchanged; p1 stays the default. Each iteration now gets its own p number.
+* p4 is p1 with a side box per bank re-measured from the OEM cut-away photo (inlet pipe as scale), **all dimensions estimates from the photo**: box about 0.32 m long and 280 mm high, depth taken as 190 mm (least certain); gas in through a 62 mm tube to a bellmouth in the middle chamber (about 0.12 m) and out through a second 62 mm tube; the front (about 60 mm) and rear (about 130 mm) chambers are side volumes behind perforated baffles (10 % open area, estimate); 25 mm steel wool on the rear end cap only (the only packing the photo shows); 0.25 m outlet pipe (off-frame, estimate).
+* Generic block change: the side-volume block (`cavity`) takes an optional absorbent layer on its closed end (thickness, packing), Python and JS. Unused by every other set.
+* **Listening test, with known failures.** Fixes p3's 2,000–3,000 rpm dip (cabin order 6 minus order 3 at 2,500 rpm: recordings about −12 dB, p1 −19, p3 +17, p4 −5). **But it is clearly harsher outside than p3**: 2–8 kHz minus order 3 outside −28…−43 dB (p3 −58…−64, recordings −36…−57). It also has an outside order-3 peak at 5,500 rpm (+10 dB rel. 3,500, recordings fall), the cabin order 3 still falls above 5,000 rpm (−3 / −10 / −12 dB at 4,500 / 5,500 / 6,500, recordings about −7 / −1 / +6), and idle is about 10 dB quieter than p1.
+* The GT350, Cadillac, BRM and 911 p1 / p2 / p3 sounds are bit-identical to v1.11.39. JS matches Python on p4 (order deltas within about 1 dB). CPU about +10 % over p1.
+
 ## v1.11.39 (tag `v1.11.39`), 2026-11-15 (911 listening test: v11 · 911 p3 with 3-chamber side boxes)
 
 * New, **non-default** 911 option **Sound v11 · 911 p3** (`?p997=p3`, also `v11.p3`; the slot freed in v1.11.38, so old p3 links now open this): p1 with a different side box on each bank, laid out after a cut-away press photo of the OEM 997 muffler supplied by the owner: three chambers in a row (0.12 / 0.16 / 0.12 m, 11 × the 57 mm pipe area, about 11 L), two perforated baffle walls (3 % open area, 4 mm holes, 1.5 mm plate), a 52 mm tube through each baffle, a small 18 mm equalising tube through baffle 1, steel-wool packing in the rear end-cap chamber and a 58 mm outlet. **Every box dimension is an estimate**: no factory figures exist, and the layout comes from the photo and forum descriptions (3 chambers, perforated baffle, pipes through the baffles). Flared tube ends are not modelled.
