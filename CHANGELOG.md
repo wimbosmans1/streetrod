@@ -2,6 +2,53 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.5 (tag `v1.12.5`), 2026-11-15 (Cadillac listening test: v12 · Cadillac p5)
+
+* **v12 · Cadillac p5** (`?caddy=p5`, `?cadillac=p5`, `?sound=v12.cadillac.p5` / `v12.caddy.p5`, or `?car=caddy&sound=p5`) is a new non-default listening set. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.4. No Cadillac-only code path, no echo EQ, no change to `ro_loss` or the open-end radiation. Resonator porosity, the manifolds and idle are unchanged.
+* p5 is **p4 plus two sourced exhaust lengths and the sourced cabin dimensions**. Walker 21158 TriFlow / 21159 Direct Flow geometry, `pack_n`, cavity damping, header-to-muffler `inter_len` and mouth positions stay as in p4.
+  * **Muffler-to-resonator connector 3.07 m × 1¾ in** (p4 used a 0.35 m p1 length carry-over). This is the developed centreline of the two-section intermediate pipe (front + rear intermediate) on the 1959 Cadillac shop-manual Fig. 10-23 (p. 10-15), one bank. Length scale from the 1959 AMA Specifications L103 overall 225.0 in; width scale from AMA W103 80.2 in (the drawing is not isotropic; scale ratio ≈ 1.40). The path develops to 120.7 in = 3.07 m (horizontal span 98.7 in = 2.51 m). Uncertainty ±15 % (±0.46 m). Cross-checks: if the pale rear ovals are the axle, drawn overhang is 62.4 in vs AMA L105 60.5 in (3 %); drawn muffler shell ≈ 21.5 in vs Walker 20.25 in (6 %). The resonator can is drawn oversized vs Walker 22.5 in and was not used as a scale.
+  * **Tail (outlet pipe) 0.50 m × 1¾ in** (p4 used 0.60 m, also a p1 length carry-over). The drawn resonator can would crush the bumper gap, so the resonator inlet is held at the drawn station and the sourced Walker 21159 overall length 27.125 in is placed toward the bumper, leaving ≈ 10 in horizontal (the drawn can would leave ≈ 5 in). Plus a 90° turndown from the shop-manual text on p. 10-14, “The outer pipe directs the flow of exhaust gases down and away from the rear of the car”: centreline radius ≈ 3 in on 1¾ in pipe, quarter-circle 4.7 in, stub ≈ 5 in, total ≈ 19.7 in = 0.50 m. Uncertainty ±0.23 m. p4's 0.60 m is inside that band; the central sourced value is used. Waldron's 1958–60 kit is listed with turndowns; the Swiss Veteran clips still show factory bumper-pod exits — a turndown into or at the pod is the reconciliation.
+  * **Cabin length 2.19 m, cabin height 1.11 m** (p4/p1 were 2.30 m / 1.05 m). From the 1959 Cadillac AMA Specifications (issued 10-1-58) for body styles 6229/6329 (Series 62 and Sedan DeVille six-window): (L4 45.6 + L3 31.4)×cos(15°) = 74.3 in toeboard-to-rear-seatback, plus 12 in package-shelf/backlight (AMA LD is blank; ±6 in) → 86.3 in = 2.19 m, uncertainty ±0.15 m. Height: H3 10.0 + H1 34.8×cos(15°) = 43.6 in = 1.11 m, uncertainty ±0.05 m. Sixty Special 6029, same 130 in wheelbase in 1959: 85.5 in / 43.3 in — not a separate generic cabin. Cabin width is not used for a mode. First longitudinal mode 74.6 → 78.3 Hz; first vertical mode 163.3 → 154.5 Hz.
+  * Generic `SET_CAR_KEYS` now also overlays `cabin_len` and `cabin_h` (they were previously only on the base car). No other set uses those keys.
+* **Impulse check** (unit pulse into cylinder 0's primary, mouth volume velocity; valves held shut; not a fitting target). First arrival is 18.39 ms on p5 against 12.13 ms on p4 (Δ +6.26 ms), which matches the extra 2.72 m of intermediate pipe at about 435 m/s. Early reflections, as |U| relative to the first arrival (same extractor on both sets; this is not the v1.12.4 locked-coefficient scale, whose raw |U| amplitudes are ~3×10⁻⁸ and round to zero):
+  * p4: 2.18 ms 1.53, 3.51 ms 1.85, 4.90 ms 2.26, 6.21 ms **2.39**, 8.46 ms 1.39; 10–20 ms train up to 1.04.
+  * p5: 2.20 ms 1.50, 3.51 ms 1.60, 4.90 ms **1.99**, 6.21 ms 1.86, 7.55 ms 0.94; 10–20 ms train up to 0.52.
+  * The 2–6 ms muffler-internal reflections remain (those lengths were not changed). The 10–20 ms train is about half as strong. The short ~3.7 ms round trip of the 0.35 m connector is replaced by a ~13.6 ms / ~73 Hz round trip of the 3.07 m intermediate. Pipe count stays 88 (`nseg` stays 3).
+* **Order balance** at the trusted clips (dB vs order 4; model minus the recording). Cabin 975 rpm: order 1 drops 7.6 dB vs p4 (still +19.8 vs real, was +27.4). Cabin 1,139 rpm: order 1 −6.3 dB, orders 0.5 and 8 −8.8 dB vs p4 (order 8 still +11.5 vs real, was +20.2). Cabin 1,406 rpm: order 1 −4.4, 0.5 −5.4, 2 −7.5, 8 −3.7 dB vs p4. Tailpipe 827 rpm is mixed and worse on the low orders (0.5 +10.2, 2 +4.6 vs p4). The 1,966 rpm tail blip is close to p4; order 2 moves from −7.5 to −0.5 vs real.
+* **Scores** on the same new dry target and old official windows as v1.12.4 (326-window pipeline, engine-only, duration × source-weight). p5 was not fitted to the score. Lower is better. p5 is closer than p4 on both headlines, and is essentially with p3 on the dry target; it is still not closer than p1 or p2. p1 stays the default until the owner listens.
+  * Old official windows (same 326-window pipeline as v1.12.3; raw seconds shown, means are duration × source-weight):
+
+    All (422.2 s raw / 316.1 s weighted):
+    | Path | p1 | p2 | p3 | p4 | p5 |
+    |---|---:|---:|---:|---:|---:|
+    | Cabin (264.6 s / 209.3 s wtd) | 3.435 | 3.419 | 4.496 | 4.928 | 4.705 |
+    | Outside far (118.9 s / 68.0 s wtd) | 7.086 | 6.873 | 7.996 | 7.840 | 6.963 |
+    | Engine bay (19.2 s) | 5.189 | 5.704 | 6.575 | 7.463 | 7.532 |
+    | Tailpipe (19.7 s) | 4.647 | 4.299 | 5.870 | 5.986 | 5.153 |
+    | All paths | 4.402 | 4.355 | 5.460 | 5.774 | 5.390 |
+
+    OK only (210.0 s):
+    | Path | p1 | p2 | p3 | p4 | p5 |
+    |---|---:|---:|---:|---:|---:|
+    | Cabin (154.1 s) | 3.462 | 3.440 | 4.548 | 4.985 | 4.752 |
+    | Outside far (17.1 s) | 4.760 | 4.543 | 5.780 | 5.549 | 4.648 |
+    | Engine bay (19.2 s) | 5.189 | 5.704 | 6.575 | 7.463 | 7.532 |
+    | Tailpipe (19.7 s) | 4.647 | 4.299 | 5.870 | 5.986 | 5.153 |
+    | All paths | 3.836 | 3.817 | 4.957 | 5.351 | 5.035 |
+
+  * New dry target (168.9 s; TaRrr + fQib cabins, vH2G + MC tailpipe, vGGag outside far, ADX bay):
+    | Path | p1 | p2 | p3 | p4 | p5 |
+    |---|---:|---:|---:|---:|---:|
+    | Cabin (131.6 s) | 3.375 | 3.376 | 4.465 | 4.903 | 4.707 |
+    | Outside far (17.1 s) | 4.760 | 4.543 | 5.780 | 5.549 | 4.648 |
+    | Engine bay (0.5 s) | 5.350 | 5.355 | 5.201 | 5.395 | 5.558 |
+    | Tailpipe (19.7 s) | 4.647 | 4.299 | 5.870 | 5.986 | 5.153 |
+    | All paths | 3.669 | 3.608 | 4.764 | 5.096 | 4.756 |
+
+  * UNSURE cabins only, reported separately at official weight 0.5 (4M0 + T-hP, 110.5 s raw / 55.2 s weighted): p1 3.358, p2 3.359, p3 4.352, p4 4.768, p5 4.574. These are not in the dry headline.
+* A Cadillac sound picker line **Sound v12 · Cadillac p5** is added. Those `?sound=` / `?caddy=` / `?cadillac=` links open the Cadillac on p5, as does `?car=caddy&sound=p5`. (p5 is not a BRM set — the BRM list is p1–p4 and p6–p11 — so a bare `sound=p5` kernel lookup is ignored when the car is already the Cadillac, and the v12 kernel is used.) p1 stays the default.
+* **CPU:** waveguide pipes still 88, same as p4 (`nseg` stays 3). Chromium desktop, 8 s at 2,000 rpm, 48 kHz, same method as v1.12.4: p1 18.0 % of real time, p2 18.4 %, p3 26.9 %, p4 28.1 %, p5 28.3 %. p5 sits with p4. (WebKit was not available in the build environment.) The p1–p4 percentages on this later run are about a point lower than the v1.12.4 figures; the pipe counts are unchanged.
+
 ## v1.12.4 (tag `v1.12.4`), 2026-11-15 (Cadillac listening test: v12 · Cadillac p4; retargeted scorecard)
 
 * **v12 · Cadillac p4** (`?caddy=p4`, `?cadillac=p4`, `?sound=v12.cadillac.p4` / `v12.caddy.p4`, or `?car=caddy&sound=p4`) is a new non-default listening set. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.3. No Cadillac-only code path, no echo EQ, no change to `ro_loss` or the open-end radiation.
