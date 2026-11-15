@@ -2,6 +2,12 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.11.38 (tag `v1.11.38`), 2026-11-15 (911 p3 removed after listening)
+
+* **v11 · 911 p3 (intake runners) removed after the owner listened** ("for the bin"). It is gone from the 911 picker, the info page notes and the Specs rows. Old `?p997=p3` / `v11.p3` links fall back to the default **p1**. The generic intake-runner block (`int_run`, `int_run_l`, `int_run_d`, `int_run_nseg`, `int_run_attach`) stays in the kernel, off unless a parameter set enables it.
+* A half-day test of a reverse-flow side muffler (perforated inlet tube, reversal chamber, perforated return tube, about 11 L, made only from existing generic blocks) on the 911 p1 base did not pass the checks (2–8 kHz outside 8–25 dB above the real recordings, order 6 weaker, cabin full-throttle level still falls with rpm), so it was not shipped.
+* p1 stays the default; p2 is unchanged. GT350, Cadillac, BRM and 911 p1 / p2 sounds are bit-identical to v1.11.37.
+
 ## v1.11.37 (tag `v1.11.37`), 2026-11-15 (911 listening test: v11 · 911 p3 with intake runners)
 
 * New, **non-default** 911 option **Sound v11 · 911 p3** (`?p997=p3`, also `v11.p3`): p1 plus a generic intake-runner block, one 1D travelling-wave pipe per cylinder from the intake valve to its bank plenum. Runner length 0.216 m (owner-supplied M97.01 figure; no public source found to confirm it). Runner diameter 45 mm is an **estimate** (two 40.2 mm intake valves; no factory runner ID found) and the 4.5 L plenum volume is a **guess** (unchanged from p1). The 76 mm throttle body is unchanged.
