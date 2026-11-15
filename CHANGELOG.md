@@ -2,6 +2,46 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.3 (tag `v1.12.3`), 2026-11-15 (Cadillac listening tests: v12 · Cadillac p2 and p3)
+
+* **Two new, non-default Cadillac listening sets.** p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.2. The kernel changes are generic (a parameter set may overlay car geometry; optional intake/exhaust cam fields; optional `tail_d`) and do nothing unless a set uses them.
+* **v12 · Cadillac p2** (`?caddy=p2`, `?cadillac=p2`, `?sound=v12.cadillac.p2` / `v12.caddy.p2`, or `?car=caddy&sound=p2`): sourced shop-manual and period-spec fixes, **same muffler chambers as p1** so that change can be heard by itself.
+  * Connecting rod 6.50 in (1959–60 shop manual; p1 was 6.625 in).
+  * Exhaust valve 1.50 in, lift 0.450 in (shop manual; p1 was 1.56 in / 0.40 in). Intake valves are 1.875 in / 0.450 in (visualisation already had these).
+  * Cam timing from the shop manual (without ramp): IO 27° BTDC, IC 75° ABDC, EO 73° BBDC, EC 29° ATDC, encoded as intake advertised 282° / LSA 114° and exhaust advertised 282° / LSA 112°.
+  * Dry-pack air cleaner instead of the oil-bath guess (1959 fact sheet / AMA: dry-pack + intake silencer). Element sizes from Belcher AF26 / equivalent 1959–60 Series 62 listings: height 2.19 in, ID 14.94 in, OD 17.31/18.31 in. Clean volume uses those plus an **estimated** 1.0 in lid plenum → 9.16 L (p1 was 9.0 L). Intake-silencer neck dimensions were not found: **estimate** 4 in diameter × 4 in long (shorter and wider than the oil-bath snorkel 75 mm × 120 mm).
+  * True dual exhaust: the H-pipe is removed (reproduction 1957–60 Cadillac systems list no crossover). Pipes 2 in from the manifold to the muffler, 1¾ in after (forum / period system lists). The 0.35 m inter-muffler pipe in the p1 list is now 1¾ in; the tail is 1¾ in. The 0.30 m × 1.5 in *internal* muffler tube is unchanged.
+  * Idle stays 520 rpm. The AMA figure is 450 rpm in Drive; Neutral idle is not clearly sourced.
+* **v12 · Cadillac p3** (`?caddy=p3`, `?sound=v12.cadillac.p3`, …) is p2 plus the muffler and resonator rebuilt from Walker factory-replacement dimensions, using the existing generic pipe, chamber, cavity and perforated-tube blocks (no Cadillac-only code path).
+  * Walker 21158 TriFlow (sourced shell): oval 3¼ × 7¾ in, shell 20¼ in, 2 in side inlet / 1¾ in centre outlet. Equivalent diameter 127.5 mm, area ratio vs 2 in pipe 6.30.
+  * Internal layout from Tenneco/Walker US 3,841,435 (three-tube, four-chamber TriFlow): imperforate inlet tube to the far crossover chamber, perforated return, near crossover, imperforate outlet, Helmholtz chamber at the outlet end. **Estimate:** no 21158 cutaway or partition lengths were found, so the four chambers are equal quarters of the sourced 20¼ in shell (each 5.06 in / 0.129 m). Inlet and outlet tubes are taken as three quarters long; the return as two quarters.
+  * Perforated return: 1¾ in tube in the oval shell, **porosity 0.20 (estimate;** typical louvered open area, no open-area spec), packing 0 (none mentioned). `nseg=3` is a cost choice, not a sourced partition.
+  * Helmholtz neck **estimate:** 1.5 in × 2 in partition stub (patent tube 43, no 21158 dimensions). Cavity volume is one estimated quarter of the oval shell (1.64 L). At 500 K that Helmholtz is about 206 Hz. The cavity through-pipe uses the kernel’s `pipe_d` (2 in) on a short 2 cm section; the 1¾ in system resumes at the following connector.
+  * Walker 21159 Direct Flow resonator (sourced shell): 5⅛ in Ø, shell 22½ in, 1¾ in straight through. Modelled as a perforated straight-through can, porosity 0.20 **(estimate)**, packing 0, `nseg=3`.
+  * The 0.35 m muffler-to-resonator connector and the 0.60 m tail are **p1 length carry-overs** (not in the Walker shell data); both are 1¾ in.
+* A Cadillac sound picker is shown when the Cadillac is on sound model v12: **Sound v12 · Cadillac p1 (default)**, **p2**, **p3**. Those `?sound=` / `?caddy=` / `?cadillac=` links open the Cadillac on the chosen set. Bare `?sound=p2` is unchanged (it is still a BRM / 911 alias, not Cadillac).
+* **Official scorecard** (comb-recut of 14 Nov 2026, 326 windows, 422.2 s all / 210.0 s OK, engine-only, duration × source-weight; the 3,600–5,000 rpm band is empty and was not tuned). Lower is better. p1, p2 and p3 were scored on the same pipeline this release. That pipeline’s p1 is not identical to the published v1.12.2 v9p figures (all 3.008 / OK 2.557) — likely a later kernel revision plus hop alignment — so the numbers below are for comparing the three Cadillac sets with each other, not for rewriting the published v9p headline.
+
+  All (422.2 s):
+
+  | Set | Overall | Cabin | Outside far | Engine bay | Tailpipe |
+  |---|---|---|---|---|---|
+  | p1 | 4.402 | 3.435 | 7.086 | 5.189 | 4.647 |
+  | p2 | **4.355** | **3.419** | **6.873** | 5.704 | **4.299** |
+  | p3 | 5.460 | 4.496 | 7.996 | 6.575 | 5.870 |
+
+  OK only (210.0 s):
+
+  | Set | Overall | Cabin | Outside far | Engine bay | Tailpipe |
+  |---|---|---|---|---|---|
+  | p1 | 3.836 | 3.462 | 4.760 | 5.189 | 4.647 |
+  | p2 | **3.817** | **3.440** | **4.543** | 5.704 | **4.299** |
+  | p3 | 4.957 | 4.548 | 5.780 | 6.575 | 5.870 |
+
+  Feature gaps on representative official windows (model − recording; `hf_db` / `low_db`): cabin and tailpipe are still too dark in the highs. p2 is close to p1 (tailpipe part-throttle blip `hf_db` −24.2 vs p1 −25.1). p3 is darker still (same blip −34.9, cabin part −30.4 vs p1 −24.7). Low-band level on the blip stays nearly matched for all three. Cabin idle stays too dark; p3 more so. Idle in the game is a few dB quieter on p2 than p1, and quieter again on p3.
+* **CPU:** waveguide pipes p1 31, p2 30, p3 80 (`nseg=3` on both perforated cans). Chromium desktop, 8 s at 2,000 rpm, 48 kHz: p1 18.1 % of real time, p2 18.6 %, p3 27.5 %. p3 is heavier than p1 but still well under real time on desktop; it is a listening test, not the default. (WebKit was not available in the build environment.)
+
+
 ## v1.12.2 (tag `v1.12.2`), 2026-11-15 (911 default is now v12 · 911 p7)
 
 * **The 911 default is now v12 · 911 p7**, chosen by the owner by ear. `?car=p997` opens p7, and unknown `?p997=` values fall back to p7. p4 (the default from v1.11.42 to v1.12.1) and p1, p2, p3, p5, p6 stay selectable, with all their aliases.
