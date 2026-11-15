@@ -2,6 +2,32 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.2 (tag `v1.12.2`), 2026-11-15 (911 default is now v12 · 911 p7)
+
+* **The 911 default is now v12 · 911 p7**, chosen by the owner by ear. `?car=p997` opens p7, and unknown `?p997=` values fall back to p7. p4 (the default from v1.11.42 to v1.12.1) and p1, p2, p3, p5, p6 stay selectable, with all their aliases.
+* No sound changes: `engine-worklet.js` is byte-identical to v1.12.1, so every car and set sounds the same.
+* **Official scorecard** (round-6 stock-OK windows: 4 rpm bins × part / full / shut over cabin, outside rear and tailpipe; pooled weighted feature distance, lower is better; Python v8phys, same windows for every set):
+
+  | Set | Overall | Cabin | Outside rear | Tailpipe |
+  |---|---|---|---|---|
+  | p1 | 3.067 | 2.796 | 3.507 | 3.840 |
+  | p2 | 4.661 | 4.956 | 4.212 | 3.225 |
+  | p3 | **2.925** | **2.534** | 3.552 | 4.154 |
+  | p4 | 3.290 | 3.261 | 3.301 | 4.095 |
+  | p5 | 3.060 | 2.890 | 3.261 | 5.053 |
+  | p6 | 3.377 | 3.313 | 3.458 | 4.024 |
+  | p7 | 2.959 | 2.767 | **3.211** | 4.704 |
+
+  * p7 is second overall, behind p3; p3 was rejected by ear.
+  * p7 is better than p4 by 0.33 overall, and better than p1 in the cabin and outside.
+  * In the tailpipe, p7 is worse than both (4.70 against p4 4.10 and p1 3.84). That comes from its idle / low cell (4.98) and the 5–7.3k cell.
+* **Per-clip checks (Rounds 6–11).** Steady renders at 2k / 3k / 4k part and full, cabin and outside, against the recordings per clip. Values are the mean absolute error in dB.
+  * **Tilt:** p7 6.1, p5 6.1, p3 6.3, p1 8.3, p4 9.8, p6 10.7, p2 21.1.
+  * **Order 3:** p3 4.1, p6 5.6, p4 5.7, p7 5.7, p2 6.1, p1 6.9, p5 7.3.
+  * **Order 4.5:** p4 2.9, p7 2.9, p2 4.3, p6 4.7, p1 6.1, p5 6.1, p3 6.5.
+  * **Not fixed:** cabin level at 2k / 3k full relative to 4k: recordings −2.2 / −1.4 dB (only 2 clips), p7 −8.0 / −9.6, p4 −8.4 / −9.0, p1 −0.9 / +6.3. p7 is still too quiet at low and mid rpm.
+* **Caveat:** the old pooled cabin target of "+4.2 dB order 3 at 5–6k (rel. 3,500)" is skewed by one clip and by closed-throttle windows. Taken per clip it is −1.1 dB, so the order-3 shape numbers are only a guide.
+
 ## v1.12.1 (tag `v1.12.1`), 2026-11-15 (911 listening test: v12 · 911 p7 = p4 with internal packing)
 
 * New, **non-default** option **Sound v12 · 911 p7** (`?p997=p7`, also `v12.911.p7` / `v11.911.p7`). The owner approved it as the last try at the low and mid-range grunt.
