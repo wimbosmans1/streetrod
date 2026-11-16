@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.12.11)</title>
+<title>Street Rod: engine sound + driving demo (v1.12.12)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -369,9 +369,9 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound: v12 · BRM p11 (default) or an earlier v12 · BRM p1–p10 set (formerly v9.1–v9.11)"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
       <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v12 · 911 p7 (default since v1.12.2; p4 with internal packing), p4 (photo-measured reverse-flow side boxes; default v1.11.42–v1.12.1), p1 (series-chamber muffler), p2 (perforated straight-through muffler), p3 (3-chamber side boxes; listening test), p5 (series 3-chamber side boxes from the Fabspeed video; listening test) or p6 (p4 with its high note earlier; listening test)"><select id="selP997" aria-label="911 engine sound option"></select></label>
-      <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac engine sound: v12 · Cadillac p1 (default; the previous set), p2 (shop-manual cam, valves, rod, dry-pack cleaner, true dual exhaust, 2 in then 1¾ in pipes; same muffler as p1) or p3 (p2 plus Walker 21158 TriFlow muffler and 21159 Direct Flow resonator). Listening tests; p1 stays the default."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2, p3, p4, p5, p6 (test) and p7 (picker-only). p1 stays the default; p7 has no new URL."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
-      <label class="sel" id="segSound" title="This car's sound-model history: every model actually developed for this car, in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
+      <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
       <button class="tb more hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
@@ -7309,7 +7309,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CarRadio;
  *    starts a silent <audio> loop (+ navigator.audioSession = 'playback') so the
  *    iPhone ring/silent switch doesn't mute Web Audio.
  *  - Engine voice runs in an AudioWorklet loaded from, in order: a same-origin
- *    file (engine-worklet.js, http/https only), a Blob URL, a data: URL.
+ *    file (engine-worklet.js?v=title-version, http/https on desktop Chromium only),
+ *    a Blob URL (first on Safari / iOS / Tesla, so addModule never sees a query string),
+ *    a data: URL.
  *    If none loads, or the worklet produces no blocks, it falls back to a
  *    main-thread ScriptProcessor running the same EngineVoice code.
  *  - DSP always uses ctx.sampleRate (44.1 or 48 kHz, whatever the device runs).
@@ -7317,12 +7319,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CarRadio;
 var EngineAudio = (function () {
   var isHttp = /^https?:$/.test(location.protocol);
 
+  // v1.12.12: Safari / iOS WebKit / the Tesla in-car browser must not call audioWorklet.addModule
+  // with a query-string URL (engine-worklet.js?v=…). That can throw, hang, or “succeed” without
+  // registering the processor. The inlined Blob always matches the current page, so use it first
+  // on those engines; keep the GitHub Pages cache-bust file?v= first on desktop Chromium.
+  function preferBlobWorklet() {
+    var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    if (/Tesla/i.test(ua)) return true;
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    if (/AppleWebKit/i.test(ua) && !/Chrome|Chromium|Edg\/|OPR\/|Android/i.test(ua)) return true;
+    return false;
+  }
+
   async function loadWorklet(ctx, log) {
     var src = engineWorkletSource(), tries = [];
     // v1.12.9: GitHub Pages serves with Cache-Control max-age=600 and ignores the repo _headers
     // no-cache rule, so a stale engine-worklet.js can stay loaded after a new index.html. Bust with the title version.
     var ver = (typeof document !== 'undefined' && document.title && (document.title.match(/\(v([\d.]+)\)/) || [])[1]) || '';
-    if (isHttp) tries.push(['file', function () { return 'engine-worklet.js?v=' + encodeURIComponent(ver || '1'); }]);
+    if (isHttp && !preferBlobWorklet()) tries.push(['file', function () { return 'engine-worklet.js?v=' + encodeURIComponent(ver || '1'); }]);
     tries.push(['blob', function () { return URL.createObjectURL(new Blob([src], { type: 'application/javascript' })); }]);
     tries.push(['data', function () { return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(src); }]);
     if (!isHttp) tries.push(tries.shift());   // file://: data first (Chrome rejects blob: on null origin)
@@ -9767,6 +9781,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.12.12", date: "2026-11-16", status: "done", headline: "Engine-model switching restored on Safari, iOS and Tesla", text: "v1.12.10 rebuilt one #selSound list by wiping its options whenever the car changed, and v1.12.9 loaded the worklet as engine-worklet.js?v=…. Both break sound switching on iOS Safari and the Tesla in-car browser (a repopulated native <select> does not fire change reliably; a query string on audioWorklet.addModule can fail to register the processor). Each car now has its own <select> again, filled once, with exactly one list visible, still showing that car's full version history (same entries as v1.12.10). On Safari / iOS / Tesla the worklet is loaded from the inlined Blob first; desktop Chromium still uses the cache-busted file URL. No new URLs, defaults unchanged, DSP unchanged from v1.12.11." },
       { v: "v1.12.11", date: "2026-11-16", status: "done", headline: "CFL-correct waveguide length at any sample rate (Cadillac p3\u2013p7 audible at 44.1 kHz)", text: "Waveguides shorter than one travel sample at a conservative hot-gas speed (the 1 mm perforated-can end-caps and ~4 mm perforate necks) are now built at that CFL length, so they stay legal delay lines at 44.1 and 48 kHz as the gas heats. Those 1-sample clamped stubs were present on Cadillac p3\u2013p7 (80\u201388 pipes) and on 911 sets that use a perforated can; Cadillac p1/p2, the GT350, 911 p1 and the BRM are unchanged (bit-identical). A junction scatter with a non-finite admittance sum is skipped so a 0/0 cannot latch the network to NaN. No new URLs, defaults unchanged, one sound drop-down per car. No Cadillac-only code." },
       { v: "v1.12.10", date: "2026-11-16", status: "done", headline: "One sound drop-down per car, with that car's version history", text: "Each car now shows exactly one sound drop-down, filled with every sound model actually developed for that car, in chronological order and mapped to the real worklet mode. The GT350 list is v1\u2013v4 plus v12 \u00b7 GT350 p1 (default). The Cadillac list is v1\u2013v4 plus v12 \u00b7 Cadillac p1\u2013p7 (p1 default; p7 stays picker-only, with no new URL). The BRM list is v12 \u00b7 BRM p1\u2013p4, p6 and p8\u2013p11 (p11 default). There is no shipped BRM p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit, so they are not invented as picker rows. The retired v8 order-table model stays retired (it is no longer in the worklet). The 911 list is v12 \u00b7 911 p1\u2013p7 in numeric order (p7 default); older names such as VarioCam Plus and v10.1 remain aliases of those sets. The leftover per-car <select> elements stay hidden, so the BRM no longer shows two lists. A never-shipped BRM query (?car=brm&sound=p7, ?sound=v12.brm.p7, ?sound=v9.7) stays on BRM p11 and no longer falls through to kernel v1. DSP is unchanged; the worklet is cache-busted as engine-worklet.js?v=1.12.10." },
       { v: "v1.12.9", date: "2026-11-16", status: "done", headline: "Worklet cache-bust; Cadillac p7 audible check", text: "The engine worklet is now loaded as engine-worklet.js?v=(version) so a stale GitHub Pages cache (max-age 600) cannot keep an old worklet after a new page load. Cadillac p7 stays a picker-only variation (no new URL); p1 stays the default. A live-site audit of every sound-picker entry (GT350 v1–v12, Cadillac p1–p7, BRM p1–p11, 911 p1–p7) confirmed each one maps to a real worklet model or parameter set and produces audible engine output, including Cadillac p7 on a fresh load and when switching from p6/p1." },
@@ -10702,21 +10717,30 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     while (i < opts.length && opts[i].value !== cur) i++;
     applySoundPicker(opts[(i + 1) % opts.length].value);
   }
-  var lastSoundHistKey = '';
-  function syncSoundPicker() {
+  // v1.12.12: each car has its own <select>, filled once at init. Never wipe options
+  // (iOS Safari and the Tesla in-car browser mishandle a repopulated native <select>).
+  function visibleSoundSelect() {
     var key = spec().engineKey;
-    if (key !== lastSoundHistKey) {
-      lastSoundHistKey = key;
-      selS.innerHTML = '';
-      soundHistory().forEach(function (o) {
-        var el = document.createElement('option');
-        el.value = o.value;
-        el.textContent = o.label;
-        selS.appendChild(el);
-      });
-    }
-    var cur = soundPickerValue();
-    if (selS.querySelector('option[value="' + cur.replace(/"/g, '') + '"]')) selS.value = cur;
+    if (key === 'BRM') return selB;
+    if (key === 'P997') return selP997;
+    if (key === 'CADDY') return selCaddy;
+    return selS;
+  }
+  function currentSoundValue() {
+    var key = spec().engineKey;
+    if (key === 'BRM') return state.brmSound;
+    if (key === 'P997') return state.p997Sound;
+    if (key === 'CADDY') return state.model === 'v9p' ? state.caddySound : state.model;
+    return state.model;
+  }
+  function syncSoundPicker() {
+    var sel = visibleSoundSelect(), cur = currentSoundValue();
+    if (sel && sel.value !== cur) sel.value = cur;
+  }
+  function applyCaddyPicker(val) {
+    if (val === 'v1' || val === 'v2' || val === 'v3' || val === 'v4') { setModel(val); return; }
+    state.model = 'v9p';
+    setCaddySound(val);
   }
   function ensureAudio() {
     audio.unlock();
@@ -11035,7 +11059,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // model / visuals selectors (built from the registries)
   var selS = document.getElementById('selSound'), selV = document.getElementById('selVisual');
   VisualModels.list.forEach(function (m) { if (m.available && !m.available()) return; var o = document.createElement('option'); o.value = m.id; o.textContent = m.label; o.title = m.note || ''; selV.appendChild(o); });
-  selS.addEventListener('change', function () { applySoundPicker(selS.value); selS.blur(); });
+  // v1.12.12: fill each car's <select> once (v1.12.7 pattern). #selSound is the GT350 list only.
+  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['v9p', 'Sound v12 · GT350 p1 (default)']].forEach(function (row) {
+    var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selS.appendChild(o);
+  });
+  selS.addEventListener('change', function () { setModel(selS.value); selS.blur(); });
   // v1.9.2: BRM sound picker (every v9.x physics model; v8 retired in v1.11.18): a compact select, so it fits an iPhone top bar
   var selB = document.getElementById('selBrm');
   SoundModels.brmList.forEach(function (b) {
@@ -11046,16 +11074,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   selB.addEventListener('change', function () { setBrmSound(selB.value); selB.blur(); });
   var selP997 = document.getElementById('selP997');
-  // v1.11.36: two 911 parameter sets on sound model v12. v1.11.39: p3 = p1 + cut-away-style 3-chamber side boxes (listening test; the v1.11.37 runner p3 is gone).
-  [['p7', 'Sound v12 · 911 p7 (default)'], ['p4', 'Sound v12 · 911 p4'], ['p1', 'Sound v12 · 911 p1'], ['p2', 'Sound v12 · 911 p2'], ['p3', 'Sound v12 · 911 p3'], ['p5', 'Sound v12 · 911 p5'], ['p6', 'Sound v12 · 911 p6']].forEach(function (row) {
+  // v1.12.10/v1.12.12: 911 list is p1–p7 in numeric (chronological) order. Filled once; never rebuilt.
+  [['p1', 'Sound v12 · 911 p1'], ['p2', 'Sound v12 · 911 p2'], ['p3', 'Sound v12 · 911 p3 (listening test)'], ['p4', 'Sound v12 · 911 p4'], ['p5', 'Sound v12 · 911 p5 (listening test)'], ['p6', 'Sound v12 · 911 p6 (listening test)'], ['p7', 'Sound v12 · 911 p7 (default)']].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selP997.appendChild(o);
   });
   if (selP997) selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
   var selCaddy = document.getElementById('selCaddy');
-  [['p1', 'Sound v12 · Cadillac p1 (default)'], ['p2', 'Sound v12 · Cadillac p2'], ['p3', 'Sound v12 · Cadillac p3'], ['p4', 'Sound v12 · Cadillac p4'], ['p5', 'Sound v12 · Cadillac p5'], ['p6', 'Sound v12 · Cadillac p6 (test)'], ['p7', 'Sound v12 · Cadillac p7']].forEach(function (row) {
+  // v1.12.12: Cadillac's one list is the full history (v1–v4 plus v12 · Cadillac p1–p7), filled once.
+  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7]].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selCaddy.appendChild(o);
   });
-  if (selCaddy) selCaddy.addEventListener('change', function () { setCaddySound(selCaddy.value); selCaddy.blur(); });
+  if (selCaddy) selCaddy.addEventListener('change', function () { applyCaddyPicker(selCaddy.value); selCaddy.blur(); });
   selV.addEventListener('change', function () { setVisual(selV.value); selV.blur(); });
   // v1.11.12: Car and Position are native <select> lists (same pattern as Sound / Visuals), so they work in the Tesla in-car browser.
   var selCar = document.getElementById('selCar'), selView = document.getElementById('selView');
@@ -11066,14 +11095,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var v = spec(), auto = v.trans === 'auto';
     selCar.value = state.carId;
     selView.value = state.bay ? '2' : String(state.view);
-    // v1.12.10: leftover per-car <select>s stay in the DOM (hidden) so old ids still exist; the one visible list is #selSound.
-    document.getElementById('segBrmSound').classList.add('hidden');
+    // v1.12.12: exactly one visible sound <select> per car; lists are static (filled once). Hide the other three.
+    var soundKey = v.engineKey;
+    document.getElementById('segBrmSound').classList.toggle('hidden', soundKey !== 'BRM');
     selB.value = state.brmSound;
-    document.getElementById('segP997Sound').classList.add('hidden');
+    document.getElementById('segP997Sound').classList.toggle('hidden', soundKey !== 'P997');
     if (selP997) selP997.value = state.p997Sound;
-    document.getElementById('segCaddySound').classList.add('hidden');
-    if (selCaddy) selCaddy.value = state.caddySound;
-    document.getElementById('segSound').classList.remove('hidden');
+    document.getElementById('segCaddySound').classList.toggle('hidden', soundKey !== 'CADDY');
+    if (selCaddy) selCaddy.value = (soundKey === 'CADDY' && state.model !== 'v9p') ? state.model : state.caddySound;
+    document.getElementById('segSound').classList.toggle('hidden', soundKey !== 'GT350');
+    if (selS && soundKey === 'GT350') selS.value = state.model;
     syncSoundPicker();
     selV.value = state.visual;
 
