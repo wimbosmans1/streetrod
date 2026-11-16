@@ -2,6 +2,17 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.7 (tag `v1.12.7`), 2026-11-16 (Cadillac picker variation: v12 · Cadillac p7)
+
+* **v12 · Cadillac p7** is a new non-default **picker variation**. It is selected from the Cadillac sound picker (label **Sound v12 · Cadillac p7**). There is no new URL or query alias (`?sound=`, `?caddy=`, `?cadillac=` are unchanged). Existing p1–p6 links still work. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.6. No Cadillac-only code path, no echo EQ, no change to `k_int`, `ro_loss` or the open-end radiation. The 3.07 m connector is not split.
+* p7 is **p6 plus a generic air-cleaner element flow resistance** in the existing lumped intake circuit (plenum–throttle–cleaner–snorkel).
+  * The new generic parameter is `r_ac` (Pa·s/m³). Default is 0: the snorkel resistance stays the previous 0.1 ρc/A radiation term only, so any car that omits `r_ac` stays bit-identical. When set, it is added in series on the snorkel path (`Q_SNR`).
+  * The 1959 Cadillac as fitted used a **dry-pack paper element**, not an oil-bath: official 1959 Cadillac specifications (brochure back cover), “dry-pack type air cleaner; intake silencer” (http://www2.cadillac.cz/zajimavosti/brochure1959/15.htm). That is the same dry-pack type already used for the p2 geometry (`v_ac`, `sn_len`, `sn_d`).
+  * **r_ac = 3900 Pa·s/m³** is the linearised ΔP/Q of a typical clean paper element. Toma, Anghelache and Moisescu, “Replacement Period Evaluation of Petrol Engines Air Filters Based on Restriction Measurement,” WSEAS ACMOS, 2014, report SAE J726 measurements presented in Zemaitis, SAE Technical Paper 980868 (1998): classic paper filters in new condition, 550–750 Pa at 600 m³/h, element only (no casing). Midpoint 650 Pa / (600/3600 m³/s) = **3900 Pa·s/m³**.
+* **Neutral blip-and-release check** (cabin, same handed game-like coast as the p6 overrun diagnosis: about 2.8 s from ~2740 to 515 rpm, throttle closed). Decay RMS **0.00406 → 0.00291** (−2.9 dB). The ~118 Hz air-cleaner Helmholtz band (108 / 118 / 128 Hz) is **3.0–3.2 dB** lower (118 Hz mean −75.2 → −78.4 dB). The 65 / 76 Hz exhaust formants, which are not the intake element, move by only −0.5 / −1.0 dB. `k_int` stays 2.0; `Q_SNR` is 5077 + 3900 = 8977 Pa·s/m³.
+* **Dry-target score** (same 168.9 s pipeline as v1.12.4–v1.12.6; lower is better). p7 was not fitted. Cabin 5.788, outside far 3.310, engine bay 5.304, tailpipe 3.331, **all paths 5.249** (p6 5.634, p5 4.756, p1 3.669). Every dry path is a little closer than p6; p1 remains the better official score and stays the default. Old official all 5.681 (p6 6.077); OK only 5.628 (p6 6.027). UNSURE cabins 5.442 (p6 5.826).
+* **CPU:** waveguide pipes still 88, same as p6 (`nseg` stays 3). Chromium desktop, 8 s at 2,000 rpm, 48 kHz, same method as v1.12.6: p1 17.9 % of real time, p6 27.8 %, p7 27.9 %. p7 sits with p6. (WebKit was not available in the build environment.)
+
 ## v1.12.6 (tag `v1.12.6`), 2026-11-15 (Cadillac diagnostic test: v12 · Cadillac p6)
 
 * **v12 · Cadillac p6 (test)** (`?caddy=p6`, `?cadillac=p6`, `?sound=v12.cadillac.p6` / `v12.caddy.p6`, or `?car=caddy&sound=p6`) is a new non-default **diagnostic** set, marked as a test in the picker. It is not a candidate default. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.5. No Cadillac-only code path, no echo EQ, no change to `ro_loss` or the open-end radiation.
