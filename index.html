@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.12.8)</title>
+<title>Street Rod: engine sound + driving demo (v1.12.9)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -7305,7 +7305,10 @@ var EngineAudio = (function () {
 
   async function loadWorklet(ctx, log) {
     var src = engineWorkletSource(), tries = [];
-    if (isHttp) tries.push(['file', function () { return 'engine-worklet.js'; }]);
+    // v1.12.9: GitHub Pages serves with Cache-Control max-age=600 and ignores the repo _headers
+    // no-cache rule, so a stale engine-worklet.js can stay loaded after a new index.html. Bust with the title version.
+    var ver = (typeof document !== 'undefined' && document.title && (document.title.match(/\(v([\d.]+)\)/) || [])[1]) || '';
+    if (isHttp) tries.push(['file', function () { return 'engine-worklet.js?v=' + encodeURIComponent(ver || '1'); }]);
     tries.push(['blob', function () { return URL.createObjectURL(new Blob([src], { type: 'application/javascript' })); }]);
     tries.push(['data', function () { return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(src); }]);
     if (!isHttp) tries.push(tries.shift());   // file://: data first (Chrome rejects blob: on null origin)
@@ -9750,6 +9753,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.12.9", date: "2026-11-16", status: "done", headline: "Worklet cache-bust; Cadillac p7 audible check", text: "The engine worklet is now loaded as engine-worklet.js?v=(version) so a stale GitHub Pages cache (max-age 600) cannot keep an old worklet after a new page load. Cadillac p7 stays a picker-only variation (no new URL); p1 stays the default. A live-site audit of every sound-picker entry (GT350 v1–v12, Cadillac p1–p7, BRM p1–p11, 911 p1–p7) confirmed each one maps to a real worklet model or parameter set and produces audible engine output, including Cadillac p7 on a fresh load and when switching from p6/p1." },
       { v: "v1.12.8", date: "2026-11-16", status: "done", headline: "One sound drop-down; Cadillac p7 stays a picker variation", text: "The Cadillac sound picker is now hidden unless the Cadillac and sound model v12 are selected, and while it is shown the general Sound list is hidden, so there is exactly one sound drop-down. Cadillac p7 remains one more entry in that list (label Sound v12 \u00b7 Cadillac p7). There is still no new URL; existing p1–p6 links still work and p1 stays the default. The GT350, 911 and BRM sounds and their pickers are unchanged. The second list was the Cadillac picker: it was added in v1.12.3 without the #segCaddySound.hidden rule that the BRM and 911 pickers have, so it stayed visible on every car (including the GT350 default) even with class hidden. v1.12.8 adds that rule and hides the general Sound list while the Cadillac v12 picker is open, matching the 911." },
       { v: "v1.12.7", date: "2026-11-16", status: "done", headline: "Cadillac picker variation: v12 \u00b7 Cadillac p7", text: "A new, non-default Cadillac option, v12 \u00b7 Cadillac p7, is in the Cadillac sound picker only. There is no new link: existing p1–p6 URLs still work, p1 stays the default, and p7 is chosen from the picker (Sound v12 \u00b7 Cadillac p7). It is p6 plus a generic air-cleaner element flow resistance in the lumped intake circuit (plenum–throttle–cleaner–snorkel). The 1959 Cadillac uses a dry-pack paper element (official 1959 specifications: “dry-pack type air cleaner; intake silencer”). The resistance itself, r_ac = 3900 Pa\u00b7s/m\u00b3, is the linearised \u0394P/Q of a typical clean paper element from SAE J726 measurements reported by Toma, Anghelache and Moisescu (WSEAS ACMOS, 2014) after Zemaitis, SAE 980868 (1998): 550–750 Pa at 600 m\u00b3/h, element only; midpoint 650 Pa gives 3900 Pa\u00b7s/m\u00b3. r_ac is a generic building block, default 0, so the GT350, 911 and BRM stay bit-identical. k_int, ro_loss and the open end are unchanged; the 3.07 m connector is not split. p1 stays the default." },
       { v: "v1.12.6", date: "2026-11-15", status: "done", headline: "Cadillac diagnostic test: v12 \u00b7 Cadillac p6 (test)", text: "A new, non-default diagnostic option, v12 \u00b7 Cadillac p6 (test) (?caddy=p6 or ?sound=v12.cadillac.p6), is p5 with the Walker muffler and resonator internal chambers and perforates made strongly lossy, using only the existing generic pack and pack_n terms (pack = 2.0, pack_n = 2.0; a diagnostic choice, not sourced or fitted). Inlet and outlet tubes, the 3.07 m connector, the tail, ro_loss and the open end are unchanged. The point is to hear whether the standing waves in p5 come from those internals. p1 stays the default. The GT350, 911 and BRM sounds are unchanged." },

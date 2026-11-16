@@ -2,6 +2,11 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.9 (tag `v1.12.9`), 2026-11-16 (worklet cache-bust; Cadillac p7 audible check)
+
+* **Worklet cache-bust.** `engine-worklet.js` is loaded with a `?v=(title version)` query so a stale GitHub Pages cache cannot keep an old worklet after a new `index.html`. GitHub Pages serves `Cache-Control: max-age=600` and does not honour the repo `_headers` no-cache rule. The DSP, Cadillac p7 (`r_ac = 3900`), the single sound drop-down, and the no-p7-URL rule are unchanged. p1 stays the default. Other cars stay bit-identical.
+* **Audible-output audit** (live site https://wimbosmans1.github.io/streetrod/, v1.12.8, fresh Chromium context, analyser RMS with ~0.7 throttle). Every picker entry maps to a real worklet model or parameter set and produces audible engine output (no `voiceErr`, engine running). Cadillac p7 is **p6 + r_ac**, not a missing set: fresh load **−35.6 dB** (p6 **−34.7 dB**, p1 **−25.3 dB**); switching p1→p6→p7: p7 **−31.2 dB** (p6 **−30.9 dB**, p1 **−24.5 dB**). Direct synth at 2000 rpm / 0.4 thr: p7 **−21.2 dB**, p6 **−20.7 dB**, no NaNs, `Q_SNR` 8977. The earlier −50 dB figure was a 4 s **idle** window without throttle, not a mute. Cabin p7 matches p6 (rev about −20 dB). ScriptProcessor fallback also plays p7.
+
 ## v1.12.8 (tag `v1.12.8`), 2026-11-16 (one sound drop-down; Cadillac p7 stays a picker variation)
 
 * **UI fix:** the site again has **exactly one sound drop-down**. Cadillac p7 remains one more entry in that list (label **Sound v12 · Cadillac p7**), as p2–p6 already were. There is still no new p7 URL; existing p1–p6 links still work; p1 stays the default. The GT350, 911 and BRM sounds and their pickers are unchanged.
