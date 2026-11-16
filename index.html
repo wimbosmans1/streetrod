@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.12.10)</title>
+<title>Street Rod: engine sound + driving demo (v1.12.11)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -4026,7 +4026,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           pin_ = NODE[nb + 4 + 2 * j] === 0 ? PF[p_ * NF + F_SB] : PF[p_ * NF + F_SA];
           sy += y; sp += y * pin_;
         }
+        if (!(sy > 0.0) || !isFinite(sp)) continue;
         var pj = 2.0 * sp / sy;
+        if (!isFinite(pj)) continue;
         for (j = 0; j < npt; j++) {
           p_ = NODE[nb + 3 + 2 * j];
           if (NODE[nb + 4 + 2 * j] === 0) { AB[p_ * DL + wi] = pj - PF[p_ * NF + F_SB]; if (knl > 0.0) arr(AB, AT, PF, p_, wi, nt, knl); }
@@ -4436,11 +4438,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (name === 'engine_bay') { x = c.intake[0]; z = c.intake[2]; return { ears: [[x - 0.25, 0.09, z + 0.55], [x - 0.25, -0.09, z + 0.55]], ground: 0.8, outside: true, shadow: 0.5, bay: true }; }
       var h = c.head; return { ears: [[h[0], h[1] + 0.09, h[2]], [h[0], h[1] - 0.09, h[2]]], ground: 0.0, outside: false, shadow: 1.0, window: name === 'in_cabin_open' };
     }
-    /** exhaust network (v8phys.build_net / net_arrays) */
-    function buildNet(c) {
+    /** exhaust network (v8phys.build_net / net_arrays).
+     *  fs is the worklet sample rate: every waveguide is at least one travel sample long at a
+     *  conservative hot-gas speed (CFL). Shorter building-block stubs (1 mm perf end-caps,
+     *  ~4 mm perforate necks) would otherwise be clamped to a 1-sample delay line — a stiff
+     *  closed-end loop whose length changes with sample rate and gas temperature. */
+    function buildNet(c, fs) {
       var pipes = [], nodes = [], left = {}, xp = -1;
+      fs = fs > 0 ? fs : 44100;
+      // CFL length: one sample at a conservative hot exhaust speed (900 K) or at ambient for intake (grp 3).
+      var L_CFL_EX = Math.sqrt(G_EX * R_GAS * 900.0) / fs, L_CFL_IN = C_AIR / fs;
       c.left_bank.forEach(function (x) { left[x] = 1; });
-      function pipe(L, d, grp, pack) { pipes.push([L, d, Math.PI * d * d / 4, grp, pack || 0, 0]); return pipes.length - 1; }
+      function pipe(L, d, grp, pack) {
+        var Lmin = grp === 3 ? L_CFL_IN : L_CFL_EX;
+        if (L < Lmin) L = Lmin;
+        pipes.push([L, d, Math.PI * d * d / 4, grp, pack || 0, 0]);
+        return pipes.length - 1;
+      }
       function node(t, x, ports) { nodes.push([t, x, ports]); }
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0;
@@ -4592,7 +4606,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         netCar.int_run_nseg = this.P.int_run_nseg !== undefined ? this.P.int_run_nseg : 1;
         netCar.int_run_attach = this.P.int_run_attach !== undefined ? this.P.int_run_attach : 1;
       }
-      var N = buildNet(netCar);
+      var N = buildNet(netCar, fs);
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
       this.Q = this._q();
       this.S = new Float64Array(NS); this.NCY = this.c.fire_order.length; this.CY = new Float64Array(this.NCY * NC); this.PF = new Float64Array(this.NP * NF);
@@ -9753,6 +9767,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.12.11", date: "2026-11-16", status: "done", headline: "CFL-correct waveguide length at any sample rate (Cadillac p3\u2013p7 audible at 44.1 kHz)", text: "Waveguides shorter than one travel sample at a conservative hot-gas speed (the 1 mm perforated-can end-caps and ~4 mm perforate necks) are now built at that CFL length, so they stay legal delay lines at 44.1 and 48 kHz as the gas heats. Those 1-sample clamped stubs were present on Cadillac p3\u2013p7 (80\u201388 pipes) and on 911 sets that use a perforated can; Cadillac p1/p2, the GT350, 911 p1 and the BRM are unchanged (bit-identical). A junction scatter with a non-finite admittance sum is skipped so a 0/0 cannot latch the network to NaN. No new URLs, defaults unchanged, one sound drop-down per car. No Cadillac-only code." },
       { v: "v1.12.10", date: "2026-11-16", status: "done", headline: "One sound drop-down per car, with that car's version history", text: "Each car now shows exactly one sound drop-down, filled with every sound model actually developed for that car, in chronological order and mapped to the real worklet mode. The GT350 list is v1\u2013v4 plus v12 \u00b7 GT350 p1 (default). The Cadillac list is v1\u2013v4 plus v12 \u00b7 Cadillac p1\u2013p7 (p1 default; p7 stays picker-only, with no new URL). The BRM list is v12 \u00b7 BRM p1\u2013p4, p6 and p8\u2013p11 (p11 default). There is no shipped BRM p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit, so they are not invented as picker rows. The retired v8 order-table model stays retired (it is no longer in the worklet). The 911 list is v12 \u00b7 911 p1\u2013p7 in numeric order (p7 default); older names such as VarioCam Plus and v10.1 remain aliases of those sets. The leftover per-car <select> elements stay hidden, so the BRM no longer shows two lists. A never-shipped BRM query (?car=brm&sound=p7, ?sound=v12.brm.p7, ?sound=v9.7) stays on BRM p11 and no longer falls through to kernel v1. DSP is unchanged; the worklet is cache-busted as engine-worklet.js?v=1.12.10." },
       { v: "v1.12.9", date: "2026-11-16", status: "done", headline: "Worklet cache-bust; Cadillac p7 audible check", text: "The engine worklet is now loaded as engine-worklet.js?v=(version) so a stale GitHub Pages cache (max-age 600) cannot keep an old worklet after a new page load. Cadillac p7 stays a picker-only variation (no new URL); p1 stays the default. A live-site audit of every sound-picker entry (GT350 v1–v12, Cadillac p1–p7, BRM p1–p11, 911 p1–p7) confirmed each one maps to a real worklet model or parameter set and produces audible engine output, including Cadillac p7 on a fresh load and when switching from p6/p1." },
       { v: "v1.12.8", date: "2026-11-16", status: "done", headline: "One sound drop-down; Cadillac p7 stays a picker variation", text: "The Cadillac sound picker is now hidden unless the Cadillac and sound model v12 are selected, and while it is shown the general Sound list is hidden, so there is exactly one sound drop-down. Cadillac p7 remains one more entry in that list (label Sound v12 \u00b7 Cadillac p7). There is still no new URL; existing p1–p6 links still work and p1 stays the default. The GT350, 911 and BRM sounds and their pickers are unchanged. The second list was the Cadillac picker: it was added in v1.12.3 without the #segCaddySound.hidden rule that the BRM and 911 pickers have, so it stayed visible on every car (including the GT350 default) even with class hidden. v1.12.8 adds that rule and hides the general Sound list while the Cadillac v12 picker is open, matching the 911." },

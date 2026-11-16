@@ -3505,7 +3505,9 @@ function engineModuleV8p(core) {
           pin_ = NODE[nb + 4 + 2 * j] === 0 ? PF[p_ * NF + F_SB] : PF[p_ * NF + F_SA];
           sy += y; sp += y * pin_;
         }
+        if (!(sy > 0.0) || !isFinite(sp)) continue;
         var pj = 2.0 * sp / sy;
+        if (!isFinite(pj)) continue;
         for (j = 0; j < npt; j++) {
           p_ = NODE[nb + 3 + 2 * j];
           if (NODE[nb + 4 + 2 * j] === 0) { AB[p_ * DL + wi] = pj - PF[p_ * NF + F_SB]; if (knl > 0.0) arr(AB, AT, PF, p_, wi, nt, knl); }
@@ -3915,11 +3917,23 @@ function engineModuleV8p(core) {
       if (name === 'engine_bay') { x = c.intake[0]; z = c.intake[2]; return { ears: [[x - 0.25, 0.09, z + 0.55], [x - 0.25, -0.09, z + 0.55]], ground: 0.8, outside: true, shadow: 0.5, bay: true }; }
       var h = c.head; return { ears: [[h[0], h[1] + 0.09, h[2]], [h[0], h[1] - 0.09, h[2]]], ground: 0.0, outside: false, shadow: 1.0, window: name === 'in_cabin_open' };
     }
-    /** exhaust network (v8phys.build_net / net_arrays) */
-    function buildNet(c) {
+    /** exhaust network (v8phys.build_net / net_arrays).
+     *  fs is the worklet sample rate: every waveguide is at least one travel sample long at a
+     *  conservative hot-gas speed (CFL). Shorter building-block stubs (1 mm perf end-caps,
+     *  ~4 mm perforate necks) would otherwise be clamped to a 1-sample delay line — a stiff
+     *  closed-end loop whose length changes with sample rate and gas temperature. */
+    function buildNet(c, fs) {
       var pipes = [], nodes = [], left = {}, xp = -1;
+      fs = fs > 0 ? fs : 44100;
+      // CFL length: one sample at a conservative hot exhaust speed (900 K) or at ambient for intake (grp 3).
+      var L_CFL_EX = Math.sqrt(G_EX * R_GAS * 900.0) / fs, L_CFL_IN = C_AIR / fs;
       c.left_bank.forEach(function (x) { left[x] = 1; });
-      function pipe(L, d, grp, pack) { pipes.push([L, d, Math.PI * d * d / 4, grp, pack || 0, 0]); return pipes.length - 1; }
+      function pipe(L, d, grp, pack) {
+        var Lmin = grp === 3 ? L_CFL_IN : L_CFL_EX;
+        if (L < Lmin) L = Lmin;
+        pipes.push([L, d, Math.PI * d * d / 4, grp, pack || 0, 0]);
+        return pipes.length - 1;
+      }
       function node(t, x, ports) { nodes.push([t, x, ports]); }
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0;
@@ -4071,7 +4085,7 @@ function engineModuleV8p(core) {
         netCar.int_run_nseg = this.P.int_run_nseg !== undefined ? this.P.int_run_nseg : 1;
         netCar.int_run_attach = this.P.int_run_attach !== undefined ? this.P.int_run_attach : 1;
       }
-      var N = buildNet(netCar);
+      var N = buildNet(netCar, fs);
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
       this.Q = this._q();
       this.S = new Float64Array(NS); this.NCY = this.c.fire_order.length; this.CY = new Float64Array(this.NCY * NC); this.PF = new Float64Array(this.NP * NF);
