@@ -2,6 +2,12 @@
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.
 
+## v1.12.8 (tag `v1.12.8`), 2026-11-16 (one sound drop-down; Cadillac p7 stays a picker variation)
+
+* **UI fix:** the site again has **exactly one sound drop-down**. Cadillac p7 remains one more entry in that list (label **Sound v12 · Cadillac p7**), as p2–p6 already were. There is still no new p7 URL; existing p1–p6 links still work; p1 stays the default. The GT350, 911 and BRM sounds and their pickers are unchanged.
+* **Cause:** v1.12.7 did not add a second `<select>`. It only added a p7 option to the existing Cadillac picker (`#selCaddy`), which has been in the page since v1.12.3. That picker never received the `#segCaddySound.hidden { display: none; }` rule that `#segBrmSound` and `#segP997Sound` have. `.sel { display: inline-flex }` therefore kept it visible on every car — including the GT350 default — even when the `hidden` class was set. With p7 picker-only, both lists were in the way.
+* **Fix:** add `#segCaddySound.hidden { display: none; }`, and hide the general Sound list (`#segSound`) while the Cadillac v12 picker is shown, the same pattern as the 911. The picker can select p7 (`caddyName(..., true)`); URL aliases `?caddy=p7`, `?cadillac=p7` and `?sound=v12.cadillac.p7` still fall back to Cadillac p1.
+
 ## v1.12.7 (tag `v1.12.7`), 2026-11-16 (Cadillac picker variation: v12 · Cadillac p7)
 
 * **v12 · Cadillac p7** is a new non-default **picker variation**. It is selected from the Cadillac sound picker (label **Sound v12 · Cadillac p7**). There is no new URL or query alias (`?sound=`, `?caddy=`, `?cadillac=` are unchanged). Existing p1–p6 links still work. p1 stays the default. The GT350, 911 and BRM sounds are bit-identical to v1.12.6. No Cadillac-only code path, no echo EQ, no change to `k_int`, `ro_loss` or the open-end radiation. The 3.07 m connector is not split.

@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.12.7)</title>
+<title>Street Rod: engine sound + driving demo (v1.12.8)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -187,6 +187,7 @@ html.vis-ink #specsDlg table.spec th { color: #3a2e22; }
 #bRadio.hidden { display: none; }
 #segBrmSound.hidden { display: none; }
 #segP997Sound.hidden { display: none; }
+#segCaddySound.hidden { display: none; }   /* v1.12.8: same hide rule as BRM / 911; .sel { display: inline-flex } would otherwise keep the Cadillac picker visible on every car */
 #segSound.hidden { display: none; }   /* v1.11.0: the 911 has one sound model */
 .sel.brmsel { padding: 0 4px; position: relative; }   /* v1.9.2 BRM sound picker: no caption, the options say "Sound v9.1" ... "Sound v9.11 (default)" (v8 retired in v1.11.18) */
 .sel.brmsel select, .touch .sel.brmsel select { -webkit-appearance: none; appearance: none; box-sizing: border-box; height: 27px; line-height: 17px; padding: 4px 17px 4px 6px; margin: 3px 0; }
@@ -9749,6 +9750,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.12.8", date: "2026-11-16", status: "done", headline: "One sound drop-down; Cadillac p7 stays a picker variation", text: "The Cadillac sound picker is now hidden unless the Cadillac and sound model v12 are selected, and while it is shown the general Sound list is hidden, so there is exactly one sound drop-down. Cadillac p7 remains one more entry in that list (label Sound v12 \u00b7 Cadillac p7). There is still no new URL; existing p1–p6 links still work and p1 stays the default. The GT350, 911 and BRM sounds and their pickers are unchanged. The second list was the Cadillac picker: it was added in v1.12.3 without the #segCaddySound.hidden rule that the BRM and 911 pickers have, so it stayed visible on every car (including the GT350 default) even with class hidden. v1.12.8 adds that rule and hides the general Sound list while the Cadillac v12 picker is open, matching the 911." },
       { v: "v1.12.7", date: "2026-11-16", status: "done", headline: "Cadillac picker variation: v12 \u00b7 Cadillac p7", text: "A new, non-default Cadillac option, v12 \u00b7 Cadillac p7, is in the Cadillac sound picker only. There is no new link: existing p1–p6 URLs still work, p1 stays the default, and p7 is chosen from the picker (Sound v12 \u00b7 Cadillac p7). It is p6 plus a generic air-cleaner element flow resistance in the lumped intake circuit (plenum–throttle–cleaner–snorkel). The 1959 Cadillac uses a dry-pack paper element (official 1959 specifications: “dry-pack type air cleaner; intake silencer”). The resistance itself, r_ac = 3900 Pa\u00b7s/m\u00b3, is the linearised \u0394P/Q of a typical clean paper element from SAE J726 measurements reported by Toma, Anghelache and Moisescu (WSEAS ACMOS, 2014) after Zemaitis, SAE 980868 (1998): 550–750 Pa at 600 m\u00b3/h, element only; midpoint 650 Pa gives 3900 Pa\u00b7s/m\u00b3. r_ac is a generic building block, default 0, so the GT350, 911 and BRM stay bit-identical. k_int, ro_loss and the open end are unchanged; the 3.07 m connector is not split. p1 stays the default." },
       { v: "v1.12.6", date: "2026-11-15", status: "done", headline: "Cadillac diagnostic test: v12 \u00b7 Cadillac p6 (test)", text: "A new, non-default diagnostic option, v12 \u00b7 Cadillac p6 (test) (?caddy=p6 or ?sound=v12.cadillac.p6), is p5 with the Walker muffler and resonator internal chambers and perforates made strongly lossy, using only the existing generic pack and pack_n terms (pack = 2.0, pack_n = 2.0; a diagnostic choice, not sourced or fitted). Inlet and outlet tubes, the 3.07 m connector, the tail, ro_loss and the open end are unchanged. The point is to hear whether the standing waves in p5 come from those internals. p1 stays the default. The GT350, 911 and BRM sounds are unchanged." },
       { v: "v1.12.5", date: "2026-11-15", status: "done", headline: "Cadillac listening test: v12 \u00b7 Cadillac p5", text: "A new, non-default Cadillac option, v12 \u00b7 Cadillac p5 (?caddy=p5 or ?sound=v12.cadillac.p5), is p4 plus three sourced lengths: the muffler-to-resonator connector is 3.07 m (developed centreline of the shop-manual two-section intermediate pipe, uncertainty \u00b115 %), the tail / outlet pipe is 0.50 m (Walker 21159 overall plus a shop-manual turndown, uncertainty \u00b10.23 m), and the cabin is 2.19 m long and 1.11 m high from the 1959 AMA interior dimensions (Sixty Special is not a separate cabin). Resonator porosity, the manifolds and idle are unchanged. p1 stays the default. The GT350, 911 and BRM sounds are unchanged." },
@@ -10468,10 +10470,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (/^v11\.(cadillac|caddy)\.p\d+$/.test(v)) return 'v9p';   // v1.12.3: v12.cadillac.p2 etc. still the v12 kernel; the set is caddyName()
     return v;
   }
-  function defaultCaddySound() { return 'p1'; }   // v1.12.7: p1 stays the Cadillac default; p7 is a picker variation (no URL)
-  function caddyName(v) {
+  function defaultCaddySound() { return 'p1'; }   // v1.12.8: p1 stays the Cadillac default; p7 is a picker variation (no URL)
+  function caddyName(v, allowP7) {
     if (!v) return defaultCaddySound();
     v = String(v).toLowerCase().replace(/^v12/, 'v11');
+    // Picker value only. No ?caddy=p7 / ?cadillac=p7 / ?sound=v12.cadillac.p7 alias (allowP7 is false on the URL path).
+    if (allowP7 && v === 'p7') return 'p7';
     if (v === 'p2' || v === 'v11p2' || v === 'v11.p2' || v === 'v11.cadillac.p2' || v === 'v11.caddy.p2') return 'p2';
     if (v === 'p6' || v === 'v11p6' || v === 'v11.p6' || v === 'v11.cadillac.p6' || v === 'v11.caddy.p6') return 'p6';
     if (v === 'p5' || v === 'v11p5' || v === 'v11.p5' || v === 'v11.cadillac.p5' || v === 'v11.caddy.p5') return 'p5';
@@ -10511,7 +10515,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
     p997Sound: p997Name(p997Param),   // v1.12.2: default p7; ?p997=p1|p2|p3|p4|p5|p6 select the other sets
-    caddySound: caddyName(caddyQuery),   // v1.12.7: default p1; p7 is picker-only (no ?caddy=p7 / ?sound= URL)
+    caddySound: caddyName(caddyQuery, false),   // v1.12.8: default p1; p7 is picker-only (no ?caddy=p7 / ?sound= URL)
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   // A Cadillac set query (?caddy=p5, ?sound=v12.cadillac.p5, or ?car=caddy&sound=p5) always uses the v12 kernel.
@@ -10594,7 +10598,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     p7: 'Sound v12 · Cadillac p7'
   };
   function setCaddySound(v) {
-    state.caddySound = caddyName(v);
+    state.caddySound = caddyName(v, true);
     if (audio.ctx) ensureAudio();
     if (spec().engineKey === 'CADDY') flash(CADDY_LABEL[state.caddySound], 1.5);
     updatePanel();
@@ -10983,7 +10987,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
         else opt.textContent = 'Sound v12 · GT350 p1 (default)';
       }
     })();
-    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997');   // 911 has its own parameter-set picker; earlier v1–v4 kernels stay in the V8 Sound menu
+    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997' || caddyV12);   // 911 and Cadillac v12 each have one parameter-set picker; earlier V8 kernels stay in #selSound when that picker is hidden
 
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
     document.getElementById('bDrag').classList.toggle('on', !!drag);
