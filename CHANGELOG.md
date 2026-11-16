@@ -1,3 +1,14 @@
+## v1.12.10 (tag `v1.12.10`), 2026-11-16 (one sound drop-down per car, with that car's version history)
+
+* **One sound drop-down per car**, filled with that car's actual version history — every sound model that was developed for that car, in chronological order, each mapped to the real worklet mode. No new URLs. Defaults are unchanged (GT350 v12 p1, Cadillac p1, BRM p11, 911 p7). Cadillac p7 stays picker-only. There is no DSP change; the worklet is loaded as `engine-worklet.js?v=1.12.10`.
+* **Cause of the two BRM lists:** the general Sound menu (`#selSound`) was hidden for the 911 and for Cadillac v12, but not for the BRM, so the BRM showed both `#selBrm` and `#selSound`. The leftover per-car `<select>` elements are now always hidden; `#selSound` is the single visible list for every car (and is no longer in the overflow "more" row, so it stays on the top bar).
+* **BRM p7:** there is no shipped BRM p7 (and no p5). The picker numbers follow historic v9.N; CHANGELOG records that v9.5 was "no refit, the same numbers as v9.4" and v9.7 was "an evaluation harness, not a fit," and both were "not offered." Those gaps are historical, not a missing row. The retired v8 order-table model is not returned to the list: it was removed from the worklet in v1.11.17 / retired from the menu in v1.11.18. A never-shipped BRM query (`?car=brm&sound=p7`, `?sound=v12.brm.p7`, `?sound=v9.7`) stays on the BRM with default p11 and no longer falls through to kernel v1. A bare `?sound=p7` is not a new alias for BRM, Cadillac or the 911.
+* **Per-car lists** (from CHANGELOG / history.js / the shipped registries; nothing invented):
+  * GT350: Sound v1 (procedural), v2 (physical exhaust), v3 (start-up sequence), v4 (pop/bang fix), v12 · GT350 p1 (default). No later GT350 p-sets were developed. Game kernels v5–v7 were never in this picker.
+  * Cadillac: Sound v1–v4 (same early kernels as the GT350; those cars share the v1–v4 engine modules), then v12 · Cadillac p1 (default), p2, p3, p4, p5, p6 (test), p7 (picker-only).
+  * BRM: v12 · BRM p1, p2, p3, p4, p6, p8, p9, p10, p11 (default). Not listed: p5, p7, v9.0, v8.
+  * 911: v12 · 911 p1, p2, p3, p4, p5, p6, p7 (default), in numeric (chronological) order. The 911 was never on the v1–v4 kernels. Older names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of these p-sets.
+
 # Changelog (engine-web)
 
 The About / History panel in the page is generated from `js/history.js`; add new versions there too.

@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.12.9)</title>
+<title>Street Rod: engine sound + driving demo (v1.12.10)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -371,7 +371,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v12 · 911 p7 (default since v1.12.2; p4 with internal packing), p4 (photo-measured reverse-flow side boxes; default v1.11.42–v1.12.1), p1 (series-chamber muffler), p2 (perforated straight-through muffler), p3 (3-chamber side boxes; listening test), p5 (series 3-chamber side boxes from the Fabspeed video; listening test) or p6 (p4 with its high note earlier; listening test)"><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac engine sound: v12 · Cadillac p1 (default; the previous set), p2 (shop-manual cam, valves, rod, dry-pack cleaner, true dual exhaust, 2 in then 1¾ in pipes; same muffler as p1) or p3 (p2 plus Walker 21158 TriFlow muffler and 21159 Direct Flow resonator). Listening tests; p1 stays the default."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
-      <label class="sel more" id="segSound"><span>Sound</span><select id="selSound" aria-label="Sound model"></select></label>
+      <label class="sel" id="segSound" title="This car's sound-model history: every model actually developed for this car, in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
       <button class="tb more hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
@@ -403,8 +403,8 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>1 / 2 / 3 / 4</td><td>Select car (GT350 / Cadillac / BRM / Porsche 911), also the Car menu</td></tr>
       <tr><td>V</td><td>Inside the car / Outside (rear), or the two garage positions; also the Position menu</td></tr>
       <tr><td>E</td><td>Engine bay (3D engine from the sound model’s parameters; drag to turn, pinch / wheel to zoom, double-tap to reset)</td></tr>
-      <tr><td>X</td><td>Next sound model (v1 – v4; v3/v4 play the real start-up and shutdown)</td></tr>
-      <tr><td>B</td><td>BRM: next engine sound (v12 · BRM p1 &rarr; &hellip; &rarr; p11, default p11; formerly v9.1–v9.11); also the picker next to the cars. The older v8 model has been retired</td></tr>
+      <tr><td>X</td><td>Next sound model in this car's list (every model actually developed for this car, in chronological order)</td></tr>
+      <tr><td>B</td><td>BRM: next engine sound in the BRM list (v12 · BRM p1–p4, p6, p8–p11, default p11; formerly v9.1–v9.11). There is no shipped p5 or p7. The older v8 model has been retired</td></tr>
       <tr><td>Z</td><td>Ink / Flat visuals (also the Visuals menu)</td></tr>
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
       <tr><td>A / D</td><td>Steer left / right (touch: drag sideways on the road)</td></tr>
@@ -6344,7 +6344,7 @@ var SoundModels = (function () {
   // BRM v9.x physics models (js/engine-brm9.js: one kernel, one fitted parameter set each). id 'v9' = v9.6 (v1.9.1 name kept).
   // brm = the BRM sound switch value / ?sound= name. gainDb: loudness-matched to the retired v8 after the limiter (test/level_match_v9.js).
   // v1.11.36: one nomenclature across cars: sound model v12 (the shared physics kernel) plus a per-car parameter-set iteration (p1, p2, …).
-  // The BRM's v9.1…v9.11 history maps onto v12 · BRM p1…p11, with p11 the default. Old ?sound=v8 links fall back to defaultBrm (p11).
+  // The BRM's shipped v9.1…v9.11 history maps onto v12 · BRM p1–p4, p6 and p8–p11, with p11 the default (v9.5 and v9.7 were never offered, so there is no p5 or p7). Old ?sound=v8 links fall back to defaultBrm (p11).
   var BRM9 = [
     { id: 'v9_1', brm: 'v9.1', note: 'engine-sound v9.1: real firing order, straight stubs, first refit on the original recordings', gainDb: { rear: -24.3, in_cabin: -35.9 } },
     { id: 'v9_2', brm: 'v9.2', note: 'engine-sound v9.2: gate-weighted refit, load map, body diffraction, recorder chain', gainDb: { rear: -25.1, in_cabin: -38.5 } },
@@ -6377,7 +6377,7 @@ var SoundModels = (function () {
       gainDb: { BRM: b.gainDb },
     });
   });
-  /** the BRM sound switch: v12 · BRM p1…p11 (the old v9.1…v9.11 sets), oldest first. Default is p11. */
+  /** the BRM sound switch: v12 · BRM p1–p4, p6, p8–p11 (the shipped v9.1…v9.11 sets), oldest first. Default is p11. No p5 (v9.5) or p7 (v9.7). */
   var defaultBrm = 'p11';
   var brmList = BRM9.map(function (b) { return { brm: b.brm, id: b.id, set: b.set, label: b.label }; });
   function get(id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return list[0]; }
@@ -9732,7 +9732,7 @@ var ProjectHistory = {
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. All four cars share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The 911\u2019s default is v12 \u00b7 911 p1 \u2014 the two-bank intake tube, a quieter valvetrain and a series-chamber muffler (formerly v10.1). v12 \u00b7 911 p2 is in the 911 sound picker: the same set, except the muffler is a packed perforated straight-through can (formerly v10.2). The BRM\u2019s default is v12 \u00b7 BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 \u00b7 BRM p1\u2013p10, formerly v9.1\u2013v9.10) stay in the BRM sound picker. The GT350 default is v12 \u00b7 GT350 p1 (formerly v9.11 physics / v9p). The Cadillac default is v12 \u00b7 Cadillac p1; v12 \u00b7 Cadillac p2 (shop-manual specs, same muffler as p1), v12 \u00b7 Cadillac p3 (p2 plus the Walker factory-replacement muffler and resonator) v12 \u00b7 Cadillac p4 (p3 with sourced Walker damping) and v12 \u00b7 Cadillac p5 (p4 with sourced intermediate, tail and cabin lengths) are in the Cadillac sound picker as listening tests. v12 \u00b7 Cadillac p6 (test) is a diagnostic: p5 with the muffler and resonator internal chambers and perforates made strongly lossy. v12 \u00b7 Cadillac p7 is a picker variation of p6 with a generic air-cleaner element flow resistance (no new URL). Earlier v1\u2013v4 kernels stay in their Sound menu.',
+    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. All four cars share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The 911\u2019s default is v12 \u00b7 911 p1 \u2014 the two-bank intake tube, a quieter valvetrain and a series-chamber muffler (formerly v10.1). v12 \u00b7 911 p2 is in the 911 sound picker: the same set, except the muffler is a packed perforated straight-through can (formerly v10.2). The BRM\u2019s default is v12 \u00b7 BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 \u00b7 BRM p1\u2013p10, formerly v9.1\u2013v9.10) stay in the BRM sound picker. The GT350 default is v12 \u00b7 GT350 p1 (formerly v9.11 physics / v9p). The Cadillac default is v12 \u00b7 Cadillac p1; v12 \u00b7 Cadillac p2 (shop-manual specs, same muffler as p1), v12 \u00b7 Cadillac p3 (p2 plus the Walker factory-replacement muffler and resonator) v12 \u00b7 Cadillac p4 (p3 with sourced Walker damping) and v12 \u00b7 Cadillac p5 (p4 with sourced intermediate, tail and cabin lengths) are in the Cadillac sound picker as listening tests. v12 \u00b7 Cadillac p6 (test) is a diagnostic: p5 with the muffler and resonator internal chambers and perforates made strongly lossy. v12 \u00b7 Cadillac p7 is a picker variation of p6 with a generic air-cleaner element flow resistance (no new URL). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1\u2013v4 plus v12 \u00b7 GT350 p1 (default); the Cadillac list is v1\u2013v4 plus v12 \u00b7 Cadillac p1\u2013p7 (p1 default; p7 is picker-only, with no new URL); the BRM list is v12 \u00b7 BRM p1\u2013p4, p6 and p8\u2013p11 (p11 default \u2014 there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 \u00b7 911 p1\u2013p7 (p7 default). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
     sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
       { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
@@ -9753,6 +9753,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.12.10", date: "2026-11-16", status: "done", headline: "One sound drop-down per car, with that car's version history", text: "Each car now shows exactly one sound drop-down, filled with every sound model actually developed for that car, in chronological order and mapped to the real worklet mode. The GT350 list is v1\u2013v4 plus v12 \u00b7 GT350 p1 (default). The Cadillac list is v1\u2013v4 plus v12 \u00b7 Cadillac p1\u2013p7 (p1 default; p7 stays picker-only, with no new URL). The BRM list is v12 \u00b7 BRM p1\u2013p4, p6 and p8\u2013p11 (p11 default). There is no shipped BRM p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit, so they are not invented as picker rows. The retired v8 order-table model stays retired (it is no longer in the worklet). The 911 list is v12 \u00b7 911 p1\u2013p7 in numeric order (p7 default); older names such as VarioCam Plus and v10.1 remain aliases of those sets. The leftover per-car <select> elements stay hidden, so the BRM no longer shows two lists. A never-shipped BRM query (?car=brm&sound=p7, ?sound=v12.brm.p7, ?sound=v9.7) stays on BRM p11 and no longer falls through to kernel v1. DSP is unchanged; the worklet is cache-busted as engine-worklet.js?v=1.12.10." },
       { v: "v1.12.9", date: "2026-11-16", status: "done", headline: "Worklet cache-bust; Cadillac p7 audible check", text: "The engine worklet is now loaded as engine-worklet.js?v=(version) so a stale GitHub Pages cache (max-age 600) cannot keep an old worklet after a new page load. Cadillac p7 stays a picker-only variation (no new URL); p1 stays the default. A live-site audit of every sound-picker entry (GT350 v1–v12, Cadillac p1–p7, BRM p1–p11, 911 p1–p7) confirmed each one maps to a real worklet model or parameter set and produces audible engine output, including Cadillac p7 on a fresh load and when switching from p6/p1." },
       { v: "v1.12.8", date: "2026-11-16", status: "done", headline: "One sound drop-down; Cadillac p7 stays a picker variation", text: "The Cadillac sound picker is now hidden unless the Cadillac and sound model v12 are selected, and while it is shown the general Sound list is hidden, so there is exactly one sound drop-down. Cadillac p7 remains one more entry in that list (label Sound v12 \u00b7 Cadillac p7). There is still no new URL; existing p1–p6 links still work and p1 stays the default. The GT350, 911 and BRM sounds and their pickers are unchanged. The second list was the Cadillac picker: it was added in v1.12.3 without the #segCaddySound.hidden rule that the BRM and 911 pickers have, so it stayed visible on every car (including the GT350 default) even with class hidden. v1.12.8 adds that rule and hides the general Sound list while the Cadillac v12 picker is open, matching the 911." },
       { v: "v1.12.7", date: "2026-11-16", status: "done", headline: "Cadillac picker variation: v12 \u00b7 Cadillac p7", text: "A new, non-default Cadillac option, v12 \u00b7 Cadillac p7, is in the Cadillac sound picker only. There is no new link: existing p1–p6 URLs still work, p1 stays the default, and p7 is chosen from the picker (Sound v12 \u00b7 Cadillac p7). It is p6 plus a generic air-cleaner element flow resistance in the lumped intake circuit (plenum–throttle–cleaner–snorkel). The 1959 Cadillac uses a dry-pack paper element (official 1959 specifications: “dry-pack type air cleaner; intake silencer”). The resistance itself, r_ac = 3900 Pa\u00b7s/m\u00b3, is the linearised \u0394P/Q of a typical clean paper element from SAE J726 measurements reported by Toma, Anghelache and Moisescu (WSEAS ACMOS, 2014) after Zemaitis, SAE 980868 (1998): 550–750 Pa at 600 m\u00b3/h, element only; midpoint 650 Pa gives 3900 Pa\u00b7s/m\u00b3. r_ac is a generic building block, default 0, so the GT350, 911 and BRM stay bit-identical. k_int, ro_loss and the open end are unchanged; the 3.07 m connector is not split. p1 stays the default." },
@@ -10501,21 +10502,34 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (v === 'p3' || v === 'v11p3' || v === 'v11.p3' || v === 'v11.911.p3') return 'p3';   // v1.11.39: p3 = p1 + cut-away-style side boxes (listening test)
     return defaultP997Sound();   // anything else -> the default (p7 since v1.12.2)
   }
+  function isRegisteredKernel(id) {
+    return !!(id && SoundModels.list.filter(function (m) { return m.id === id && !m.hidden; })[0]);
+  }
+  // Clearly a BRM sound query (v9.N or v12.brm.pN, including never-shipped p5/p7). Bare pN is not in this test: p1–p4/p6/p8–p11 already resolve via brmName, and a bare p7 must not become a new BRM/Cadillac/911 alias.
+  function looksLikeBrmSound(v) {
+    var s = String(v || '').toLowerCase();
+    return /^(?:v12\.|v11\.|v10\.)?brm\.(p\d+|v9(?:\.\d+)?)$/.test(s) || /^v9(?:\.\d+)?$/.test(s);
+  }
   var soundParam = params.get('sound'), retiredBrmV8 = soundParam === 'v8';
   var brmParam = (soundParam && !retiredBrmV8) ? brmName(soundParam) : null;
+  var brmUnknown = !!(soundParam && !retiredBrmV8 && !brmParam && looksLikeBrmSound(soundParam));
   var p997Param = (params.get('p997') || '').toLowerCase();
   if (!p997Param && soundParam && /variocam/.test(soundParam.toLowerCase())) p997Param = 'variocam';
   var soundL = (soundParam || '').toLowerCase();
   var caddyParam = (params.get('caddy') || params.get('cadillac') || '').toLowerCase();
   if (!caddyParam && /caddy|cadillac/.test(soundL)) caddyParam = soundL;
-  var startCar = params.get('car') || (brmParam ? 'brm' : (caddyParam ? 'caddy' : null));
+  var startCar = params.get('car') || (brmParam || brmUnknown ? 'brm' : (caddyParam ? 'caddy' : null));
   var startId = (startCar && cars[startCar]) ? startCar : 'gt350';
-  var soundChoice = (brmParam || retiredBrmV8) ? null : v8Name(soundParam);
+  var soundChoice = (brmParam || retiredBrmV8 || brmUnknown) ? null : v8Name(soundParam);
+  if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;   // unknown tokens (bare p7, v9.7 already handled) must not fall through to kernel v1
   if (!soundChoice) soundChoice = v8Name(lsGet('streetrod.sound', null));
+  if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;
   var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');
-  // Bare ?car=caddy&sound=p5 is a Cadillac set, not a kernel id. p5 is not a BRM set (the BRM list is p1–p4 and p6–p11), so brmName('p5') is null and v8Name('p5') would otherwise fall through to SoundModels.get → v1.
+  // Bare ?car=caddy&sound=p5 is a Cadillac set, not a kernel id. p5 is not a BRM set (the shipped BRM list is p1–p4, p6, p8–p11), so brmName('p5') is null and v8Name('p5') would otherwise fall through to SoundModels.get → v1.
   // Guard only: a bare ?car=caddy&sound=p7 must not fall through to kernel v1 or a BRM set. It does not select Cadillac p7 (picker-only; caddyName has no p7 alias).
   if (startId === 'caddy' && soundParam && /^p[1234567]$/i.test(soundParam)) soundChoice = null;
+  // ?car=brm&sound=p7 (or any unshipped pN): stay on the BRM with the default set (p11). Do not select kernel v1.
+  if (startId === 'brm') soundChoice = null;
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
     p997Sound: p997Name(p997Param),   // v1.12.2: default p7; ?p997=p1|p2|p3|p4|p5|p6 select the other sets
@@ -10626,6 +10640,68 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var L = SoundModels.brmList, i = 0;
     while (i < L.length && L[i].set !== state.brmSound) i++;
     setBrmSound(L[(i + 1) % L.length].set);
+  }
+  // v1.12.10: one sound drop-down per car, containing that car's actual version history in chronological order (no invented sets).
+  function soundHistory() {
+    var key = spec().engineKey;
+    if (key === 'BRM') {
+      return SoundModels.brmList.map(function (b) {
+        return { value: 'brm:' + b.set, label: 'Sound v12 · BRM ' + b.set + (b.set === defaultBrmSound() ? ' (default)' : '') };
+      });
+    }
+    if (key === 'P997') {
+      return ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'].map(function (p) {
+        var extra = p === defaultP997Sound() ? ' (default)' : (p === 'p3' || p === 'p5' || p === 'p6' ? ' (listening test)' : '');
+        return { value: 'p997:' + p, label: 'Sound v12 · 911 ' + p + extra };
+      });
+    }
+    var early = [
+      { value: 'kern:v1', label: 'Sound v1 (procedural)' },
+      { value: 'kern:v2', label: 'Sound v2 (physical exhaust)' },
+      { value: 'kern:v3', label: 'Sound v3 (start-up sequence)' },
+      { value: 'kern:v4', label: 'Sound v4 (pop/bang fix)' }
+    ];
+    if (key === 'CADDY') {
+      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'].map(function (p) {
+        return { value: 'caddy:' + p, label: CADDY_LABEL[p] };
+      }));
+    }
+    return early.concat([{ value: 'kern:v9p', label: 'Sound v12 · GT350 p1 (default)' }]);
+  }
+  function soundPickerValue() {
+    var key = spec().engineKey;
+    if (key === 'BRM') return 'brm:' + state.brmSound;
+    if (key === 'P997') return 'p997:' + state.p997Sound;
+    if (key === 'CADDY' && state.model === 'v9p') return 'caddy:' + state.caddySound;
+    return 'kern:' + state.model;
+  }
+  function applySoundPicker(val) {
+    var i = String(val || '').indexOf(':'), kind = i < 0 ? '' : String(val).slice(0, i), id = i < 0 ? val : String(val).slice(i + 1);
+    if (kind === 'brm') { setBrmSound(id); return; }
+    if (kind === 'p997') { setP997Sound(id); return; }
+    if (kind === 'caddy') { state.model = 'v9p'; setCaddySound(id); return; }
+    setModel(id);
+  }
+  function nextHistorySound() {
+    var opts = soundHistory(), cur = soundPickerValue(), i = 0;
+    while (i < opts.length && opts[i].value !== cur) i++;
+    applySoundPicker(opts[(i + 1) % opts.length].value);
+  }
+  var lastSoundHistKey = '';
+  function syncSoundPicker() {
+    var key = spec().engineKey;
+    if (key !== lastSoundHistKey) {
+      lastSoundHistKey = key;
+      selS.innerHTML = '';
+      soundHistory().forEach(function (o) {
+        var el = document.createElement('option');
+        el.value = o.value;
+        el.textContent = o.label;
+        selS.appendChild(el);
+      });
+    }
+    var cur = soundPickerValue();
+    if (selS.querySelector('option[value="' + cur.replace(/"/g, '') + '"]')) selS.value = cur;
   }
   function ensureAudio() {
     audio.unlock();
@@ -10862,7 +10938,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
         else setView(state.view === 1 ? 0 : 1);
         break;
       case 'e': case 'E': setView(state.bay ? state.view : 2); break;
-      case 'x': case 'X': setModel(cycle(SoundModels.list, state.model)); break;
+      case 'x': case 'X': nextHistorySound(); break;
       case 'b': case 'B': if (spec().engineKey === 'BRM') nextBrmSound(); break;
       case 'z': case 'Z': setVisual(cycle(VisualModels.list, state.visual)); break;
       case 'u': case 'U': toggleUnits(); break;
@@ -10943,9 +11019,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 
   // model / visuals selectors (built from the registries)
   var selS = document.getElementById('selSound'), selV = document.getElementById('selVisual');
-  SoundModels.list.forEach(function (m) { if (m.hidden) return; var o = document.createElement('option'); o.value = m.id; o.textContent = m.label; o.title = m.note || ''; selS.appendChild(o); });
   VisualModels.list.forEach(function (m) { if (m.available && !m.available()) return; var o = document.createElement('option'); o.value = m.id; o.textContent = m.label; o.title = m.note || ''; selV.appendChild(o); });
-  selS.addEventListener('change', function () { setModel(selS.value); selS.blur(); });
+  selS.addEventListener('change', function () { applySoundPicker(selS.value); selS.blur(); });
   // v1.9.2: BRM sound picker (every v9.x physics model; v8 retired in v1.11.18): a compact select, so it fits an iPhone top bar
   var selB = document.getElementById('selBrm');
   SoundModels.brmList.forEach(function (b) {
@@ -10976,22 +11051,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var v = spec(), auto = v.trans === 'auto';
     selCar.value = state.carId;
     selView.value = state.bay ? '2' : String(state.view);
-    document.getElementById('segBrmSound').classList.toggle('hidden', v.engineKey !== 'BRM');
+    // v1.12.10: leftover per-car <select>s stay in the DOM (hidden) so old ids still exist; the one visible list is #selSound.
+    document.getElementById('segBrmSound').classList.add('hidden');
     selB.value = state.brmSound;
-    document.getElementById('segP997Sound').classList.toggle('hidden', v.engineKey !== 'P997');
+    document.getElementById('segP997Sound').classList.add('hidden');
     if (selP997) selP997.value = state.p997Sound;
-    var caddyV12 = v.engineKey === 'CADDY' && state.model === 'v9p';
-    document.getElementById('segCaddySound').classList.toggle('hidden', !caddyV12);
+    document.getElementById('segCaddySound').classList.add('hidden');
     if (selCaddy) selCaddy.value = state.caddySound;
-    selS.value = state.model; selV.value = state.visual;
-    (function () {
-      var opt = selS.querySelector('option[value="v9p"]');
-      if (opt) {
-        if (v.engineKey === 'CADDY') opt.textContent = caddyV12 ? 'Sound v12 · Cadillac' : 'Sound v12 · Cadillac p1 (default)';
-        else opt.textContent = 'Sound v12 · GT350 p1 (default)';
-      }
-    })();
-    document.getElementById('segSound').classList.toggle('hidden', v.engineKey === 'P997' || caddyV12);   // 911 and Cadillac v12 each have one parameter-set picker; earlier V8 kernels stay in #selSound when that picker is hidden
+    document.getElementById('segSound').classList.remove('hidden');
+    syncSoundPicker();
+    selV.value = state.visual;
 
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
     document.getElementById('bDrag').classList.toggle('on', !!drag);
