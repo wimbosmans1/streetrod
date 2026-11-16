@@ -743,6 +743,12 @@
   };
   /** start-up state of a self-gated source (v3+), for the game's tach / physics hand-over */
   EngineVoice.prototype.report = function () { const s = this.nsrc || this.src; return s && s.selfGated && s.report ? s.report() : null; };
+  EngineVoice.prototype.dspStats = function () {
+    const s = this.nsrc || this.src;
+    const syn = s && s.cur ? s.cur : s;
+    if (!syn) return { nan: 0, pipes: 0, pipes0: 0, lite: false };
+    return { nan: syn.nanResets || 0, pipes: syn.NP || 0, pipes0: syn.NP0 || syn.NP || 0, lite: !!syn.netLite };
+  };
   const api = { EngineSynth, EngineVoice, V1Source, ListenerSource, NpRandomState, Starter, TyreNoise, Limiter, bq, lopeOf, DEFAULT_SPEC };
   // ---- sound-model registry: v1 is built in, later versions are drop-in modules ----
   const ENGINES = { v1: { id: 'v1', Synth: EngineSynth, positions: [] } };
@@ -756,13 +762,25 @@
         super();
         this.voice = new EngineVoice(sampleRate, (options && options.processorOptions) || {});
         this.port.onmessage = (e) => this.voice.msg(e.data);
-        this.n = 0;
+        this.n = 0; this.overruns = 0; this.cpuAcc = 0; this.cpu = 0;
         this.port.postMessage({ type: 'hello', fs: sampleRate });
       }
       process(inputs, outputs) {
         const out = outputs[0]; const L = out[0], R = out[1] || out[0];
+        var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         this.voice.process(L, R, L.length);
-        if ((++this.n & 31) === 0) { this.port.postMessage({ type: 'meter', gr: this.voice.gr, blocks: this.n, model: this.voice.modelId, err: this.voice.error }); }
+        var t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        this.cpuAcc += (t1 - t0);
+        var budget = 1000 * L.length / sampleRate;
+        // Accumulate only time spent inside process() (not the gaps between quanta).
+        if ((++this.n & 31) === 0) {
+          var audioMs = 32 * budget;
+          this.cpu = audioMs > 0 ? this.cpuAcc / audioMs : 0;
+          if (this.cpu > 1) this.overruns++;
+          this.cpuAcc = 0;
+          var st = this.voice.dspStats();
+          this.port.postMessage({ type: 'meter', gr: this.voice.gr, blocks: this.n, model: this.voice.modelId, err: this.voice.error, cpu: this.cpu, overruns: this.overruns, nan: st.nan, pipes: st.pipes, pipes0: st.pipes0, lite: st.lite });
+        }
         if ((this.n & 7) === 0) { const r = this.voice.report(); if (r || this.lastRep) this.port.postMessage({ type: 'eng', r: r }); this.lastRep = r; }
         if (this.voice.bayOn && (this.n & 7) === 4) { const o = this.voice.bayState(new Float32Array(56)); this.port.postMessage({ type: 'bay', t: currentTime + L.length / sampleRate, s: o }, [o.buffer]); }
         return true;
@@ -3367,6 +3385,10 @@ function engineModuleV8p(core) {
       var al = PF[pf + F_LP];
       PF[pf + F_SA] += (1.0 - al) * (PF[pf + F_GAIN] * xa - PF[pf + F_SA]);
       PF[pf + F_SB] += (1.0 - al) * (PF[pf + F_GAIN] * xb - PF[pf + F_SB]);
+      // Flush IEEE-754 subnormals (older CPUs, including many in-car SoCs, handle them extremely slowly).
+      var sa = PF[pf + F_SA], sb = PF[pf + F_SB];
+      if (sa !== 0.0 && sa > -2.2250738585072014e-308 && sa < 2.2250738585072014e-308) PF[pf + F_SA] = 0.0;
+      if (sb !== 0.0 && sb > -2.2250738585072014e-308 && sb < 2.2250738585072014e-308) PF[pf + F_SB] = 0.0;
     }
     }
     function kCyl(Q, S, CY, PF, AB, AT, K, NCY, th, w, rpm, pman, fs, dt, knl, wi, nt, tpr, rho_e, npol, leak, hk, vf_g, vf_w) {
@@ -3922,9 +3944,16 @@ function engineModuleV8p(core) {
      *  conservative hot-gas speed (CFL). Shorter building-block stubs (1 mm perf end-caps,
      *  ~4 mm perforate necks) would otherwise be clamped to a 1-sample delay line — a stiff
      *  closed-end loop whose length changes with sample rate and gas temperature. */
-    function buildNet(c, fs) {
+    // Soft cap on waveguide count. Networks under this stay bit-identical; heavier
+    // perforated-can sets (Cadillac p3–p7: 80–88 pipes) are rebuilt with a cheaper
+    // generic can (1 segment, no 1 mm CFL-clamped end-cap stubs) so a slower CPU
+    // (Tesla in-car) can finish a worklet quantum. 911 p2 is 46 pipes and is unchanged.
+    var NET_PIPE_BUDGET = 56;
+    function buildNet(c, fs, lim) {
       var pipes = [], nodes = [], left = {}, xp = -1;
       fs = fs > 0 ? fs : 44100;
+      lim = lim || {};
+      var perfNsegMax = lim.perfNsegMax, perfCaps = lim.perfCaps !== false;
       // CFL length: one sample at a conservative hot exhaust speed (900 K) or at ambient for intake (grp 3).
       var L_CFL_EX = Math.sqrt(G_EX * R_GAS * 900.0) / fs, L_CFL_IN = C_AIR / fs;
       c.left_bank.forEach(function (x) { left[x] = 1; });
@@ -3996,22 +4025,35 @@ function engineModuleV8p(core) {
             var Lp = +mf[1], dp = +mf[2], Ls = +mf[3], ds = +mf[4], por = +mf[5], pk = +mf[6];
             var nseg = mf.length > 7 ? (mf[7] | 0) : 4, tWall = mf.length > 8 ? +mf[8] : 0.0015, dHole = mf.length > 9 ? +mf[9] : 0.004;
             var packN = mf.length > 10 ? +mf[10] : 0.0;
+            if (perfNsegMax !== undefined && nseg > perfNsegMax) nseg = perfNsegMax;
             if (nseg < 1) nseg = 1;
             var Lt = Lp / nseg, Lc = Ls / nseg, dAnn = Math.sqrt(Math.max(ds * ds - dp * dp, 1e-8));
             var sig = Math.min(Math.max(por, 1e-6), 0.9), Ah = sig * Math.PI * dp * Lt;
             var dNeck = 2.0 * Math.sqrt(Ah / Math.PI), Lneck = tWall + 0.85 * dHole;
             var Ts = [], Cs = [], Ns = [], ii;
             for (ii = 0; ii < nseg; ii++) { Ts.push(pipe(Lt, dp, 2, 0.0)); Cs.push(pipe(Lc, dAnn, 2, pk)); Ns.push(pipe(Lneck, dNeck, 2, packN)); }
-            var capL = pipe(0.001, dAnn, 2, pk), capR = pipe(0.001, dAnn, 2, pk);
-            node(3, 0, [[capL, 1]]);
-            node(0, 0, [[capL, 0], [Cs[0], 0], [Ns[0], 1]]);
-            for (ii = 0; ii < nseg; ii++) {
-              node(0, 0, [[prev, 1], [Ts[ii], 0], [Ns[ii], 0]]);
-              prev = Ts[ii];
-              if (ii + 1 < nseg) node(0, 0, [[Cs[ii], 1], [Cs[ii + 1], 0], [Ns[ii + 1], 1]]);
+            if (perfCaps) {
+              var capL = pipe(0.001, dAnn, 2, pk), capR = pipe(0.001, dAnn, 2, pk);
+              node(3, 0, [[capL, 1]]);
+              node(0, 0, [[capL, 0], [Cs[0], 0], [Ns[0], 1]]);
+              for (ii = 0; ii < nseg; ii++) {
+                node(0, 0, [[prev, 1], [Ts[ii], 0], [Ns[ii], 0]]);
+                prev = Ts[ii];
+                if (ii + 1 < nseg) node(0, 0, [[Cs[ii], 1], [Cs[ii + 1], 0], [Ns[ii + 1], 1]]);
+              }
+              node(0, 0, [[Cs[nseg - 1], 1], [capR, 0]]);
+              node(3, 0, [[capR, 1]]);
+            } else {
+              // Cheaper generic can: 1-segment (or reduced-nseg) through + neck + annulus, rigid ends,
+              // no 1 mm CFL-clamped cap stubs. The neck joins the left end of the annulus.
+              node(0, 0, [[Cs[0], 0], [Ns[0], 1]]);
+              for (ii = 0; ii < nseg; ii++) {
+                node(0, 0, [[prev, 1], [Ts[ii], 0], [Ns[ii], 0]]);
+                prev = Ts[ii];
+                if (ii + 1 < nseg) node(0, 0, [[Cs[ii], 1], [Cs[ii + 1], 0], [Ns[ii + 1], 1]]);
+              }
+              node(3, 0, [[Cs[nseg - 1], 1]]);
             }
-            node(0, 0, [[Cs[nseg - 1], 1], [capR, 0]]);
-            node(3, 0, [[capR, 1]]);
           } else if (mf[0] === 'par') {
             // v11 generic (v1.11.39): N parallel paths (internal tubes, a perforated baffle's holes as one lumped
             // neck, a small equalising tube) from the previous volume into the next chamber; same as v8phys.build_net.
@@ -4085,8 +4127,10 @@ function engineModuleV8p(core) {
         netCar.int_run_nseg = this.P.int_run_nseg !== undefined ? this.P.int_run_nseg : 1;
         netCar.int_run_attach = this.P.int_run_attach !== undefined ? this.P.int_run_attach : 1;
       }
-      var N = buildNet(netCar, fs);
+      var N = buildNet(netCar, fs), nPipes0 = N.PG.length;
+      if (nPipes0 > NET_PIPE_BUDGET) N = buildNet(netCar, fs, { perfNsegMax: 1, perfCaps: false });
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
+      this.NP0 = nPipes0; this.netLite = nPipes0 > NET_PIPE_BUDGET; this.nanResets = 0;
       this.Q = this._q();
       this.S = new Float64Array(NS); this.NCY = this.c.fire_order.length; this.CY = new Float64Array(this.NCY * NC); this.PF = new Float64Array(this.NP * NF);
       this.AB = new Float64Array(this.NP * DL); this.BB = new Float64Array(this.NP * DL); this.AT = new Float64Array(this.NP * DL); this.NA = new Float64Array(this.NN * 2);
@@ -4297,10 +4341,27 @@ function engineModuleV8p(core) {
       for (j = 0; j < n * NO; j++) out[j] = 0.0;
       this._blockRun(n, K, L, R, off);
     };
+    V8pSynth.prototype._resetNet = function () {
+      var i, nAB = this.AB.length, nPF = this.PF.length, nS = this.S.length;
+      for (i = 0; i < nAB; i++) { this.AB[i] = 0.0; this.BB[i] = 0.0; this.AT[i] = 0.0; }
+      for (i = 0; i < this.NP; i++) { this.PF[i * NF + F_SA] = 0.0; this.PF[i * NF + F_SB] = 0.0; }
+      this.nanResets = (this.nanResets || 0) + 1;
+    };
     V8pSynth.prototype._blockRun = function (n, K, L, R, off) {
       var out = this.out, dtb = n / this.fs;
       var nf0 = this.S[S_NFIRE];
       kv8(n, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
+      var zi, nan = false, nOut = n * NO;
+      for (zi = 0; zi < nOut; zi++) if (!isFinite(out[zi])) { nan = true; break; }
+      if (!nan) {
+        for (zi = 0; zi < this.NP; zi++) {
+          if (!isFinite(this.PF[zi * NF + F_SA]) || !isFinite(this.PF[zi * NF + F_SB])) { nan = true; break; }
+        }
+      }
+      if (nan) {
+        this._resetNet();
+        for (zi = 0; zi < nOut; zi++) out[zi] = 0.0;
+      }
       var firing = K[K_IGN] > 0.5 && (this.S[S_NFIRE] > nf0 || this.ctlr.recentFire());
       this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
       this._thermal(dtb, firing); this._pipes();
@@ -4321,7 +4382,14 @@ function engineModuleV8p(core) {
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
-    V8pSynth.prototype.report = function () { return this.ctlr.report(); };
+    V8pSynth.prototype.report = function () {
+      var r = this.ctlr.report() || {};
+      r.nanResets = this.nanResets || 0;
+      r.pipes = this.NP;
+      r.pipes0 = this.NP0 || this.NP;
+      r.netLite = !!this.netLite;
+      return r;
+    };
     V8pSynth.prototype.rpmNow = function () { return this.S[S_W] * 60 / (2 * Math.PI); };
 
     function Ctl(syn, cold) {

@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.12.12)</title>
+<title>Street Rod: engine sound + driving demo (v1.12.13)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -36,7 +36,7 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
 .seg { display: inline-flex; border-radius: 9px; overflow: hidden; }
 .seg .tb { border-radius: 0; background: rgba(120,105,80,.85); color: #f3ead2; }
 .seg .tb.on { background: #ffcf4a; color: #1a120c; }
-.astatus { flex: 1 1 100%; font: 11px/1.25 'Courier New', monospace; color: #e6dcc0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.astatus { flex: 1 1 100%; font: 11px/1.35 'Courier New', monospace; color: #e6dcc0; white-space: normal; overflow: visible;
   pointer-events: none !important; }
 .astatus span { background: rgba(0,0,0,.55); border-radius: 5px; padding: 2px 6px; }
 
@@ -62,7 +62,7 @@ td { padding: 2px 4px; vertical-align: top; } td:first-child { white-space: nowr
   display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
 .tb.big { width: 72px; height: 62px; opacity: .88; font-size: 26px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
 .tb.big small { font-size: 10px; margin-top: 4px; }
-.touch .astatus { flex: 1 1 100%; font: 11px/1.25 'Courier New', monospace; color: #e6dcc0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.touch .astatus { flex: 1 1 100%; font: 11px/1.35 'Courier New', monospace; color: #e6dcc0; white-space: normal; overflow: visible;
   pointer-events: none !important; }
 .astatus span { background: rgba(0,0,0,.55); border-radius: 5px; padding: 2px 6px; }
 #rotate { display: none; }
@@ -381,7 +381,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <button class="tb more" id="bSpecs" data-act="specs" aria-label="Engine specifications" title="Engine specifications">Specs</button>
       <button class="tb more" id="bAbout" data-act="about" aria-label="About and history" title="About / History">i</button>
       <button class="tb" id="bMenu" data-act="menu" aria-label="More controls" title="More controls">&#9776;</button>
-      <div id="astatus" class="astatus more">Sound: tap to enable</div>
+      <div id="astatus" class="astatus">Sound: tap to enable</div>
     </div>
     <div id="touch">
       <div class="pedal" id="pBrake" data-pedal="brake"><div class="fill"></div><span>BRAKE</span></div>
@@ -1181,6 +1181,12 @@ function engineWorkletMain(modules) {
   };
   /** start-up state of a self-gated source (v3+), for the game's tach / physics hand-over */
   EngineVoice.prototype.report = function () { const s = this.nsrc || this.src; return s && s.selfGated && s.report ? s.report() : null; };
+  EngineVoice.prototype.dspStats = function () {
+    const s = this.nsrc || this.src;
+    const syn = s && s.cur ? s.cur : s;
+    if (!syn) return { nan: 0, pipes: 0, pipes0: 0, lite: false };
+    return { nan: syn.nanResets || 0, pipes: syn.NP || 0, pipes0: syn.NP0 || syn.NP || 0, lite: !!syn.netLite };
+  };
   const api = { EngineSynth, EngineVoice, V1Source, ListenerSource, NpRandomState, Starter, TyreNoise, Limiter, bq, lopeOf, DEFAULT_SPEC };
   // ---- sound-model registry: v1 is built in, later versions are drop-in modules ----
   const ENGINES = { v1: { id: 'v1', Synth: EngineSynth, positions: [] } };
@@ -1194,13 +1200,25 @@ function engineWorkletMain(modules) {
         super();
         this.voice = new EngineVoice(sampleRate, (options && options.processorOptions) || {});
         this.port.onmessage = (e) => this.voice.msg(e.data);
-        this.n = 0;
+        this.n = 0; this.overruns = 0; this.cpuAcc = 0; this.cpu = 0;
         this.port.postMessage({ type: 'hello', fs: sampleRate });
       }
       process(inputs, outputs) {
         const out = outputs[0]; const L = out[0], R = out[1] || out[0];
+        var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         this.voice.process(L, R, L.length);
-        if ((++this.n & 31) === 0) { this.port.postMessage({ type: 'meter', gr: this.voice.gr, blocks: this.n, model: this.voice.modelId, err: this.voice.error }); }
+        var t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        this.cpuAcc += (t1 - t0);
+        var budget = 1000 * L.length / sampleRate;
+        // Accumulate only time spent inside process() (not the gaps between quanta).
+        if ((++this.n & 31) === 0) {
+          var audioMs = 32 * budget;
+          this.cpu = audioMs > 0 ? this.cpuAcc / audioMs : 0;
+          if (this.cpu > 1) this.overruns++;
+          this.cpuAcc = 0;
+          var st = this.voice.dspStats();
+          this.port.postMessage({ type: 'meter', gr: this.voice.gr, blocks: this.n, model: this.voice.modelId, err: this.voice.error, cpu: this.cpu, overruns: this.overruns, nan: st.nan, pipes: st.pipes, pipes0: st.pipes0, lite: st.lite });
+        }
         if ((this.n & 7) === 0) { const r = this.voice.report(); if (r || this.lastRep) this.port.postMessage({ type: 'eng', r: r }); this.lastRep = r; }
         if (this.voice.bayOn && (this.n & 7) === 4) { const o = this.voice.bayState(new Float32Array(56)); this.port.postMessage({ type: 'bay', t: currentTime + L.length / sampleRate, s: o }, [o.buffer]); }
         return true;
@@ -3888,6 +3906,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var al = PF[pf + F_LP];
       PF[pf + F_SA] += (1.0 - al) * (PF[pf + F_GAIN] * xa - PF[pf + F_SA]);
       PF[pf + F_SB] += (1.0 - al) * (PF[pf + F_GAIN] * xb - PF[pf + F_SB]);
+      // Flush IEEE-754 subnormals (older CPUs, including many in-car SoCs, handle them extremely slowly).
+      var sa = PF[pf + F_SA], sb = PF[pf + F_SB];
+      if (sa !== 0.0 && sa > -2.2250738585072014e-308 && sa < 2.2250738585072014e-308) PF[pf + F_SA] = 0.0;
+      if (sb !== 0.0 && sb > -2.2250738585072014e-308 && sb < 2.2250738585072014e-308) PF[pf + F_SB] = 0.0;
     }
     }
     function kCyl(Q, S, CY, PF, AB, AT, K, NCY, th, w, rpm, pman, fs, dt, knl, wi, nt, tpr, rho_e, npol, leak, hk, vf_g, vf_w) {
@@ -4443,9 +4465,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
      *  conservative hot-gas speed (CFL). Shorter building-block stubs (1 mm perf end-caps,
      *  ~4 mm perforate necks) would otherwise be clamped to a 1-sample delay line — a stiff
      *  closed-end loop whose length changes with sample rate and gas temperature. */
-    function buildNet(c, fs) {
+    // Soft cap on waveguide count. Networks under this stay bit-identical; heavier
+    // perforated-can sets (Cadillac p3–p7: 80–88 pipes) are rebuilt with a cheaper
+    // generic can (1 segment, no 1 mm CFL-clamped end-cap stubs) so a slower CPU
+    // (Tesla in-car) can finish a worklet quantum. 911 p2 is 46 pipes and is unchanged.
+    var NET_PIPE_BUDGET = 56;
+    function buildNet(c, fs, lim) {
       var pipes = [], nodes = [], left = {}, xp = -1;
       fs = fs > 0 ? fs : 44100;
+      lim = lim || {};
+      var perfNsegMax = lim.perfNsegMax, perfCaps = lim.perfCaps !== false;
       // CFL length: one sample at a conservative hot exhaust speed (900 K) or at ambient for intake (grp 3).
       var L_CFL_EX = Math.sqrt(G_EX * R_GAS * 900.0) / fs, L_CFL_IN = C_AIR / fs;
       c.left_bank.forEach(function (x) { left[x] = 1; });
@@ -4517,22 +4546,35 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
             var Lp = +mf[1], dp = +mf[2], Ls = +mf[3], ds = +mf[4], por = +mf[5], pk = +mf[6];
             var nseg = mf.length > 7 ? (mf[7] | 0) : 4, tWall = mf.length > 8 ? +mf[8] : 0.0015, dHole = mf.length > 9 ? +mf[9] : 0.004;
             var packN = mf.length > 10 ? +mf[10] : 0.0;
+            if (perfNsegMax !== undefined && nseg > perfNsegMax) nseg = perfNsegMax;
             if (nseg < 1) nseg = 1;
             var Lt = Lp / nseg, Lc = Ls / nseg, dAnn = Math.sqrt(Math.max(ds * ds - dp * dp, 1e-8));
             var sig = Math.min(Math.max(por, 1e-6), 0.9), Ah = sig * Math.PI * dp * Lt;
             var dNeck = 2.0 * Math.sqrt(Ah / Math.PI), Lneck = tWall + 0.85 * dHole;
             var Ts = [], Cs = [], Ns = [], ii;
             for (ii = 0; ii < nseg; ii++) { Ts.push(pipe(Lt, dp, 2, 0.0)); Cs.push(pipe(Lc, dAnn, 2, pk)); Ns.push(pipe(Lneck, dNeck, 2, packN)); }
-            var capL = pipe(0.001, dAnn, 2, pk), capR = pipe(0.001, dAnn, 2, pk);
-            node(3, 0, [[capL, 1]]);
-            node(0, 0, [[capL, 0], [Cs[0], 0], [Ns[0], 1]]);
-            for (ii = 0; ii < nseg; ii++) {
-              node(0, 0, [[prev, 1], [Ts[ii], 0], [Ns[ii], 0]]);
-              prev = Ts[ii];
-              if (ii + 1 < nseg) node(0, 0, [[Cs[ii], 1], [Cs[ii + 1], 0], [Ns[ii + 1], 1]]);
+            if (perfCaps) {
+              var capL = pipe(0.001, dAnn, 2, pk), capR = pipe(0.001, dAnn, 2, pk);
+              node(3, 0, [[capL, 1]]);
+              node(0, 0, [[capL, 0], [Cs[0], 0], [Ns[0], 1]]);
+              for (ii = 0; ii < nseg; ii++) {
+                node(0, 0, [[prev, 1], [Ts[ii], 0], [Ns[ii], 0]]);
+                prev = Ts[ii];
+                if (ii + 1 < nseg) node(0, 0, [[Cs[ii], 1], [Cs[ii + 1], 0], [Ns[ii + 1], 1]]);
+              }
+              node(0, 0, [[Cs[nseg - 1], 1], [capR, 0]]);
+              node(3, 0, [[capR, 1]]);
+            } else {
+              // Cheaper generic can: 1-segment (or reduced-nseg) through + neck + annulus, rigid ends,
+              // no 1 mm CFL-clamped cap stubs. The neck joins the left end of the annulus.
+              node(0, 0, [[Cs[0], 0], [Ns[0], 1]]);
+              for (ii = 0; ii < nseg; ii++) {
+                node(0, 0, [[prev, 1], [Ts[ii], 0], [Ns[ii], 0]]);
+                prev = Ts[ii];
+                if (ii + 1 < nseg) node(0, 0, [[Cs[ii], 1], [Cs[ii + 1], 0], [Ns[ii + 1], 1]]);
+              }
+              node(3, 0, [[Cs[nseg - 1], 1]]);
             }
-            node(0, 0, [[Cs[nseg - 1], 1], [capR, 0]]);
-            node(3, 0, [[capR, 1]]);
           } else if (mf[0] === 'par') {
             // v11 generic (v1.11.39): N parallel paths (internal tubes, a perforated baffle's holes as one lumped
             // neck, a small equalising tube) from the previous volume into the next chamber; same as v8phys.build_net.
@@ -4606,8 +4648,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         netCar.int_run_nseg = this.P.int_run_nseg !== undefined ? this.P.int_run_nseg : 1;
         netCar.int_run_attach = this.P.int_run_attach !== undefined ? this.P.int_run_attach : 1;
       }
-      var N = buildNet(netCar, fs);
+      var N = buildNet(netCar, fs), nPipes0 = N.PG.length;
+      if (nPipes0 > NET_PIPE_BUDGET) N = buildNet(netCar, fs, { perfNsegMax: 1, perfCaps: false });
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
+      this.NP0 = nPipes0; this.netLite = nPipes0 > NET_PIPE_BUDGET; this.nanResets = 0;
       this.Q = this._q();
       this.S = new Float64Array(NS); this.NCY = this.c.fire_order.length; this.CY = new Float64Array(this.NCY * NC); this.PF = new Float64Array(this.NP * NF);
       this.AB = new Float64Array(this.NP * DL); this.BB = new Float64Array(this.NP * DL); this.AT = new Float64Array(this.NP * DL); this.NA = new Float64Array(this.NN * 2);
@@ -4818,10 +4862,27 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       for (j = 0; j < n * NO; j++) out[j] = 0.0;
       this._blockRun(n, K, L, R, off);
     };
+    V8pSynth.prototype._resetNet = function () {
+      var i, nAB = this.AB.length, nPF = this.PF.length, nS = this.S.length;
+      for (i = 0; i < nAB; i++) { this.AB[i] = 0.0; this.BB[i] = 0.0; this.AT[i] = 0.0; }
+      for (i = 0; i < this.NP; i++) { this.PF[i * NF + F_SA] = 0.0; this.PF[i * NF + F_SB] = 0.0; }
+      this.nanResets = (this.nanResets || 0) + 1;
+    };
     V8pSynth.prototype._blockRun = function (n, K, L, R, off) {
       var out = this.out, dtb = n / this.fs;
       var nf0 = this.S[S_NFIRE];
       kv8(n, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
+      var zi, nan = false, nOut = n * NO;
+      for (zi = 0; zi < nOut; zi++) if (!isFinite(out[zi])) { nan = true; break; }
+      if (!nan) {
+        for (zi = 0; zi < this.NP; zi++) {
+          if (!isFinite(this.PF[zi * NF + F_SA]) || !isFinite(this.PF[zi * NF + F_SB])) { nan = true; break; }
+        }
+      }
+      if (nan) {
+        this._resetNet();
+        for (zi = 0; zi < nOut; zi++) out[zi] = 0.0;
+      }
       var firing = K[K_IGN] > 0.5 && (this.S[S_NFIRE] > nf0 || this.ctlr.recentFire());
       this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
       this._thermal(dtb, firing); this._pipes();
@@ -4842,7 +4903,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
-    V8pSynth.prototype.report = function () { return this.ctlr.report(); };
+    V8pSynth.prototype.report = function () {
+      var r = this.ctlr.report() || {};
+      r.nanResets = this.nanResets || 0;
+      r.pipes = this.NP;
+      r.pipes0 = this.NP0 || this.NP;
+      r.netLite = !!this.netLite;
+      return r;
+    };
     V8pSynth.prototype.rpmNow = function () { return this.S[S_W] * 60 / (2 * Math.PI); };
 
     function Ctl(syn, cold) {
@@ -7308,10 +7376,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CarRadio;
  *    keydown): it creates/resumes the context there, plays a 1-sample buffer and
  *    starts a silent <audio> loop (+ navigator.audioSession = 'playback') so the
  *    iPhone ring/silent switch doesn't mute Web Audio.
- *  - Engine voice runs in an AudioWorklet loaded from, in order: a same-origin
- *    file (engine-worklet.js?v=title-version, http/https on desktop Chromium only),
- *    a Blob URL (first on Safari / iOS / Tesla, so addModule never sees a query string),
- *    a data: URL.
+ *  - Engine voice runs in an AudioWorklet loaded from, in order: an inlined Blob
+ *    URL (every browser, so addModule never depends on a query-string file URL),
+ *    a data: URL, then (http/https) engine-worklet.js?v=title-version as a last fallback.
  *    If none loads, or the worklet produces no blocks, it falls back to a
  *    main-thread ScriptProcessor running the same EngineVoice code.
  *  - DSP always uses ctx.sampleRate (44.1 or 48 kHz, whatever the device runs).
@@ -7319,16 +7386,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CarRadio;
 var EngineAudio = (function () {
   var isHttp = /^https?:$/.test(location.protocol);
 
-  // v1.12.12: Safari / iOS WebKit / the Tesla in-car browser must not call audioWorklet.addModule
-  // with a query-string URL (engine-worklet.js?v=…). That can throw, hang, or “succeed” without
-  // registering the processor. The inlined Blob always matches the current page, so use it first
-  // on those engines; keep the GitHub Pages cache-bust file?v= first on desktop Chromium.
-  function preferBlobWorklet() {
-    var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
-    if (/Tesla/i.test(ua)) return true;
-    if (/iPhone|iPad|iPod/i.test(ua)) return true;
-    if (/AppleWebKit/i.test(ua) && !/Chrome|Chromium|Edg\/|OPR\/|Android/i.test(ua)) return true;
-    return false;
+  // v1.12.13: Blob first on every browser. Tesla UA may omit "Tesla", and a hanging
+  // addModule(file?v=) would block the ScriptProcessor fallback. file?v= stays as a last http fallback.
+  function addModuleTimed(ctx, url, ms) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error('addModule timeout'));
+      }, ms);
+      ctx.audioWorklet.addModule(url).then(function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve();
+      }, function (e) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(e);
+      });
+    });
   }
 
   async function loadWorklet(ctx, log) {
@@ -7336,16 +7415,21 @@ var EngineAudio = (function () {
     // v1.12.9: GitHub Pages serves with Cache-Control max-age=600 and ignores the repo _headers
     // no-cache rule, so a stale engine-worklet.js can stay loaded after a new index.html. Bust with the title version.
     var ver = (typeof document !== 'undefined' && document.title && (document.title.match(/\(v([\d.]+)\)/) || [])[1]) || '';
-    if (isHttp && !preferBlobWorklet()) tries.push(['file', function () { return 'engine-worklet.js?v=' + encodeURIComponent(ver || '1'); }]);
-    tries.push(['blob', function () { return URL.createObjectURL(new Blob([src], { type: 'application/javascript' })); }]);
-    tries.push(['data', function () { return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(src); }]);
-    if (!isHttp) tries.push(tries.shift());   // file://: data first (Chrome rejects blob: on null origin)
+    if (!isHttp) {
+      // file://: data first (Chrome rejects blob: on null origin)
+      tries.push(['data', function () { return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(src); }]);
+      tries.push(['blob', function () { return URL.createObjectURL(new Blob([src], { type: 'application/javascript' })); }]);
+    } else {
+      tries.push(['blob', function () { return URL.createObjectURL(new Blob([src], { type: 'application/javascript' })); }]);
+      tries.push(['data', function () { return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(src); }]);
+      tries.push(['file', function () { return 'engine-worklet.js?v=' + encodeURIComponent(ver || '1'); }]);
+    }
     var errs = [];
     for (var i = 0; i < tries.length; i++) {
       var url = tries[i][1]();
-      try { await ctx.audioWorklet.addModule(url); return 'worklet/' + tries[i][0]; }
+      try { await addModuleTimed(ctx, url, 4000); return 'worklet/' + tries[i][0]; }
       catch (e) { errs.push(tries[i][0] + ': ' + (e && e.message || e)); if (log) log('worklet ' + tries[i][0] + ' failed: ' + (e && e.message || e)); }
-      finally { if (url.indexOf('blob:') === 0) URL.revokeObjectURL(url); }
+      // Keep the Blob URL alive: some Chromium builds unregister the processor if it is revoked immediately.
     }
     throw new Error('worklet load failed (' + errs.join(' | ') + ')');
   }
@@ -7416,7 +7500,13 @@ var EngineAudio = (function () {
         var node = new AudioWorkletNode(ctx, 'engine-processor', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
         node.port.onmessage = function (e) {
           var d = e.data;
-          if (d.type === 'meter') { self.gr = d.gr; self.blocks = d.blocks; self.activeModel = d.model; if (d.err) self.voiceErr = d.err; }
+          if (d.type === 'meter') {
+            self.gr = d.gr; self.blocks = d.blocks; self.activeModel = d.model; if (d.err) self.voiceErr = d.err;
+            if (d.cpu != null) self.cpu = d.cpu;
+            if (d.overruns != null) self.overruns = d.overruns;
+            if (d.nan != null) self.nanResets = d.nan;
+            if (d.pipes != null) { self.pipes = d.pipes; self.pipes0 = d.pipes0; self.lite = d.lite; }
+          }
           else if (d.type === 'hello') self.workletAlive = true;
           else if (d.type === 'eng') self.eng = d.r;
           else if (d.type === 'bay') self.bay = { t: d.t, s: d.s, p: performance.now() };   // v1.10 engine bay: crank state from the audio thread   // start-up sound models: phase / rpm / idle reported by the audio
@@ -7444,10 +7534,16 @@ var EngineAudio = (function () {
     this.lastSpec && voice.msg(this.lastSpec); this.lastCtl && voice.msg(this.lastCtl);
     var sp = ctx.createScriptProcessor(this.opts.spBuffer || 2048, 1, 2);
     sp.onaudioprocess = function (e) {
+      var t0 = Date.now();
       var L = e.outputBuffer.getChannelData(0), R = e.outputBuffer.getChannelData(1), n = L.length;
       for (var o = 0; o < n; o += 128) voice.process(L.subarray(o, o + 128), R.subarray(o, o + 128), Math.min(128, n - o));
       if (voice.bayOn) self.bay = { t: (e.playbackTime || ctx.currentTime) + n / ctx.sampleRate, s: voice.bayState(self.bayBuf || (self.bayBuf = new Float32Array(56))), p: performance.now() };
       self.blocks += n / 128; self.eng = voice.report(); self.gr = voice.gr; self.activeModel = voice.modelId; if (voice.error) self.voiceErr = voice.error;
+      var st = voice.dspStats ? voice.dspStats() : null;
+      if (st) { self.nanResets = st.nan; self.pipes = st.pipes; self.pipes0 = st.pipes0; self.lite = st.lite; }
+      var budget = 1000 * n / ctx.sampleRate, load = budget > 0 ? (Date.now() - t0) / budget : 0;
+      self._cpuAcc = (self._cpuAcc || 0) + load; self._cpuN = (self._cpuN || 0) + 1;
+      if (self._cpuN >= 8) { self.cpu = self._cpuAcc / self._cpuN; self._cpuAcc = 0; self._cpuN = 0; if (self.cpu > 1) self.overruns = (self.overruns || 0) + 1; }
     };
     // some WebKit versions need an input connected for onaudioprocess to fire
     var src = ctx.createConstantSource ? ctx.createConstantSource() : ctx.createOscillator();
@@ -7484,11 +7580,16 @@ var EngineAudio = (function () {
     return 10 * Math.log10(e / this.abuf.length + 1e-12);
   };
   EngineAudio.prototype.statusText = function () {
-    if (!this.ctx) return 'Sound: tap to enable';
-    var s = 'Sound: ' + this.ctx.state + ' · ' + this.ctx.sampleRate + ' Hz · ' + this.mode;
+    var ver = (typeof document !== 'undefined' && document.title && (document.title.match(/\(v([\d.]+)\)/) || [])[1]) || '';
+    if (!this.ctx) return 'Sound: ' + (ver ? 'v' + ver + ' · ' : '') + 'tap to enable';
+    var s = 'Sound: ' + (ver ? 'v' + ver + ' · ' : '') + this.ctx.state + ' · ' + this.ctx.sampleRate + ' Hz · ' + this.mode;
     if (this.activeModel) s += ' · sound ' + this.activeModel;
     if (this.ready) s += ' · blocks ' + Math.round(this.blocks);
+    if (this.pipes) s += ' · net ' + this.pipes + (this.lite ? '/' + this.pipes0 + ' lite' : '') + ' pipes';
     var lv = this.levelDb(); if (lv !== null) s += ' · level ' + (lv < -90 ? '-inf' : Math.round(lv)) + ' dB';
+    if (this.cpu != null) s += ' · cpu ' + Math.round(this.cpu * 100) + '%';
+    if (this.overruns) s += ' · overruns ' + this.overruns;
+    s += ' · nan ' + (this.nanResets || 0);
     if (this.errors.length) s += ' · ' + this.errors[this.errors.length - 1];
     if (this.voiceErr) s += ' · ' + this.voiceErr;
     return s;
@@ -9781,6 +9882,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.12.13", date: "2026-11-16", status: "done", headline: "Cadillac p3–p7 play on a slower CPU; Tesla status line", text: "On the Tesla in-car browser every other car and sound model already played; only Cadillac p3–p7 were silent (p1 and p2 were fine). Those sets use two Walker perforated cans and 80–88 waveguides, about 1.6× the CPU of p1, which can overrun the AudioWorklet on a slower in-car SoC. Networks already under a generic 56-pipe budget stay bit-identical (Cadillac p1/p2, the GT350, 911 including p2, the BRM). Over-budget networks are rebuilt with a cheaper generic perforated can (one segment, no 1 mm CFL-clamped end-cap stubs). A non-finite worklet block resets the delay-line network; subnormals in the packing filter are flushed. The on-screen Sound status is always visible and shows the page version, worklet mode, pipe count, CPU load, overruns, NaN resets and the last error. The worklet loads from an inlined Blob first on every browser. No new URLs, defaults unchanged, no Cadillac-only code." },
       { v: "v1.12.12", date: "2026-11-16", status: "done", headline: "Engine-model switching restored on Safari, iOS and Tesla", text: "v1.12.10 rebuilt one #selSound list by wiping its options whenever the car changed, and v1.12.9 loaded the worklet as engine-worklet.js?v=…. Both break sound switching on iOS Safari and the Tesla in-car browser (a repopulated native <select> does not fire change reliably; a query string on audioWorklet.addModule can fail to register the processor). Each car now has its own <select> again, filled once, with exactly one list visible, still showing that car's full version history (same entries as v1.12.10). On Safari / iOS / Tesla the worklet is loaded from the inlined Blob first; desktop Chromium still uses the cache-busted file URL. No new URLs, defaults unchanged, DSP unchanged from v1.12.11." },
       { v: "v1.12.11", date: "2026-11-16", status: "done", headline: "CFL-correct waveguide length at any sample rate (Cadillac p3\u2013p7 audible at 44.1 kHz)", text: "Waveguides shorter than one travel sample at a conservative hot-gas speed (the 1 mm perforated-can end-caps and ~4 mm perforate necks) are now built at that CFL length, so they stay legal delay lines at 44.1 and 48 kHz as the gas heats. Those 1-sample clamped stubs were present on Cadillac p3\u2013p7 (80\u201388 pipes) and on 911 sets that use a perforated can; Cadillac p1/p2, the GT350, 911 p1 and the BRM are unchanged (bit-identical). A junction scatter with a non-finite admittance sum is skipped so a 0/0 cannot latch the network to NaN. No new URLs, defaults unchanged, one sound drop-down per car. No Cadillac-only code." },
       { v: "v1.12.10", date: "2026-11-16", status: "done", headline: "One sound drop-down per car, with that car's version history", text: "Each car now shows exactly one sound drop-down, filled with every sound model actually developed for that car, in chronological order and mapped to the real worklet mode. The GT350 list is v1\u2013v4 plus v12 \u00b7 GT350 p1 (default). The Cadillac list is v1\u2013v4 plus v12 \u00b7 Cadillac p1\u2013p7 (p1 default; p7 stays picker-only, with no new URL). The BRM list is v12 \u00b7 BRM p1\u2013p4, p6 and p8\u2013p11 (p11 default). There is no shipped BRM p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit, so they are not invented as picker rows. The retired v8 order-table model stays retired (it is no longer in the worklet). The 911 list is v12 \u00b7 911 p1\u2013p7 in numeric order (p7 default); older names such as VarioCam Plus and v10.1 remain aliases of those sets. The leftover per-car <select> elements stay hidden, so the BRM no longer shows two lists. A never-shipped BRM query (?car=brm&sound=p7, ?sound=v12.brm.p7, ?sound=v9.7) stays on BRM p11 and no longer falls through to kernel v1. DSP is unchanged; the worklet is cache-busted as engine-worklet.js?v=1.12.10." },
