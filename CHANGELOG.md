@@ -1,3 +1,15 @@
+## v1.13.4 (tag `v1.13.4`), 2026-11-17 (Sound v14 · Cadillac: flow noise removed)
+
+* **Sound v14 · Cadillac** = Sound v13.4 with flow noise removed from the model: `k_jet = 0` (tailpipe jet noise) and `k_vf = 0` (exhaust-valve flow noise). Both were measured about 80 dB under the radiated exhaust sound (switching either off changed a 2000 rpm throttle step by 0.0 dB).
+* **Generic kernel change.** The open-end (typ 2) node now skips the jet computation when `k_jet = 0` (no RNG draw, no per-sample `exp` / `sqrt`). Every shipped set has `k_jet > 0`, so p1–p7, v13, v13.1, v13.2, v13.4, the GT350 and the 911 stay bit-identical. Valve flow noise was already skipped at `k_vf = 0`.
+* Added at the end of Cadillac's one drop-down, picker-only. p1 stays the default; no ?caddy= / ?sound= alias.
+
+* **Per-car lists:**
+  * GT350: Sound v1 (procedural), v2 (physical exhaust), v3 (start-up sequence), v4 (pop/bang fix), v12 · GT350 p1 (default).
+  * Cadillac: Sound v1–v4, then v12 · Cadillac p1 (default), p2, p3, p4, p5, p6 (test), p7 (picker-only), Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac and Sound v14 · Cadillac (all picker-only).
+  * BRM: v12 · BRM p1, p2, p3, p4, p6, p8, p9, p10, p11 (default). Not listed: p5, p7, v9.0, v8.
+  * 911: v12 · 911 p1–p7 (p7 default). The 911 was never on v1–v4.
+
 ## v1.13.3 (tag `v1.13.3`), 2026-11-17 (Sound v13.4 · Cadillac: throttle lag fix)
 
 * **Diagnosis.** The throttle lag on v13.x was not filter delay or CPU. On a throttle step 0.1→1 at fixed rpm, most of v13's rise came through the exhaust-temperature model: three lags in series (load 1.5 s → primary gas 0.4 s → tail gas 1.0 s, unsourced, from the v9.11 work-in-progress). With the temperature frozen, v13.3 at 2000 rpm rose +0.6 dB instead of +3.8 dB.

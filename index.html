@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.3)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.4)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -369,7 +369,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound: v12 · BRM p11 (default) or an earlier v12 · BRM p1–p10 set (formerly v9.1–v9.11)"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
       <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v12 · 911 p7 (default since v1.12.2; p4 with internal packing), p4 (photo-measured reverse-flow side boxes; default v1.11.42–v1.12.1), p1 (series-chamber muffler), p2 (perforated straight-through muffler), p3 (3-chamber side boxes; listening test), p5 (series 3-chamber side boxes from the Fabspeed video; listening test) or p6 (p4 with its high note earlier; listening test)"><select id="selP997" aria-label="911 engine sound option"></select></label>
-      <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2, p3, p4, p5, p6 (test), p7 (picker-only), Sound v13 · Cadillac (picker-only), Sound v13.1 · Cadillac (picker-only), Sound v13.2 · Cadillac (picker-only), and Sound v13.4 · Cadillac (picker-only). p1 stays the default; p7, v13, v13.1, v13.2 and v13.4 have no new URL."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2, p3, p4, p5, p6 (test), p7 (picker-only), Sound v13 · Cadillac (picker-only), Sound v13.1 · Cadillac (picker-only), Sound v13.2 · Cadillac (picker-only), Sound v13.4 · Cadillac (picker-only), and Sound v14 · Cadillac (picker-only). p1 stays the default; p7, v13, v13.1, v13.2, v13.4 and v14 have no new URL."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
@@ -3838,6 +3838,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       DATA.cadillac59.sets['v13.4'].gas_dyn = 1;
     }
 
+    // v14: v13.4 with flow noise removed from the model (k_jet = 0: no tailpipe jet noise; k_vf = 0: no exhaust-valve flow noise).
+    // Both were about 80 dB under the radiated exhaust sound. Generic params only; every older set stays bit-identical.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.4'] && !DATA.cadillac59.sets['v14']) {
+      DATA.cadillac59.sets['v14'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.4']));
+      DATA.cadillac59.sets['v14'].k_jet = 0;
+      DATA.cadillac59.sets['v14'].k_vf = 0;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -5120,12 +5128,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var rho_t = P_ATM / (R_GAS * S[S_TTAIL]);
         var U = (pinm + st) * PF[pq * NF + F_A] / (rho_t * PF[pq * NF + F_C]);
         out[ko + O_U0 + mo] = U;
-        var uu = U / Q[Q_TAILA]; if (uu < 0.0) uu = 0.0;
-        var nz = (rnd(S) - 0.5) * 3.4641016151377544;
-        var fj = uu / Math.sqrt(4.0 * Q[Q_TAILA] / Math.PI) + 150.0, aj = 1.0 - Math.exp(-2.0 * Math.PI * fj / fs);
-        var r4 = (uu / 30.0) * (uu / 30.0);
-        S[S_JET0 + mo] += aj * (nz * 7e-4 * Q[Q_KJET] * r4 * r4 - S[S_JET0 + mo]);
-        out[ko + O_JET0 + mo] = S[S_JET0 + mo];
+        // tailpipe jet (flow) noise; k_jet = 0 (Sound v14+) removes it entirely: no RNG draw, no per-sample exp/sqrt
+        if (Q[Q_KJET] > 0.0) {
+          var uu = U / Q[Q_TAILA]; if (uu < 0.0) uu = 0.0;
+          var nz = (rnd(S) - 0.5) * 3.4641016151377544;
+          var fj = uu / Math.sqrt(4.0 * Q[Q_TAILA] / Math.PI) + 150.0, aj = 1.0 - Math.exp(-2.0 * Math.PI * fj / fs);
+          var r4 = (uu / 30.0) * (uu / 30.0);
+          S[S_JET0 + mo] += aj * (nz * 7e-4 * Q[Q_KJET] * r4 * r4 - S[S_JET0 + mo]);
+          out[ko + O_JET0 + mo] = S[S_JET0 + mo];
+        }
       } else if (typ === 3) {
         // closed / rigid end: pressure reflection +1, no radiation (Helmholtz cavity)
         var pc = NODE[nb + 3];
@@ -11071,6 +11082,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.4", date: "2026-11-17", status: "done", headline: "Sound v14 · Cadillac: flow noise removed", text: "Sound v14 · Cadillac is v13.4 with flow noise removed from the model: k_jet = 0 (tailpipe jet noise) and k_vf = 0 (exhaust-valve flow noise). Both were about 80 dB under the radiated exhaust sound (0.0 dB effect on a 2000 rpm throttle step). With k_jet = 0 the open-end node skips the jet entirely (no RNG draw, no per-sample exp/sqrt). Every older entry, v13.4 included, stays bit-identical as a fallback. Added at the end of Cadillac's one drop-down, picker-only; p1 stays the default; no new URL; no Cadillac-only code." },
       { v: "v1.13.3", date: "2026-11-17", status: "done", headline: "Sound v13.4 · Cadillac: throttle lag fix (cycle-resolved exhaust gas temperature)", text: "Wim heard a throttle lag on v13.x. It was not filter delay or CPU. On a throttle step at fixed rpm, most of v13's rise came through the exhaust-temperature model: three unsourced lags in series (load 1.5 s, primary gas 0.4 s, tail gas 1.0 s) that set pipe sound speed and port gas density. Sound v13.4 · Cadillac is v13.1 geometry with the v13.3 TMM upsampler fix (rev=3: continuous fs/4 output interpolation; v13.2's 12 kHz whine -37 dB → -81 dB) plus the new generic gas_dyn=1: exhaust gas temperature follows each engine cycle (Heywood 1988, ch. 6), tail gas lags by the plug-flow transport time (exhaust volume / exhaust flow), wall warm-up unchanged, so steady states are the same. Step 0.1→1 (dB vs part throttle, 60–120 / 120–250 ms, steady): 3500 rpm v13.3 +5.1/+4.9, +7.2 → v13.4 +6.8/+7.5, +6.6; 2000 rpm +3.7/+1.5, +3.8 → +3.9/+4.4, +4.2. The 2000 rpm gap to p2 is the TriFlow's real mid-band TL removing steepened blowdown energy, not retuned. Added at the end of Cadillac's one drop-down, picker-only; p1 stays the default; no new URL; no Cadillac-only code; other cars unchanged (gas_dyn off)." },
       { v: "v1.13.2", date: "2026-11-16", status: "done", headline: "Sound v13.2 · Cadillac: high-rpm jump fix and cheaper TMM", text: "On v13.1 the engine jumped loud at higher rpm (part +8.0 dB from 3200 to 3700, full +7.3 dB from 3200 to 3800) and ran heavy on iPhone (desktop CPU 30 % vs p2 19 %). The jump was a fit error, not a retune: the IIR gate ignored everything above 2 kHz, S21 under-attenuated at 320–640 Hz and 5–7 kHz, S11 was too strong at 1237 Hz, and poles sat near the unit circle, coinciding with V8 harmonics around 3200–3800 rpm. The real 1280 Hz 21158 passband is physics and was not EQ’d or level-matched away. Cadillac’s one drop-down gains a picker-only Sound v13.2 · Cadillac after v13.1 (rev=2): a tighter mid-band under-TL gate, a peak-aligned hybrid/FIR window so reflection energy is not dropped, and TMM filters run at fs/4 with a Nyquist taper. v13 and v13.1 stay bit-identical. p1 stays the default; there is no ?caddy=v13.2 / ?sound=v13.2 alias. Louvre estimates were not retuned. No new URLs, defaults unchanged, no Cadillac-only code, banks do not share filter state." },
       { v: "v1.13.1", date: "2026-11-16", status: "done", headline: "Sound v13.1 · Cadillac: TMM physics fixes and a cheaper filter", text: "v13 mid-band over-attenuation was two generic TMM bugs, not the louvre-size estimates: a shadowed Mach number plus cx() swallowing NaN zeroed the concentric waveguide length, and wrong S22 signs forced a 0.71 passivity scale. Both are fixed behind an opt-in rev field, so released v13 stays bit-identical. Cadillac’s one drop-down gains a picker-only Sound v13.1 · Cadillac after v13, using the same geometry with rev=1 and a short FIR-head plus stable low-order IIR tail in place of the 512-tap FIRs. p1 stays the default; there is no ?caddy=v13.1 / ?sound=v13.1 alias. Louvre dHole 0.030 in and σ=0.10 stay estimates and were not retuned. No new URLs, defaults unchanged, no Cadillac-only code." },
@@ -11800,12 +11812,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (/^v11\.(cadillac|caddy)\.p\d+$/.test(v)) return 'v9p';   // v1.12.3: v12.cadillac.p2 etc. still the v12 kernel; the set is caddyName()
     return v;
   }
-  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, v13, v13.1, v13.2 and v13.4 are picker-only (no URL)
+  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, v13, v13.1, v13.2, v13.4 and v14 are picker-only (no URL)
   function caddyName(v, allowPicker) {
     if (!v) return defaultCaddySound();
     v = String(v).toLowerCase().replace(/^v12/, 'v11');
-    // Picker values only. No ?caddy=p7 / ?caddy=v13 / ?caddy=v13.1 / ?caddy=v13.2 / ?caddy=v13.4 / ?cadillac=… / ?sound=… aliases (allowPicker is false on the URL path).
+    // Picker values only. No ?caddy=p7 / ?caddy=v13 / ?caddy=v13.1 / ?caddy=v13.2 / ?caddy=v13.4 / ?caddy=v14 / ?cadillac=… / ?sound=… aliases (allowPicker is false on the URL path).
     if (allowPicker && v === 'p7') return 'p7';
+    if (allowPicker && v === 'v14') return 'v14';
     if (allowPicker && v === 'v13.4') return 'v13.4';
     if (allowPicker && v === 'v13.2') return 'v13.2';
     if (allowPicker && v === 'v13.1') return 'v13.1';
@@ -11853,17 +11866,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;   // unknown tokens (bare p7, v9.7 already handled) must not fall through to kernel v1
   if (!soundChoice) soundChoice = v8Name(lsGet('streetrod.sound', null));
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;
-  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, v13, v13.1, v13.2 and v13.4 stay picker-only: not accepted from ?sound=
+  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, v13, v13.1, v13.2, v13.4 and v14 stay picker-only: not accepted from ?sound=
   // Bare ?car=caddy&sound=p5 is a Cadillac set, not a kernel id. p5 is not a BRM set (the shipped BRM list is p1–p4, p6, p8–p11), so brmName('p5') is null and v8Name('p5') would otherwise fall through to SoundModels.get → v1.
-  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4 alias on the URL path).
-  if (startId === 'caddy' && soundParam && /^(p[1234567]|v13|v13\.1|v13\.2|v13\.4)$/i.test(soundParam)) soundChoice = null;
-  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4)$/i.test(soundParam)) soundChoice = null;
+  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 / ?sound=v14 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4/v14 alias on the URL path).
+  if (startId === 'caddy' && soundParam && /^(p[1234567]|v13|v13\.1|v13\.2|v13\.4|v14)$/i.test(soundParam)) soundChoice = null;
+  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4|v14)$/i.test(soundParam)) soundChoice = null;
   // ?car=brm&sound=p7 (or any unshipped pN): stay on the BRM with the default set (p11). Do not select kernel v1.
   if (startId === 'brm') soundChoice = null;
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
     p997Sound: p997Name(p997Param),   // v1.12.2: default p7; ?p997=p1|p2|p3|p4|p5|p6 select the other sets
-    caddySound: caddyName(caddyQuery, false),   // default p1; p7, v13, v13.1, v13.2 and v13.4 are picker-only (no ?caddy= / ?sound= URL)
+    caddySound: caddyName(caddyQuery, false),   // default p1; p7, v13, v13.1, v13.2, v13.4 and v14 are picker-only (no ?caddy= / ?sound= URL)
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   // A Cadillac set query (?caddy=p5, ?sound=v12.cadillac.p5, or ?car=caddy&sound=p5) always uses the v12 kernel.
@@ -11947,7 +11960,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     v13: 'Sound v13 · Cadillac',
     'v13.1': 'Sound v13.1 · Cadillac',
     'v13.2': 'Sound v13.2 · Cadillac',
-    'v13.4': 'Sound v13.4 · Cadillac'
+    'v13.4': 'Sound v13.4 · Cadillac',
+    'v14': 'Sound v14 · Cadillac'
   };
   function setCaddySound(v) {
     state.caddySound = caddyName(v, true);
@@ -11996,7 +12010,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       { value: 'kern:v4', label: 'Sound v4 (pop/bang fix)' }
     ];
     if (key === 'CADDY') {
-      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'v13', 'v13.1', 'v13.2', 'v13.4'].map(function (p) {
+      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'v13', 'v13.1', 'v13.2', 'v13.4', 'v14'].map(function (p) {
         return { value: 'caddy:' + p, label: CADDY_LABEL[p] };
       }));
     }
@@ -12384,8 +12398,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   if (selP997) selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
   var selCaddy = document.getElementById('selCaddy');
-  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p7, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac and Sound v13.4 · Cadillac), filled once.
-  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']]].forEach(function (row) {
+  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p7, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac and Sound v14 · Cadillac), filled once.
+  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']], ['v14', CADDY_LABEL['v14']]].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selCaddy.appendChild(o);
   });
   if (selCaddy) selCaddy.addEventListener('change', function () { applyCaddyPicker(selCaddy.value); selCaddy.blur(); });

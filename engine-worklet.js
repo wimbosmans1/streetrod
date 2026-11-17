@@ -3317,6 +3317,14 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['v13.4'].gas_dyn = 1;
     }
 
+    // v14: v13.4 with flow noise removed from the model (k_jet = 0: no tailpipe jet noise; k_vf = 0: no exhaust-valve flow noise).
+    // Both were about 80 dB under the radiated exhaust sound. Generic params only; every older set stays bit-identical.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.4'] && !DATA.cadillac59.sets['v14']) {
+      DATA.cadillac59.sets['v14'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.4']));
+      DATA.cadillac59.sets['v14'].k_jet = 0;
+      DATA.cadillac59.sets['v14'].k_vf = 0;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -4599,12 +4607,15 @@ function engineModuleV8p(core) {
         var rho_t = P_ATM / (R_GAS * S[S_TTAIL]);
         var U = (pinm + st) * PF[pq * NF + F_A] / (rho_t * PF[pq * NF + F_C]);
         out[ko + O_U0 + mo] = U;
-        var uu = U / Q[Q_TAILA]; if (uu < 0.0) uu = 0.0;
-        var nz = (rnd(S) - 0.5) * 3.4641016151377544;
-        var fj = uu / Math.sqrt(4.0 * Q[Q_TAILA] / Math.PI) + 150.0, aj = 1.0 - Math.exp(-2.0 * Math.PI * fj / fs);
-        var r4 = (uu / 30.0) * (uu / 30.0);
-        S[S_JET0 + mo] += aj * (nz * 7e-4 * Q[Q_KJET] * r4 * r4 - S[S_JET0 + mo]);
-        out[ko + O_JET0 + mo] = S[S_JET0 + mo];
+        // tailpipe jet (flow) noise; k_jet = 0 (Sound v14+) removes it entirely: no RNG draw, no per-sample exp/sqrt
+        if (Q[Q_KJET] > 0.0) {
+          var uu = U / Q[Q_TAILA]; if (uu < 0.0) uu = 0.0;
+          var nz = (rnd(S) - 0.5) * 3.4641016151377544;
+          var fj = uu / Math.sqrt(4.0 * Q[Q_TAILA] / Math.PI) + 150.0, aj = 1.0 - Math.exp(-2.0 * Math.PI * fj / fs);
+          var r4 = (uu / 30.0) * (uu / 30.0);
+          S[S_JET0 + mo] += aj * (nz * 7e-4 * Q[Q_KJET] * r4 * r4 - S[S_JET0 + mo]);
+          out[ko + O_JET0 + mo] = S[S_JET0 + mo];
+        }
       } else if (typ === 3) {
         // closed / rigid end: pressure reflection +1, no radiation (Helmholtz cavity)
         var pc = NODE[nb + 3];
