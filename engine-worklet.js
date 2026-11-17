@@ -3302,6 +3302,21 @@ function engineModuleV8p(core) {
       }
     }
 
+    // v13.3: same v13.1 geometry with rev=3 (rev-2 fit, continuous fs/4 output interpolation, decimation lag taken off the bulk delay). Generic param only.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.1'] && !DATA.cadillac59.sets['v13.3']) {
+      DATA.cadillac59.sets['v13.3'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.1']));
+      var _m133 = DATA.cadillac59.sets['v13.3'].muf, _i133;
+      for (_i133 = 0; _m133 && _i133 < _m133.length; _i133++) {
+        if (_m133[_i133] && _m133[_i133][0] === 'tmm') _m133[_i133][_m133[_i133].length - 1] = 3;
+      }
+    }
+
+    // v13.4: v13.3 (v13.1 geometry, TMM rev=3) + gas_dyn=1 (cycle-resolved exhaust gas temperature). Generic param only.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.3'] && !DATA.cadillac59.sets['v13.4']) {
+      DATA.cadillac59.sets['v13.4'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.3']));
+      DATA.cadillac59.sets['v13.4'].gas_dyn = 1;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -4168,6 +4183,11 @@ function engineModuleV8p(core) {
           var hint = (names[i] === 'S21' || names[i] === 'S12') ? dTx : 0;
           filt[names[i]] = fitTransfer(samp.freqs, H, fsFit, hint, p.rev >= 1, { rev: p.rev || 0, name: names[i] });
         }
+        // rev>=3: the decimated path's output interpolation lags one fsFit sample; take it
+        // off the fitted pure delay so the can adds no latency over the full-rate fit.
+        if (decim > 1 && p.rev >= 3) {
+          for (i = 0; i < 4; i++) if (filt[names[i]].delay >= 1) filt[names[i]].delay -= 1;
+        }
         var out = { kind: kind, p: p, fs: fs, fsFit: fsFit, decim: decim, filt: filt, TL: samp.TL, freqs: samp.freqs, area1: samp.area1, area2: samp.area2, scale: samp.scale, gas: samp.gas };
         if (p.rev >= 1) stabilizeCan(out);
         return out;
@@ -4175,7 +4195,7 @@ function engineModuleV8p(core) {
 
       // Runtime filter state
       function makeState(comp) {
-        var st = { decim: (comp && comp.decim) || 1, _ph: 0, _o1: 0, _o2: 0, _o1p: 0, _o2p: 0, _s1: 0, _s2: 0 }, n, f, names = ['S11', 'S12', 'S21', 'S22'];
+        var st = { decim: (comp && comp.decim) || 1, rev: (comp && comp.p && comp.p.rev) || 0, _ph: 0, _o1: 0, _o2: 0, _o1p: 0, _o2p: 0, _s1: 0, _s2: 0 }, n, f, names = ['S11', 'S12', 'S21', 'S22'];
         for (n = 0; n < 4; n++) {
           f = comp.filt[names[n]];
           st[names[n]] = {
@@ -4253,6 +4273,11 @@ function engineModuleV8p(core) {
         st._s1 = 0; st._s2 = 0; st._ph = 0;
         st._o1p = st._o1; st._o2p = st._o2;
         st._o1 = y.o1; st._o2 = y.o2;
+        // rev>=3: continuous linear interpolation (t = 0 at the update). rev 2 returned the
+        // new value here and then restarted from the previous one, a sawtooth at fs/decim
+        // (a ~12 kHz whine at 48 kHz). The one decimated sample of latency is taken off the
+        // fitted bulk delay in compileCan.
+        if (st.rev >= 3) return { o1: st._o1p, o2: st._o2p };
         return y;
       }
 
@@ -5195,6 +5220,14 @@ function engineModuleV8p(core) {
           this.tmmState.push(TMM.makeState(tcomp));
         }
       }
+      // gas_dyn: exhaust volume downstream of the ports (pipes in groups 1/2 + TMM can shells), for the gas transport time.
+      var vex = 0.0, gi, tsp2;
+      for (gi = 0; gi < this.PG.length; gi++) if (this.PG[gi][3] === 1 || this.PG[gi][3] === 2) vex += this.PG[gi][0] * this.PG[gi][2];
+      for (gi = 0; gi < this.tmmCans.length; gi++) {
+        tsp2 = this.tmmCans[gi].p;
+        vex += tsp2.kind === 'triflow' ? Math.PI / 4 * tsp2.aOval * tsp2.bOval * (tsp2.L1 + tsp2.L2 + tsp2.L3) : Math.PI / 4 * tsp2.dShell * tsp2.dShell * tsp2.L;
+      }
+      this._vex = vex;
       this.Q = this._q();
       this.S = new Float64Array(NS); this.NCY = this.c.fire_order.length; this.CY = new Float64Array(this.NCY * NC); this.PF = new Float64Array(this.NP * NF);
       this.AB = new Float64Array(this.NP * DL); this.BB = new Float64Array(this.NP * DL); this.AT = new Float64Array(this.NP * DL); this.NA = new Float64Array(this.NN * 2);
@@ -5389,6 +5422,7 @@ function engineModuleV8p(core) {
       this.setRunning(rpm || this.c.idle_rpm);
     };
     V8pSynth.prototype._thermal = function (dtb, firing) {
+      if (this.P.gas_dyn) { this._thermalGas(dtb, firing); return; }
       var P = this.P, S = this.S, pr = S[S_PMAN] / P_ATM, rpm = S[S_W] * 60 / (2 * Math.PI);
       var tl = firing ? pr * (0.5 + 0.5 * Math.min(1.0, rpm / 4000.0)) : 0.0;
       this.load += (tl - this.load) * Math.min(1.0, dtb / 1.5);
@@ -5397,6 +5431,25 @@ function engineModuleV8p(core) {
       S[S_TPRIM] += (tg - S[S_TPRIM]) * Math.min(1.0, dtb / 0.4);
       var tt = T_AMB + (0.25 + 0.2 * this.pw) * (S[S_TPRIM] - T_AMB);
       S[S_TTAIL] += (tt - S[S_TTAIL]) * Math.min(1.0, dtb / 1.0);
+    };
+    // gas_dyn (generic param): the exhaust GAS temperature follows each engine cycle (Heywood 1988, ch. 6: exhaust gas
+    // temperature is set per cycle by the expansion; the slow EGT seen on thermocouples is sensor / wall lag). Port gas and
+    // load: one engine cycle (120/rpm s). Downstream (tail) gas: plug-flow transport time = exhaust volume downstream of the
+    // ports / exhaust volume flow (eta_v * MAP/P_atm * Vd * rpm/120 * T_prim/T_amb), bounded to [one cycle, 2 s].
+    // Wall warm-up (pw, 25 s) is unchanged, so steady-state temperatures are the same as without gas_dyn.
+    V8pSynth.prototype._thermalGas = function (dtb, firing) {
+      var P = this.P, S = this.S, Q = this.Q, pr = S[S_PMAN] / P_ATM, rpm = S[S_W] * 60 / (2 * Math.PI);
+      var cyc = 120.0 / (rpm > 300.0 ? rpm : 300.0), kc = Math.min(1.0, dtb / cyc);
+      var tl = firing ? pr * (0.5 + 0.5 * Math.min(1.0, rpm / 4000.0)) : 0.0;
+      this.load += (tl - this.load) * kc;
+      if (firing) this.pw += (1.0 - this.pw) * dtb / 25.0; else this.pw -= this.pw * dtb / 200.0;
+      var tg = firing ? (T_AMB + (P.t_prim0 + P.t_prima * this.load - T_AMB) * (0.6 + 0.4 * this.pw)) : T_AMB + 40.0 * this.pw;
+      S[S_TPRIM] += (tg - S[S_TPRIM]) * kc;
+      var qex = Q[Q_ETAV] * (pr > 0.05 ? pr : 0.05) * Q[Q_VD] * (rpm / 120.0) * (S[S_TPRIM] / T_AMB);
+      var ttr = qex > 1e-6 ? (this._vex || 0) / qex : 2.0;
+      if (ttr < cyc) ttr = cyc; if (ttr > 2.0) ttr = 2.0;
+      var tt = T_AMB + (0.25 + 0.2 * this.pw) * (S[S_TPRIM] - T_AMB);
+      S[S_TTAIL] += (tt - S[S_TTAIL]) * Math.min(1.0, dtb / ttr);
     };
     /** one block (n <= 256) -> L/R at off; game = { running, starter, warm, gear } or null (offline 'run' mode) */
     V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {

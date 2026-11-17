@@ -1,3 +1,17 @@
+## v1.13.3 (tag `v1.13.3`), 2026-11-17 (Sound v13.4 · Cadillac: throttle lag fix)
+
+* **Diagnosis.** The throttle lag on v13.x was not filter delay or CPU. On a throttle step 0.1→1 at fixed rpm, most of v13's rise came through the exhaust-temperature model: three lags in series (load 1.5 s → primary gas 0.4 s → tail gas 1.0 s, unsourced, from the v9.11 work-in-progress). With the temperature frozen, v13.3 at 2000 rpm rose +0.6 dB instead of +3.8 dB.
+* **Generic fix `gas_dyn` (parameter, off by default).** The exhaust gas temperature follows each engine cycle (Heywood 1988, ch. 6: exhaust gas temperature is set per cycle; slow EGT readings are thermocouple and wall lag). Port gas and load: one engine cycle (120/rpm s). Tail gas: plug-flow transport time = exhaust volume downstream of the ports (pipes + TMM can shells, 0.048 m³ for v13.4) / exhaust volume flow (η_v · MAP/P_atm · V_d · rpm/120 · T_prim/T_amb), bounded to one cycle … 2 s. Wall warm-up (25 s) is unchanged, so steady-state temperatures and levels are the same.
+* **TMM checked, not changed.** Fitted S21 matches the frequency-domain TL within about 1–3 dB up to 3 kHz; S21 → 1 at low frequency; passive; `scalePassive` = 1. The remaining 2000 rpm gap to p2 is the TriFlow's real 400 Hz–4 kHz TL removing the steepened blowdown energy that carries p2's instant throttle cue. Not EQ'd or level-matched.
+* **Sound v13.4 · Cadillac** = v13.1 geometry, TMM `rev = 3` (the v13.3 upsampler fix: continuous fs/4 output interpolation, 12 kHz whine −37 dB → −81 dB; v13.3 itself was never shipped), plus `gas_dyn = 1`. Added at the end of Cadillac's one drop-down, picker-only. v13, v13.1 and v13.2 stay bit-identical. p1 stays the default; no ?caddy= / ?sound= alias.
+* **Step response (dB vs part throttle; 60–120 / 120–250 / 250–500 ms; steady).** 2000 rpm: v13.3 +3.7 / +1.5 / +1.8; +3.8 → v13.4 +3.9 / +4.4 / +4.1; +4.2. 3500 rpm: v13.3 +5.1 / +4.9 / +5.1; +7.2 → v13.4 +6.8 / +7.5 / +6.3; +6.6. CPU (node, one core): v13.3 19.7 / 18.7 %, v13.4 18.6 / 17.9 %, p2 about 19 %.
+
+* **Per-car lists:**
+  * GT350: Sound v1 (procedural), v2 (physical exhaust), v3 (start-up sequence), v4 (pop/bang fix), v12 · GT350 p1 (default).
+  * Cadillac: Sound v1–v4, then v12 · Cadillac p1 (default), p2, p3, p4, p5, p6 (test), p7 (picker-only), Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac and Sound v13.4 · Cadillac (all picker-only).
+  * BRM: v12 · BRM p1, p2, p3, p4, p6, p8, p9, p10, p11 (default). Not listed: p5, p7, v9.0, v8.
+  * 911: v12 · 911 p1–p7 (p7 default). The 911 was never on v1–v4.
+
 ## v1.13.2 (tag `v1.13.2`), 2026-11-16 (Sound v13.2 · Cadillac: high-rpm jump fix and cheaper TMM)
 
 * **Diagnosis, not a retune.** On v13.1 the engine suddenly got loud at higher rpm (part +8.0 dB from 3200 −13.6 to 3700 −5.6; full +7.3 dB from 3200 −9.9 to 3800 −2.6) and felt laggy on iPhone. The IIR-fit quality gate only covered 20–2000 Hz, so HF errors were unchecked. Triflow S21 under-TL vs the frequency-domain TMM was 5.56 dB at 349 Hz and about 21 dB at 7.5 kHz; S11 was 3.25 dB too strong at 1237 Hz; poles sat at 0.990–0.997. At 3600–3700 rpm a V8’s 5th harmonic is ~1233 Hz and the 6th at 3200 rpm is 1280 Hz (the real 21158 passband, fd TL 5.21 dB). Those stacked. The passband itself is physics and was not EQ’d or level-matched away, and louvre `dHole` 0.030 in / σ = 0.10 were not retuned.
