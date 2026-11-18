@@ -3379,6 +3379,22 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['p8'].muf = [['chamber', 0.51435, 6.296875, 0], ['pipe', 3.07, 0.04445, 0], ['chamber', 0.5715, 6.56640625, 0]];
     }
 
+    // p9 (v12 family): p8 plus a realistic amount of damping, set from physics and sources, not from the scorecard.
+    // NACA Report 1192 (Davis et al. 1954): plain expansion chambers without flow match lossless plane-wave theory,
+    // so reactive cans damp little at rest; Sullivan (JASA 66, 1979): louvred/perforated cans with flow "can be very
+    // dissipative" through the flow-induced resistance of the perforation. Per can: segmented concentric perforated-
+    // duct model (Sullivan & Crocker 1978; Munjal 2014 ch. 4) of the real shell and 1 3/4 in tube, Rao & Munjal (1986)
+    // grazing-flow resistance 7.337e-3 (1 + 72.23 M)/sigma plus orifice visco-thermal resistance, Kirchhoff wall
+    // losses at the gas temperature (Sutherland viscosity), gas state midway between the engine model's warm idle and
+    // cruise (v14.1/v15 can_gas). Its dissipative attenuation (0.4-2.6 dB, rising with frequency) is mapped onto the
+    // existing generic chamber terms by least squares in octave bands: chamber pack 0.25 (muffler) / 0.13
+    // (resonator), with the set's pack 1.743 unchanged and pack_r 0.30 (broadband part). Generic params only.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['p8'] && !DATA.cadillac59.sets['p9']) {
+      DATA.cadillac59.sets['p9'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['p8']));
+      DATA.cadillac59.sets['p9'].muf = [['chamber', 0.51435, 6.296875, 0.25], ['pipe', 3.07, 0.04445, 0], ['chamber', 0.5715, 6.56640625, 0.13]];
+      DATA.cadillac59.sets['p9'].pack_r = 0.30;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz

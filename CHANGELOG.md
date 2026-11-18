@@ -1,3 +1,34 @@
+## v1.13.8 (tag `v1.13.8`), 2026-11-18 (v12 · Cadillac p9: p8 with a realistic amount of damping)
+
+* **v12 · Cadillac p9** is p8 (same plain single-chamber cans, same sourced sizes, same v14.1 engine and pipes) plus damping set from physics and sources, not from the scorecard. It is picker-only, placed right after p8 on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=p9` or `?sound=p9` alias and no new URL. Generic parameters only; no Cadillac-only code.
+* **What real cans of this type damp.**
+  * Plain reactive chambers barely dissipate without flow: NACA Report 1192 (Davis, Stokes, Moore & Stevens, 1954) measured 77 mufflers at room temperature without flow and found expansion chambers "in good agreement with the plane-wave theory", which has no losses; viscous effects only limit the peaks at resonance. The same report notes that flow tends to increase low-frequency attenuation.
+  * Louvred or perforated cans with flow do dissipate: Sullivan (*JASA* 66, 1979, 779–788) found that such components "can be very dissipative, even though they contain no recognizable dissipative materials", because of the flow-induced resistance of the perforation.
+  * No packing: the Walker patents (US2182945, US3841435, US3498406) describe reactive cans with no fibrous packing.
+* **How the amount was set.** For each can, a segmented concentric perforated-duct model (Sullivan & Crocker 1978; Munjal, *Acoustics of Ducts and Mufflers*, 2nd ed. 2014, ch. 4) was built with:
+  * the real shell and a 1¾ in louvred tube (sourced);
+  * louvre porosity 0.11 for the muffler (sourced, US2182945 / US1931736) and 0.20 with ⅛ in holes for the resonator (carried over from p4, estimate);
+  * Rao & Munjal (*J. Sound Vib.* 108, 1986) grazing-flow resistance 7.337·10⁻³ (1 + 72.23 M)/σ, plus the orifice's own visco-thermal resistance;
+  * Kirchhoff wall losses at the real gas temperature (Sutherland viscosity, γ 1.30, Pr 0.70);
+  * the gas state midway between the engine model's warm idle and cruise (`can_gas`; v14.1/v15): muffler 662 K, Mach 0.022; resonator 548 K, Mach 0.026 (estimate; Rao–Munjal is fitted for Mach 0.05–0.2, so this is a slight extrapolation).
+* **Result.** Dissipative attenuation per octave band from 125 Hz to 4 kHz, in dB:
+  * muffler 0.5 / 0.9 / 1.1 / 1.4 / 1.9 / 2.6;
+  * resonator 0.4 / 0.5 / 0.7 / 0.9 / 1.2 / 2.1;
+  * p8's chambers: about 0.05.
+* **Mapping onto the model's existing generic terms**, by least squares on those octave bands (not on recordings):
+  * muffler chamber `pack` 0.25;
+  * resonator chamber `pack` 0.13;
+  * the set's `pack` coefficient 1.743 unchanged (the one-pole, frequency-rising part);
+  * new set value `pack_r` 0.30 (the broadband part; it was already a generic parameter, used by the 911).
+  * Mapped attenuation: muffler 0.5 / 0.2 / 1.4 / 1.2 / 1.6 / 2.8 dB; resonator 0.2 / 0.1 / 0.9 / 1.0 / 1.3 / 2.0 dB. A plain chamber cannot dissipate much below its first length mode, so the lowest two bands come out under the target.
+* **Scores, for information only (142 dry windows, lower is closer):** p9 3.207, p8 2.950, p1 3.622, p2 3.554, v14.1 5.263, v15 5.660.
+  * By path (cabin / outside far / tailpipe / engine bay): p9 2.894 / 4.280 / 4.256 / 7.600.
+  * 1.5–6 kHz share, model − recording: p9 −7.0 dB (p8 −4.4, p1 −7.9, p2 −9.1, v14.1 −29.7).
+  * Slope: p9 −1.38 dB/oct (p8 −0.37, p1 −0.78, p2 −2.38, v14.1 −6.33).
+  * p9 is closer than p8 at 2,400–3,600 rpm (all three throttle settings), and further at lower rpm.
+* **Cost.** Same 26 waveguides as p8. Desktop CPU (node, ms per audio second, 48 kHz, 2000 rpm): p9 185.6, p8 188.1, v14.1 194.0 (same run).
+* **Unchanged.** Every older entry stays bit-identical (50/50 offline renders, including p8). BRM is untouched.
+
 ## v1.13.7 (tag `v1.13.7`), 2026-11-18 (v12 · Cadillac p8: four plain 1-D cans from a small layout search)
 
 * **v12 · Cadillac p8** is a new picker-only entry in the v12 family, placed right after p7 on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=p8` or `?sound=p8` alias, and no new URL; `?sound=p8` on the Cadillac does not fall through to kernel v1. The full history stays on the drop-down.
