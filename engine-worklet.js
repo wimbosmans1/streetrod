@@ -3325,6 +3325,26 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['v14'].k_vf = 0;
     }
 
+    // v14.1: v14 with the can shells as 3-D modal chambers (generic kinds 'triflow3d' / 'perf_through3d'; same gas
+    // paths, same 1-D tubes, same perforate formula). Changed numbers, each from a source, none fitted to recordings:
+    //  - triflow louvre porosity 0.10 -> 0.11: US2182945 Fig. 3 shows about 20 louvres round the 1 3/4 in tube
+    //    (14 on the drawn 250 deg arc), opening 0.030 in (US1931736): 20 x 0.030 / (pi x 1.75) = 0.109.
+    //  - gas temperature and Mach number from the engine model at warm idle (tools/can_gas.cjs): p_man 0.285 atm,
+    //    520 rpm, T_prim 798.6 K; first can fed by the group-1 pipe at T_AMB + 0.65 (T_prim - T_AMB) = 621.7 K, the
+    //    resonator at T_tail = 519.6 K; volume flow eta_v p_man/p_atm V_d rpm/120 T/T_AMB per bank over the tube area:
+    //    M = 0.0073 (muffler, 2 in inlet) and 0.0087 (resonator, 1 3/4 in). Replaces the estimates 650 K / 0.08, 550 K / 0.06.
+    //  - TMM rev 4: exact causal impulse response from a dense grid split into the same hybrid FIR + IIR filter (compileCan4).
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v14'] && !DATA.cadillac59.sets['v14.1']) {
+      DATA.cadillac59.sets['v14.1'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v14']));
+      var _m141 = DATA.cadillac59.sets['v14.1'].muf, _i141;
+      for (_i141 = 0; _m141 && _i141 < _m141.length; _i141++) {
+        var _c141 = _m141[_i141];
+        if (!_c141 || _c141[0] !== 'tmm') continue;
+        if (_c141[1] === 'triflow') { _c141[1] = 'triflow3d'; _c141[10] = 0.11; _c141[14] = 621.7; _c141[15] = 0.0073; _c141[17] = 4; }
+        else if (_c141[1] === 'perf_through') { var _n141 = _c141[6] | 0; _c141[1] = 'perf_through3d'; _c141[9 + _n141] = 519.6; _c141[10 + _n141] = 0.0087; _c141[11 + _n141] = 4; }
+      }
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -3599,6 +3619,8 @@ function engineModuleV8p(core) {
       // perf_through: straight-through perforated tube with N chambers (US3648803 / Sullivan).
       function tOfCan(kind, p, omega, rho, c0) {
         if (kind === 'perf_through') return tOfPerfThrough(p, omega, rho, c0);
+        if (kind === 'perf_through3d') return tOfPerfThrough3d(p, omega, rho, c0);
+        if (kind === 'triflow3d') return tOfTriflow3d(p, omega, rho, c0);
         return tOfTriflow(p, omega, rho, c0);
       }
 
@@ -3664,6 +3686,237 @@ function engineModuleV8p(core) {
         parts.push(tTube(L2 * 0.25, aOut, omega, rho, c0, M)); // residual outlet length in ch14 not already in the return path
         parts.push(tTube(L3, aOut, omega, rho, c0, M));
         return tChain(parts);
+      }
+
+      // ---- v14.1: 3-D modal chamber model (generic) ----------------------------------------------
+      // Each can shell chamber is a rigid-walled box (equal-area rectangle with the real section aspect ratio:
+      // oval -> a x b scaled by sqrt(pi/4); round -> square of the same area), axial length = chamber length.
+      // Pressure from volume velocity: modal Green's function (Morse & Ingard 1968, ch. 9; Venkatesham, Tiwari &
+      // Munjal, J. Sound Vib. 323 (2009) 1032-1044): transverse modes cos(m pi y/Ly) cos(n pi z/Lz), the axial
+      // direction in closed form per transverse mode, g = -cos(kx x<) cos(kx (L - x>)) / (kx sin(kx L)),
+      // kx^2 = kc^2 - kmn^2 (cut-on and evanescent modes alike; g is even in kx). Patches (perforated tube
+      // segments, necks, open ends) are averaged over x and over their equal-area square. Wall loss: the
+      // same Kirchhoff boundary-layer attenuation as tTube, on the chamber's own perimeter / area.
+      // Internal tubes stay 1-D (tTube); perforate impedance is the same zPerforate. The can two-port follows
+      // from nodal analysis of tubes + perforates + chamber impedance matrices.
+      function cmplxCos(ar, ai, o) { o[0] = Math.cos(ar) * Math.cosh(ai); o[1] = -Math.sin(ar) * Math.sinh(ai); }
+      function cmplxSin(ar, ai, o) { o[0] = Math.sin(ar) * Math.cosh(ai); o[1] = Math.cos(ar) * Math.sinh(ai); }
+      function sincR(u) { return Math.abs(u) < 1e-9 ? 1 : Math.sin(u) / u; }
+      // chamber: { L, Ly, Lz }, patches: [{ x0, x1, y, z, s }] -> K x K complex (re, im) of p_k / Q_j [Pa s/m^3]
+      function chamberZ3d(ch, patches, omega, rho, c0) {
+        var K = patches.length, re = new Float64Array(K * K), im = new Float64Array(K * K);
+        var L = ch.L, Ly = ch.Ly, Lz = ch.Lz, k = omega / c0, i, j, m, n;
+        var nu = MU_AIR / rho, alpha = ((2 * (Ly + Lz)) / (2 * Ly * Lz)) * Math.sqrt(nu * omega) / c0;
+        if (alpha > 5) alpha = 5;
+        // kc = k - j alpha ; kc^2 = k^2 - alpha^2 - 2 j k alpha
+        var kc2r = k * k - alpha * alpha, kc2i = -2 * k * alpha;
+        var sMin = 1e9; for (i = 0; i < K; i++) if (patches[i].s < sMin) sMin = patches[i].s;
+        var mMax = Math.min(64, Math.ceil(6 * Ly / sMin)), nMax = Math.min(64, Math.ceil(6 * Lz / sMin));
+        if (ch.modeCap !== undefined) { mMax = Math.min(mMax, ch.modeCap); nMax = Math.min(nMax, ch.modeCap); }   // validation only
+        var phi = new Float64Array(K), Cr = new Float64Array(K), Ci = new Float64Array(K), Dr = new Float64Array(K), Di = new Float64Array(K);
+        var t = [0, 0], t2 = [0, 0], t3 = [0, 0], t4 = [0, 0];
+        var same = []; // identical x-interval flags
+        for (i = 0; i < K; i++) { same[i] = []; for (j = 0; j < K; j++) same[i][j] = Math.abs(patches[i].x0 - patches[j].x0) < 1e-9 && Math.abs(patches[i].x1 - patches[j].x1) < 1e-9; }
+        for (m = 0; m <= mMax; m++) {
+          for (n = 0; n <= nMax; n++) {
+            var km2 = (m * PI / Ly) * (m * PI / Ly) + (n * PI / Lz) * (n * PI / Lz);
+            var eps = (m ? 2 : 1) * (n ? 2 : 1), lam = Ly * Lz / eps;
+            var any = false;
+            for (i = 0; i < K; i++) {
+              var P = patches[i];
+              phi[i] = Math.cos(m * PI * P.y / Ly) * sincR(m * PI * P.s / (2 * Ly)) * Math.cos(n * PI * P.z / Lz) * sincR(n * PI * P.s / (2 * Lz));
+              if (Math.abs(phi[i]) > 1e-12) any = true;
+            }
+            if (!any) continue;
+            // kx = sqrt(kc^2 - km^2) (principal); g is even in kx so the branch does not matter
+            var ar = kc2r - km2, ai = kc2i, mod = Math.sqrt(Math.sqrt(ar * ar + ai * ai)), ang = 0.5 * Math.atan2(ai, ar);
+            var kr = mod * Math.cos(ang), ki = mod * Math.sin(ang);
+            // den = kx sin(kx L)
+            cmplxSin(kr * L, ki * L, t);
+            var denr = kr * t[0] - ki * t[1], deni = kr * t[1] + ki * t[0];
+            var dd = denr * denr + deni * deni; if (dd < 1e-300) dd = 1e-300;
+            // 1/den
+            var ivr = denr / dd, ivi = -deni / dd;
+            // per-patch x-averages: C = <cos kx x>, D = <cos kx (L-x)>
+            for (i = 0; i < K; i++) {
+              var a = patches[i].x0, b = patches[i].x1, h = b - a;
+              if (h < 1e-9) {
+                cmplxCos(kr * a, ki * a, t); Cr[i] = t[0]; Ci[i] = t[1];
+                cmplxCos(kr * (L - a), ki * (L - a), t); Dr[i] = t[0]; Di[i] = t[1];
+              } else {
+                // (sin kb - sin ka) / (k h)
+                cmplxSin(kr * b, ki * b, t); cmplxSin(kr * a, ki * a, t2);
+                var nr = t[0] - t2[0], ni = t[1] - t2[1], qr = kr * h, qi = ki * h, qd = qr * qr + qi * qi;
+                Cr[i] = (nr * qr + ni * qi) / qd; Ci[i] = (ni * qr - nr * qi) / qd;
+                cmplxSin(kr * (L - a), ki * (L - a), t); cmplxSin(kr * (L - b), ki * (L - b), t2);
+                nr = t[0] - t2[0]; ni = t[1] - t2[1];
+                Dr[i] = (nr * qr + ni * qi) / qd; Di[i] = (ni * qr - nr * qi) / qd;
+              }
+            }
+            for (i = 0; i < K; i++) {
+              if (phi[i] === 0) continue;
+              for (j = i; j < K; j++) {
+                if (phi[j] === 0) continue;
+                var w = phi[i] * phi[j] / lam, gr, gi;
+                var Pi = patches[i], Pj = patches[j];
+                if (same[i][j] && Pi.x1 - Pi.x0 > 1e-9) {
+                  // E = (2/(kx h^2)) [ 1/2 (h sin kxL - (cos kx(2b-L) - cos kx(2a-L)) / (2 kx)) - sin(kx a) (sin kx(L-a) - sin kx(L-b)) / kx ]
+                  var a2 = Pi.x0, b2 = Pi.x1, h2 = b2 - a2;
+                  cmplxSin(kr * L, ki * L, t);                                   // sin kxL
+                  cmplxCos(kr * (2 * b2 - L), ki * (2 * b2 - L), t2); cmplxCos(kr * (2 * a2 - L), ki * (2 * a2 - L), t3);
+                  var c1r = t2[0] - t3[0], c1i = t2[1] - t3[1];                  // cos diff
+                  // c1 / (2 kx)
+                  var kd = kr * kr + ki * ki, x1r = (c1r * kr + c1i * ki) / (2 * kd), x1i = (c1i * kr - c1r * ki) / (2 * kd);
+                  var term1r = 0.5 * (h2 * t[0] - x1r), term1i = 0.5 * (h2 * t[1] - x1i);
+                  cmplxSin(kr * a2, ki * a2, t4);
+                  cmplxSin(kr * (L - a2), ki * (L - a2), t2); cmplxSin(kr * (L - b2), ki * (L - b2), t3);
+                  var s2r = t2[0] - t3[0], s2i = t2[1] - t3[1];
+                  var pr = t4[0] * s2r - t4[1] * s2i, pim = t4[0] * s2i + t4[1] * s2r;   // sin(ka) * sdiff
+                  var y2r = (pr * kr + pim * ki) / kd, y2i = (pim * kr - pr * ki) / kd; // / kx
+                  var er = term1r - y2r, ei = term1i - y2i;
+                  // * 2/(kx h^2)
+                  var fr = 2 * kr / (kd * h2 * h2), fi = -2 * ki / (kd * h2 * h2);
+                  var Er = er * fr - ei * fi, Ei = er * fi + ei * fr;
+                  gr = -(Er * ivr - Ei * ivi); gi = -(Er * ivi + Ei * ivr);
+                } else {
+                  // left patch uses C, right patch uses D
+                  var lft = (Pi.x0 + Pi.x1) <= (Pj.x0 + Pj.x1) ? i : j, rgt = lft === i ? j : i;
+                  var pr2 = Cr[lft] * Dr[rgt] - Ci[lft] * Di[rgt], pi2 = Cr[lft] * Di[rgt] + Ci[lft] * Dr[rgt];
+                  gr = -(pr2 * ivr - pi2 * ivi); gi = -(pr2 * ivi + pi2 * ivr);
+                }
+                re[i * K + j] += w * gr; im[i * K + j] += w * gi;
+              }
+            }
+          }
+        }
+        // Z = j omega rho * sum ; symmetric fill
+        for (i = 0; i < K; i++) for (j = i; j < K; j++) {
+          var zr = -omega * rho * im[i * K + j], zi = omega * rho * re[i * K + j];
+          re[i * K + j] = zr; im[i * K + j] = zi; re[j * K + i] = zr; im[j * K + i] = zi;
+        }
+        return { re: re, im: im, K: K };
+      }
+      // complex dense solve (partial pivoting): A (n x n, re/im) X = B (n x nr) in place, returns X re/im
+      function csolve(n, Ar, Ai, nr, Br, Bi) {
+        var i, j, k, p, r;
+        for (k = 0; k < n; k++) {
+          p = k; var best = Ar[k * n + k] * Ar[k * n + k] + Ai[k * n + k] * Ai[k * n + k];
+          for (i = k + 1; i < n; i++) { var v = Ar[i * n + k] * Ar[i * n + k] + Ai[i * n + k] * Ai[i * n + k]; if (v > best) { best = v; p = i; } }
+          if (best < 1e-300) return false;
+          if (p !== k) {
+            for (j = 0; j < n; j++) { var tr = Ar[k * n + j], ti = Ai[k * n + j]; Ar[k * n + j] = Ar[p * n + j]; Ai[k * n + j] = Ai[p * n + j]; Ar[p * n + j] = tr; Ai[p * n + j] = ti; }
+            for (j = 0; j < nr; j++) { var ur = Br[k * nr + j], ui = Bi[k * nr + j]; Br[k * nr + j] = Br[p * nr + j]; Bi[k * nr + j] = Bi[p * nr + j]; Br[p * nr + j] = ur; Bi[p * nr + j] = ui; }
+          }
+          var dr = Ar[k * n + k], di = Ai[k * n + k], dd = dr * dr + di * di, ir = dr / dd, ii = -di / dd;
+          for (i = k + 1; i < n; i++) {
+            var fr = Ar[i * n + k] * ir - Ai[i * n + k] * ii, fi = Ar[i * n + k] * ii + Ai[i * n + k] * ir;
+            if (fr === 0 && fi === 0) continue;
+            for (j = k; j < n; j++) { Ar[i * n + j] -= fr * Ar[k * n + j] - fi * Ai[k * n + j]; Ai[i * n + j] -= fr * Ai[k * n + j] + fi * Ar[k * n + j]; }
+            for (j = 0; j < nr; j++) { Br[i * nr + j] -= fr * Br[k * nr + j] - fi * Bi[k * nr + j]; Bi[i * nr + j] -= fr * Bi[k * nr + j] + fi * Br[k * nr + j]; }
+          }
+        }
+        for (k = n - 1; k >= 0; k--) {
+          var dr2 = Ar[k * n + k], di2 = Ai[k * n + k], dd2 = dr2 * dr2 + di2 * di2, ir2 = dr2 / dd2, ii2 = -di2 / dd2;
+          for (r = 0; r < nr; r++) {
+            var sr = Br[k * nr + r], si = Bi[k * nr + r];
+            for (j = k + 1; j < n; j++) { sr -= Ar[k * n + j] * Br[j * nr + r] - Ai[k * n + j] * Bi[j * nr + r]; si -= Ar[k * n + j] * Bi[j * nr + r] + Ai[k * n + j] * Br[j * nr + r]; }
+            Br[k * nr + r] = sr * ir2 - si * ii2; Bi[k * nr + r] = sr * ii2 + si * ir2;
+          }
+        }
+        return true;
+      }
+      // Network: nodes 0..N-1, elems [{ i, j, T }] (1-D two-ports, p-U), chambers [{ ch, patches:[{node, x0,x1,y,z,s, Zp:{r,i}}] }]
+      // -> 2x2 T between node 0 (in) and node N-1 (out, U leaving).
+      function tOfNet(N, elems, chambers, omega, rho, c0) {
+        var Yr = new Float64Array(N * N), Yi = new Float64Array(N * N), e, q, i, j;
+        function addY(a, b, z) { Yr[a * N + b] += z.r; Yi[a * N + b] += z.i; }
+        for (q = 0; q < elems.length; q++) {
+          e = elems[q]; var T = e.T, A = T[0][0], B = T[0][1], C = T[1][0], D = T[1][1];
+          var iB = cinv(B);
+          addY(e.i, e.i, cmul(D, iB));
+          addY(e.i, e.j, csub(C, cmul(cmul(A, D), iB)));
+          addY(e.j, e.i, cneg(iB));
+          addY(e.j, e.j, cmul(A, iB));
+        }
+        for (q = 0; q < chambers.length; q++) {
+          var chm = chambers[q], P = chm.patches, K = P.length;
+          var Z = chamberZ3d(chm.ch, P, omega, rho, c0);
+          var Ar = new Float64Array(K * K), Ai = new Float64Array(K * K), Br = new Float64Array(K * K), Bi = new Float64Array(K * K);
+          for (i = 0; i < K * K; i++) { Ar[i] = Z.re[i]; Ai[i] = Z.im[i]; }
+          for (i = 0; i < K; i++) { Ar[i * K + i] += P[i].Zp.r; Ai[i * K + i] += P[i].Zp.i; Br[i * K + i] = 1; }
+          if (!csolve(K, Ar, Ai, K, Br, Bi)) continue;
+          for (i = 0; i < K; i++) for (j = 0; j < K; j++) { Yr[P[i].node * N + P[j].node] += Br[i * K + j]; Yi[P[i].node * N + P[j].node] += Bi[i * K + j]; }
+        }
+        // Z-parameters at the two ports: Y p = I with I = e_in, e_out
+        var Rr = new Float64Array(N * 2), Ri = new Float64Array(N * 2);
+        Rr[0 * 2 + 0] = 1; Rr[(N - 1) * 2 + 1] = 1;
+        if (!csolve(N, Yr, Yi, 2, Rr, Ri)) return null;
+        var z11 = cx(Rr[0], Ri[0]), z12 = cx(Rr[1], Ri[1]), z21 = cx(Rr[(N - 1) * 2], Ri[(N - 1) * 2]), z22 = cx(Rr[(N - 1) * 2 + 1], Ri[(N - 1) * 2 + 1]);
+        var i21 = cinv(z21);
+        return [[cmul(z11, i21), cmul(csub(cmul(z11, z22), cmul(z12, z21)), i21)], [i21, cmul(z22, i21)]];
+      }
+      // perforate discretisation: midpoint rule, error ~ dx^2; 1.5 cm segments keep the TL within ~0.3 dB of the converged value
+      function nsegOf(L) { return Math.max(6, Math.ceil(L / 0.015)); }
+      // Builder helpers for the generic network
+      function netBuilder() {
+        var o = { N: 1, elems: [], chambers: [] };
+        o.tube = function (a, L, area, omega, rho, c0, M) { if (L < 1e-6) return a; var b = o.N++; o.elems.push({ i: a, j: b, T: tTube(L, area, omega, rho, c0, M) }); return b; };
+        // perforated tube run through chamber chm (local x from xa to xb), nseg segments, coupling via zPerforate
+        o.perf = function (a, chm, xa, xb, y, z, d, nseg, sig, tw, dh, louv, omega, rho, c0, M) {
+          var L = Math.abs(xb - xa), dx = L / nseg, area = PI * d * d / 4, s = d * Math.sqrt(PI) / 2, node = a, k;
+          var zpc = zPerforate(omega, rho, c0, sig, tw, dh, M, louv), zs = rho * c0 / (PI * d * dx);
+          for (k = 0; k < nseg; k++) {
+            node = o.tube(node, (k === 0 ? 0.5 : 1) * dx, area, omega, rho, c0, M);
+            var x0 = xa < xb ? xa + k * dx : xa - (k + 1) * dx, x1 = x0 + dx;
+            if (x0 < 0) x0 = 0; if (x1 > chm.ch.L) x1 = chm.ch.L;
+            chm.patches.push({ node: node, x0: x0, x1: x1, y: y, z: z, s: s, Zp: cx(zpc.r * zs, zpc.i * zs) });
+          }
+          return o.tube(node, 0.5 * dx, area, omega, rho, c0, M);
+        };
+        o.chamber = function (L, Ly, Lz) { var c = { ch: { L: L, Ly: Ly, Lz: Lz }, patches: [] }; o.chambers.push(c); return c; };
+        return o;
+      }
+      // triflow3d: same gas path and parameters as tOfTriflow (US2182945 three-tube reverse flow), chambers as 3-D boxes.
+      // Tube layout in the shell section (US3841435: symmetrically arranged tubes): inlet, return, outlet side by side on
+      // the major axis at 1/6, 1/2, 5/6 of the width, on the minor-axis centre line.
+      function tOfTriflow3d(p, omega, rho, c0) {
+        var M = p.M || 0, sig = p.sigma, tw = p.tWall, dh = p.dHole, Lx = p.Lxover || 0.05;
+        var aIn = PI * p.dIn * p.dIn / 4, aRet = PI * p.dRet * p.dRet / 4, aOut = PI * p.dOut * p.dOut / 4;
+        var aShell = PI * p.aOval * p.bOval / 4;
+        // Gas section of each chamber = shell section minus the tubes passing through it (same volumes as tOfTriflow),
+        // as an equal-area rectangle with the oval's aspect ratio b/a. Tubes symmetrically arranged (US3841435):
+        // inlet / return / outlet at y = Ly/6, Ly/2, 5Ly/6 on the major axis, z = Lz/2.
+        function box(aNet) { var k = Math.sqrt(Math.max(aNet, 1e-6) / (p.aOval * p.bOval)); return [p.bOval * k, p.aOval * k]; }
+        var b15 = box(aShell - aIn - aOut), b14 = box(aShell - aIn - aRet - aOut), b13 = box(aShell - aIn - aOut);
+        var nb = netBuilder(), c15 = nb.chamber(p.L1, b15[0], b15[1]), c14 = nb.chamber(p.L2, b14[0], b14[1]), c13 = nb.chamber(p.L3, b13[0], b13[1]);
+        var Ly = b14[0], zc = b14[1] / 2, yIn = Ly / 6, yRet = Ly / 2, yOut = 5 * b15[0] / 6, z15 = b15[1] / 2, z13 = b13[1] / 2;
+        var n = 0;
+        n = nb.tube(n, p.L1, aIn, omega, rho, c0, M);                                               // inlet, solid through ch15
+        n = nb.perf(n, c14, 0, p.L2, yIn, zc, p.dIn, nsegOf(p.L2), sig, tw, dh, true, omega, rho, c0, M);     // louvred inlet in ch14
+        n = nb.tube(n, Lx, aRet, omega, rho, c0, M);                                                // rear crossover (in ch13)
+        var dNeck = p.dNeck || 0.0254, Lneck = (tw || 0.0015) + 0.85 * dNeck, Aneck = PI * dNeck * dNeck / 4;
+        var r13 = p.rNeck || (0.5 * rho * c0 / Aneck * 0.05);
+        c13.patches.push({ node: n, x0: 0, x1: 0, y: b13[0] / 3, z: z13, s: dNeck * Math.sqrt(PI) / 2, Zp: cx(r13, omega * rho * Lneck / Aneck) });
+        n = nb.perf(n, c14, p.L2, 0, yRet, zc, p.dRet, nsegOf(p.L2), sig, tw, dh, true, omega, rho, c0, M);   // louvred return in ch14 (same cavity)
+        n = nb.tube(n, Lx, aOut, omega, rho, c0, M);                                                // front crossover (in ch15)
+        n = nb.perf(n, c15, 0, p.L1, yOut, z15, p.dOut, nsegOf(p.L1), sig, tw, dh, true, omega, rho, c0, M);   // louvred outlet in ch15
+        n = nb.tube(n, p.L2 * 0.25, aOut, omega, rho, c0, M);
+        n = nb.tube(n, p.L3, aOut, omega, rho, c0, M);
+        var T = tOfNet(nb.N, nb.elems, nb.chambers, omega, rho, c0);
+        return T || tOfTriflow(p, omega, rho, c0);
+      }
+      // perf_through3d: straight-through perforated tube on the shell axis, pinched partitions -> chambers (US3648803).
+      function tOfPerfThrough3d(p, omega, rho, c0) {
+        // gas section = shell minus tube (annulus), as an equal-area square; tube on the axis
+        var Ls = Math.sqrt(Math.max(p.dShell * p.dShell - p.dTube * p.dTube, 1e-8) * PI / 4), fr = p.chFrac || [1], M = p.M || 0, i, n = 0;
+        var nb = netBuilder();
+        for (i = 0; i < fr.length; i++) {
+          var Li = p.L * fr[i]; if (Li < 1e-4) continue;
+          var c = nb.chamber(Li, Ls, Ls);
+          n = nb.perf(n, c, 0, Li, Ls / 2, Ls / 2, p.dTube, nsegOf(Li), p.sigma, p.tWall, p.dHole, false, omega, rho, c0, M);
+        }
+        var T = tOfNet(nb.N, nb.elems, nb.chambers, omega, rho, c0);
+        return T || tOfPerfThrough(p, omega, rho, c0);
       }
 
       // ---- IIR fit (Sanathanan–Koerner) + delay --------------------------------
@@ -4156,8 +4409,9 @@ function engineModuleV8p(core) {
       function sampleCan(kind, p, fs, nF) {
         nF = nF || 256;
         var g = gas(p.T, p.M), i, freqs = [], Ss = [], TLs = [];
-        var a1 = kind === 'triflow' ? PI * p.dIn * p.dIn / 4 : PI * p.dTube * p.dTube / 4;
-        var a2 = kind === 'triflow' ? PI * p.dOut * p.dOut / 4 : a1;
+        var tri = kind === 'triflow' || kind === 'triflow3d';
+        var a1 = tri ? PI * p.dIn * p.dIn / 4 : PI * p.dTube * p.dTube / 4;
+        var a2 = tri ? PI * p.dOut * p.dOut / 4 : a1;
         var fMin = 10, fMax = 0.45 * fs;
         for (i = 0; i < nF; i++) {
           // log grid so low-frequency TL (chamber / Helmholtz) is well sampled
@@ -4175,13 +4429,66 @@ function engineModuleV8p(core) {
         return { freqs: freqs, S: Ss, TL: TLs, area1: a1, area2: a2, gas: g, scale: sc };
       }
 
+      // rev 4 (v14.1, 3-D cans): the 3-D responses have narrow cross-mode peaks that a 256-point log grid under-samples
+      // (75 Hz apart at 3 kHz), so the rev-3 fitter loses up to ~10 dB of band energy. Their impulse responses are short
+      // (99 % of the energy within ~150 samples at fs/4), so rev 4 takes the exact causal IR from a dense linear grid
+      // (inverse DFT, same passivity scaling and same 0.38-0.45 fsFit taper as rev 3) and splits it into the same hybrid
+      // filter: FIR head + order-8 IIR tail (Steiglitz-McBride). Run-time size is fixed and no larger than the rev-3 cans:
+      // 16-tap head + order 8 on all four paths (34 multiply-adds per fsFit sample; rev 3 uses 30-42). Decimation 4 and
+      // interpolation as rev 3. Fit error, octave band power vs the frequency-domain model: mostly within 1.5 dB, worst 2.5 dB.
+      var CAN4_NFFT = 1024;
+      function compileCan4(kind, p, fs) {
+        var decim = 4, fsFit = fs / decim, N = CAN4_NFFT, g = gas(p.T, p.M), k, n, i;
+        var tri = kind === 'triflow' || kind === 'triflow3d';
+        var a1 = tri ? PI * p.dIn * p.dIn / 4 : PI * p.dTube * p.dTube / 4, a2 = tri ? PI * p.dOut * p.dOut / 4 : a1;
+        var freqs = [], Ss = [], TLs = [];
+        for (k = 0; k <= N / 2; k++) {
+          var f = k === 0 ? 0.25 * fsFit / N : k * fsFit / N;
+          freqs.push(f);
+          Ss.push(tToS(tOfCan(kind, p, 2 * PI * f, g.rho, g.c0), a1, a2, g.rho, g.c0, p.rev));
+        }
+        var sc = scalePassive(Ss, a1, a2);
+        for (k = 0; k < Ss.length; k++) TLs.push(tlOfS(Ss[k], a1, a2));
+        var names = ['S11', 'S12', 'S21', 'S22'], filt = {};
+        for (i = 0; i < 4; i++) {
+          var nm = names[i], h = new Float64Array(N), re = [], im = [];
+          for (k = 0; k <= N / 2; k++) {
+            var fr = freqs[k] / fsFit, tw = fr >= 0.45 ? 0 : (fr > 0.38 ? 0.5 + 0.5 * Math.cos(PI * (fr - 0.38) / 0.07) : 1);
+            if (k === N / 2) tw = 0;
+            re.push(Ss[k][nm].r * tw); im.push(k === 0 ? 0 : Ss[k][nm].i * tw);
+          }
+          for (n = 0; n < N; n++) {
+            var acc = re[0];
+            for (k = 1; k < N / 2; k++) { var w = 2 * PI * k * n / N; acc += 2 * (re[k] * Math.cos(w) - im[k] * Math.sin(w)); }
+            h[n] = acc / N;
+          }
+          // pure delay: up to the first sample carrying 0.1 % of the energy (no earlier than 0)
+          var tot = 0, cum = 0, d = 0;
+          for (n = 0; n < N; n++) tot += h[n] * h[n];
+          for (n = 0; n < N; n++) { cum += h[n] * h[n]; if (cum > 1e-3 * tot) { d = n; break; } }
+          if (d > 240) d = 240;
+          var hLen = 16, ord = 8;
+          var head = Array.prototype.slice.call(h, d, d + hLen), tail = Array.prototype.slice.call(h, d + hLen, Math.min(N, d + hLen + 768));
+          var sol = steiglitzMcBride(tail, ord, ord, 8), guard = 0;
+          while (sol && !iirImpulseStable(sol.a, sol.b, 1024) && guard < 10) { sol.a = shrinkPoles(sol.a, 0.96); guard++; }
+          if (!sol || !iirImpulseStable(sol.a, sol.b, 1024)) sol = { a: [1], b: [0] };
+          filt[nm] = { typ: 'hyb', delay: d, fir: head, a: sol.a, b: sol.b, tailDelay: hLen };
+        }
+        // decimated path output interpolation lags one fsFit sample (as rev 3)
+        for (i = 0; i < 4; i++) if (filt[names[i]].delay >= 1) filt[names[i]].delay -= 1;
+        var out = { kind: kind, p: p, fs: fs, fsFit: fsFit, decim: decim, filt: filt, TL: TLs, freqs: freqs, area1: a1, area2: a2, scale: sc, gas: g };
+        stabilizeCan(out);
+        return out;
+      }
+
       function compileCan(kind, p, fs) {
         var decim = (p && p.rev >= 2) ? 4 : 1;
         var fsFit = fs / decim;
+        if (p && p.rev >= 4) return compileCan4(kind, p, fs);
         var samp = sampleCan(kind, p, fsFit, 256);
         var names = ['S11', 'S12', 'S21', 'S22'], i, k, filt = {};
         var path = 0;
-        if (kind === 'triflow') path = p.L1 + 2 * p.L2 + 2 * (p.Lxover || 0) + p.L1 + 0.25 * p.L2 + p.L3;
+        if (kind === 'triflow' || kind === 'triflow3d') path = p.L1 + 2 * p.L2 + 2 * (p.Lxover || 0) + p.L1 + 0.25 * p.L2 + p.L3;
         else path = p.L || 0;
         var dTx = samp.gas.c0 > 0 ? path / samp.gas.c0 * fsFit : 0;
         for (i = 0; i < 4; i++) {
@@ -4324,7 +4631,7 @@ function engineModuleV8p(core) {
       function parseSpec(mf) {
         if (!mf || mf[0] !== 'tmm') return null;
         var kind = mf[1], IN = 0.0254, i, o = { kind: kind, rev: 0 };
-        if (kind === 'triflow') {
+        if (kind === 'triflow' || kind === 'triflow3d') {
           o.L1 = +mf[2]; o.L2 = +mf[3]; o.L3 = +mf[4];
           o.aOval = +mf[5]; o.bOval = +mf[6];
           o.dIn = +mf[7]; o.dRet = +mf[8]; o.dOut = +mf[9];
@@ -4332,7 +4639,7 @@ function engineModuleV8p(core) {
           o.Lxover = +mf[13]; o.T = +mf[14]; o.M = +mf[15];
           o.dNeck = mf[16] != null ? +mf[16] : 0.0254;
           o.rev = mf[17] != null ? +mf[17] : 0;
-        } else if (kind === 'perf_through') {
+        } else if (kind === 'perf_through' || kind === 'perf_through3d') {
           o.L = +mf[2]; o.dShell = +mf[3]; o.dTube = +mf[4]; o.sigma = +mf[5];
           var nch = mf[6] | 0, fr = [];
           var s = 0;
@@ -4353,10 +4660,13 @@ function engineModuleV8p(core) {
         tOfCan: tOfCan, tToS: tToS, tlOfS: tlOfS,
         sampleCan: sampleCan, compileCan: compileCan,
         makeState: makeState, applyCan: applyCan, parseSpec: parseSpec,
+        tOfCan: tOfCan, chamberZ3d: chamberZ3d, tOfNet: tOfNet, tOfTriflow3d: tOfTriflow3d, tOfPerfThrough3d: tOfPerfThrough3d,
         gas: gas, skFit: skFit, fitTransfer: fitTransfer, steiglitzMcBride: steiglitzMcBride, pronyFit: pronyFit
       };
     }
     var TMM = createEngineTmm();
+    var TMM_CACHE = {};
+    var CAN4_PRE = /*CAN4_PRE*/{"44100|[\"tmm\",\"triflow3d\",0.21140420000000001,0.18455639999999998,0.11838939999999998,0.08255,0.19685,0.0508,0.044449999999999996,0.044449999999999996,0.11,0.0015,0.000762,0.11,621.7,0.0073,0.0254,4]":{"filt":{"S11":{"typ":"hyb","delay":4,"fir":[-0.01949048246026464,0.029476477472515087,-0.03769609449424019,0.029904579646461198,-0.006897079976775348,-0.32608078463629225,-0.21347628266368318,-0.07147634867095465,-0.12547805087675837,-0.044605965252671326,0.020845708240897758,0.014579296040925996,0.0806535374778452,0.14846207097473565,-0.06319743830361746,0.05451518661005539],"a":[1,-0.6850749509694587,1.4460202879790192,-0.7033282112832492,1.4618814300113798,-0.7658719211116565,1.2754464393084286,-0.5834126195436784,0.43782549216022004],"b":[0.21140615898901124,-0.29708219418038584,0.3141911235306946,-0.3027635283378764,0.30498730491796744,-0.2741172951276187,0.2626764783572376,-0.3592592560735426,0.08890743285527335],"tailDelay":16},"S12":{"typ":"hyb","delay":16,"fir":[0.020264531824815277,0.03703318396901257,0.003807073627708539,-0.0034230783331730746,0.03285602028026302,0.025971194866969777,-0.005369467598927237,0.008771136623053108,0.04326092630484074,0.015177047142400946,0.0031841995647098323,0.08445295294174417,0.06213733119894944,-0.018581209529031615,0.0127129850625153,0.0027072163159816715],"a":[1,-1.9728729524410382,2.841406046237017,-3.612377050658285,3.568088069568888,-2.659627604869256,1.7388327408121573,-0.9688827092880088,0.14194867465975622],"b":[-0.02428331257382236,0.061229449941883916,-0.045435167031882946,0.0951565740565757,-0.08159653987733921,0.06832859957099328,-0.09170249831295899,0.06994781364931994,-0.01699509410328309],"tailDelay":16},"S21":{"typ":"hyb","delay":16,"fir":[0.026467959934452636,0.04836987293911839,0.004972504330068291,-0.004470959455573009,0.04291398567218022,0.03392156064257278,-0.007013182170027411,0.011456178446436711,0.056504067010404245,0.019823081981911437,0.004158954533498573,0.11030589771982906,0.08115896319862793,-0.024269334895061737,0.016604715183693438,0.0035359560045474555],"a":[1,-1.9728734411855025,2.8414069553693495,-3.6123783680420223,3.5680897219947867,-2.6596291652297914,1.7388338426566317,-0.9688833911565607,0.14194901785816363],"b":[-0.03171697968869229,0.07997316933029866,-0.059343914688260536,0.12428613459590339,-0.10657508455132994,0.08924550203008368,-0.11977467094195121,0.09136041548200124,-0.022197682001329672],"tailDelay":16},"S22":{"typ":"hyb","delay":2,"fir":[-0.022584867071596893,0.0343221174071197,-0.04467482037234881,0.03968236375081845,-0.02929026735232935,-0.4294699062210492,-0.1928175605633522,-0.00988053692407735,-0.12230362243779608,-0.0019026286724158287,-0.03491954269419504,0.0631438101494744,0.059748781572985375,-0.01201627487529286,0.12812695537564406,0.03182178915397146],"a":[1,-1.6327899803048733,3.1097001658822325,-2.94754840619203,3.45520043678929,-2.4703497506458683,2.282999353219004,-1.0172774366843302,0.563867025008728],"b":[0.08716138519870692,-0.04682552572957179,0.02318951480224779,0.19384895433808175,-0.3421263658886577,0.5083889944426125,-0.4959358063148413,0.36011187905745046,-0.18299186076851925],"tailDelay":16}},"stabShrink":0},"48000|[\"tmm\",\"triflow3d\",0.21140420000000001,0.18455639999999998,0.11838939999999998,0.08255,0.19685,0.0508,0.044449999999999996,0.044449999999999996,0.11,0.0015,0.000762,0.11,621.7,0.0073,0.0254,4]":{"filt":{"S11":{"typ":"hyb","delay":5,"fir":[-0.020520083535429997,0.03059266514681131,-0.040568731258563424,0.03564300107561563,-0.023327540530624146,-0.35199468022844305,-0.16553959141633776,-0.06208667397315419,-0.14393370412952627,-0.017900545212530667,-0.031752251486694034,0.03846947654372203,0.03680007589812939,0.09563794296119905,0.12254957886381714,-0.11742101033462043],"a":[1,-1.106804141679187,1.9660413525636544,-1.6540007100624667,2.2007051457078224,-1.5736060284247075,1.557933841373312,-0.6905767580089301,0.33549988651057333],"b":[0.1283016043336977,0.030148031455419333,-0.10612163874782386,0.22164731749452377,-0.24291558897755947,0.3050312549596064,-0.28910258006222805,0.28654119742659223,-0.2878885364919477],"tailDelay":16},"S12":{"typ":"hyb","delay":18,"fir":[0.03177216176088626,0.02527949734997664,-0.004937727312026149,0.004359350862999591,0.030701697197788428,0.02492158215811631,-0.006324980545470974,0.004695222999886642,0.037641305670623314,0.023536482170817514,-0.0016203762093099667,0.040541440872740794,0.08960296954746338,0.019893403619901245,-0.01891259057158857,0.022037562043023956],"a":[1,-2.604542253495415,4.327988639914171,-5.662322152500837,5.6867733737895145,-4.350093326000918,2.666595486734103,-1.1984332862915172,0.184948039837335],"b":[-0.008923817997999715,0.006243128738408207,0.010470418367104896,0.007525477807878765,0.0150568989150567,-0.009946018769227126,0.012285910183226775,-0.040988906722864205,0.030378886971972708],"tailDelay":16},"S21":{"typ":"hyb","delay":18,"fir":[0.0414983337285045,0.03301811898772455,-0.0064492764891769545,0.0056938460251423255,0.04010017593180534,0.03255063792080497,-0.008261199079798857,0.006132536163117223,0.04916415434530388,0.030741527733312686,-0.00211640974277219,0.05295208603786566,0.11703245002117675,0.02598322105456484,-0.02470215911391163,0.028783754505174126],"a":[1,-2.604543231792552,4.3279910543484075,-5.662326062696914,5.6867782931361255,-4.350097971918571,2.6665987657376244,-1.1984351072143093,0.1849487305357041],"b":[-0.011655599017279765,0.008154309659404833,0.013675609261134335,0.009829251670641232,0.0196660182647658,-0.012990565230764618,0.016046725499614837,-0.05353639169982503,0.03967849967227222],"tailDelay":16},"S22":{"typ":"hyb","delay":1,"fir":[0.012513414712880562,-0.006960772779189181,-0.007028285507490529,0.02369700565790374,-0.048841682703952005,0.07260511622264688,-0.15051656426448587,-0.4315963516063082,-0.08032018888842282,-0.034443806594871895,-0.11563834152881348,0.010458384072726498,-0.04556343513633008,0.039854347006820307,0.08371351540821875,-0.02182968016906422],"a":[1,-1.9540957314389957,3.7831466871189363,-4.104771004045131,4.767407130542473,-3.789348688891292,3.193487776731167,-1.5440846857170845,0.7088681613964305],"b":[0.0715386746986636,-0.16231376224355268,0.3113209243303448,-0.25094244623231793,0.1962586758981358,-0.04623101382727048,0.04429188649157192,-0.025686782638522622,0.022322415509742538],"tailDelay":16}},"stabShrink":0},"44100|[\"tmm\",\"perf_through3d\",0.5715,0.13017499999999999,0.044449999999999996,0.2,3,0.22,0.45,0.33,0.0015,0.003175,519.6,0.0087,4]":{"filt":{"S11":{"typ":"hyb","delay":0,"fir":[-0.2432521145757572,-0.49931570254972446,-0.20719415184104406,0.09244620822519482,0.11765434198686926,-0.13601373319031268,0.07490165965713644,0.24379223944660408,-0.05600787503735035,-0.01563477362558716,-0.0688589004038132,-0.06925877355275076,0.08404011001786267,0.008247520649882859,0.030025716092451527,-0.05000450575855574],"a":[1,-1.0143113907720436,0.9566527448560198,-1.561311912951296,1.4294024197088373,-1.475524465853356,0.6904410419890017,-0.6946805162378233,0.7168582415045401],"b":[-0.11682768008328621,0.10919044019737703,-0.07445483683043798,0.18882820035376166,-0.19704498309960472,0.14082509939337115,-0.052530871771194435,0.04569958045798562,-0.0336572379920928],"tailDelay":16},"S12":{"typ":"hyb","delay":14,"fir":[0.017637906708513246,0.009146277412478037,0.04186364879946693,0.03585583232617448,0.022584378530747306,0.06549483143630803,0.00043582085289795507,0.04917900965296985,0.06573026966471383,-0.022210284809458684,0.09370208645506171,0.02884460057458724,-0.023203470053202908,0.11916943160636224,-0.017026234798298782,-0.0011269522469354526],"a":[1,-0.0007222847815451895,-1.1678925244502492,-1.7049465741913457,0.6871409949683167,1.3887170907646262,0.7614040945807259,-0.5667111224070888,-0.3921405714961329],"b":[0.10398784311982676,-0.06039933138229704,-0.10866160502100015,-0.06676590173923848,0.08297801380678407,0.04576139179293633,0.05555999567824535,-0.011045334718796752,-0.03910702955879736],"tailDelay":16},"S21":{"typ":"hyb","delay":14,"fir":[0.017637906708513246,0.009146277412478037,0.04186364879946693,0.03585583232617448,0.022584378530747306,0.06549483143630803,0.00043582085289795507,0.04917900965296985,0.06573026966471383,-0.022210284809458684,0.09370208645506171,0.02884460057458724,-0.023203470053202908,0.11916943160636224,-0.017026234798298782,-0.0011269522469354526],"a":[1,-0.0007222847815451895,-1.1678925244502492,-1.7049465741913457,0.6871409949683167,1.3887170907646262,0.7614040945807259,-0.5667111224070888,-0.3921405714961329],"b":[0.10398784311982676,-0.06039933138229704,-0.10866160502100015,-0.06676590173923848,0.08297801380678407,0.04576139179293633,0.05555999567824535,-0.011045334718796752,-0.03910702955879736],"tailDelay":16},"S22":{"typ":"hyb","delay":0,"fir":[-0.2314131565632115,-0.5092901803015595,-0.2036440695587462,0.09508902475611963,0.10117431207688359,-0.09823434469228846,-0.028478775357716004,0.08838245887887314,-0.049480428680891926,0.0532324526351115,0.1389046769864927,0.08692754546628848,-0.05487161818533848,-0.11096921401600446,0.019674135095283086,-0.04630243330324391],"a":[1,-1.2735777950257592,1.0324045316789738,-0.6337145932017625,0.6043735044521147,-0.8833193252749333,0.8888576785299942,-0.4680153372463355,-0.229191483400472],"b":[-0.015471026791176285,0.008389731908179845,-0.004026164431292844,0.14873817393879954,-0.18732123516516855,0.1314466801677949,-0.10692998058130193,0.028169127893692723,0.024596566755602737],"tailDelay":16}},"stabShrink":0},"48000|[\"tmm\",\"perf_through3d\",0.5715,0.13017499999999999,0.044449999999999996,0.2,3,0.22,0.45,0.33,0.0015,0.003175,519.6,0.0087,4]":{"filt":{"S11":{"typ":"hyb","delay":0,"fir":[-0.20022319414334935,-0.4997208332392921,-0.21067667635030762,0.015327461330977845,0.13458958914558852,-0.00876366871424184,-0.13644588371796487,0.24322006621798264,0.12209277051184435,-0.09300515395399869,0.034318701469993926,-0.11405050659022224,-0.03779521134036852,0.07739069114631923,-0.004843099818168125,0.04902553748503454],"a":[1,-1.03447854007999,1.1131022887217974,-1.5117474697076163,1.5426429885115795,-1.4866631331224598,0.8958978807676224,-1.074971074346503,0.6130609529072641],"b":[-0.030104605088206237,-0.03412101788679024,-0.06024542753855941,0.04844495830276082,0.02210338838394847,0.01436597782425515,-0.02145034222614481,0.015883929925228083,0.06925422477938245],"tailDelay":16},"S12":{"typ":"hyb","delay":16,"fir":[0.019594810056883315,0.014571505305126548,0.046256382717121694,0.025255967641297304,0.025264187539998793,0.06370411855460328,-0.008632416421114892,0.04730865950217493,0.07223651323521113,-0.03249692313458245,0.07453802983781749,0.06357721673214331,-0.043806401296426,0.07562062806305175,0.06366331711834268,-0.04365524917634085],"a":[1,0.6697104185198992,0.5358649019085318,-1.4398155482376294,-1.3900759955927438,-1.2167838961268538,0.6068474063688963,0.5764566399657223,0.7117131225800909],"b":[0.04845881712117933,0.08942106110894861,-0.025607311475599727,-0.10537386550914686,-0.13087231478214428,-0.04351540819100662,0.08085432781776311,0.07817720824418756,0.02172668530113018],"tailDelay":16},"S21":{"typ":"hyb","delay":16,"fir":[0.019594810056883315,0.014571505305126548,0.046256382717121694,0.025255967641297304,0.025264187539998793,0.06370411855460328,-0.008632416421114892,0.04730865950217493,0.07223651323521113,-0.03249692313458245,0.07453802983781749,0.06357721673214331,-0.043806401296426,0.07562062806305175,0.06366331711834268,-0.04365524917634085],"a":[1,0.6697104185198992,0.5358649019085318,-1.4398155482376294,-1.3900759955927438,-1.2167838961268538,0.6068474063688963,0.5764566399657223,0.7117131225800909],"b":[0.04845881712117933,0.08942106110894861,-0.025607311475599727,-0.10537386550914686,-0.13087231478214428,-0.04351540819100662,0.08085432781776311,0.07817720824418756,0.02172668530113018],"tailDelay":16},"S22":{"typ":"hyb","delay":0,"fir":[-0.20112894512014898,-0.49028711103359607,-0.22887381118668726,0.034911638226106885,0.11652431525014635,-0.0008649421406056694,-0.12259553381790621,0.06665405393900034,0.044334204897462426,-0.06450334737869831,0.09813605663619678,0.11415502500057646,0.07298773225125652,-0.021532311777949724,-0.13719154712207912,0.019587247278867383],"a":[1,-0.3892844331486882,1.5189635669478516,-0.7195791341287705,1.6490476110613914,-0.6084876564507024,1.2550698343290259,-0.2170881374020277,0.7786971145575506],"b":[-0.016086524707533204,-0.023247318519913532,0.012010828508072615,-0.07974903357293688,0.11249378652616933,-0.027199628977642203,0.09370319831719698,0.015041548471454618,-0.017824720465519348],"tailDelay":16}},"stabShrink":0}}/*CAN4_PRE_END*/;
     var DL = 1024, DLM = DL - 1, HB = 4096, NSRC = 6;
     var TMM_RT = null; // set around kv8: array of per-can filter states
     // Q
@@ -5226,7 +5536,18 @@ function engineModuleV8p(core) {
         for (ti = 0; ti < N.tmmCans.length; ti++) {
           var tsp = TMM.parseSpec(N.tmmCans[ti]);
           if (!tsp) continue;
-          var tcomp = TMM.compileCan(tsp.kind, tsp, fs);
+          // v14.1: compile each distinct can once per sample rate (both banks share one spec); the compiled filters are
+          // read-only at run time, every can keeps its own state. Same numbers as compiling twice.
+          var tkey = fs + '|' + JSON.stringify(N.tmmCans[ti]);
+          var tcomp = TMM_CACHE[tkey];
+          if (!tcomp && tsp.rev >= 4 && CAN4_PRE[tkey]) {
+            // prebuilt rev-4 filters (tools/prebuild_cans.cjs, same compileCan4 output to the last bit) skip the
+            // load-time compile at 44.1 / 48 kHz; any other rate compiles below
+            var pre = CAN4_PRE[tkey];
+            tcomp = { kind: tsp.kind, p: tsp, fs: fs, fsFit: fs / 4, decim: 4, filt: pre.filt, stabShrink: pre.stabShrink, prebuilt: true };
+            TMM_CACHE[tkey] = tcomp;
+          }
+          if (!tcomp) tcomp = TMM_CACHE[tkey] = TMM.compileCan(tsp.kind, tsp, fs);
           this.tmmCans.push(tcomp);
           this.tmmState.push(TMM.makeState(tcomp));
         }
@@ -5236,7 +5557,7 @@ function engineModuleV8p(core) {
       for (gi = 0; gi < this.PG.length; gi++) if (this.PG[gi][3] === 1 || this.PG[gi][3] === 2) vex += this.PG[gi][0] * this.PG[gi][2];
       for (gi = 0; gi < this.tmmCans.length; gi++) {
         tsp2 = this.tmmCans[gi].p;
-        vex += tsp2.kind === 'triflow' ? Math.PI / 4 * tsp2.aOval * tsp2.bOval * (tsp2.L1 + tsp2.L2 + tsp2.L3) : Math.PI / 4 * tsp2.dShell * tsp2.dShell * tsp2.L;
+        vex += (tsp2.kind === 'triflow' || tsp2.kind === 'triflow3d') ? Math.PI / 4 * tsp2.aOval * tsp2.bOval * (tsp2.L1 + tsp2.L2 + tsp2.L3) : Math.PI / 4 * tsp2.dShell * tsp2.dShell * tsp2.L;
       }
       this._vex = vex;
       this.Q = this._q();
@@ -5685,5 +6006,5 @@ function engineModuleV8p(core) {
 
     function Synth(spec, listener, fs, opts) { return new V8pSynth(spec, listener, fs, opts); }
     return { id: 'v9p', label: 'v9.11 physics (V8)', Synth: Synth, synthOpts: { mode: 'game' }, startup: true, positions: ['rear', 'in_cabin'],
-      V8pSynth: V8pSynth, DATA: DATA, perspective: perspective, buildNet: buildNet };
+      V8pSynth: V8pSynth, DATA: DATA, perspective: perspective, buildNet: buildNet, TMM: TMM };
   }]);
