@@ -1,3 +1,17 @@
+## v1.13.7 (tag `v1.13.7`), 2026-11-18 (v12 · Cadillac p8: four plain 1-D cans from a small layout search)
+
+* **v12 · Cadillac p8** is a new picker-only entry in the v12 family, placed right after p7 on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=p8` or `?sound=p8` alias, and no new URL; `?sound=p8` on the Cadillac does not fall through to kernel v1. The full history stays on the drop-down.
+* **What it is.** Sound v14.1's parameters (sourced engine and pipes, gas_dyn, k_jet = 0, k_vf = 0, r_ac 3900, tail 0.5 m), with the four cans back on the plain v12 1-D muffler list (`chamber` / `pipe` items, as in p1–p7 and the 911). No TMM filters and no 3-D shells. Generic items only; no Cadillac-only code.
+* **Layout per bank** (sourced = from a source; searched = chosen by the search):
+  * Muffler (Walker 21158 TriFlow): **1 chamber** (searched, 1–3 tried), 20¼ in long (sourced, Walker catalog), section = the 3¼ × 7¾ in oval over the 2 in pipe, area ratio 6.297 (sourced), packing 0 (searched, 0/0.1/0.3 tried; also consistent with US3841435 / US3498406, which describe a reactive TriFlow with no packing).
+  * Connector: 3.07 m of 1¾ in pipe (sourced p5 lengths, as v13–v15).
+  * Resonator (Walker 21159 Direct Flow): **1 chamber** (searched, 1–3 tried), 22½ in long, 5⅛ in round (sourced, Walker replacement-line spec), area ratio 6.566, packing 0 (searched, 0/0.1/0.3/1.0 tried).
+* **Search (owner-authorised, small and structured).** 29 candidates in three stages: muffler 1/2/3 chambers (sourced US2182945 partition positions; internal tube 0.1 or 0.3 m, estimate) × resonator 1/2/3 chambers (½-½ or 0.22/0.45/0.33) at p2's packing; then a packing grid on the best layout; then three multi-chamber checks without packing. Scored on the 4×3 matrix against the same 142 dry windows. The simplest layout won overall, in every leave-one-source-out fold, on all four listening paths and on all six recordings.
+* **Scores (142 dry windows, lower is better):** p8 **2.950**, p1 3.622, p2 3.554, v14.1 5.263, v15 5.660. By path (cabin / outside far / tailpipe / engine bay): p8 2.634 / 4.066 / 3.979 / 7.349; p1 3.337 / 4.616 / 4.561 / 7.571. 1.5–6 kHz share, model − recording: p8 −4.4 dB (p1 −7.9, p2 −9.1, v14.1 −29.7, v15 −33.1). Slope: p8 −0.37 dB/oct (p1 −0.78, p2 −2.38, v14.1 −6.33, v15 −6.96). p8 is behind p1 in 2 of 9 cells (2.4–3.6k full and part throttle, 6 windows).
+* **Caveat.** Every model in this family is still short of the recordings' treble, so the score favours the least-damping can layout. p8 is the simplest plausible layout, not a sourced cut-open geometry; the real 21159's chamber count is still unknown.
+* **Cost.** 26 waveguides, no can filters to build. Desktop CPU (node, ms per audio second, 48 kHz, 2000 rpm): p8 188.1, v14.1 210.8, v15 206.7, p2 201.1. Within the Tesla/iPhone budget.
+* **Unchanged.** Every older entry stays bit-identical (48/48 offline renders checked): p1–p7, v13–v15, the GT350 and the 911. BRM is untouched.
+
 ## v1.13.6 (tag `v1.13.6`), 2026-11-18 (Sound v15 · Cadillac: cruise-flow can filters; causal perforated-tube model)
 
 * **Sound v15 · Cadillac** = Sound v14.1 with a second, prebuilt gas state for the muffler and resonator. A new generic parameter, `muf_cruise`, holds the cruise state. Nothing is fitted to recordings, and there is no Cadillac-only code.

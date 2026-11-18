@@ -3365,6 +3365,20 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['v15'].muf_cruise = _mc15;
     }
 
+    // p8 (v12 family): v14.1 parameters with the four cans back on the plain v12 1-D muffler list (no TMM, no 3-D shell).
+    // Owner-authorised small structured search (29 candidates, 1-3 chambers per can, packing 0-1, internal tube 0.1/0.3 m)
+    // scored on the 142 dry windows; the simplest layout won in every leave-one-source-out fold. Per bank:
+    //  - muffler (Walker 21158): one chamber, 20.25 in shell (catalog), area of the 3.25 x 7.75 in oval over the 2 in pipe
+    //    = 6.296875 (catalog), packing 0 (searched; TriFlow is reactive, US3841435 / US3498406 mention no packing);
+    //  - connector 3.07 m of 1 3/4 in pipe (p5 sourced lengths, as v13-v15);
+    //  - resonator (Walker 21159): one chamber, 22.5 in shell, 5 1/8 in round over the 2 in pipe = 6.56640625 (Walker
+    //    catalog spec), packing 0 (searched; Direct Flow, no packing listed). Chamber count per can: searched.
+    // Generic 'chamber'/'pipe' items only; no Cadillac-only code. Every older set stays bit-identical.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v14.1'] && !DATA.cadillac59.sets['p8']) {
+      DATA.cadillac59.sets['p8'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v14.1']));
+      DATA.cadillac59.sets['p8'].muf = [['chamber', 0.51435, 6.296875, 0], ['pipe', 3.07, 0.04445, 0], ['chamber', 0.5715, 6.56640625, 0]];
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
