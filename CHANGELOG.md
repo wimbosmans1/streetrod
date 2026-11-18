@@ -1,3 +1,36 @@
+## v1.13.6 (tag `v1.13.6`), 2026-11-18 (Sound v15 · Cadillac: cruise-flow can filters; causal perforated-tube model)
+
+* **Sound v15 · Cadillac** = Sound v14.1 with a second, prebuilt gas state for the muffler and resonator. A new generic parameter, `muf_cruise`, holds the cruise state. Nothing is fitted to recordings, and there is no Cadillac-only code.
+* **Cruise state, from the engine model** (`tools/can_gas.cjs cruise`). Cruise means 0.4 × redline = 2000 rpm at quarter throttle, which gives p_man 0.607 atm and T_prim 922.1 K.
+  * Muffler: 701.9 K, Mach 0.0634.
+  * Resonator: 576.1 K, Mach 0.0750.
+  * For comparison, warm idle (v14.1) is 621.7 K / Mach 0.0073 for the muffler and 519.6 K / Mach 0.0087 for the resonator.
+* **Choosing the state while driving.**
+  * Each can computes its live mean-flow Mach number from the engine model's live mass flow and gas temperature. It uses the same formula as `can_gas`.
+  * The can uses the design state nearest in log Mach. The switch point is the geometric mean of the two Mach numbers, with ±20 % hysteresis.
+  * The mean-flow terms of the transfer-matrix model are set by Mach and temperature, so this is the closer of the two exact models. It is not a blend fitted to anything.
+  * On a change, the new filter runs for 512 samples to warm up, then crosses over linearly in 1024 samples. Steady driving uses the plain single filter, the same code path as v14.1.
+* **Cost.** Both states are prebuilt for 44.1/48 kHz (`tools/prebuild_cans.cjs`, 8 filters, 25 KB), so there is no compile at load and no stall on a switch.
+  * Construction takes 2–4 ms, against v14.1's 1 ms and v14's ~1.4 s.
+  * Desktop CPU (node, ms per audio second):
+    * steady cruise: v14.1 189.0 / 188.4, v15 189.5 / 188.9 (+0.3 %);
+    * switching state twice a second: 184.8 / 185.8 vs 186.9 / 187.4 (+1 %).
+* **Generic fix: 1-D perforated tube (TMM rev 5).**
+  * The old concentric-perforate cascade (rev 1–4) mixed left-to-right tube matrices with a right-to-left perforate link, then inverted the product. The effect was a negative-admittance perforate and waves running backwards in time.
+    * On v14's cans, 85 % (muffler) and 100 % (resonator) of the S21 impulse-response energy fell at negative time.
+    * Refined to fine segments, it did not converge to the textbook limit: 48.5 dB at 400 Hz for a 5 %-open tube.
+  * Rev 5 is the segmented coupled-duct model (Sullivan & Crocker, *JASA* 64 (1978) 207–215; Munjal, *Acoustics of Ducts and Mufflers*, 2nd ed. 2014, ch. 4).
+    * Segments are 1.5 cm or shorter. The annulus is closed at both ends.
+    * It is solved as a nodal network, because a 4×4 matrix power overflows when the perforate is strongly coupled.
+  * Checks:
+    * It matches the independent 3-D plane-wave model within 0.02 dB from 100 to 1000 Hz (σ 0.2, L 0.3 m, d 1¾ in, D 0.13 m).
+    * It converges with refinement.
+    * 0 % of its impulse-response energy is at negative time.
+  * The old path is kept unchanged for rev ≤ 4, so every older set stays bit-identical.
+  * **v14.1 and v15 use the 3-D cans (`triflow3d`, `perf_through3d`), which never went through the 1-D cascade. The fix therefore does not change their sound.** It applies to any set that uses the 1-D kinds at rev 5.
+* **Unchanged.** Every older entry stays bit-identical (offline renders checked): p1–p7, v13, v13.1, v13.2, v13.3, v13.4, v14, v14.1, the GT350 and the 911.
+* v15 is added at the end of Cadillac's one drop-down, picker-only. p1 stays the default. There is no ?caddy= or ?sound= alias.
+
 ## v1.13.5 (tag `v1.13.5`), 2026-11-18 (Sound v14.1 · Cadillac: 3-D muffler and resonator shells)
 
 * **Sound v14.1 · Cadillac** = Sound v14 with each can shell modelled in 3-D. Generic kinds `triflow3d` (Walker three-tube reverse-flow muffler, US2182945 topology) and `perf_through3d` (straight-through perforated resonator, US3648803). Any car can use them through its muffler parameters; there is no Cadillac-only code.
