@@ -3395,6 +3395,19 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['p9'].pack_r = 0.30;
     }
 
+    // p10 (v12 family): p9 with damping at the upper end of the physically plausible range (same method as p9, not a
+    // score fit): engine-model cruise gas state (muffler 701.9 K, M 0.0634; resonator 576.1 K, M 0.0750) instead of the
+    // idle/cruise midpoint; Rao & Munjal resistance x1.25 (scatter of the empirical fit, estimate); muffler louvre
+    // porosity 0.08 (14 louvres round the tube, US2182945 Fig. 3, lower bound) plus Sullivan (1979) cross-flow
+    // resistance 0.514 d M/(l sigma) because all TriFlow flow crosses the louvres; resonator porosity 0.15 with 1.5 mm
+    // holes (estimate). Dissipative attenuation 1.0-6.0 dB (muffler) and 0.7-3.4 dB (resonator) per octave band,
+    // mapped as in p9: chamber pack 0.39 / 0.24, set pack 1.743 unchanged, pack_r 0.31. No packing material.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['p9'] && !DATA.cadillac59.sets['p10']) {
+      DATA.cadillac59.sets['p10'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['p9']));
+      DATA.cadillac59.sets['p10'].muf = [['chamber', 0.51435, 6.296875, 0.39], ['pipe', 3.07, 0.04445, 0], ['chamber', 0.5715, 6.56640625, 0.24]];
+      DATA.cadillac59.sets['p10'].pack_r = 0.31;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz

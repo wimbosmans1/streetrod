@@ -1,3 +1,30 @@
+## v1.13.9 (tag `v1.13.9`), 2026-11-19 (v12 · Cadillac p10: p9 with damping at the upper end of the plausible range)
+
+* **v12 · Cadillac p10** is p9 (same plain single-chamber cans, sourced sizes, v14.1 engine and pipes) with more damping. It is set by the same physics as p9, at the upper end of the plausible range, and not fitted to the scorecard. It is picker-only, right after p9 on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=p10` or `?sound=p10` alias and no new URL. Generic parameters only; no packing material; no Cadillac-only code.
+* **Upper-end assumptions** (p9's are given in brackets):
+  * Gas state: the engine model's cruise state, muffler 701.9 K, Mach 0.0634; resonator 576.1 K, Mach 0.0750 [idle/cruise midpoint]. Sourced from the model (`can_gas`).
+  * Rao & Munjal (1986) flow resistance × 1.25 [× 1.0]: estimate, allowing for the scatter of their empirical fit.
+  * Muffler louvre porosity 0.08 [0.11]: the lower bound of the US2182945 drawing, which shows 14 louvres on the drawn arc. 0.11 assumes 20 louvres all round.
+  * Muffler: Sullivan (1979) cross-flow resistance 0.514 d M/(l σ) added [not used], because all the TriFlow's flow crosses its louvres.
+  * Resonator porosity 0.15 with 1.5 mm holes [0.20, ⅛ in]: estimate.
+  * A sweep of 38 assumption sets (porosity, state, coefficient, hole size, cross-flow) bounds the range. A resonator porosity of 0.10 was left out: there the plane-wave model breaks down above about 2 kHz, near the shell's first cross mode.
+* **Dissipative attenuation per octave band**, 125 Hz–4 kHz, in dB:
+  * muffler 1.0 / 1.6 / 1.9 / 2.6 / 3.4 / 6.0 (p9: 0.5 / 0.9 / 1.1 / 1.4 / 1.9 / 2.6);
+  * resonator 0.7 / 1.2 / 1.3 / 1.8 / 2.4 / 3.4 (p9: 0.4 / 0.5 / 0.7 / 0.9 / 1.2 / 2.1).
+  * This is about twice p9 and the realistic upper bound for these cans without packing.
+* **Mapped as in p9**, by least squares on octave bands:
+  * muffler chamber `pack` 0.39 (p9 0.25);
+  * resonator chamber `pack` 0.24 (p9 0.13);
+  * set `pack` 1.743 unchanged;
+  * `pack_r` 0.31 (p9 0.30).
+  * Mapped attenuation: muffler 0.8 / 0.4 / 2.2 / 2.4 / 4.6 / 5.3 dB; resonator 0.3 / 0.2 / 1.5 / 1.8 / 2.2 / 3.6 dB.
+* **Scores, for information (142 dry windows, lower is closer):** p10 3.663, p9 3.207, p8 2.950, p1 3.622, p2 3.554.
+  * By path (cabin / outside far / tailpipe / engine bay): p10 3.354 / 4.646 / 4.764 / 7.951.
+  * p10 is the closest of p8, p9 and p10 in all three 2,400–3,600 rpm cells: shut 2.529, part 2.286, full 2.590. It is behind both at 350–2,400 rpm.
+  * 1.5–6 kHz share, model − recording: p10 −9.3 dB (p9 −7.0, p8 −4.4). Slope: −2.42 dB/oct (p9 −1.38, p8 −0.37).
+* **Cost.** Same 26 waveguides as p8 and p9. Desktop CPU (node, ms per audio second, 48 kHz, 2000 rpm, same run): p10 173.9, p9 175.0, p8 175.5.
+* **Unchanged.** Every older entry stays bit-identical (52/52 offline renders, including p8 and p9). BRM is untouched.
+
 ## v1.13.8 (tag `v1.13.8`), 2026-11-18 (v12 · Cadillac p9: p8 with a realistic amount of damping)
 
 * **v12 · Cadillac p9** is p8 (same plain single-chamber cans, same sourced sizes, same v14.1 engine and pipes) plus damping set from physics and sources, not from the scorecard. It is picker-only, placed right after p8 on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=p9` or `?sound=p9` alias and no new URL. Generic parameters only; no Cadillac-only code.
