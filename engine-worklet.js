@@ -3408,6 +3408,22 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['p10'].pack_r = 0.31;
     }
 
+    // Sound v16 (Cadillac): v15 with its four TMM cans replaced by plain long single chambers in the sourced Walker shells,
+    // following the inverse-cans analysis (scratch/inverse_cans: the recordings want an even can loss 125 Hz-2 kHz; v15's
+    // cans act as a strong low-pass). Per bank: muffler 21158, 20.25 in shell, 3.25 x 7.75 in oval over the 2 in pipe =
+    // area ratio 6.296875 (Walker catalog); connector 3.07 m of 1 3/4 in pipe (p5 sourced); resonator 21159, 22.5 in shell,
+    // 5 1/8 in round = 6.56640625 (Walker catalog); tail 0.5 m (p5). No extended tubes, no reverse-flow internals, no
+    // Helmholtz branch (none sourced). Damping: the p9 physics (damp.py: Rao & Munjal 1986 louvre/perforate resistance,
+    // Kirchhoff wall loss, idle/cruise midpoint gas), chamber pack 0.25 / 0.13, pack_r 0.30. New generic key muf_t1: the
+    // first can's gas is at the group-1 temperature, as for v15's first TMM can (can_gas.cjs). Generic params only.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v15'] && !DATA.cadillac59.sets['v16']) {
+      DATA.cadillac59.sets['v16'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v15']));
+      delete DATA.cadillac59.sets['v16'].muf_cruise;
+      DATA.cadillac59.sets['v16'].muf = [['chamber', 0.51435, 6.296875, 0.25], ['pipe', 3.07, 0.04445, 0], ['chamber', 0.5715, 6.56640625, 0.13]];
+      DATA.cadillac59.sets['v16'].pack_r = 0.30;
+      DATA.cadillac59.sets['v16'].muf_t1 = 1;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -5359,7 +5375,7 @@ function engineModuleV8p(core) {
       return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (lsaEx + dEx), 360.0 - (lsaEx - dEx)];
     }
     // Generic: a parameter set may override car geometry. Keys absent from the set leave the car bit-identical.
-    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz'];
+    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz','muf_t1'];
     function applySetCar(c, P) {
       if (!P) return c;
       for (var i = 0; i < SET_CAR_KEYS.length; i++) {
@@ -5508,6 +5524,7 @@ function engineModuleV8p(core) {
         var inter = pipe(c.inter_len + dl, c.pipe_d, 1);
         node(0, 0, hx ? [[prevOut, 1], [xp, bank], [inter, 0]] : [[prevOut, 1], [inter, 0]]);
         prev = inter;
+        var t1Done = false;
         mufItems.forEach(function (mf) {
           if (mf[0] === 'tmm') {
             tmmCans.push(mf);
@@ -5571,7 +5588,12 @@ function engineModuleV8p(core) {
             prev = ch;
           } else {
             var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
-            var p = pipe(mf[1], d, 2, mf[3]); node(0, 0, [[prev, 1], [p, 0]]); prev = p;
+            // v16 generic (set key muf_t1): plain items up to and including the first chamber take the group-1 gas
+            // temperature, as a first TMM can fed by the inter pipe does (tools/can_gas.cjs); later items stay at T_tail.
+            // Absent key: group 2 as before (older sets bit-identical).
+            var gT = (c.muf_t1 && !t1Done) ? 1 : 2;
+            if (c.muf_t1 && mf[0] === 'chamber') t1Done = true;
+            var p = pipe(mf[1], d, gT, mf[3]); node(0, 0, [[prev, 1], [p, 0]]); prev = p;
           }
         });
         var tail = pipe(c.tail_len, (c.tail_d != null ? c.tail_d : c.pipe_d), 2);

@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.9)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.10)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -3929,6 +3929,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       DATA.cadillac59.sets['p10'].pack_r = 0.31;
     }
 
+    // Sound v16 (Cadillac): v15 with its four TMM cans replaced by plain long single chambers in the sourced Walker shells,
+    // following the inverse-cans analysis (scratch/inverse_cans: the recordings want an even can loss 125 Hz-2 kHz; v15's
+    // cans act as a strong low-pass). Per bank: muffler 21158, 20.25 in shell, 3.25 x 7.75 in oval over the 2 in pipe =
+    // area ratio 6.296875 (Walker catalog); connector 3.07 m of 1 3/4 in pipe (p5 sourced); resonator 21159, 22.5 in shell,
+    // 5 1/8 in round = 6.56640625 (Walker catalog); tail 0.5 m (p5). No extended tubes, no reverse-flow internals, no
+    // Helmholtz branch (none sourced). Damping: the p9 physics (damp.py: Rao & Munjal 1986 louvre/perforate resistance,
+    // Kirchhoff wall loss, idle/cruise midpoint gas), chamber pack 0.25 / 0.13, pack_r 0.30. New generic key muf_t1: the
+    // first can's gas is at the group-1 temperature, as for v15's first TMM can (can_gas.cjs). Generic params only.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v15'] && !DATA.cadillac59.sets['v16']) {
+      DATA.cadillac59.sets['v16'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v15']));
+      delete DATA.cadillac59.sets['v16'].muf_cruise;
+      DATA.cadillac59.sets['v16'].muf = [['chamber', 0.51435, 6.296875, 0.25], ['pipe', 3.07, 0.04445, 0], ['chamber', 0.5715, 6.56640625, 0.13]];
+      DATA.cadillac59.sets['v16'].pack_r = 0.30;
+      DATA.cadillac59.sets['v16'].muf_t1 = 1;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -5880,7 +5896,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (lsaEx + dEx), 360.0 - (lsaEx - dEx)];
     }
     // Generic: a parameter set may override car geometry. Keys absent from the set leave the car bit-identical.
-    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz'];
+    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz','muf_t1'];
     function applySetCar(c, P) {
       if (!P) return c;
       for (var i = 0; i < SET_CAR_KEYS.length; i++) {
@@ -6029,6 +6045,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var inter = pipe(c.inter_len + dl, c.pipe_d, 1);
         node(0, 0, hx ? [[prevOut, 1], [xp, bank], [inter, 0]] : [[prevOut, 1], [inter, 0]]);
         prev = inter;
+        var t1Done = false;
         mufItems.forEach(function (mf) {
           if (mf[0] === 'tmm') {
             tmmCans.push(mf);
@@ -6092,7 +6109,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
             prev = ch;
           } else {
             var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
-            var p = pipe(mf[1], d, 2, mf[3]); node(0, 0, [[prev, 1], [p, 0]]); prev = p;
+            // v16 generic (set key muf_t1): plain items up to and including the first chamber take the group-1 gas
+            // temperature, as a first TMM can fed by the inter pipe does (tools/can_gas.cjs); later items stay at T_tail.
+            // Absent key: group 2 as before (older sets bit-identical).
+            var gT = (c.muf_t1 && !t1Done) ? 1 : 2;
+            if (c.muf_t1 && mf[0] === 'chamber') t1Done = true;
+            var p = pipe(mf[1], d, gT, mf[3]); node(0, 0, [[prev, 1], [p, 0]]); prev = p;
           }
         });
         var tail = pipe(c.tail_len, (c.tail_d != null ? c.tail_d : c.pipe_d), 2);
@@ -11582,6 +11604,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.10", date: "2026-11-19", status: "done", headline: "Sound v16 · Cadillac: plain long chambers in the real Walker shells, worked out backwards from the recordings", text: "Sound v16 · Cadillac follows the inverse-cans analysis: rendering v15 with its cans swapped for straight pipe and comparing it with the real recordings shows the cans should cut about evenly from 125 Hz to 2 kHz, while v15's cans acted as a strong low-pass. v16 keeps v15's engine and pipes and uses one plain long chamber per can in the sourced Walker shells (muffler 21158, resonator 21159), with the realistic louvre damping worked out for p9 and the first can's gas at the hotter temperature of the pipe feeding it. Tracing the pipe network showed no numerical error in how the cans join the pipes: the remaining 250 Hz bump comes from the tail pipe ringing near 450 Hz, which is real physics. Picker-only, after Sound v15 · Cadillac; p1 stays the default." },
       { v: "v1.13.9", date: "2026-11-19", status: "done", headline: "v12 · Cadillac p10: p9 with damping at the upper end of the plausible range", text: "v12 · Cadillac p10 is p9 with more damping, set by the same physics at the upper end of what is plausible: the exhaust flow of steady cruising, the fewest louvres the patent drawing allows, the extra resistance of exhaust flowing across the louvres, and the high end of the measured perforate resistance. That gives about 1 to 6 dB of damping in the muffler and 0.7 to 3.4 dB in the resonator, rising with pitch, about twice p9. It is the realistic ceiling for these cans without packing. It is set with the same generic packing terms: 0.39 in the muffler, 0.24 in the resonator, plus a broadband part of 0.31. p10 is the closest of p8–p10 at 2,400–3,600 rpm and further at lower rpm. Same CPU as p8. Added after p9 on Cadillac's one drop-down, picker-only; p1 stays the default; no new URL; no Cadillac-only code; every older entry stays bit-identical." },
       { v: "v1.13.8", date: "2026-11-18", status: "done", headline: "v12 · Cadillac p9: p8 with a realistic amount of damping", text: "v12 · Cadillac p9 is p8 with the damping that cans of this type really have, worked out from physics and published measurements rather than from the scorecard. Plain chambers barely damp without flow (NACA Report 1192, 1954), but louvred tubes with exhaust flowing past them do (Sullivan 1979; Rao & Munjal 1986). A perforated-tube model of each Walker can at the engine model's own gas temperature and flow gives about 0.5 to 2.6 dB of damping, rising with pitch. That is set with the existing generic packing terms: 0.25 in the muffler, 0.13 in the resonator, plus a broadband part of 0.30. No packing material is assumed; the patents show none. Same CPU as p8. Added after p8 on Cadillac's one drop-down, picker-only; p1 stays the default; no new URL; no Cadillac-only code; every older entry stays bit-identical." },
       { v: "v1.13.7", date: "2026-11-18", status: "done", headline: "v12 · Cadillac p8: four plain 1-D cans from a small layout search", text: "v12 · Cadillac p8 uses Sound v14.1's engine and pipes with the four cans (a muffler and a resonator on each side) back on the plain v12 muffler model. Their real shell sizes are kept: the Walker 21158 muffler is 20¼ in long and oval 3¼ × 7¾ in; the 21159 resonator is 22½ in long and 5⅛ in round. A small owner-approved search of 29 plausible layouts (1–3 chambers per can, packing 0–1) was scored against the same 142 recording windows; one chamber per can with no packing won on every listening position and every recording. Score 2.95 against p1's 3.62 (lower is better); it uses less CPU than v14.1. Added after p7 on Cadillac's one drop-down, picker-only; p1 stays the default; no new URL; no Cadillac-only code; every older entry stays bit-identical." },
@@ -12317,16 +12340,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (/^v11\.(cadillac|caddy)\.p\d+$/.test(v)) return 'v9p';   // v1.12.3: v12.cadillac.p2 etc. still the v12 kernel; the set is caddyName()
     return v;
   }
-  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1 and v15 are picker-only (no URL)
+  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15 and v16 are picker-only (no URL)
   function caddyName(v, allowPicker) {
     if (!v) return defaultCaddySound();
     v = String(v).toLowerCase().replace(/^v12/, 'v11');
-    // Picker values only. No ?caddy=p7 / ?caddy=p8 / ?caddy=p9 / ?caddy=p10 / ?caddy=v13 / ?caddy=v13.1 / ?caddy=v13.2 / ?caddy=v13.4 / ?caddy=v14 / ?caddy=v14.1 / ?caddy=v15 / ?cadillac=… / ?sound=… aliases (allowPicker is false on the URL path).
+    // Picker values only. No ?caddy=p7 / ?caddy=p8 / ?caddy=p9 / ?caddy=p10 / ?caddy=v13 / ?caddy=v13.1 / ?caddy=v13.2 / ?caddy=v13.4 / ?caddy=v14 / ?caddy=v14.1 / ?caddy=v15 / ?caddy=v16 / ?cadillac=… / ?sound=… aliases (allowPicker is false on the URL path).
     if (allowPicker && v === 'p7') return 'p7';
     if (allowPicker && v === 'p8') return 'p8';
     if (allowPicker && v === 'p9') return 'p9';
     if (allowPicker && v === 'p10') return 'p10';
     if (allowPicker && v === 'v15') return 'v15';
+    if (allowPicker && v === 'v16') return 'v16';
     if (allowPicker && v === 'v14.1') return 'v14.1';
     if (allowPicker && v === 'v14') return 'v14';
     if (allowPicker && v === 'v13.4') return 'v13.4';
@@ -12376,17 +12400,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;   // unknown tokens (bare p7, v9.7 already handled) must not fall through to kernel v1
   if (!soundChoice) soundChoice = v8Name(lsGet('streetrod.sound', null));
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;
-  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1 and v15 stay picker-only: not accepted from ?sound=
+  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15 and v16 stay picker-only: not accepted from ?sound=
   // Bare ?car=caddy&sound=p5 is a Cadillac set, not a kernel id. p5 is not a BRM set (the shipped BRM list is p1–p4, p6, p8–p11), so brmName('p5') is null and v8Name('p5') would otherwise fall through to SoundModels.get → v1.
-  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 / ?sound=v14 / ?sound=v14.1 / ?sound=v15 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4/v14/v14.1/v15 alias on the URL path).
-  if (startId === 'caddy' && soundParam && /^(p[123456789]|p10|v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15)$/i.test(soundParam)) soundChoice = null;
-  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15)$/i.test(soundParam)) soundChoice = null;
+  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 / ?sound=v14 / ?sound=v14.1 / ?sound=v15 / ?sound=v16 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4/v14/v14.1/v15 alias on the URL path).
+  if (startId === 'caddy' && soundParam && /^(p[123456789]|p10|v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16)$/i.test(soundParam)) soundChoice = null;
+  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16)$/i.test(soundParam)) soundChoice = null;
   // ?car=brm&sound=p7 (or any unshipped pN): stay on the BRM with the default set (p11). Do not select kernel v1.
   if (startId === 'brm') soundChoice = null;
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
     p997Sound: p997Name(p997Param),   // v1.12.2: default p7; ?p997=p1|p2|p3|p4|p5|p6 select the other sets
-    caddySound: caddyName(caddyQuery, false),   // default p1; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1 and v15 are picker-only (no ?caddy= / ?sound= URL)
+    caddySound: caddyName(caddyQuery, false),   // default p1; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15 and v16 are picker-only (no ?caddy= / ?sound= URL)
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   // A Cadillac set query (?caddy=p5, ?sound=v12.cadillac.p5, or ?car=caddy&sound=p5) always uses the v12 kernel.
@@ -12476,7 +12500,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     'v13.4': 'Sound v13.4 · Cadillac',
     'v14': 'Sound v14 · Cadillac',
     'v14.1': 'Sound v14.1 · Cadillac',
-    'v15': 'Sound v15 · Cadillac'
+    'v15': 'Sound v15 · Cadillac',
+    'v16': 'Sound v16 · Cadillac'
   };
   function setCaddySound(v) {
     state.caddySound = caddyName(v, true);
@@ -12525,7 +12550,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       { value: 'kern:v4', label: 'Sound v4 (pop/bang fix)' }
     ];
     if (key === 'CADDY') {
-      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'v13', 'v13.1', 'v13.2', 'v13.4', 'v14', 'v14.1', 'v15'].map(function (p) {
+      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'v13', 'v13.1', 'v13.2', 'v13.4', 'v14', 'v14.1', 'v15', 'v16'].map(function (p) {
         return { value: 'caddy:' + p, label: CADDY_LABEL[p] };
       }));
     }
@@ -12913,8 +12938,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   if (selP997) selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
   var selCaddy = document.getElementById('selCaddy');
-  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p10, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac, Sound v14 · Cadillac, Sound v14.1 · Cadillac and Sound v15 · Cadillac), filled once.
-  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['p8', CADDY_LABEL.p8], ['p9', CADDY_LABEL.p9], ['p10', CADDY_LABEL.p10], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']], ['v14', CADDY_LABEL['v14']], ['v14.1', CADDY_LABEL['v14.1']], ['v15', CADDY_LABEL['v15']]].forEach(function (row) {
+  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p10, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac, Sound v14 · Cadillac, Sound v14.1 · Cadillac, Sound v15 · Cadillac and Sound v16 · Cadillac), filled once.
+  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['p8', CADDY_LABEL.p8], ['p9', CADDY_LABEL.p9], ['p10', CADDY_LABEL.p10], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']], ['v14', CADDY_LABEL['v14']], ['v14.1', CADDY_LABEL['v14.1']], ['v15', CADDY_LABEL['v15']], ['v16', CADDY_LABEL['v16']]].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selCaddy.appendChild(o);
   });
   if (selCaddy) selCaddy.addEventListener('change', function () { applyCaddyPicker(selCaddy.value); selCaddy.blur(); });

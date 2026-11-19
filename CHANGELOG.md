@@ -1,3 +1,29 @@
+## v1.13.10 (tag `v1.13.10`), 2026-11-19 (Sound v16 · Cadillac: plain long chambers in the real Walker shells, from the inverse-cans analysis)
+
+* **Sound v16 · Cadillac** is Sound v15 (same engine, pipes, radiation, listener and cabin) with its four TMM cans replaced by one plain long chamber per can in the sourced Walker shells. It is picker-only, appended after Sound v15 · Cadillac on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=v16` or `?sound=v16`.
+* **Why.** Working backwards (v15 with the cans swapped for straight pipe, compared with the 142 dry recording windows) shows that the recordings want the cans to cut about evenly from 125 Hz to 2 kHz, relative to 500 Hz. v15's cans acted as a strong low-pass instead: about −20 dB at 63–125 Hz and +11 to +17 dB at 1–2 kHz.
+* **Cans, per bank** (generic `chamber` / `pipe` items):
+  * muffler (Walker 21158): 20.25 in shell; 3.25 × 7.75 in oval over the 2 in pipe, area ratio 6.296875. Walker catalog, sourced.
+  * connector: 3.07 m of 1¾ in pipe. Sourced p5 lengths.
+  * resonator (Walker 21159): 22.5 in shell; 5⅛ in round, area ratio 6.56640625. Walker catalog, sourced.
+  * tail: 0.5 m of 1¾ in (p5).
+  * No extended tubes and no reverse-flow internals. No Helmholtz branch, because none is sourced.
+* **Damping.** p9's physics (Rao & Munjal 1986 louvre/perforate resistance, Kirchhoff wall loss, idle/cruise midpoint gas state), not fitted: chamber `pack` 0.25 (muffler) / 0.13 (resonator), set `pack` 1.743 unchanged, `pack_r` 0.30.
+* **New generic key `muf_t1`.** Plain muffler-list items up to and including the first chamber take the group-1 gas temperature (`tm`). This is what a first TMM can fed by the inter pipe already got (`tools/can_gas.cjs`). Without the key, every plain item stays at the tail temperature, so older sets are bit-identical. In v16 the muffler is at about 508 m/s sound speed instead of 461 m/s at 700 rpm.
+* **Pipe–can coupling trace.** The question was why plain chambers in the model's pipe chain gave about +15 dB at 250 Hz (relative to 500 Hz) where a standalone can gives about +7.
+  * Method: an exact frequency-domain solver of the kernel's own exhaust graph (same pipes, Kelly–Lochbaum junctions, valve and open-end conditions, per-pipe losses). Run time-domain, it reproduces the kernel's impulse response to 6e-16.
+  * Fractional-delay interpolation versus exact delays: under 1 dB below 2 kHz.
+  * Mean-flow loss at the area steps: changes the shape by under 0.5 dB.
+  * Junction end corrections (Karal): about 1 cm, negligible.
+  * Result: no numerical or junction error. With anechoic ends the in-chain chambers give +7.7 dB at 250 Hz, matching the standalone figure. With the real ends (closed valves 0.98, open tail), the loss at 500 Hz collapses from 8.4 dB to 0.7 dB. The 0.5 m tail pipe's half-wave resonance (about 450 Hz with end correction) coincides with the chambers' first pass bands, so the other bands look high when measured relative to 500 Hz. That is real in-system physics, so the kernel's coupling is unchanged.
+* **Scores (142 dry windows, lower is closer):** v16 3.292, p9 3.207, p8 2.950, v15 5.660.
+  * By path (cabin / outside far / tailpipe / engine bay): v16 2.971 / 4.383 / 4.381 / 7.485.
+  * v16 is the closest of v15, p8 and p9 in the 2,400–3,600 rpm full-throttle cell (2.769) and part-throttle cell (2.413). It is behind p8 and p9 at 350–2,400 rpm, and far ahead of v15 everywhere.
+  * Can-loss shape, 125 Hz–2 kHz (rms dB against the inverse-cans curve, pooled): v16 4.0, p10 4.5, p9 4.7, p8 5.5, v15 12.4. This is the best of every set tried.
+  * 1.5–6 kHz share, model − recording: v16 −7.9 dB (p9 −7.0, p8 −4.4, v15 −33.1). Slope: −1.55 dB/oct (p9 −1.38, p8 −0.37, v15 −6.96).
+* **Cost.** Same 26 waveguides as p8 and p9. Desktop CPU (node, ms per audio second, 48 kHz, 2000 rpm, same run): v16 180.4, p8 182.7, p9 178.2, v15 184.5.
+* **Unchanged.** Every older entry stays bit-identical (52/52 offline renders, including p8–p10 and v15). BRM is untouched.
+
 ## v1.13.9 (tag `v1.13.9`), 2026-11-19 (v12 · Cadillac p10: p9 with damping at the upper end of the plausible range)
 
 * **v12 · Cadillac p10** is p9 (same plain single-chamber cans, sourced sizes, v14.1 engine and pipes) with more damping. It is set by the same physics as p9, at the upper end of the plausible range, and not fitted to the scorecard. It is picker-only, right after p9 on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=p10` or `?sound=p10` alias and no new URL. Generic parameters only; no packing material; no Cadillac-only code.
