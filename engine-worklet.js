@@ -3424,6 +3424,22 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['v16'].muf_t1 = 1;
     }
 
+    // Sound v17 (Cadillac): v16 plus two generic physical effects, no fitted values.
+    // (1) port_bc: every exhaust area step >= 1.2 is a resistive junction with the mean-flow Borda-Carnot loss
+    //     Dp = K rho U u (Ronneberger 1967; Munjal 2014 ch. 2; expansion K = (1 - A1/A2)^2, contraction 0.5 (1 - A2/A1), Idelchik).
+    // (2) t_axial: the exhaust gas cools along each bank from the head pipe to the tail (steady 1-D heat balance, Incropera
+    //     & DeWitt ch. 8; inside h from Dittus-Boelter 1930; flow from the engine model). Outside coefficient h_o = 20 W/m2K
+    //     for a still car: natural convection (Churchill & Chu 1975, 8-9 W/m2K on the 1 3/4 in pipe) plus radiation from
+    //     oxidised steel (emissivity 0.79, Incropera Table A.11; 8-12 W/m2K at 420-500 K) = 16-21 W/m2K. Driving would be
+    //     higher (Hilpert cross-flow, ~50-80 W/m2K); 20 is the conservative still-air value.
+    //     At warm idle the resonator runs at ~387 K and the tail at ~380 K instead of 505 K, so the tail half-wave and the
+    //     two cans' pass bands no longer coincide. Generic params only.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v16'] && !DATA.cadillac59.sets['v17']) {
+      DATA.cadillac59.sets['v17'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v16']));
+      DATA.cadillac59.sets['v17'].port_bc = 1;
+      DATA.cadillac59.sets['v17'].t_axial = 20;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -5071,6 +5087,15 @@ function engineModuleV8p(core) {
         var U5 = (2.0 * pin5 - ppl5) * PF[pr5 * NF + F_A] / (RHO_AIR * PF[pr5 * NF + F_C]);
         if (Q[Q_INTRES] > 0.0 && bk5 !== 2) { if (bk5 === 0) qinL -= U5; else qinR -= U5; }
         qin -= U5;
+      } else if (typ === 7) {
+        // v16.1 resistive 2-port junction (port_bc): p1 - p2 = R u, u1 + u2 = 0; r = NA[2nd+1] in narrow rho c / A
+        var q1 = NODE[nb + 3], s1 = NODE[nb + 4], q2 = NODE[nb + 5], s2 = NODE[nb + 6];
+        var a71 = s1 === 0 ? PF[q1 * NF + F_SB] : PF[q1 * NF + F_SA], a72 = s2 === 0 ? PF[q2 * NF + F_SB] : PF[q2 * NF + F_SA];
+        var y71 = PF[q1 * NF + F_A] * PF[q1 * NF + F_C], y72 = PF[q2 * NF + F_A] * PF[q2 * NF + F_C];
+        var u7 = 2.0 * (a71 - a72) / (1.0 / y71 + 1.0 / y72 + NA[nd * 2 + 1] / (y71 < y72 ? y71 : y72));
+        if (!isFinite(u7)) continue;
+        if (s1 === 0) { AB[q1 * DL + wi] = a71 - u7 / y71; if (knl > 0.0) arr(AB, AT, PF, q1, wi, nt, knl); } else BB[q1 * DL + wi] = a71 - u7 / y71;
+        if (s2 === 0) { AB[q2 * DL + wi] = a72 + u7 / y72; if (knl > 0.0) arr(AB, AT, PF, q2, wi, nt, knl); } else BB[q2 * DL + wi] = a72 + u7 / y72;
       } else if (typ === 6) {
         // TMM two-port: travelling-wave scattering via precomputed Sij filters.
         var id6 = NODE[nb + 1], pA = NODE[nb + 3], eA = NODE[nb + 4], pB = NODE[nb + 5], eB = NODE[nb + 6];
@@ -5586,6 +5611,24 @@ function engineModuleV8p(core) {
             node(0, 0, [[prev, 1]].concat(ps.map(function (q) { return [q, 0]; })));
             node(0, 0, ps.map(function (q) { return [q, 1]; }).concat([[ch, 0]]));
             prev = ch;
+          } else if (mf[0] === 'chx') {
+            // v16.1 generic: plain chamber with extended inlet / outlet tubes (Munjal 2014 ch. 3; Selamet & Ji 1998):
+            // ['chx', L, area ratio, pack, l_in, l_out, d_in, d_out]. Each extension is a tube of the pipe diameter
+            // reaching l into the shell; the annulus between tube and shell is a quarter-wave cavity closed by the
+            // end plate. Same gas-temperature rule as 'chamber' (muf_t1).
+            var gX = (c.muf_t1 && !t1Done) ? 1 : 2; if (c.muf_t1) t1Done = true;
+            var dX = c.pipe_d * Math.sqrt(mf[2]), lIn = +(mf[4] || 0), lOut = +(mf[5] || 0);
+            var dIn = mf[6] ? +mf[6] : c.pipe_d, dOut = mf[7] ? +mf[7] : c.pipe_d;
+            if (lIn > 0) {
+              var eIn = pipe(lIn, dIn, gX, 0), aIn = pipe(lIn, Math.sqrt(Math.max(dX * dX - dIn * dIn, 1e-8)), gX, mf[3]);
+              node(0, 0, [[prev, 1], [eIn, 0]]);
+              var mX = pipe(Math.max(mf[1] - lIn - lOut, 0.01), dX, gX, mf[3]);
+              node(0, 0, [[eIn, 1], [aIn, 0], [mX, 0]]); node(3, 0, [[aIn, 1]]); prev = mX;
+            } else { var mX0 = pipe(Math.max(mf[1] - lOut, 0.01), dX, gX, mf[3]); node(0, 0, [[prev, 1], [mX0, 0]]); prev = mX0; }
+            if (lOut > 0) {
+              var aOut = pipe(lOut, Math.sqrt(Math.max(dX * dX - dOut * dOut, 1e-8)), gX, mf[3]), eOut = pipe(lOut, dOut, gX, 0);
+              node(0, 0, [[prev, 1], [aOut, 0], [eOut, 0]]); node(3, 0, [[aOut, 1]]); prev = eOut;
+            }
           } else {
             var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
             // v16 generic (set key muf_t1): plain items up to and including the first chamber take the group-1 gas
@@ -5623,13 +5666,26 @@ function engineModuleV8p(core) {
           node(5, att ? (left[ci + 1] === 1 ? 0 : 1) : 2, [[pv_, 1]]);
         }
       }
+      // v16.1 generic (set key port_bc): every 2-port exhaust junction with an area step >= 1.2 becomes a resistive
+      // junction (type 7) carrying the linearised mean-flow pressure loss Dp = K rho U u (Borda-Carnot; Ronneberger
+      // 1967; Munjal 2014 ch. 2): expansion K = (1 - A_up/A_dn)^2, contraction K = 0.5 (1 - A_dn/A_up) (Idelchik),
+      // both on the narrow pipe's velocity. k7 = [node, K, narrow pipe]; r = K M is set per block in _pipes.
+      var k7 = [];
+      if (c.port_bc) nodes.forEach(function (n, k) {
+        if (n[0] !== 0 || n[2].length !== 2) return;
+        var pu = n[2][0][0], pd = n[2][1][0], Au = pipes[pu][2], Ad = pipes[pd][2];
+        if (pipes[pu][3] === 0 || pipes[pu][3] === 3 || pipes[pd][3] === 3) return;
+        if (Math.max(Au, Ad) < 1.2 * Math.min(Au, Ad)) return;
+        var K = Au < Ad ? (1 - Au / Ad) * (1 - Au / Ad) : 0.5 * (1 - Ad / Au);
+        n[0] = 7; k7.push([k, K, Au < Ad ? pu : pd]);
+      });
       var NW = 0; nodes.forEach(function (n) { NW = Math.max(NW, 3 + 2 * n[2].length); });
       var NODE = new Int32Array(nodes.length * NW);
       nodes.forEach(function (n, k) {
         NODE[k * NW] = n[0]; NODE[k * NW + 1] = n[1]; NODE[k * NW + 2] = n[2].length;
         n[2].forEach(function (pe, j) { NODE[k * NW + 3 + 2 * j] = pe[0]; NODE[k * NW + 4 + 2 * j] = pe[1]; });
       });
-      return { PG: pipes, NODE: NODE, NN: nodes.length, NW: NW, tmmCans: tmmCans };
+      return { PG: pipes, NODE: NODE, NN: nodes.length, NW: NW, tmmCans: tmmCans, k7: k7 };
     }
 
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
@@ -5650,6 +5706,7 @@ function engineModuleV8p(core) {
       this.selfGated = opts.mode !== 'run' && opts.mode !== 'raw';
       var netCar = Object.assign({}, this.c);
       if (this.P.cat_early) netCar.cat_early = 1;
+      if (this.P.port_bc) netCar.port_bc = 1;
       if (this.P.muf) netCar.muf = this.P.muf;   // generic: any car may select a muffler list via parameters
       else if (this.P.muf_cavity) netCar.muf = mufAsCavity(netCar, this.P.muf_core_pack || 0.0);
       if (this.P.int_run) {   // generic intake-runner block (parameters only; off unless a set enables it)
@@ -5662,6 +5719,7 @@ function engineModuleV8p(core) {
       var N = buildNet(netCar, fs), nPipes0 = N.PG.length;
       if (nPipes0 > NET_PIPE_BUDGET) N = buildNet(netCar, fs, { perfNsegMax: 1, perfCaps: false });
       this.PG = N.PG; this.NODE = N.NODE; this.NN = N.NN; this.NW = N.NW; this.NP = N.PG.length;
+      this.K7 = N.k7 && N.k7.length ? N.k7 : null;
       this.NP0 = nPipes0; this.netLite = nPipes0 > NET_PIPE_BUDGET; this.nanResets = 0;
       this.tmmCans = []; this.tmmState = [];
       if (N.tmmCans && N.tmmCans.length) {
@@ -5792,14 +5850,58 @@ function engineModuleV8p(core) {
       var runPl = {};
       for (nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 2) tail[this.NODE[nd * this.NW + 3]] = 1;
       for (nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 5) runPl[this.NODE[nd * this.NW + 3]] = 1;
+      var TAX = null;
+      if (P.t_axial && this.Q) {
+        // v17 generic (set key t_axial = outside heat-transfer coefficient h_o, W/m2K): axial gas-temperature drop along each
+        // exhaust run (consecutive group-1/2 pipes in network order, i.e. one bank from the head pipe to the tail). Per pipe,
+        // steady 1-D heat balance (Incropera & DeWitt ch. 8, constant outside temperature): T_out = T_amb + (T_in - T_amb)
+        // exp(-U P L / (m cp)), U = 1 / (1/h_i + 1/h_o), h_i from Dittus-Boelter (1930) Nu = 0.023 Re^0.8 Pr^0.3 (laminar
+        // floor Nu 3.66), P = pi d. The pipe's acoustic temperature is the value at its mid-length. The run starts at the model's head-pipe temperature tm.
+        // Mass flow per bank = the model's own exhaust flow (same formula as port_bc / can_gas). Replaces tm / T_tail only
+        // for those pipes; everything else unchanged.
+        TAX = new Float64Array(this.NP);
+        var rpmA = S[S_W] * 60 / (2 * Math.PI), prA = S[S_PMAN] / P_ATM; if (!(rpmA > 0)) rpmA = 0; if (!(prA > 0.05)) prA = 0.05;
+        var mdot = Math.max(1e-4, 0.5 * P.eta_v * prA * this.Q[Q_VD] * rpmA / 120 * P_ATM / (R_GAS * T_AMB)), cpA = G_EX * R_GAS / (G_EX - 1), Tin = tm;
+        for (p = 0; p < this.NP; p++) {
+          var gA = this.PG[p];
+          if (gA[3] !== 1 && gA[3] !== 2) { Tin = tm; continue; }
+          var dA = gA[1], TmA = Tin, mu = 1.458e-6 * TmA * Math.sqrt(TmA) / (TmA + 110.4);
+          var Re = 4 * mdot / (Math.PI * dA * mu), Nu = Re > 2300 ? 0.023 * Math.pow(Re, 0.8) * Math.pow(0.7, 0.3) : 3.66;
+          var hi = Nu * mu * cpA / 0.7 / dA, U = 1 / (1 / hi + 1 / P.t_axial), ex = U * Math.PI * dA * gA[0] / (mdot * cpA);
+          TAX[p] = T_AMB + (Tin - T_AMB) * Math.exp(-0.5 * ex); Tin = T_AMB + (Tin - T_AMB) * Math.exp(-ex);
+        }
+      }
       for (p = 0; p < this.NP; p++) {
         var g = this.PG[p], L = g[0], d = g[1], A = g[2], grp = g[3], pack = g[4];
-        var T = grp === 0 ? tp : (grp === 1 ? tm : tt), c = grp === 3 ? C_AIR : Math.sqrt(G_EX * R_GAS * T);   // grp 3: intake runners, ambient air
+        var T = grp === 0 ? tp : (grp === 1 ? tm : tt);
+        if (TAX && (grp === 1 || grp === 2)) T = TAX[p];
+        var c = grp === 3 ? C_AIR : Math.sqrt(G_EX * R_GAS * T);   // grp 3: intake runners, ambient air
         var Le = L + (tail[p] ? 0.61 * d / 2 : (runPl[p] ? 0.85 * d / 2 : 0.0)), f = p * NF;
         this.PF[f + F_C] = c; this.PF[f + F_A] = A;
         this.PF[f + F_D] = Math.min(Math.max(Le / c * fs, 1.0), DL - 4);
         this.PF[f + F_GAIN] = Math.exp(-P.wall * L / d - pack * (P.pack_r || 0));
         this.PF[f + F_LP] = Math.min(0.9, P.hf * L / d + pack * P.pack);
+        if (P.wall_kf) {
+          // v16.1 generic (set key wall_kf): Kirchhoff visco-thermal wall loss (Kirchhoff 1868; Munjal 2014 eq. 1.x)
+          // alpha = (2/d) sqrt(pi f nu) / c (1 + (gamma-1)/sqrt(Pr)), Sutherland viscosity, replaces the flat wall/hf
+          // terms: gain + one-pole fitted exactly at 500 Hz and 2 kHz (alpha ~ sqrt f). Packing terms unchanged.
+          var Tk = c * c / (G_EX * R_GAS), nu = 1.458e-6 * Tk * Math.sqrt(Tk) / (Tk + 110.4) * R_GAS * Tk / P_ATM;
+          var a1 = 2.0 / d * Math.sqrt(Math.PI * 500.0 * nu) / c * (1.0 + (G_EX - 1.0) / Math.sqrt(0.7)) * L * P.wall_kf, a2 = 2.0 * a1;
+          var rr = Math.exp(-2.0 * (a2 - a1)), c1 = Math.cos(2 * Math.PI * 500.0 / fs), c2 = Math.cos(2 * Math.PI * 2000.0 / fs);
+          var bq = c1 - rr * c2, alk = (bq - Math.sqrt(Math.max(bq * bq - (1 - rr) * (1 - rr), 0.0))) / (1 - rr);
+          var lp1 = (1 - alk) / Math.sqrt(1 - 2 * alk * c1 + alk * alk);
+          this.PF[f + F_GAIN] = Math.exp(-a1 - pack * (P.pack_r || 0)) / lp1;
+          this.PF[f + F_LP] = Math.min(0.9, alk + pack * P.pack);
+        }
+      }
+      if (this.K7 && this.Q) {
+        var rpmK = S[S_W] * 60 / (2 * Math.PI), prK = S[S_PMAN] / P_ATM, kk;
+        if (!(rpmK > 0)) rpmK = 0; if (!(prK > 0.05)) prK = 0.05;
+        for (kk = 0; kk < this.K7.length; kk++) {
+          var e7 = this.K7[kk], cq = this.PF[e7[2] * NF + F_C], Tq = cq * cq / (G_EX * R_GAS);
+          var q7 = 0.5 * P.eta_v * prK * this.Q[Q_VD] * rpmK / 120 * Tq / T_AMB;
+          this.NA[e7[0] * 2 + 1] = e7[1] * q7 / (this.PG[e7[2]][2] * cq) * P.port_bc;
+        }
       }
       for (nd = 0; nd < this.NN; nd++) if (this.NODE[nd * this.NW] === 2) {
         var pq = this.NODE[nd * this.NW + 3], a = this.PG[pq][1] / 2, fc = this.PF[pq * NF + F_C] / (2 * Math.PI * a);

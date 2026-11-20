@@ -1,3 +1,29 @@
+## v1.13.11 (tag `v1.13.11`), 2026-11-20 (Sound v17 · Cadillac: gas cooling along the exhaust and flow loss at the pipe steps)
+
+* **Sound v17 · Cadillac** is v16 (same sourced Walker shells, 3.07 m connector, 0.5 m tail and p9 damping) plus two generic physical effects. Nothing is fitted to the scorecard. It is picker-only, right after Sound v16 · Cadillac on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=v17` or `?sound=v17` alias and no new URL. Generic parameters only; no Cadillac-only code.
+* **Axial gas cooling (new generic set key `t_axial` = outside heat-transfer coefficient h_o).**
+  * Each bank's exhaust run, from the head pipe to the tail (consecutive group-1/2 pipes), loses heat by the steady 1-D balance T_out = T_amb + (T_in − T_amb)·exp(−U·πd·L/(ṁ c_p)) (Incropera & DeWitt, *Fundamentals of Heat and Mass Transfer*, ch. 8).
+  * U = 1/(1/h_i + 1/h_o). Inside: Dittus–Boelter (1930), Nu = 0.023 Re^0.8 Pr^0.3 (laminar floor 3.66), Sutherland viscosity. Mass flow is the engine model's own exhaust flow per bank. Each pipe takes the gas temperature at its mid-length. The run starts at the model's existing head-pipe temperature.
+  * h_o = 20 W/m²K for a car standing still: natural convection from a horizontal cylinder (Churchill & Chu 1975), 8–9 W/m²K on the 1¾ in pipe, plus radiation from oxidised steel (ε 0.79, Incropera Table A.11), 8–12 W/m²K at 420–500 K. Total 16–21 W/m²K. A moving car would see more (Hilpert cross-flow, roughly 50–80 W/m²K); 20 is the conservative still-air value.
+  * Warm idle, model gas temperatures, v16 → v17: head pipe 616 → 594 K, muffler 616 → 488 K, connector 505 → 428 K, resonator 505 → 387 K, tail 505 → 380 K. At 2000 rpm and 0.4 throttle: muffler 761 → 713 K, connector, resonator and tail 617 → 681 / 651 / 641 K (v16's single tail temperature was below this run's cooling curve).
+  * Effect: the 0.5 m tail pipe's half-wave and the two cans' pass bands (n·c/2L) no longer coincide, so the 210 / 470 / 930 Hz ring drops.
+* **Flow loss at pipe steps (set key `port_bc`, generic block from the unreleased v16.1 work).** Every exhaust area step of at least 1.2 is a resistive junction carrying the linearised mean-flow loss Δp = K ρ U u (Borda–Carnot; Ronneberger 1967; Munjal, *Acoustics of Ducts and Mufflers*, 2014, ch. 2). Expansion K = (1 − A1/A2)², contraction K = 0.5 (1 − A2/A1) (Idelchik).
+* **Cleaned scorecard (scorer v2, 183 windows, lower is closer):**
+  * Combined (pooled + 0.25 × ring): v17 3.715, v16 4.191, p8 4.231. Segment bootstrap v17 − v16 −0.48 (95 % −0.59…−0.37).
+  * Pooled: v17 2.880, v16 3.172, p8 3.063. By path, cabin / outside far / tail: v17 2.02 / 5.15 / 2.72; v16 2.09 / 5.82 / 3.70.
+  * Ring: v17 3.34 dB, v16 4.08, p8 4.67.
+  * Cabin tilt below 1 kHz, model − recording: v17 −2.18 dB/oct, v16 −2.21.
+  * Recordings' own floor: pooled 2.37, combined 2.79.
+* **Also tried, not shipped** (scorer v2 combined):
+  * the perforated straight-through 21159 resonator, 4.86, and +26 waveguides;
+  * design 1 three-pass louvred tubes, 4.70, and +35 ms/s;
+  * design 2 reversing layout, 4.44, and +11 ms/s;
+  * Kirchhoff wall loss added to v17, 3.88, with a darker cabin;
+  * h_o 15 / 40 / 50: 3.78 / 3.62 / 3.65. The value was not chosen on score.
+  * The dual system and the connector routing stay as in the 1959 shop manual (Fig. 10-23, one per bank).
+* CPU: 26 waveguides, the same as v16. Node, 48 kHz, 2000 rpm / 0.4, same run: v17 190.5, v16 190.6, p8 189.9 ms per audio second.
+* Bit-identity: every existing v9p set of every car × 2 positions, v1.13.10 tree vs v1.13.11 tree: 54/54 identical. NON_ENGINE_NOISE / MIXER_WIND stay 0.
+
 ## v1.13.10 (tag `v1.13.10`), 2026-11-19 (Sound v16 · Cadillac: plain long chambers in the real Walker shells, from the inverse-cans analysis)
 
 * **Sound v16 · Cadillac** is Sound v15 (same engine, pipes, radiation, listener and cabin) with its four TMM cans replaced by one plain long chamber per can in the sourced Walker shells. It is picker-only, appended after Sound v15 · Cadillac on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=v16` or `?sound=v16`.
