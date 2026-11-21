@@ -3455,6 +3455,31 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['v19'].noise = { tyre_w: 208, d_mean: 0.55, wheelbase: 3.30, axle_x: 1.37, floor_m: 9, r_near: 1.0, cav_q: 8, cav_db: 6, wind_db100: 65, wind_n: 5.5, shape: 1 };
     }
 
+    // Sound 'v20' (Cadillac, picker-only): v19 with the Walker 21159 resonator
+    // modelled as a straight-through perforated can (generic kind perf_through3d; same sourced shell,
+    // gas path and idle gas state as v14.1 / v15), not as a plain expansion chamber. The 21158 muffler
+    // stays the v16 long chamber with p9 pack. Motive: two similar-length plain chambers plus the 0.5 m
+    // tail share a pass near c/(2L) ≈ 400 Hz (NACA 1192 / Munjal expansion-chamber TL is zero at kL=π).
+    // That pass dominates closed-throttle cabin tilt. Walker 21159 is a Direct-Flow (straight-through)
+    // resonator, which fills the plane-wave pass. Parameters only; older sets stay bit-identical.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v19'] && !DATA.cadillac59.sets['v20']) {
+      DATA.cadillac59.sets['v20'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v19']));
+      var _m20 = DATA.cadillac59.sets['v20'].muf, _i20, _res20 = null;
+      if (DATA.cadillac59.sets['v15'] && DATA.cadillac59.sets['v15'].muf) {
+        for (_i20 = 0; _i20 < DATA.cadillac59.sets['v15'].muf.length; _i20++) {
+          if (DATA.cadillac59.sets['v15'].muf[_i20] && DATA.cadillac59.sets['v15'].muf[_i20][0] === 'tmm' && String(DATA.cadillac59.sets['v15'].muf[_i20][1]).indexOf('perf_through') === 0) {
+            _res20 = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v15'].muf[_i20]));
+            break;
+          }
+        }
+      }
+      if (_m20 && _res20) {
+        for (_i20 = 0; _i20 < _m20.length; _i20++) {
+          if (_m20[_i20] && _m20[_i20][0] === 'chamber' && _i20 > 0) { _m20[_i20] = _res20; break; }
+        }
+      }
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
