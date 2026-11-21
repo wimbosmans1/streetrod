@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.15)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.16)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -10285,25 +10285,35 @@ var EngineParams = (function () {
     var cx = c.camx || 1, dur = c.adv_dur, lsa = c.lsa;
     P.exValve = { d: c.ev_d, lift: c.ev_lift, open: pmod(360 - lsa - dur / 2, 720), dur: dur, camx: cx };
     P.inValve = { d: 0.030, lift: c.ev_lift, open: pmod(360 + lsa - dur / 2, 720), dur: dur, camx: cx };
-    P.headers = { type: '2-1-shared', len: +(c.prim_len + c.head_len).toFixed(3), primD: c.prim_d, pipeD: c.pipe_d, pipeLen: c.inter_len, crossover: 'shared-muffler', toNose: false };
+    var hx = c.hx || ['hx', 0.42, 0.032, 0.08];
+    var muf = c.muf, mufLen = (muf && muf[0] && muf[0][1] != null) ? muf[0][1] : 0.40;
+    var mufArea = (muf && muf[0] && muf[0][2] != null) ? muf[0][2] : 12;
+    // mufWidth is visual only (transverse can / shell width). It is not a sound-model length.
+    // Sourced: VW logo NOS 26.75 in = 0.679 m (TheSamba t=485463; Dansk 26 in, earlier cans 27 in).
+    // The kernel still uses mufLen (0.40 m, ESTIMATE) as the internal gas-path length.
+    P.headers = { type: '2-1-shared', len: +(c.prim_len + c.head_len).toFixed(3), primLen: c.prim_len, headLen: c.head_len,
+      primD: c.prim_d, pipeD: c.pipe_d, pipeLen: c.inter_len, interLen: c.inter_len,
+      hxLen: hx[1], hxD: hx[2], hxJacket: hx[3],
+      mufLen: mufLen, mufArea: mufArea, mufWidth: 0.679, tailLen: c.tail_len, tailD: c.tail_d,
+      crossover: 'shared-muffler', toNose: true };
     P.starter = { type: 'Bosch EED 0.4/6 L 4', ringTeeth: c.st_teeth, ratio: +c.st_ratio.toFixed(2), pinionTeeth: 9, crankWarm: 0, poles: 4, volts: 6 };
     P.charging = { type: 'generator', ratio: 2.0, fanBlades: (c.fan && c.fan.n_blades) || 0, wpVanes: 0 };
     P.fan = c.fan ? { type: 'centrifugal', ratio: c.fan.ratio, blades: c.fan.n_blades, d: c.fan.d } : null;
-    P.carb = { type: c.carb };
+    P.carb = { type: c.carb, count: 1, barrels: 1, cleaner: 'oil-bath' };
     note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration at 1 mm (factory timing), ' + lsa + '\u00b0 LSA. Exhaust valve diameter and lift are estimates.', true);
-    note(P, 'dims', 'Bore 77 mm, stroke 64 mm, CR 6.6 (factory Aug 1955). Con-rod 129.2 mm is a community estimate.', false);
-    note(P, 'headers', 'Each head: two short primaries into a heater-box (heat exchanger; gas stays in the core). Both sides feed one transverse muffler with two tailpipes (generic exhaust type 2-1-shared). Heater-box and can lengths are estimates.', true);
+    note(P, 'dims', 'Bore 77 mm, stroke 64 mm, CR 6.6 (factory Aug 1955). Con-rod 129.2 mm is a community estimate. 4-cyl boxer, two single-port heads.', false);
+    note(P, 'headers', 'Each head: two short primaries into a heater-box (heat exchanger; gas stays in the core). Both sides feed one transverse muffler with two tailpipes (generic exhaust type 2-1-shared). Drawn HE, inter, tail and sound-model can path use the v21 estimates (prim ' + (c.prim_len * 100).toFixed(0) + ' cm, HE core ' + (hx[1] * 100).toFixed(0) + ' cm, inter ' + (c.inter_len * 100).toFixed(0) + ' cm, path ' + (mufLen * 100).toFixed(0) + ' cm, tail ' + (c.tail_len * 100).toFixed(0) + ' cm). The bay draws the can at 0.679 m transverse width (sourced: VW logo NOS 26.75 in, TheSamba t=485463). That figure is the shell width, not the internal gas path; the path length remains an estimate (0.40 m in Sound v21) and is not changed.', true);
     note(P, 'starter', 'Starter: Bosch EED 0.4/6 L 4 on a 6 V battery. Ring 109 / pinion 9 (sourced-secondary). Free and lock currents are estimates from the 0.4 kW rating.', true);
-    note(P, 'fan', 'Engine-driven centrifugal cooling fan on the generator shaft, factory ratio about 1:2, 18 cu ft/s at 3300 engine rpm. Blade count 24 is an estimate.', true);
+    note(P, 'fan', 'Engine-driven centrifugal cooling fan on the generator shaft, factory ratio about 1:2, 18 cu ft/s at 3300 engine rpm. Blade count 24 and impeller diameter 220 mm are estimates.', true);
     P.parts = { block: true, pistons: true, rods: true, crank: true, valvesEx: true, valvesIn: true, cams: true, stubs: false, headers: true, collector: true, crossover: false,
       blower: false, centreGear: false, starter: true, fan: true, charging: true, carb: true, bay: true, ancillaries: true, glow: true };
-    note(P, 'bayLayout', 'Rear engine, crank along the car, transaxle ahead of the engine, fan and generator on the pulley end under the deck lid, Solex 28 PCI on top, twin heater boxes into a shared muffler.', false);
+    note(P, 'bayLayout', 'Rear engine, crank along the car, transaxle ahead of the engine (flywheel / xmin), upright dynamo and centrifugal fan in a vertical shroud at the pulley end (xmax, under the deck lid), single Solex 28 PCI on the central single-port manifold with an oil-bath air cleaner, distributor at the flywheel end of the crankcase, oil filler on the case, twin heater boxes into a shared transverse 2-tip muffler at the rear apron. Layout from period 36 hp / 30 PS Type 1 bay photographs (Wikimedia: 1953 VW 1200 engine, CC0; 1959 30 PS engine, CC BY-SA 3.0). The muffler is drawn at its sourced transverse width (0.679 m); the sound model is unchanged.', false);
     note(P, 'paint', 'Body colour in the game is L240 Agave, mid-tone #979A84 (highlight #A5A893, shadow #7E816C), sampled from owner photo (private), mid-tone panels.', false);
     return P;
   }
 
   /** engineKey 'BRM' | 'GT350' | 'CADDY' | 'P997' | 'BEETLE', soundId = the sound model now playing for that car */
-  function forCar(engineKey, soundId) { return engineKey === 'BRM' ? brm(soundId) : engineKey === 'P997' ? p997(soundId) : engineKey === 'BEETLE' ? beetle(soundId) : v8(engineKey, soundId); }
+  function forCar(engineKey, soundId, variant) { return engineKey === 'BRM' ? brm(soundId) : engineKey === 'P997' ? p997(soundId) : engineKey === 'BEETLE' ? beetle(soundId) : v8(engineKey, soundId); }
   /** kinematics shared by the bay and the tests: piston pin distance from the crank axis at local angle phi (deg after firing TDC) */
   function pinDist(P, phi) { var r = 0.5 * P.stroke, a = phi * Math.PI / 180, s = Math.sin(a); return r * Math.cos(a) + Math.sqrt(P.conrod * P.conrod - r * r * s * s); }
   /** valve lift (m) of event V at the cylinder's local angle a (deg after its firing TDC, 0..720): the kernel's law sin(pi x)^camx */
@@ -10441,7 +10451,7 @@ var EngineBay = (function () {
       // v1.10.10 (job 7) engine-bay layout: body panels are glass so they never hide the engine; ancillaries opaque
       body: G(0x5a626c, 0.13), bodyEdge: L(0x30353b), chrome: L(0xdfe4e8, { emissive: 0x15171a }), battery: L(0x1f2226), batTop: L(0x3a3e44), terminal: L(0xb04030),
       radCore: G(0x4d463d, 0.32), radTank: G(0x575b60, 0.4), booster: L(0xa3a8ac), hose: L(0x1c1e21), vcFord: G(0x2b2d31, 0.42), vcCad: G(0x2d4c8e, 0.4),
-      pump: L(0x2f4f86), filter: L(0x2f4f86), dist: L(0x1d1f22), mag: L(0x25272b), su: L(0xc4bfb2), brace: L(0x3a3f45) };
+      pump: L(0x2f4f86), filter: L(0x2f4f86), dist: L(0x1d1f22), distCap: L(0xc43a32), oilBath: L(0x1a1c1f), tin: L(0x2a2c30), mag: L(0x25272b), su: L(0xc4bfb2), brace: L(0x3a3f45) };
   }
 
   // ---------------------------------------------------------------- build the bay for one parameter set
@@ -10588,7 +10598,55 @@ var EngineBay = (function () {
       up.stubs = stubs;
       g.add(stubs);
     }
-    if (parts.headers && P.headers) {   // V8: tubular headers (each primary exactly header_len_m) into a collector, or a log manifold
+    if (parts.headers && P.headers) {
+      if (P.headers.type === '2-1-shared') {
+        // Generic boxer 2-1-shared: short primaries per head into a heat-exchanger core; both sides feed one
+        // transverse muffler with two tails. Pipe, HE and tail lengths come from the sound-model parameters.
+        // mufWidth, if set, is a visual-only transverse can width (the shell, left-to-right). It is not a
+        // sound-model length: the kernel uses mufLen as the internal path, which may be shorter.
+        // toNose: the muffler sits at the pulley end (xmax), the rear of a rear-engined car.
+        var hdr = [], hxList = [], mufList = [], pipeR = P.headers.pipeD / 2, primR = P.headers.primD / 2;
+        var hxLen = P.headers.hxLen || 0.42, hxJacket = P.headers.hxJacket || 0.08, hxR = hxJacket / 2;
+        var interLen = (P.headers.interLen != null) ? P.headers.interLen : (P.headers.pipeLen || 0.18);
+        var mufLen = P.headers.mufLen || 0.40, mufArea = P.headers.mufArea || 12, mufR = pipeR * Math.sqrt(mufArea);
+        var mufVis = (P.headers.mufWidth != null) ? P.headers.mufWidth : mufLen;
+        var tailLen = P.headers.tailLen || 0.25, tailR = ((P.headers.tailD != null) ? P.headers.tailD : P.headers.pipeD) / 2;
+        var pipeY = H - 0.22;
+        // HE along X, under / outboard of each bank, ending just past the pulley so a short inter pipe reaches the can.
+        var hxEnd = xmax + 0.04, hxStart = hxEnd - hxLen;
+        var mufX = hxEnd + interLen;
+        for (var bk3 = 0; bk3 < 2; bk3++) {
+          var cyls = []; for (c = 0; c < N; c++) if (P.bank[c] === bk3) cyls.push(c);
+          if (!cyls.length) continue;
+          var side = Math.sign(up.port[cyls[0]].z) || (bk3 === 0 ? -1 : 1);
+          var latO = side * (Math.abs(up.port[cyls[0]].z) + 0.05);
+          var hy = pipeY;
+          cyls.forEach(function (c6) {
+            var p0 = up.port[c6];
+            var join = v3(p0.x, hy + hxR, latO);
+            hdr.push(tube(smooth([p0, v3(p0.x, (p0.y + join.y) / 2, (p0.z + latO) / 2), join], 2), primR, lite ? 6 : 10));
+            up.mouth[c6] = p0.clone();
+          });
+          // jacket (outer) and a slightly protruding core
+          hxList.push((function (x0, x1, y, z, rr) { var s = cyl(rr, rr, x1 - x0, lite ? 8 : 12); s.rotateZ(Math.PI / 2); s.translate((x0 + x1) / 2, y, z); return s; })(hxStart, hxEnd, hy, latO, hxR));
+          hdr.push((function (x0, x1, y, z, rr) { var s = cyl(rr, rr, x1 - x0 + 0.02, lite ? 6 : 10); s.rotateZ(Math.PI / 2); s.translate((x0 + x1) / 2, y, z); return s; })(hxStart, hxEnd, hy, latO, pipeR));
+          var inlet = v3(hxEnd, hy, latO), mouthIn = v3(mufX, hy, side * Math.min(mufVis / 2 - 0.02, Math.abs(latO)));
+          hdr.push(tube(smooth([inlet, v3((inlet.x + mouthIn.x) / 2, hy, latO), mouthIn], 2), pipeR, lite ? 6 : 10));
+          up['pipeZ' + bk3] = latO;
+        }
+        // transverse can along Z, two short tails pointing past the pulley end (+X, rear)
+        mufList.push((function () { var s = cyl(mufR, mufR, mufVis, lite ? 10 : 16); s.rotateX(Math.PI / 2); s.translate(mufX, pipeY, 0); return s; })());
+        var tipZ = Math.min(0.28, mufVis / 2 - 0.02);
+        [-tipZ, tipZ].forEach(function (tz) {
+          var t0 = v3(mufX + mufR * 0.2, pipeY, tz), t1 = v3(mufX + tailLen, pipeY, tz);
+          hdr.push(segBetween(t0, t1, tailR, lite ? 6 : 10));
+          hdr.push((function () { var s = cyl(tailR * 1.15, tailR * 1.15, 0.02, 10); s.rotateZ(Math.PI / 2); s.translate(t1.x + 0.01, t1.y, t1.z); return s; })());
+        });
+        if (hxList.length) g.add(new T.Mesh(merge(hxList), M.steel));
+        if (mufList.length) g.add(new T.Mesh(merge(mufList), M.pipe));
+        g.add(new T.Mesh(merge(hdr), M.header));
+      } else {
+      // V8: tubular headers (each primary exactly header_len_m) into a collector, or a log manifold
       // v1.11.0: toNose = the pipes run past the crank nose (the 911: pulley end at the back of the car, silencers under the rear bumper)
       var hs = P.headers.toNose ? 1 : -1, hdr = [], pipeR = P.headers.pipeD / 2, primR = P.headers.primD / 2, rearX = P.headers.toNose ? xmax + 0.12 : xmin - 0.12,
         pipeEnd = P.headers.toNose ? xmax + 0.42 : xmin - 0.75, pipeY = H - 0.26;
@@ -10618,6 +10676,7 @@ var EngineBay = (function () {
       }
       if (parts.crossover) hdr.push(segBetween(v3(pipeEnd + 0.12, pipeY, up.pipeZ0), v3(pipeEnd + 0.12, pipeY, up.pipeZ1), pipeR * 0.9, 10));
       g.add(new T.Mesh(merge(hdr), M.header));
+      }
     }
     // ---- blower (BRM): two-stage centrifugal at the front, step-up gear from the crank nose ----
     if (parts.blower && P.blower) {
@@ -10684,8 +10743,31 @@ var EngineBay = (function () {
         boxAt(xmax - xmin - 0.1, 0.05, 0.12, (xmin + xmax) / 2, vY, 0)];
       g.add(new T.Mesh(merge(pl.concat(ductL.map(off))), M.casing));
     }
-    // ---- V8 accessories: carb + air cleaner, fan, alternator / generator ----
-    if (parts.carb && P.carb) {
+    // ---- accessories: carb + air cleaner, fan, alternator / generator ----
+    // Single-choke / oil-bath (Type 1 Solex and any other 1x1 oil-bath) is drawn from parameters, not a per-car path.
+    // A centrifugal fan (P.fan.type) draws an upright dynamo + shrouded impeller at the pulley end instead of the V8 axial fan and side generator.
+    if (parts.carb && P.carb && P.carb.count === 1 && P.carb.barrels === 1) {
+      var cxC = 0.5 * (xmin + xmax), topY = H + 0.15;
+      // central single-port manifold (T): body on the crankcase, runners out to each head
+      var man = [boxAt(0.10, 0.04, 0.07, cxC, topY, 0)];
+      for (var bkM = 0; bkM < 2; bkM++) {
+        var sideM = 0, cM;
+        for (cM = 0; cM < N; cM++) if (P.bank[cM] === bkM) sideM += P.x[cM];
+        var nM = 0; for (cM = 0; cM < N; cM++) if (P.bank[cM] === bkM) nM++;
+        var xM = nM ? sideM / nM : cxC;
+        var zHead = (bkM === 0 ? -1 : 1) * (deck + 0.02);
+        man.push(tube(smooth([v3(cxC, topY, 0), v3(xM, topY + 0.01, zHead * 0.45), v3(xM, H + 0.08, zHead * 0.85)], 2), 0.016, lite ? 6 : 10));
+      }
+      g.add(new T.Mesh(merge(man), M.casing));
+      var cb = new T.Mesh(new T.BoxGeometry(0.07, 0.07, 0.07), M.su); cb.position.set(cxC, topY + 0.055, 0); g.add(cb);
+      up.plates = [];
+      var pt1 = new T.Mesh(cyl(0.014, 0.014, 0.002, 16), M.plate); pt1.position.set(cxC, topY + 0.055, 0); g.add(pt1); up.plates.push(pt1);
+      var cleaner = (P.carb.cleaner === 'oil-bath' || P.carb.cleaner === 'oilbath')
+        ? merge([(function () { var s = cyl(0.055, 0.055, 0.07, segs); s.translate(cxC, topY + 0.13, 0); return s; })(),
+            (function () { var s = cyl(0.062, 0.04, 0.025, segs); s.translate(cxC, topY + 0.175, 0); return s; })()])
+        : merge([(function () { var s = cyl(0.07, 0.07, 0.05, segs, true); s.translate(cxC, topY + 0.12, 0); return s; })()]);
+      g.add(new T.Mesh(cleaner, (P.carb.cleaner === 'oil-bath' || P.carb.cleaner === 'oilbath') ? M.oilBath : M.cleaner));
+    } else if (parts.carb && P.carb) {
       var topY = H + Math.cos(P.vAngle / 2 * D2R) * (deck + 0.55 * b) + 0.02, cxC = 0.5 * (xmin + xmax) * 0.3;
       g.add(new T.Mesh(merge([boxAt(xmax - xmin - 0.05, 0.05, 0.16, (xmin + xmax) / 2, topY - 0.02, 0)]), M.shell));
       var cb = new T.Mesh(new T.BoxGeometry(0.15, 0.085, 0.14), M.carb); cb.position.set(cxC, topY + 0.045, 0); g.add(cb);
@@ -10702,14 +10784,40 @@ var EngineBay = (function () {
         : merge([(function () { var s = cyl(0.18, 0.18, 0.06, segs, true); s.translate(cxC, topY + 0.12, 0); return s; })(), (function () { var s = cyl(0.18, 0.18, 0.004, segs); s.translate(cxC, topY + 0.152, 0); return s; })()]);
       g.add(new T.Mesh(ac, M.cleaner));
     }
-    if (parts.fan && P.fan) {
+    if (parts.fan && P.fan && P.fan.type === 'centrifugal') {
+      // Upright dynamo at the pulley end, shaft along the crank; centrifugal impeller inside a vertical shroud.
+      // The generator housing is static; the impeller (and a pulley) spin on up.fan about X, same as the V8 fan.
+      var fanD = P.fan.d || 0.22, fanR = fanD / 2, shroudR = fanR + 0.035;
+      var fanX = xmax + 0.02, fanY = H + 0.13;
+      var fg = new T.Group(); fg.position.set(fanX, fanY, 0); g.add(fg); up.fan = fg;
+      var fl2 = [(function () { var s = cyl(fanR * 0.2, fanR * 0.95, 0.012, segs); s.rotateZ(Math.PI / 2); s.translate(-0.03, 0, 0); return s; })(),
+        (function () { var s = cyl(0.018, 0.018, 0.10, 8); s.rotateZ(Math.PI / 2); s.translate(0.02, 0, 0); return s; })(),
+        (function () { var s = cyl(0.042, 0.042, 0.022, 16); s.rotateZ(Math.PI / 2); s.translate(0.07, 0, 0); return s; })()];
+      var nB = P.fan.blades || 16;
+      for (i = 0; i < nB; i++) {
+        var vb = new T.BoxGeometry(0.032, fanR * 0.72, 0.004);
+        vb.translate(-0.02, 0.02 + fanR * 0.36, 0);
+        vb.rotateX(i / nB * Math.PI * 2);
+        fl2.push(vb);
+      }
+      fg.add(new T.Mesh(merge(fl2), M.impeller));
+      // static dynamo body (ahead of the pulley, through the shroud) and a slightly open shroud so the impeller stays readable
+      var dyn = [(function () { var s = cyl(0.045, 0.045, 0.16, segs); s.rotateZ(Math.PI / 2); s.translate(fanX - 0.05, fanY, 0); return s; })(),
+        (function () { var s = cyl(0.05, 0.05, 0.02, segs); s.rotateZ(Math.PI / 2); s.translate(fanX - 0.13, fanY, 0); return s; })()];
+      g.add(new T.Mesh(merge(dyn), M.alt));
+      var sh = [(function () { var s = cyl(shroudR, shroudR, 0.12, segs, true); s.rotateZ(Math.PI / 2); s.translate(fanX - 0.04, fanY, 0); return s; })(),
+        (function () { var s = cyl(shroudR, shroudR * 0.45, 0.02, segs); s.rotateZ(Math.PI / 2); s.translate(fanX - 0.10, fanY, 0); return s; })(),
+        (function () { var s = cyl(shroudR + 0.004, shroudR * 0.7, 0.016, segs, true); s.rotateZ(Math.PI / 2); s.translate(fanX + 0.03, fanY, 0); return s; })()];
+      g.add(new T.Mesh(merge(sh), M.tin));
+      var pul = cyl(0.07, 0.07, 0.022, segs); pul.rotateZ(Math.PI / 2); pul.translate(xmax + 0.06, 0, 0); crank.add(new T.Mesh(pul, M.steel));
+    } else if (parts.fan && P.fan) {
       var fg = new T.Group(), fy = H + 0.12; fg.position.set(xmax + 0.16, fy, 0); g.add(fg); up.fan = fg;
       var fl2 = [(function () { var s = cyl(0.04, 0.04, 0.03, 16); s.rotateZ(Math.PI / 2); return s; })(), (function () { var s = cyl(0.012, 0.012, 0.14, 8); s.rotateZ(Math.PI / 2); s.translate(-0.07, 0, 0); return s; })()];
       for (i = 0; i < P.fan.blades; i++) { var fb = new T.BoxGeometry(0.004, P.fan.d / 2 - 0.035, 0.07); fb.rotateY(0.45); fb.translate(0, 0.035 + (P.fan.d / 2 - 0.035) / 2, 0); fb.rotateX(i / P.fan.blades * Math.PI * 2); fl2.push(fb); }
       fg.add(new T.Mesh(merge(fl2), M.fan));
       var pul = cyl(0.075, 0.075, 0.02, segs); pul.rotateZ(Math.PI / 2); pul.translate(xmax + 0.06, 0, 0); crank.add(new T.Mesh(pul, M.steel));
     }
-    if (parts.charging && P.charging) {
+    if (parts.charging && P.charging && !(P.fan && P.fan.type === 'centrifugal')) {
       // v1.10.10 (job 7): right-hand (passenger) side on both cars: 289 Hi-Po alternator on the RH head (Mustang / vintage-mustang.com),
       // Cadillac 390 generator high on the RH side (1962 390 photo, Commons). Size, ratio and fan from the start-up data, unchanged.
       var ag = new T.Group(), az = 0.2; ag.position.set(xmax + 0.02, H + 0.2, az); g.add(ag); up.alt = ag;
@@ -10881,6 +10989,32 @@ var EngineBay = (function () {
       add('rear subframe, wheel arches + engine-lid opening', [bx(xmax - axX + 0.6, 0.04, 0.05, (xmax + axX) / 2 + 0.2, 0.2, -0.42), bx(xmax - axX + 0.6, 0.04, 0.05, (xmax + axX) / 2 + 0.2, 0.2, 0.42),
         bx(0.6, 0.5, 0.004, axX, 0.5, -0.66), bx(0.6, 0.5, 0.004, axX, 0.5, 0.66), bx(0.004, 0.36, 1.3, xmax + 0.42, 0.42, 0),
         bx(0.7, 0.004, 0.06, xmax - 0.05, 0.86, -0.5), bx(0.7, 0.004, 0.06, xmax - 0.05, 0.86, 0.5), bx(0.06, 0.004, 1.0, xmax + 0.3, 0.86, 0)], M.body, true, 'bay');
+    } else if (P.flat && P.fan && P.fan.type === 'centrifugal') {
+      // Generic rear boxer with a shrouded centrifugal fan: transaxle at the flywheel (xmin), pulley/fan/muffler
+      // at the rear (xmax). Valve covers, distributor, oil filler, dynamo belt, tinware and a light rear-apron
+      // opening. Sources are listed on P.notes 'bayLayout'. Sizes not in a source are assumed here.
+      add('valve covers', coverOn(0, 0.022, 0, M.vcFord).concat(coverOn(1, 0.022, 0, M.vcFord)), M.vcFord, false, 'ancillaries');
+      var fanY2 = H + 0.13, fanX2 = xmax + 0.02;
+      add('dynamo belt', [segBetween(v3(xmax + 0.06, H + 0.07, 0), v3(fanX2 + 0.07, fanY2 + 0.042, 0), 0.004, 6),
+        segBetween(v3(xmax + 0.06, H - 0.07, 0), v3(fanX2 + 0.07, fanY2 - 0.042, 0), 0.004, 6)], M.hose, false, 'ancillaries');
+      // distributor at the flywheel end of the crankcase (left of the case as seen from the rear)
+      add('distributor', [cylY(0.022, 0.022, 0.05, xmin + 0.02, H + 0.10, -0.07, 12),
+        cylY(0.032, 0.028, 0.035, xmin + 0.02, H + 0.15, -0.07, 12)], M.distCap, false, 'ancillaries');
+      add('oil filler', [cylY(0.018, 0.018, 0.03, 0.02, H + 0.12, 0.06, 10),
+        cylY(0.024, 0.016, 0.012, 0.02, H + 0.15, 0.06, 10)], M.chrome, false, 'ancillaries');
+      add('ignition coil', [cylX(0.016, 0.07, xmin + 0.06, H + 0.16, -0.12, 10)], M.dist, false, 'ancillaries');
+      var bhX = xmin - 0.12, axX = xmin - 0.34;
+      add('transaxle (bell housing + gearbox)', [(function () { var s2 = cyl(0.11, 0.16, 0.14, sg, true); s2.rotateZ(Math.PI / 2); s2.translate(bhX, H, 0); return s2; })(),
+        bx(0.28, 0.16, 0.18, axX, H - 0.02, 0)], M.casing, true, 'bay');
+      add('drive shafts', [cylZ(0.014, 0.9, axX, H - 0.04, 0, 10)], M.steel, true, 'bay');
+      add('rear wheel hubs', [cylZ(0.08, 0.04, axX, H - 0.04, -0.5, sg), cylZ(0.08, 0.04, axX, H - 0.04, 0.5, sg)], M.rim, true, 'bay');
+      add('rear apron, wheel arches + deck opening', [
+        bx(0.004, 0.28, 0.95, xmax + 0.42, 0.32, 0),
+        bx(0.55, 0.004, 0.05, (xmax + axX) / 2 + 0.15, 0.18, -0.38), bx(0.55, 0.004, 0.05, (xmax + axX) / 2 + 0.15, 0.18, 0.38),
+        bx(0.5, 0.4, 0.004, axX + 0.05, 0.42, -0.58), bx(0.5, 0.4, 0.004, axX + 0.05, 0.42, 0.58),
+        bx(0.55, 0.004, 0.05, xmax - 0.02, 0.78, -0.42), bx(0.55, 0.004, 0.05, xmax - 0.02, 0.78, 0.42),
+        bx(0.05, 0.004, 0.84, xmax + 0.26, 0.78, 0)
+      ], M.body, true, 'bay');
     }
   }
 
@@ -11047,9 +11181,9 @@ var EngineBay = (function () {
     }
     st.rpm = rpm; st.still = !live;
     // (re)build when car / sound model / detail / parts change
-    var lite = liteNow(s), key = s.engineKey + '/' + s.soundId + '/' + (lite ? 'L' : 'F') + '/' + JSON.stringify(opt.over);
+    var lite = liteNow(s), key = s.engineKey + '/' + s.soundId + '/' + (s.variant || '') + '/' + (lite ? 'L' : 'F') + '/' + JSON.stringify(opt.over);
     if (key !== st.key) {
-      var P = EngineParams.forCar(s.engineKey, s.soundId); if (!P) return false;
+      var P = EngineParams.forCar(s.engineKey, s.soundId, s.variant); if (!P) return false;
       if (st.bay) { st.scene.remove(st.bay.group); st.bay.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
       st.bay = build(P, lite); st.scene.add(st.bay.group); st.key = key; st.lite = lite;
       if (!document.getElementById('bayPanel').classList.contains('hidden')) panel();
@@ -12359,7 +12493,7 @@ var ProjectHistory = {
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.15. v1.13.15 is a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20 and Sound v21 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
+    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.16. v1.13.16 redraws the Beetle engine bay to match the stock 36 hp Type 1 layout, using new generic drawing for a 2-1-shared exhaust, a centrifugal fan with an upright dynamo and shroud, and a single-choke oil-bath carb (no per-car code path). The muffler shell is drawn at its sourced transverse width of 0.679 m (TheSamba; that figure is the can width, not the internal gas path). Sound v21 · Beetle stays the only picker entry and is bit-identical; the kernel still uses the 0.40 m path-length estimate. v1.13.15 was a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20 and Sound v21 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
         sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
       { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
@@ -12382,6 +12516,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.16", date: "2026-11-21", status: "done", headline: "Beetle engine-bay view matches the stock 36 hp Type 1 layout", text: "The Beetle engine bay was drawn as a generic V8 (long tubular headers the wrong way, an axial fan, a side generator, and a four-barrel carb). It now follows the stock 1956 36 hp / 30 PS Type 1 layout: upright dynamo and a shrouded centrifugal fan at the pulley end, a single Solex 28 PCI on a central single-port manifold with an oil-bath cleaner, distributor and oil filler, heat exchangers, and a transverse 2-tip muffler. The drawing is generic (headers type 2-1-shared, fan type centrifugal, 1×1 oil-bath carb, flat + centrifugal layout extras); the GT350, Cadillac, BRM and 911 are unchanged. A sourced 0.679 m figure (VW logo NOS 26.75 in, TheSamba) is the can’s transverse width and is used only for the bay; it is not the internal gas path. Sound v21 is unchanged (path length remains the 0.40 m estimate) and stays the only Beetle picker entry. Every older sound stays bit-identical." },
       { v: "v1.13.15", date: "2026-11-21", status: "done", headline: "UI hotfix, Beetle cabin and rear-wheel fixes, and Sound v21 · Cadillac (coast-down lag)", text: "v1.13.14 added the Beetle sound picker and toggled the hidden class, but never added a CSS rule to hide #segBeetleSound. .sel { display: inline-flex } therefore kept the Beetle list visible on every other car — the same class of bug as v1.12.8. This build adds a generic rule .sel.brmsel.hidden, #segSound.hidden { display: none; }, and keeps the existing specific rules, so any future per-car picker hides correctly. The Cadillac picker title now lists the full history (v1–v4, p1–p10, v13–v17, v19, v20, v21; p1 default). The Beetle cabin is redrawn from 1953–57 oval driver’s-seat photographs: the factory oval dash is kept (single speedo, central grille, glovebox, grab handle), a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is transparent down to the cowl and wiper line, with no hood hump or fender hints). In the rear view the face-on hubcap badges are removed; only the tyre tread and sidewall remain, because the hubcaps are not visible from directly behind. Paint is unchanged (#979A84). Sound v21 · Cadillac is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not track cycle-resolved gas temperature on a closed-throttle coast; it is picker-only, after v20; p1 stays the default; no new URL. A repeatable headless check walks every car, both ways of selecting it, every Position and both Visuals, and requires exactly one visible sound drop-down with that car’s full list. Every older sound stays bit-identical." },
       { v: "v1.13.14", date: "2026-11-21", status: "done", headline: "1956 VW Beetle Type 1: Sound v21, L240 Agave art, and a fast-idle fix", text: "The game now includes a 1956 Volkswagen Beetle Type 1 oval-window, in L240 Agave. Body colour is #979A84 (highlight #A5A893, shadow #7E816C), sampled from the owner photo (private) as the mid-tone of body panels in overcast daylight (median of the 30–70th percentile luminance). Rear and cabin art is in the same Flat and Ink styles as the other cars, with period 1956 details (oval window, split decklid louvres, small round tail lamps, chrome bumper with overriders, plate light, chrome hubcaps, blackwall tyres). Key 5 selects the car. The sound drop-down is one entry, Sound v21 · Beetle: the v20 kernel plus new generic blocks (an engine-driven centrifugal cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust network) that any car can use; no additional URL alias. After starter handoff, the HUD no longer holds the choke fast-idle override (it had been left at the flare rpm). The info page lists the Beetle, names sound model v21, and the next work is a Cadillac coast-down fix, then rotating mass and resonator packing, then a Tesla Model X. Every older sound stays bit-identical." },
       { v: "v1.13.13", date: "2026-11-21", status: "done", headline: "Sound v20 · Cadillac: v19 with the Walker 21159 resonator as a perforated straight-through can", text: "Sound v20 \u00b7 Cadillac is Sound v19, except the Walker 21159 resonator is the existing generic straight-through perforated can (perf_through3d), with the same sourced shell, gas path and idle gas state as in v15, not a plain expansion chamber. The 21158 muffler is unchanged. Two similar-length plain chambers plus the 0.5 m tail had shared a pass near 400 Hz, which made closed-throttle cabin sound too bright; the Direct-Flow resonator fills that pass. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v19 (3.32 against 2.95, floor 2.27), because part-throttle, full load and idle go darker; mid-rev overrun is clearly better, and the 2jGo lift tilt is \u22129.78 against the recording\u2019s \u221210.66 (v19 was \u22122.82). CPU stays in the same range. It is picker-only, after Sound v19 \u00b7 Cadillac; p1 stays the default; no new URL. Sound v19 stays in the drop-down. Every other sound is bit-identical." },
