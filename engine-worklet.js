@@ -3615,6 +3615,29 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['v21'].t_ac = 4.0;
     }
 
+    // Sound 'v22' (Cadillac, picker-only): v21 plus sourced Neutral engine inertia and
+    // a generic packed-annulus parameter on the Walker 21159 perf_through3d resonator.
+    // packSigma is flow resistivity (Pa s/m^2) of the fibrous lining in the annulus;
+    // unset / 0 = empty gas (current behaviour), so every older set stays bit-identical.
+    // engineInertia is used only when this set is selected (vehicle default otherwise).
+    // p1 stays the default; no new URL.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v21'] && !DATA.cadillac59.sets['v22']) {
+      DATA.cadillac59.sets['v22'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v21']));
+      DATA.cadillac59.sets['v22'].engineInertia = 0.43;   // kg m^2, Neutral, sourced estimate (see review notes)
+      var _m22 = DATA.cadillac59.sets['v22'].muf, _i22, _n22;
+      for (_i22 = 0; _m22 && _i22 < _m22.length; _i22++) {
+        if (!_m22[_i22] || _m22[_i22][0] !== 'tmm') continue;
+        if (String(_m22[_i22][1]).indexOf('perf_through') !== 0) continue;
+        _n22 = _m22[_i22][6] | 0;
+        while (_m22[_i22].length < 12 + _n22) _m22[_i22].push(0);
+        // 2500 Pa s/m^2: ESTIMATE, light end of 1950s glass-fibre / steel-wool packing
+        // (see review notes). Chosen after a 10000 / 5000 / 2500 comparison: that
+        // sourced band is a near-saturated absorber on this can; 2500 keeps the
+        // ring / coast-down gain with the least load darkness of the three.
+        _m22[_i22][12 + _n22] = 2500;
+      }
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -3664,10 +3687,33 @@ function engineModuleV8p(core) {
       }
 
       // Straight tube, p–U convention. Visco-thermal loss + mean-flow (simple 1/(1-M²) wavenumber).
-      function tTube(L, area, omega, rho, c0, M) {
+      // Delany & Bazley 1970 equivalent fluid for a fibrous lining (JSV 1970, 24, 29–40).
+      // sigma = flow resistivity, Pa s/m^2. X = rho f / sigma is clamped to the published
+      // range ~0.01–1 so the power laws stay finite at very low frequency. Uses the local
+      // gas rho and c0 (the can's design temperature). Unset / sigma<=0 is never called.
+      function delanyBazley(omega, rho, c0, sigma) {
+        var f = omega / (2 * PI), X = rho * f / Math.max(sigma, 1);
+        if (X < 0.01) X = 0.01;
+        if (X > 1) X = 1;
+        var Zm = 1 + 0.0571 * Math.pow(X, -0.754), Zph = -0.087 * Math.pow(X, -0.732);
+        var km = 1 + 0.0978 * Math.pow(X, -0.700), kph = -0.189 * Math.pow(X, -0.595);
+        var Zc = cx(rho * c0 * Zm, rho * c0 * Zph);
+        var k0 = omega / Math.max(c0, 1e-9);
+        var k = cx(k0 * km, k0 * kph);
+        var rhoEq = cscale(cmul(Zc, k), 1 / Math.max(omega, 1e-12));
+        return { Zc: Zc, k: k, rho: rhoEq };
+      }
+
+      function tTube(L, area, omega, rho, c0, M, packSigma) {
         if (L < 0) L = 0;
         if (area < 1e-10) area = 1e-10;
         if (omega < 1e-6) omega = 1e-6;
+        if (packSigma && packSigma > 0) {
+          var eq = delanyBazley(omega, rho, c0, packSigma);
+          var gL = cscale(eq.k, L), ch = ccosh(gL), sh = csinh(gL);
+          var Zc = cdiv(eq.Zc, cx(area, 0));
+          return [[ch, cmul(sh, Zc)], [cmul(sh, cinv(Zc)), ch]];
+        }
         var P = 2 * Math.sqrt(PI * area); // perimeter
         // Kirchhoff/Kirchhoff-style wall attenuation (Munjal): α ≈ P/S * sqrt(ω ν) / (2 c) * const
         var nu = MU_AIR / rho, alpha = (P / (2 * area)) * Math.sqrt(nu * omega) / c0;
@@ -3766,7 +3812,7 @@ function engineModuleV8p(core) {
       // Proper Sullivan / Munjal concentric perforated duct: inner + annular waveguides
       // coupled by a distributed perforate, annulus closed at both ends, reduced to a 2x2 on the inner tube.
       // At high frequency the perforate mass closes the holes and the inner tube passes (textbook behaviour).
-      function tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, M, nseg, inclLouver) {
+      function tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, M, nseg, inclLouver, packSigma) {
         if (nseg < 1) nseg = 6;
         var dx = L / nseg, a1 = PI * dTube * dTube / 4, a2 = PI * dShell * dShell / 4 - a1;
         if (a2 < 1e-6) a2 = 1e-6;
@@ -3775,7 +3821,7 @@ function engineModuleV8p(core) {
         var Awall = PI * dTube * dx;
         var Zlink = cdiv(Zohm, cx(Math.max(Awall, 1e-9), 0));
         var M = m4id(), s, half = dx * 0.5;
-        var T1 = tTube(half, a1, omega, rho, c0, M), T2 = tTube(half, a2, omega, rho, c0, 0);
+        var T1 = tTube(half, a1, omega, rho, c0, M), T2 = tTube(half, a2, omega, rho, c0, 0, packSigma);
         var Lk = m4link(Zlink);
         var seg = m4mul(m4mul(m4mul(m4tube(T1, 0), m4tube(T2, 1)), Lk), m4mul(m4tube(T1, 0), m4tube(T2, 1)));
         for (s = 0; s < nseg; s++) M = m4mul(seg, M); // X_right = M X_left, state [p1,U1,p2,U2]
@@ -3798,7 +3844,7 @@ function engineModuleV8p(core) {
         return T;
       }
 
-      function tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver) {
+      function tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma) {
         if (nseg < 1) nseg = 6;
         var dx = L / nseg, a1 = PI * dTube * dTube / 4, a2 = PI * dShell * dShell / 4 - a1;
         if (a2 < 1e-6) a2 = 1e-6;
@@ -3807,7 +3853,7 @@ function engineModuleV8p(core) {
         var Awall = PI * dTube * dx;
         var Zlink = cdiv(Zohm, cx(Math.max(Awall, 1e-9), 0));
         var MM = m4id(), s, half = dx * 0.5;
-        var T1 = tTube(half, a1, omega, rho, c0, Mach), T2 = tTube(half, a2, omega, rho, c0, 0);
+        var T1 = tTube(half, a1, omega, rho, c0, Mach), T2 = tTube(half, a2, omega, rho, c0, 0, packSigma);
         var Lk = m4link(Zlink);
         var seg = m4mul(m4mul(m4mul(m4tube(T1, 0), m4tube(T2, 1)), Lk), m4mul(m4tube(T1, 0), m4tube(T2, 1)));
         for (s = 0; s < nseg; s++) MM = m4mul(seg, MM);
@@ -3832,7 +3878,7 @@ function engineModuleV8p(core) {
       // Crocker, JASA 64 (1978) 207-215; Munjal, Acoustics of Ducts and Mufflers, 2nd ed. 2014, ch. 4) with each element
       // in its own, consistent direction. Segments: at least nseg and no longer than 1.5 cm (midpoint rule, as the 3-D
       // model). Kept apart so rev <= 4 is unchanged.
-      function tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver) {
+      function tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma) {
         // Solved as a nodal network (the generic tOfNet below), not as a 4x4 matrix power: with a well-coupled perforate the
         // difference mode decays fast along the duct and a 4x4 cascade overflows; the nodal solve stays well conditioned.
         var ns = Math.max(nseg | 0, Math.ceil(L / 0.015), 1);
@@ -3841,7 +3887,7 @@ function engineModuleV8p(core) {
         var Zohm = cscale(zPerforate(omega, rho, c0, sigma, tWall, dHole, Mach, inclLouver), rho * c0);
         var Zlink = cdiv(Zohm, cx(Math.max(PI * dTube * dx, 1e-9), 0));
         var Th = tTube(dx * 0.5, a1, omega, rho, c0, Mach), Tf = tTube(dx, a1, omega, rho, c0, Mach);
-        var Ah = tTube(dx * 0.5, a2, omega, rho, c0, 0), Af = tTube(dx, a2, omega, rho, c0, 0);
+        var Ah = tTube(dx * 0.5, a2, omega, rho, c0, 0, packSigma), Af = tTube(dx, a2, omega, rho, c0, 0, packSigma);
         var link = [[cx(1, 0), Zlink], [cx(0, 0), cx(1, 0)]];
         // nodes: 0 = inlet; 1..ns inner mid-segment nodes; ns+1..2ns annulus mid nodes; 2ns+1, 2ns+2 closed annulus ends; last = outlet
         var elems = [], N = 2 * ns + 4, out = N - 1, aL = 2 * ns + 1, aR = 2 * ns + 2;
@@ -3856,10 +3902,10 @@ function engineModuleV8p(core) {
         if (!TT || !isFinite(TT[0][0].r)) return tTube(L, a1, omega, rho, c0, Mach);
         return TT;
       }
-      function tPerforatedConcentric(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, rev) {
-        if (rev >= 5) return tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver);
-        if (rev >= 1) return tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver);
-        return tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver);
+      function tPerforatedConcentric(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, rev, packSigma) {
+        if (rev >= 5) return tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma);
+        if (rev >= 1) return tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma);
+        return tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma);
       }
 
       // Solve 2x2 T for S-params given port areas (characteristic Zc = ρc/A).
@@ -3936,7 +3982,7 @@ function engineModuleV8p(core) {
         for (i = 0; i < fr.length; i++) {
           var Li = L * fr[i];
           if (Li < 1e-4) continue;
-          T = tMul(T, tPerforatedConcentric(Li, dT, dS, sigma, tw, dh, omega, rho, c0, M, 8, false, p.rev));
+          T = tMul(T, tPerforatedConcentric(Li, dT, dS, sigma, tw, dh, omega, rho, c0, M, 8, false, p.rev, p.packSigma));
         }
         return T;
       }
@@ -4010,10 +4056,13 @@ function engineModuleV8p(core) {
       function chamberZ3d(ch, patches, omega, rho, c0) {
         var K = patches.length, re = new Float64Array(K * K), im = new Float64Array(K * K);
         var L = ch.L, Ly = ch.Ly, Lz = ch.Lz, k = omega / c0, i, j, m, n;
-        var nu = MU_AIR / rho, alpha = ((2 * (Ly + Lz)) / (2 * Ly * Lz)) * Math.sqrt(nu * omega) / c0;
+        var packed = ch.packSigma && ch.packSigma > 0, eq = packed ? delanyBazley(omega, rho, c0, ch.packSigma) : null;
+        var nu = MU_AIR / rho, alpha = packed ? 0 : ((2 * (Ly + Lz)) / (2 * Ly * Lz)) * Math.sqrt(nu * omega) / c0;
         if (alpha > 5) alpha = 5;
         // kc = k - j alpha ; kc^2 = k^2 - alpha^2 - 2 j k alpha
-        var kc2r = k * k - alpha * alpha, kc2i = -2 * k * alpha;
+        // Packed: Delany–Bazley equivalent fluid (complex k); no extra Kirchhoff wall term.
+        var kc2r = packed ? (eq.k.r * eq.k.r - eq.k.i * eq.k.i) : (k * k - alpha * alpha);
+        var kc2i = packed ? (2 * eq.k.r * eq.k.i) : (-2 * k * alpha);
         var sMin = 1e9; for (i = 0; i < K; i++) if (patches[i].s < sMin) sMin = patches[i].s;
         var mMax = Math.min(64, Math.ceil(6 * Ly / sMin)), nMax = Math.min(64, Math.ceil(6 * Lz / sMin));
         if (ch.modeCap !== undefined) { mMax = Math.min(mMax, ch.modeCap); nMax = Math.min(nMax, ch.modeCap); }   // validation only
@@ -4094,8 +4143,16 @@ function engineModuleV8p(core) {
           }
         }
         // Z = j omega rho * sum ; symmetric fill
+        // Packed: rho is the complex Delany–Bazley equivalent density.
         for (i = 0; i < K; i++) for (j = i; j < K; j++) {
-          var zr = -omega * rho * im[i * K + j], zi = omega * rho * re[i * K + j];
+          var zr, zi;
+          if (packed) {
+            var rr = eq.rho.r, ri = eq.rho.i, Gr = re[i * K + j], Gi = im[i * K + j];
+            zr = omega * (-ri * Gr - rr * Gi);
+            zi = omega * (rr * Gr - ri * Gi);
+          } else {
+            zr = -omega * rho * im[i * K + j]; zi = omega * rho * re[i * K + j];
+          }
           re[i * K + j] = zr; im[i * K + j] = zi; re[j * K + i] = zr; im[j * K + i] = zi;
         }
         return { re: re, im: im, K: K };
@@ -4217,6 +4274,7 @@ function engineModuleV8p(core) {
         for (i = 0; i < fr.length; i++) {
           var Li = p.L * fr[i]; if (Li < 1e-4) continue;
           var c = nb.chamber(Li, Ls, Ls);
+          if (p.packSigma && p.packSigma > 0) c.ch.packSigma = p.packSigma;
           n = nb.perf(n, c, 0, Li, Ls / 2, Ls / 2, p.dTube, nsegOf(Li), p.sigma, p.tWall, p.dHole, false, omega, rho, c0, M);
         }
         var T = tOfNet(nb.N, nb.elems, nb.chambers, omega, rho, c0);
@@ -4967,6 +5025,8 @@ function engineModuleV8p(core) {
           o.chFrac = fr;
           o.tWall = +mf[7 + nch]; o.dHole = +mf[8 + nch]; o.T = +mf[9 + nch]; o.M = +mf[10 + nch];
           o.rev = mf[11 + nch] != null ? +mf[11 + nch] : 0;
+          // Optional packSigma (Pa s/m^2) after rev. Missing or <=0 = empty annulus (current behaviour).
+          o.packSigma = (mf[12 + nch] != null && +mf[12 + nch] > 0) ? +mf[12 + nch] : 0;
         } else return null;
         return o;
       }

@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.16)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.17)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -372,7 +372,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound: v12 · BRM p11 (default) or an earlier v12 · BRM p1–p10 set (formerly v9.1–v9.11)"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
       <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v12 · 911 p7 (default since v1.12.2; p4 with internal packing), p4 (photo-measured reverse-flow side boxes; default v1.11.42–v1.12.1), p1 (series-chamber muffler), p2 (perforated straight-through muffler), p3 (3-chamber side boxes; listening test), p5 (series 3-chamber side boxes from the Fabspeed video; listening test) or p6 (p4 with its high note earlier; listening test)"><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel brmsel hidden" id="segBeetleSound" title="Beetle engine sound: Sound v21 · Beetle (v20 kernel + new generic blocks). No additional URL alias."><select id="selBeetle" aria-label="Beetle engine sound option"></select></label>
-      <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2–p10, Sound v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20 and v21 · Cadillac. p1 stays the default; p7 and everything after it is picker-only, with no new URL. v18 is not on the site."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2–p10, Sound v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20, v21 and v22 · Cadillac. p1 stays the default; p7 and everything after it is picker-only, with no new URL. v18 is not on the site."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
@@ -4139,6 +4139,29 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       DATA.cadillac59.sets['v21'].t_ac = 4.0;
     }
 
+    // Sound 'v22' (Cadillac, picker-only): v21 plus sourced Neutral engine inertia and
+    // a generic packed-annulus parameter on the Walker 21159 perf_through3d resonator.
+    // packSigma is flow resistivity (Pa s/m^2) of the fibrous lining in the annulus;
+    // unset / 0 = empty gas (current behaviour), so every older set stays bit-identical.
+    // engineInertia is used only when this set is selected (vehicle default otherwise).
+    // p1 stays the default; no new URL.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v21'] && !DATA.cadillac59.sets['v22']) {
+      DATA.cadillac59.sets['v22'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v21']));
+      DATA.cadillac59.sets['v22'].engineInertia = 0.43;   // kg m^2, Neutral, sourced estimate (see review notes)
+      var _m22 = DATA.cadillac59.sets['v22'].muf, _i22, _n22;
+      for (_i22 = 0; _m22 && _i22 < _m22.length; _i22++) {
+        if (!_m22[_i22] || _m22[_i22][0] !== 'tmm') continue;
+        if (String(_m22[_i22][1]).indexOf('perf_through') !== 0) continue;
+        _n22 = _m22[_i22][6] | 0;
+        while (_m22[_i22].length < 12 + _n22) _m22[_i22].push(0);
+        // 2500 Pa s/m^2: ESTIMATE, light end of 1950s glass-fibre / steel-wool packing
+        // (see review notes). Chosen after a 10000 / 5000 / 2500 comparison: that
+        // sourced band is a near-saturated absorber on this can; 2500 keeps the
+        // ring / coast-down gain with the least load darkness of the three.
+        _m22[_i22][12 + _n22] = 2500;
+      }
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -4188,10 +4211,33 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       }
 
       // Straight tube, p–U convention. Visco-thermal loss + mean-flow (simple 1/(1-M²) wavenumber).
-      function tTube(L, area, omega, rho, c0, M) {
+      // Delany & Bazley 1970 equivalent fluid for a fibrous lining (JSV 1970, 24, 29–40).
+      // sigma = flow resistivity, Pa s/m^2. X = rho f / sigma is clamped to the published
+      // range ~0.01–1 so the power laws stay finite at very low frequency. Uses the local
+      // gas rho and c0 (the can's design temperature). Unset / sigma<=0 is never called.
+      function delanyBazley(omega, rho, c0, sigma) {
+        var f = omega / (2 * PI), X = rho * f / Math.max(sigma, 1);
+        if (X < 0.01) X = 0.01;
+        if (X > 1) X = 1;
+        var Zm = 1 + 0.0571 * Math.pow(X, -0.754), Zph = -0.087 * Math.pow(X, -0.732);
+        var km = 1 + 0.0978 * Math.pow(X, -0.700), kph = -0.189 * Math.pow(X, -0.595);
+        var Zc = cx(rho * c0 * Zm, rho * c0 * Zph);
+        var k0 = omega / Math.max(c0, 1e-9);
+        var k = cx(k0 * km, k0 * kph);
+        var rhoEq = cscale(cmul(Zc, k), 1 / Math.max(omega, 1e-12));
+        return { Zc: Zc, k: k, rho: rhoEq };
+      }
+
+      function tTube(L, area, omega, rho, c0, M, packSigma) {
         if (L < 0) L = 0;
         if (area < 1e-10) area = 1e-10;
         if (omega < 1e-6) omega = 1e-6;
+        if (packSigma && packSigma > 0) {
+          var eq = delanyBazley(omega, rho, c0, packSigma);
+          var gL = cscale(eq.k, L), ch = ccosh(gL), sh = csinh(gL);
+          var Zc = cdiv(eq.Zc, cx(area, 0));
+          return [[ch, cmul(sh, Zc)], [cmul(sh, cinv(Zc)), ch]];
+        }
         var P = 2 * Math.sqrt(PI * area); // perimeter
         // Kirchhoff/Kirchhoff-style wall attenuation (Munjal): α ≈ P/S * sqrt(ω ν) / (2 c) * const
         var nu = MU_AIR / rho, alpha = (P / (2 * area)) * Math.sqrt(nu * omega) / c0;
@@ -4290,7 +4336,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       // Proper Sullivan / Munjal concentric perforated duct: inner + annular waveguides
       // coupled by a distributed perforate, annulus closed at both ends, reduced to a 2x2 on the inner tube.
       // At high frequency the perforate mass closes the holes and the inner tube passes (textbook behaviour).
-      function tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, M, nseg, inclLouver) {
+      function tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, M, nseg, inclLouver, packSigma) {
         if (nseg < 1) nseg = 6;
         var dx = L / nseg, a1 = PI * dTube * dTube / 4, a2 = PI * dShell * dShell / 4 - a1;
         if (a2 < 1e-6) a2 = 1e-6;
@@ -4299,7 +4345,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var Awall = PI * dTube * dx;
         var Zlink = cdiv(Zohm, cx(Math.max(Awall, 1e-9), 0));
         var M = m4id(), s, half = dx * 0.5;
-        var T1 = tTube(half, a1, omega, rho, c0, M), T2 = tTube(half, a2, omega, rho, c0, 0);
+        var T1 = tTube(half, a1, omega, rho, c0, M), T2 = tTube(half, a2, omega, rho, c0, 0, packSigma);
         var Lk = m4link(Zlink);
         var seg = m4mul(m4mul(m4mul(m4tube(T1, 0), m4tube(T2, 1)), Lk), m4mul(m4tube(T1, 0), m4tube(T2, 1)));
         for (s = 0; s < nseg; s++) M = m4mul(seg, M); // X_right = M X_left, state [p1,U1,p2,U2]
@@ -4322,7 +4368,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         return T;
       }
 
-      function tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver) {
+      function tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma) {
         if (nseg < 1) nseg = 6;
         var dx = L / nseg, a1 = PI * dTube * dTube / 4, a2 = PI * dShell * dShell / 4 - a1;
         if (a2 < 1e-6) a2 = 1e-6;
@@ -4331,7 +4377,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var Awall = PI * dTube * dx;
         var Zlink = cdiv(Zohm, cx(Math.max(Awall, 1e-9), 0));
         var MM = m4id(), s, half = dx * 0.5;
-        var T1 = tTube(half, a1, omega, rho, c0, Mach), T2 = tTube(half, a2, omega, rho, c0, 0);
+        var T1 = tTube(half, a1, omega, rho, c0, Mach), T2 = tTube(half, a2, omega, rho, c0, 0, packSigma);
         var Lk = m4link(Zlink);
         var seg = m4mul(m4mul(m4mul(m4tube(T1, 0), m4tube(T2, 1)), Lk), m4mul(m4tube(T1, 0), m4tube(T2, 1)));
         for (s = 0; s < nseg; s++) MM = m4mul(seg, MM);
@@ -4356,7 +4402,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       // Crocker, JASA 64 (1978) 207-215; Munjal, Acoustics of Ducts and Mufflers, 2nd ed. 2014, ch. 4) with each element
       // in its own, consistent direction. Segments: at least nseg and no longer than 1.5 cm (midpoint rule, as the 3-D
       // model). Kept apart so rev <= 4 is unchanged.
-      function tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver) {
+      function tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma) {
         // Solved as a nodal network (the generic tOfNet below), not as a 4x4 matrix power: with a well-coupled perforate the
         // difference mode decays fast along the duct and a 4x4 cascade overflows; the nodal solve stays well conditioned.
         var ns = Math.max(nseg | 0, Math.ceil(L / 0.015), 1);
@@ -4365,7 +4411,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var Zohm = cscale(zPerforate(omega, rho, c0, sigma, tWall, dHole, Mach, inclLouver), rho * c0);
         var Zlink = cdiv(Zohm, cx(Math.max(PI * dTube * dx, 1e-9), 0));
         var Th = tTube(dx * 0.5, a1, omega, rho, c0, Mach), Tf = tTube(dx, a1, omega, rho, c0, Mach);
-        var Ah = tTube(dx * 0.5, a2, omega, rho, c0, 0), Af = tTube(dx, a2, omega, rho, c0, 0);
+        var Ah = tTube(dx * 0.5, a2, omega, rho, c0, 0, packSigma), Af = tTube(dx, a2, omega, rho, c0, 0, packSigma);
         var link = [[cx(1, 0), Zlink], [cx(0, 0), cx(1, 0)]];
         // nodes: 0 = inlet; 1..ns inner mid-segment nodes; ns+1..2ns annulus mid nodes; 2ns+1, 2ns+2 closed annulus ends; last = outlet
         var elems = [], N = 2 * ns + 4, out = N - 1, aL = 2 * ns + 1, aR = 2 * ns + 2;
@@ -4380,10 +4426,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         if (!TT || !isFinite(TT[0][0].r)) return tTube(L, a1, omega, rho, c0, Mach);
         return TT;
       }
-      function tPerforatedConcentric(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, rev) {
-        if (rev >= 5) return tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver);
-        if (rev >= 1) return tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver);
-        return tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver);
+      function tPerforatedConcentric(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, rev, packSigma) {
+        if (rev >= 5) return tPerforatedConcentricCausal(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma);
+        if (rev >= 1) return tPerforatedConcentricFixed(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma);
+        return tPerforatedConcentricLegacy(L, dTube, dShell, sigma, tWall, dHole, omega, rho, c0, Mach, nseg, inclLouver, packSigma);
       }
 
       // Solve 2x2 T for S-params given port areas (characteristic Zc = ρc/A).
@@ -4460,7 +4506,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         for (i = 0; i < fr.length; i++) {
           var Li = L * fr[i];
           if (Li < 1e-4) continue;
-          T = tMul(T, tPerforatedConcentric(Li, dT, dS, sigma, tw, dh, omega, rho, c0, M, 8, false, p.rev));
+          T = tMul(T, tPerforatedConcentric(Li, dT, dS, sigma, tw, dh, omega, rho, c0, M, 8, false, p.rev, p.packSigma));
         }
         return T;
       }
@@ -4534,10 +4580,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       function chamberZ3d(ch, patches, omega, rho, c0) {
         var K = patches.length, re = new Float64Array(K * K), im = new Float64Array(K * K);
         var L = ch.L, Ly = ch.Ly, Lz = ch.Lz, k = omega / c0, i, j, m, n;
-        var nu = MU_AIR / rho, alpha = ((2 * (Ly + Lz)) / (2 * Ly * Lz)) * Math.sqrt(nu * omega) / c0;
+        var packed = ch.packSigma && ch.packSigma > 0, eq = packed ? delanyBazley(omega, rho, c0, ch.packSigma) : null;
+        var nu = MU_AIR / rho, alpha = packed ? 0 : ((2 * (Ly + Lz)) / (2 * Ly * Lz)) * Math.sqrt(nu * omega) / c0;
         if (alpha > 5) alpha = 5;
         // kc = k - j alpha ; kc^2 = k^2 - alpha^2 - 2 j k alpha
-        var kc2r = k * k - alpha * alpha, kc2i = -2 * k * alpha;
+        // Packed: Delany–Bazley equivalent fluid (complex k); no extra Kirchhoff wall term.
+        var kc2r = packed ? (eq.k.r * eq.k.r - eq.k.i * eq.k.i) : (k * k - alpha * alpha);
+        var kc2i = packed ? (2 * eq.k.r * eq.k.i) : (-2 * k * alpha);
         var sMin = 1e9; for (i = 0; i < K; i++) if (patches[i].s < sMin) sMin = patches[i].s;
         var mMax = Math.min(64, Math.ceil(6 * Ly / sMin)), nMax = Math.min(64, Math.ceil(6 * Lz / sMin));
         if (ch.modeCap !== undefined) { mMax = Math.min(mMax, ch.modeCap); nMax = Math.min(nMax, ch.modeCap); }   // validation only
@@ -4618,8 +4667,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           }
         }
         // Z = j omega rho * sum ; symmetric fill
+        // Packed: rho is the complex Delany–Bazley equivalent density.
         for (i = 0; i < K; i++) for (j = i; j < K; j++) {
-          var zr = -omega * rho * im[i * K + j], zi = omega * rho * re[i * K + j];
+          var zr, zi;
+          if (packed) {
+            var rr = eq.rho.r, ri = eq.rho.i, Gr = re[i * K + j], Gi = im[i * K + j];
+            zr = omega * (-ri * Gr - rr * Gi);
+            zi = omega * (rr * Gr - ri * Gi);
+          } else {
+            zr = -omega * rho * im[i * K + j]; zi = omega * rho * re[i * K + j];
+          }
           re[i * K + j] = zr; im[i * K + j] = zi; re[j * K + i] = zr; im[j * K + i] = zi;
         }
         return { re: re, im: im, K: K };
@@ -4741,6 +4798,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         for (i = 0; i < fr.length; i++) {
           var Li = p.L * fr[i]; if (Li < 1e-4) continue;
           var c = nb.chamber(Li, Ls, Ls);
+          if (p.packSigma && p.packSigma > 0) c.ch.packSigma = p.packSigma;
           n = nb.perf(n, c, 0, Li, Ls / 2, Ls / 2, p.dTube, nsegOf(Li), p.sigma, p.tWall, p.dHole, false, omega, rho, c0, M);
         }
         var T = tOfNet(nb.N, nb.elems, nb.chambers, omega, rho, c0);
@@ -5491,6 +5549,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           o.chFrac = fr;
           o.tWall = +mf[7 + nch]; o.dHole = +mf[8 + nch]; o.T = +mf[9 + nch]; o.M = +mf[10 + nch];
           o.rev = mf[11 + nch] != null ? +mf[11 + nch] : 0;
+          // Optional packSigma (Pa s/m^2) after rev. Missing or <=0 = empty annulus (current behaviour).
+          o.packSigma = (mf[12 + nch] != null && +mf[12 + nch] > 0) ? +mf[12 + nch] : 0;
         } else return null;
         return o;
       }
@@ -8913,7 +8973,8 @@ var Vehicles = (function () {
     // 430 lb-ft @ 3100, 325 hp @ 4800 (= 356 lb-ft)
     torque: curve([[0, 180], [500, 300], [1000, 350], [2000, 405], [3100, 430], [4000, 400], [4800, 356], [5200, 318], [5800, 250]]),
     netFactor: 0.80, idleRpm: 550, limiterRpm: 5000, tachMax: 6000, tachRed: 5000,
-    engineInertia: 0.45,                        // heavy flywheel + fluid-coupling impeller
+    engineInertia: 0.45,                        // heavy flywheel + fluid-coupling impeller (unsourced; v1–v21)
+    engineInertiaBySet: { v22: 0.43 },           // Neutral Je, sourced mid estimate (band ~0.32–0.58); generic per-set override
     friction: [24, 11.0, 1.0],
     trans: 'auto', transText: 'Hydra-Matic 4-speed (controlled fluid coupling)',
     gears: [3.97, 2.55, 1.55, 1.00], finalDrive: 2.94, drivelineEff: 0.86,
@@ -12493,7 +12554,7 @@ var ProjectHistory = {
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.16. v1.13.16 redraws the Beetle engine bay to match the stock 36 hp Type 1 layout, using new generic drawing for a 2-1-shared exhaust, a centrifugal fan with an upright dynamo and shroud, and a single-choke oil-bath carb (no per-car code path). The muffler shell is drawn at its sourced transverse width of 0.679 m (TheSamba; that figure is the can width, not the internal gas path). Sound v21 · Beetle stays the only picker entry and is bit-identical; the kernel still uses the 0.40 m path-length estimate. v1.13.15 was a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20 and Sound v21 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
+    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.17. v1.13.16 redraws the Beetle engine bay to match the stock 36 hp Type 1 layout, using new generic drawing for a 2-1-shared exhaust, a centrifugal fan with an upright dynamo and shroud, and a single-choke oil-bath carb (no per-car code path). The muffler shell is drawn at its sourced transverse width of 0.679 m (TheSamba; that figure is the can width, not the internal gas path). Sound v21 · Beetle stays the only picker entry and is bit-identical; the kernel still uses the 0.40 m path-length estimate. v1.13.15 was a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. Sound v22 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v21 plus a sourced Neutral engine inertia of 0.43 kg·m² (mid of a band about 0.32–0.58) and a generic packed-annulus parameter on the Walker 21159 resonator (flow resistivity 2,500 Pa·s/m², estimate, at the light end of typical 1950s glass-fibre / steel-wool packing). On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20, Sound v21 and Sound v22 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
         sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
       { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
@@ -12510,12 +12571,13 @@ var ProjectHistory = {
       { title: 'Other filters', text: 'Distance and delay (sound falls with range and arrives later from a farther source), the 911\u2019s rear lid shadow, packing and wall damping in the silencers, and a little equalisation on the radiation and on the throttle hiss, are the remaining filters. Nothing you hear is a recording, and there is no added flow-noise effect on the 911 exhaust valves.' },
       { title: 'How the sound is fitted', text: 'When the model is matched to a recording of a standard car, the engine\u2019s real sizes stay as they are: bore, stroke, compression, firing order, cam timing, pipe lengths, gear ratios. What is adjusted are the model parameters \u2014 how hard the burn is, how much leftover gas there is, how much the muffler damps, how much comes through the body, and so on. Those knobs are tuned so the synthetic sound is as close as possible to the recording, judged on a scorecard of engine speed against throttle opening (a grid of rpm bands and throttle levels). A lower score is closer. The Specs page lists every one of those figures for the car you have selected.' },
       { title: 'Where the model stands now', text: 'The physics has to stay the core, because the aim is that aftermarket parts — a different muffler, resonator, or a set of pipes — should be heard as a change of parameters, not hidden by a correction fitted to the stock car. That is why the Cadillac default is still p1 until the owner listens, why v20 ships a sourced change to the resonator (the Walker 21159 Direct-Flow can, as the generic perforated straight-through block) rather than a fitted equaliser, and why v18 was shelved. Sound v19 · Cadillac stays in the picker. Scoring is now scorer v2.4. On that official combined score v20 is worse than v19, because part-throttle, full load and idle go darker; closed-throttle mid-rev overrun is clearly better, and the cabin no longer has that bright 400 Hz pass. The two large cans about three metres apart still ring and still leave an idle hole. The cabin path is still only a first model of the body. The 1956 Beetle is on sound model v21, using the v20 kernel plus those new generic blocks; older cars and sound sets stay on the same models as before.' },
-      { title: 'What comes next', text: 'Next is rotating mass and resonator packing, then a Tesla Model X.' }
+      { title: 'What comes next', text: 'Next is a thinner packing layer in the resonator, then a Tesla Model X.' }
     ]
   },
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.17", date: "2026-11-21", status: "done", headline: "Sound v22 · Cadillac: sourced Neutral inertia and a packed Walker 21159 resonator", text: "Sound v22 · Cadillac is Sound v21 plus two sourced physical changes, with no fitted values. Neutral rotating mass for the 390 + Controlled Coupling Hydra-Matic is 0.43 kg·m² (mid of a sourced band about 0.32–0.58; older sets keep the vehicle default 0.45). The Walker 21159 resonator annulus is packed, using a new generic TMM field (packSigma, unset = empty, bit-identical). The lining is 2,500 Pa·s/m², an estimate at the light end of typical 1950s glass-fibre / steel-wool packing. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). It is picker-only, after Sound v21 · Cadillac; p1 stays the default. Every older sound stays bit-identical." },
       { v: "v1.13.16", date: "2026-11-21", status: "done", headline: "Beetle engine-bay view matches the stock 36 hp Type 1 layout", text: "The Beetle engine bay was drawn as a generic V8 (long tubular headers the wrong way, an axial fan, a side generator, and a four-barrel carb). It now follows the stock 1956 36 hp / 30 PS Type 1 layout: upright dynamo and a shrouded centrifugal fan at the pulley end, a single Solex 28 PCI on a central single-port manifold with an oil-bath cleaner, distributor and oil filler, heat exchangers, and a transverse 2-tip muffler. The drawing is generic (headers type 2-1-shared, fan type centrifugal, 1×1 oil-bath carb, flat + centrifugal layout extras); the GT350, Cadillac, BRM and 911 are unchanged. A sourced 0.679 m figure (VW logo NOS 26.75 in, TheSamba) is the can’s transverse width and is used only for the bay; it is not the internal gas path. Sound v21 is unchanged (path length remains the 0.40 m estimate) and stays the only Beetle picker entry. Every older sound stays bit-identical." },
       { v: "v1.13.15", date: "2026-11-21", status: "done", headline: "UI hotfix, Beetle cabin and rear-wheel fixes, and Sound v21 · Cadillac (coast-down lag)", text: "v1.13.14 added the Beetle sound picker and toggled the hidden class, but never added a CSS rule to hide #segBeetleSound. .sel { display: inline-flex } therefore kept the Beetle list visible on every other car — the same class of bug as v1.12.8. This build adds a generic rule .sel.brmsel.hidden, #segSound.hidden { display: none; }, and keeps the existing specific rules, so any future per-car picker hides correctly. The Cadillac picker title now lists the full history (v1–v4, p1–p10, v13–v17, v19, v20, v21; p1 default). The Beetle cabin is redrawn from 1953–57 oval driver’s-seat photographs: the factory oval dash is kept (single speedo, central grille, glovebox, grab handle), a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is transparent down to the cowl and wiper line, with no hood hump or fender hints). In the rear view the face-on hubcap badges are removed; only the tyre tread and sidewall remain, because the hubcaps are not visible from directly behind. Paint is unchanged (#979A84). Sound v21 · Cadillac is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not track cycle-resolved gas temperature on a closed-throttle coast; it is picker-only, after v20; p1 stays the default; no new URL. A repeatable headless check walks every car, both ways of selecting it, every Position and both Visuals, and requires exactly one visible sound drop-down with that car’s full list. Every older sound stays bit-identical." },
       { v: "v1.13.14", date: "2026-11-21", status: "done", headline: "1956 VW Beetle Type 1: Sound v21, L240 Agave art, and a fast-idle fix", text: "The game now includes a 1956 Volkswagen Beetle Type 1 oval-window, in L240 Agave. Body colour is #979A84 (highlight #A5A893, shadow #7E816C), sampled from the owner photo (private) as the mid-tone of body panels in overcast daylight (median of the 30–70th percentile luminance). Rear and cabin art is in the same Flat and Ink styles as the other cars, with period 1956 details (oval window, split decklid louvres, small round tail lamps, chrome bumper with overriders, plate light, chrome hubcaps, blackwall tyres). Key 5 selects the car. The sound drop-down is one entry, Sound v21 · Beetle: the v20 kernel plus new generic blocks (an engine-driven centrifugal cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust network) that any car can use; no additional URL alias. After starter handoff, the HUD no longer holds the choke fast-idle override (it had been left at the flare rpm). The info page lists the Beetle, names sound model v21, and the next work is a Cadillac coast-down fix, then rotating mass and resonator packing, then a Tesla Model X. Every older sound stays bit-identical." },
@@ -12854,7 +12916,12 @@ var EngineSpecs = (function () {
       if (kind === 'cavity') return (i + 1) + '. Side volume ' + fmt(a, 3) + ' m long, \u00d8 ' + mm(b) + ', neck ' + fmt(s[4], 4) + ' m \u00d8 ' + mm(s[5]) + (c ? ', packing ' + fmt(c, 2) : '') + (s.length > 9 && s[8] > 0 ? ', end-cap layer ' + fmt(s[8] * 1000, 0) + ' mm packing ' + fmt(s[9], 2) : '');
       if (kind === 'hx') return (i + 1) + '. Heat exchanger (finned core; jacket is cabin air) ' + fmt(a, 2) + ' m long, \u00d8 ' + mm(b) + (c ? ', packing ' + fmt(c, 2) : '');
       if (kind === 'par') return (i + 1) + '. Chamber ' + fmt(s[2], 2) + ' m long, area ratio ' + fmt(s[3], 1) + (s[4] ? ', packing ' + fmt(s[4], 2) : '') + ', fed in parallel by ' + s[1].map(function (q) { return fmt(q[0], 3) + ' m \u00d8 ' + mm(q[1]); }).join(' + ');
+      if (kind === 'tmm' && (s[1] === 'perf_through' || s[1] === 'perf_through3d')) {
+        var nch = s[6] | 0, ps = s[12 + nch];
+        return (i + 1) + '. Perforated straight-through (TMM ' + s[1] + '), shell ' + fmt(s[2], 2) + ' m, \u00d8 ' + mm(s[3]) + ', tube \u00d8 ' + mm(s[4]) + (ps > 0 ? ', lining ' + fmt(ps, 0) + ' Pa\u00b7s/m\u00b2' : '');
+      }
       return (i + 1) + '. ' + kind + ' ' + [a, b, c].filter(function (x) { return x != null; }).join(', ');
+
     }).join('<br>');
   }
   function peaks(v) {
@@ -13208,6 +13275,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var cars = {};
   Vehicles.list.forEach(function (v) {
     var car = new Physics.Vehicle(v);
+    car._Je0 = car.c.engineInertia;   // vehicle default; a sound set may override (generic)
     car.odo = ODO_START[v.id] * 1000;
     try { var saved = localStorage.getItem('streetrod.odo.' + v.id); if (saved) car.odo = +saved; } catch (e) {}
     cars[v.id] = car;
@@ -13260,7 +13328,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (/^v11\.(cadillac|caddy)\.p\d+$/.test(v)) return 'v9p';   // v1.12.3: v12.cadillac.p2 etc. still the v12 kernel; the set is caddyName()
     return v;
   }
-  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20 and v21 are picker-only (no URL)
+  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20, v21 and v22 are picker-only (no URL)
   function caddyName(v, allowPicker) {
     if (!v) return defaultCaddySound();
     v = String(v).toLowerCase().replace(/^v12/, 'v11');
@@ -13275,6 +13343,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (allowPicker && v === 'v19') return 'v19';
     if (allowPicker && v === 'v20') return 'v20';
     if (allowPicker && v === 'v21') return 'v21';
+    if (allowPicker && v === 'v22') return 'v22';
     if (allowPicker && v === 'v14.1') return 'v14.1';
     if (allowPicker && v === 'v14') return 'v14';
     if (allowPicker && v === 'v13.4') return 'v13.4';
@@ -13324,17 +13393,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;   // unknown tokens (bare p7, v9.7 already handled) must not fall through to kernel v1
   if (!soundChoice) soundChoice = v8Name(lsGet('streetrod.sound', null));
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;
-  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20 and v21 stay picker-only: not accepted from ?sound=
+  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20, v21 and v22 stay picker-only: not accepted from ?sound=
   // Bare ?car=caddy&sound=p5 is a Cadillac set, not a kernel id. p5 is not a BRM set (the shipped BRM list is p1–p4, p6, p8–p11), so brmName('p5') is null and v8Name('p5') would otherwise fall through to SoundModels.get → v1.
-  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 / ?sound=v14 / ?sound=v14.1 / ?sound=v15 / ?sound=v16 / ?sound=v17 / ?sound=v19 / ?sound=v20 / ?sound=v21 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4/v14/v14.1/v15 alias on the URL path).
-  if (startId === 'caddy' && soundParam && /^(p[123456789]|p10|v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17|v19|v20|v21)$/i.test(soundParam)) soundChoice = null;
-  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17|v19|v20|v21)$/i.test(soundParam)) soundChoice = null;
+  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 / ?sound=v14 / ?sound=v14.1 / ?sound=v15 / ?sound=v16 / ?sound=v17 / ?sound=v19 / ?sound=v20 / ?sound=v21 / ?sound=v22 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4/v14/v14.1/v15 alias on the URL path).
+  if (startId === 'caddy' && soundParam && /^(p[123456789]|p10|v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17|v19|v20|v21|v22)$/i.test(soundParam)) soundChoice = null;
+  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17|v19|v20|v21|v22)$/i.test(soundParam)) soundChoice = null;
   // ?car=brm&sound=p7 (or any unshipped pN): stay on the BRM with the default set (p11). Do not select kernel v1.
   if (startId === 'brm') soundChoice = null;
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
     p997Sound: p997Name(p997Param),   // v1.12.2: default p7; ?p997=p1|p2|p3|p4|p5|p6 select the other sets
-    caddySound: caddyName(caddyQuery, false),   // default p1; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20 and v21 are picker-only (no ?caddy= / ?sound= URL)
+    caddySound: caddyName(caddyQuery, false),   // default p1; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20, v21 and v22 are picker-only (no ?caddy= / ?sound= URL)
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   // A Cadillac set query (?caddy=p5, ?sound=v12.cadillac.p5, or ?car=caddy&sound=p5) always uses the v12 kernel.
@@ -13430,10 +13499,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     'v17': 'Sound v17 · Cadillac',
     'v19': 'Sound v19 · Cadillac',
     'v20': 'Sound v20 · Cadillac',
-    'v21': 'Sound v21 · Cadillac'
+    'v21': 'Sound v21 · Cadillac',
+    'v22': 'Sound v22 · Cadillac'
   };
+  // Generic: a sound set may name engineInertia (kg m^2). Unset = the vehicle default, so
+  // every older set keeps the same Neutral / in-gear Je. Applied when the set or car changes.
+  function applySoundInertia() {
+    var c = car();
+    if (c._Je0 == null) c._Je0 = c.c.engineInertia;
+    var je = c._Je0, map = c.c.engineInertiaBySet, key = null;
+    if (spec().engineKey === 'CADDY' && state.model === 'v9p') key = state.caddySound;
+    else if (spec().engineKey === 'P997') key = state.p997Sound;
+    else if (spec().engineKey === 'BRM') key = state.brmSound;
+    if (key && map && map[key] != null) je = map[key];
+    c.c.engineInertia = je;
+  }
   function setCaddySound(v) {
     state.caddySound = caddyName(v, true);
+    applySoundInertia();
     if (audio.ctx) ensureAudio();
     if (spec().engineKey === 'CADDY') flash(CADDY_LABEL[state.caddySound], 1.5);
     updatePanel();
@@ -13479,7 +13562,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       { value: 'kern:v4', label: 'Sound v4 (pop/bang fix)' }
     ];
     if (key === 'CADDY') {
-      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'v13', 'v13.1', 'v13.2', 'v13.4', 'v14', 'v14.1', 'v15', 'v16', 'v17', 'v19', 'v20', 'v21'].map(function (p) {
+      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'v13', 'v13.1', 'v13.2', 'v13.4', 'v14', 'v14.1', 'v15', 'v16', 'v17', 'v19', 'v20', 'v21', 'v22'].map(function (p) {
         return { value: 'caddy:' + p, label: CADDY_LABEL[p] };
       }));
     }
@@ -13561,6 +13644,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var wasRunning = car().engine !== 'off';
     state.carId = id;
     if (!soundChoice) state.model = defaultV8Sound(id);
+    applySoundInertia();
     ensureAudio();
     if (wasRunning && car().engine === 'off') car().ignition();
     if (radio && radio.on && !spec().radio) radio.stop();
@@ -13868,8 +13952,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   if (selP997) selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
   var selCaddy = document.getElementById('selCaddy');
-  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p10, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac, Sound v14 · Cadillac, Sound v14.1 · Cadillac, Sound v15 · Cadillac, Sound v16 · Cadillac, Sound v17 · Cadillac, Sound v19 · Cadillac, Sound v20 · Cadillac and Sound v21 · Cadillac), filled once.
-  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['p8', CADDY_LABEL.p8], ['p9', CADDY_LABEL.p9], ['p10', CADDY_LABEL.p10], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']], ['v14', CADDY_LABEL['v14']], ['v14.1', CADDY_LABEL['v14.1']], ['v15', CADDY_LABEL['v15']], ['v16', CADDY_LABEL['v16']], ['v17', CADDY_LABEL['v17']], ['v19', CADDY_LABEL['v19']], ['v20', CADDY_LABEL['v20']], ['v21', CADDY_LABEL['v21']]].forEach(function (row) {
+  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p10, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac, Sound v14 · Cadillac, Sound v14.1 · Cadillac, Sound v15 · Cadillac, Sound v16 · Cadillac, Sound v17 · Cadillac, Sound v19 · Cadillac, Sound v20 · Cadillac and Sound v21 · Cadillac and Sound v22 · Cadillac), filled once.
+  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['p8', CADDY_LABEL.p8], ['p9', CADDY_LABEL.p9], ['p10', CADDY_LABEL.p10], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']], ['v14', CADDY_LABEL['v14']], ['v14.1', CADDY_LABEL['v14.1']], ['v15', CADDY_LABEL['v15']], ['v16', CADDY_LABEL['v16']], ['v17', CADDY_LABEL['v17']], ['v19', CADDY_LABEL['v19']], ['v20', CADDY_LABEL['v20']], ['v21', CADDY_LABEL['v21']], ['v22', CADDY_LABEL['v22']]].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selCaddy.appendChild(o);
   });
   if (selCaddy) selCaddy.addEventListener('change', function () { applyCaddyPicker(selCaddy.value); selCaddy.blur(); });
