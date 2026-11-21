@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.13)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.14)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -366,9 +366,10 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <canvas id="dash"></canvas>
     <div id="topbar">
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
-      <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option></select></label>
+      <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option><option value="beetle">1956 VW Beetle</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound: v12 · BRM p11 (default) or an earlier v12 · BRM p1–p10 set (formerly v9.1–v9.11)"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
       <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v12 · 911 p7 (default since v1.12.2; p4 with internal packing), p4 (photo-measured reverse-flow side boxes; default v1.11.42–v1.12.1), p1 (series-chamber muffler), p2 (perforated straight-through muffler), p3 (3-chamber side boxes; listening test), p5 (series 3-chamber side boxes from the Fabspeed video; listening test) or p6 (p4 with its high note earlier; listening test)"><select id="selP997" aria-label="911 engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segBeetleSound" title="Beetle engine sound: Sound v21 · Beetle (v20 kernel + new generic blocks). No additional URL alias."><select id="selBeetle" aria-label="Beetle engine sound option"></select></label>
       <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2, p3, p4, p5, p6 (test), p7 (picker-only), Sound v13 · Cadillac (picker-only), Sound v13.1 · Cadillac (picker-only), Sound v13.2 · Cadillac (picker-only), Sound v13.4 · Cadillac (picker-only), and Sound v14 · Cadillac (picker-only). p1 stays the default; p7, v13, v13.1, v13.2, v13.4 and v14 have no new URL."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
@@ -400,7 +401,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>&darr;</td><td>Brake (hold; ramps to full pedal, can lock the wheels)</td></tr>
       <tr><td>&rarr; / &larr;</td><td>GT350: shift up / down (automatic clutch).<br>BRM: shift up / down, 5-speed H (automatic clutch).<br>911: shift up / down, 6-speed H (automatic clutch, AWD).<br>Cadillac: selector N &rarr; D &rarr; S &rarr; L (Hydra-Matic shifts itself)</td></tr>
       <tr><td>S or I</td><td>Ignition: start / stop engine</td></tr>
-      <tr><td>1 / 2 / 3 / 4</td><td>Select car (GT350 / Cadillac / BRM / Porsche 911), also the Car menu</td></tr>
+      <tr><td>1 / 2 / 3 / 4 / 5</td><td>Select car (GT350 / Cadillac / BRM / Porsche 911 / Beetle), also the Car menu</td></tr>
       <tr><td>V</td><td>Inside the car / Outside (rear), or the two garage positions; also the Position menu</td></tr>
       <tr><td>E</td><td>Engine bay (3D engine from the sound model’s parameters; drag to turn, pinch / wheel to zoom, double-tap to reset)</td></tr>
       <tr><td>X</td><td>Next sound model in this car's list (every model actually developed for this car, in chronological order)</td></tr>
@@ -3815,6 +3816,130 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
   g0.ENGINE_MODULES.push(function engineModuleV8p(core) {
     // ---- model data (tools/export_v8p_params.py: engine-sound v8phys.CARS + PHYS merged with fitted_params_v8phys.json)
     var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306,"lsa":114,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850,"redline":6800,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800,"st_i_free":80,"st_i_lock":550,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200,"spark0":12},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750,"t_prima":420,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":15,"f_fw":72.41426333042916,"k_cab":0.35,"cab_q":4.312931693945894,"cab_model":1,"leak_floor":0.3,"leak_fw":0.003,"k_floor":1.000048686830272,"k_ind":0.029701259811889123,"f_abs":8000,"k_win":0.3,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.14,"a_idle":7.285542239127752e-05,"fast_idle":1,"prime_rev":0.6,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1,"k_st_mesh":0.38,"k_st_comm":0.2,"k_st_mot":0.16,"k_st_bb":1,"k_st_out":1,"k_st_cab":1.28,"k_st_bb2":0.5,"k_st_bbhi":0.22,"k_st_am":0.55,"k_st_am_far":0.58,"k_st_am_out":0.5,"k_st_am_cab":0.52,"st_lead":0.04}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264,"lsa":114,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520,"redline":5000,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8,0],["pipe",0.3,0.038099999999999995,0],["chamber",0.25,8,0],["pipe",0.35,0.0508,0],["chamber",0.35,5,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350,"st_i_free":82,"st_i_lock":330,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200,"spark0":5},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03},"sets":{"p2":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.044449999999999996,0.0],["chamber",0.35,5.0,0.1]]},"p3":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["chamber",0.1285875,6.296875000000001,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,0.0,3],["chamber",0.1285875,6.296875000000001,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",0.35,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,0.0,3]]},"p4":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,0.0,3,0.0015,0.003175,0.13],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",0.35,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,0.0,3,0.0015,0.003175,0.13]]},"p5":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,0.0,3,0.0015,0.003175,0.13],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",3.07,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,0.0,3,0.0015,0.003175,0.13]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11},"p6":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,2.0,3,0.0015,0.003175,2.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",3.07,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,2.0,3,0.0015,0.003175,2.0]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11},"p7":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,2.0,3,0.0015,0.003175,2.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",3.07,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,2.0,3,0.0015,0.003175,2.0]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11,"r_ac":3900.0},"v13":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["tmm","triflow",0.21140420000000001,0.18455639999999998,0.11838939999999998,0.08255,0.19685,0.0508,0.044449999999999996,0.044449999999999996,0.1,0.0015,0.000762,0.11,650,0.08,0.0254],["pipe",3.07,0.044449999999999996,0.0],["tmm","perf_through",0.5715,0.13017499999999999,0.044449999999999996,0.2,3,0.22,0.45,0.33,0.0015,0.003175,550,0.06]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11,"r_ac":3900.0},"v13.1":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["tmm","triflow",0.21140420000000001,0.18455639999999998,0.11838939999999998,0.08255,0.19685,0.0508,0.044449999999999996,0.044449999999999996,0.1,0.0015,0.000762,0.11,650,0.08,0.0254,1],["pipe",3.07,0.044449999999999996,0.0],["tmm","perf_through",0.5715,0.13017499999999999,0.044449999999999996,0.2,3,0.22,0.45,0.33,0.0015,0.003175,550,0.06,1]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11,"r_ac":3900.0}}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252,"lsa":116,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1,"lifters":"hydraulic","idle_rpm":670,"redline":7300,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0,"inter_len":0.6,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["chamber",0.22,10,0.5],["pipe",0.12,0.045,0],["chamber",0.22,10,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1],"cabin_len":1.9,"cabin_h":1,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000,"st_i_free":70,"st_i_lock":850,"st_v_test":11.5,"st_v_lock":6,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000,"spark0":10},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":0,"k_jet":0.36735134466175745,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.0035613790028847887,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":8000,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":40,"pack":2.212846561320972,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14},"sets":{"p1":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25},"p2":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["perf",0.44,0.057,0.44,0.18,0.12,0.5],["pipe",0.12,0.045,0]]},"p3":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["chamber",0.12,11,0.1],["par",[[0.2,0.052,0],[0.0049,0.032744007085266764,0],[0.2,0.018,0]],0.16,11,0.1],["par",[[0.2,0.052,0],[0.0049,0.032744007085266764,0]],0.12,11,0.5],["pipe",0.1,0.058,0]]},"p4":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["pipe",0.16,0.062,0],["cavity",0.12,0.24183051916579923,0,0.005,0.24183051916579923,0.001,0],["cavity",0.06,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0],["cavity",0.105,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0,0.025,0.5],["pipe",0.16,0.062,0],["pipe",0.25,0.057,0]]},"p5":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["pipe",0.2,0.057,0],["par",[[0.0049,0.06752777206453653,0]],0.1344,18,0.5],["par",[[0.3,0.057,0]],0.1216,18,0],["par",[[0.0049,0.07647352483049281,0]],0.064,18,0],["pipe",0.3,0.057,0],["pipe",0.25,0.057,0]]},"p6":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.32,0.05,0],["pipe",0.16,0.062,0],["cavity",0.12,0.24183051916579923,0,0.005,0.24183051916579923,0.001,0],["cavity",0.06,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0],["cavity",0.105,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0,0.025,0.5],["pipe",0.16,0.062,0],["pipe",0.25,0.057,0]]},"p7":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["pipe",0.16,0.062,0.2],["cavity",0.12,0.24183051916579923,0.3,0.005,0.24183051916579923,0.001,0],["cavity",0.06,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0],["cavity",0.105,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0,0.025,0.5],["pipe",0.16,0.062,0],["pipe",0.25,0.057,0]]}}}}/*END_V8P_DATA*/;
+    // 1956 VW Beetle Type 1 (Export 113) — parameters only; no per-car code path.
+    // Sourced figures from factory Aug 1955 supplement / shop manual unless marked ESTIMATE.
+    DATA.beetle56 = {
+      car: {
+        name: "1956 VW Beetle (Type 1, 1192 cc, 30 PS DIN)",
+        bore: 0.077,                 // sourced: 77 mm
+        stroke: 0.064,               // sourced: 64 mm
+        rod: 0.1292,                 // ESTIMATE: community 5.086 in rod, no factory page
+        cr: 6.6,                     // sourced: Aug 1955 supplement
+        fire_order: [1, 4, 3, 2],    // sourced: Type 1
+        left_bank: [3, 4],           // sourced convention: 3 left-front, 4 left-rear
+        nCyl: 4,
+        v_angle: 180,
+        adv_dur: 220.0,              // derived: timing at 1 mm, IVO 2.5 BTDC / IVC 37.5 ABDC
+        lsa: 107.5,                  // derived from the same timing
+        ev_d: 0.0285,                // ESTIMATE: exhaust head ~1.5 mm under the 30.0 mm intake
+        ev_lift: 0.0074,             // ESTIMATE: ~7.4 mm net lift, 1:1 rocker minus lash
+        camx: 1.0,                   // ESTIMATE: modest sinusoidal cam
+        lifters: "mechanical",
+        idle_rpm: 850.0,             // ESTIMATE: no factory idle rpm in the supplement; typical warm Type 1
+        redline: 3800.0,             // ESTIMATE: a little above the 3700 SAE rating, below a 4000 hard limit
+        inertia: 0.18,               // ESTIMATE: small flywheel + crank + 180 mm clutch, kg m^2
+        carb: "Solex 28 PCI, 21.5 mm venturi, oil-bath cleaner",
+        th_area_wot: 0.00061575,     // sourced geometry: 28 mm throttle bore
+        v_man: 0.0008,               // ESTIMATE: short single-port dual-manifold volume
+        v_ac: 0.0015,                // ESTIMATE: oil-bath cleaner volume
+        sn_len: 0.08,                // ESTIMATE
+        sn_d: 0.05,                  // ESTIMATE
+        th_len: 0.04,                // ESTIMATE
+        rear_engine: true,
+        eng_shadow: 0.8,             // engine under the rear lid / grille
+        exhaust: "2-1-shared",
+        prim_len: 0.10,              // ESTIMATE: short port stub into the heat exchanger
+        prim_d: 0.030,               // ESTIMATE: ~30 mm ID, period 36 hp stacks
+        prim_x: [1.0, 1.12],         // ESTIMATE: slight front/rear stub difference
+        head_len: 0.06,              // ESTIMATE: collector into the heater-box inlet
+        pipe_d: 0.032,               // ESTIMATE: 32 mm ID after the collector
+        hx: ["hx", 0.42, 0.032, 0.08], // ESTIMATE: heater-box core ~0.42 m, finned wall pack 0.08
+        x_len: 0,
+        inter_len: 0.18,             // ESTIMATE: HE outlet to the transverse muffler
+        muf: [["chamber", 0.40, 12, 0.15]], // ESTIMATE: OE 111 251 051 G transverse can ~0.40 m
+        tail_len: 0.25,              // ESTIMATE
+        tail_d: 0.032,               // ESTIMATE: twin tips, same ID
+        bank_dl: 0.03,               // ESTIMATE: small bank length difference
+        // positions, car frame: x forward from the rear bumper, y left, z up
+        mouth: [[0.02, 0.28, 0.22], [0.02, -0.28, 0.22]], // ESTIMATE: twin tips under the rear apron
+        intake: [0.55, 0.0, 0.78],   // ESTIMATE: carb on top of the fan shroud
+        covers: [[0.70, 0.28, 0.55], [0.70, -0.28, 0.55]], // ESTIMATE: valve covers
+        starter_pos: [1.05, 0.18, 0.28], // ESTIMATE: starter on the left of the transaxle bell
+        head: [1.70, 0.28, 0.95],    // ESTIMATE: driver's ear in the short cabin
+        cabin_len: 1.50,             // ESTIMATE: cabin length, wheelbase 2.40 m less front trunk
+        cabin_h: 1.05,               // ESTIMATE
+        // Bosch EED 0.4/6 L 4, 6 V. Ratio and teeth sourced-secondary (109/9). Currents / free speed estimated.
+        st_ratio: 12.11111111111111, // sourced-secondary: 109 / 9, direct-drive
+        st_teeth: 109,               // sourced-secondary: pre-1967 flywheel
+        st_free_rpm: 7000.0,         // ESTIMATE: armature no-load; must sit well above cranking × 109/9 (~300 rpm × 12.11 ≈ 3600)
+        st_i_free: 40.0,             // ESTIMATE: free current for 0.4 kW 6 V
+        st_i_lock: 250.0,            // ESTIMATE: stall current, 6 V
+        st_v_test: 5.5,              // ESTIMATE: 6 V system test voltage
+        st_v_lock: 3.0,              // ESTIMATE: lock terminal voltage under drop
+        r_batt: 0.010,               // ESTIMATE: 6 V battery IR + short thick cables; 20 mΩ collapsed the 6 V rail at stall
+        st_kind: "bosch_eed",        // series-wound (same path as Delco unless ford_pe / bosch_pm)
+        v_batt: 6.3,                 // sourced family: 6 V system, charged
+        st_i_sat: 200.0,             // ESTIMATE: series-field saturation, same order as other series starters
+        spark0: 7.5,                 // ESTIMATE: typical Type 1 initial advance, deg BTDC
+        fan: {
+          n_blades: 24,              // ESTIMATE: unconfirmed; common aftermarket count, not on the factory page
+          ratio: 2.0,                // sourced: generator / fan ~1:2
+          d: 0.22,                   // ESTIMATE: impeller diameter ~220 mm inside the shroud
+          Q_ref: 0.51,               // sourced: 18 cu ft/s = 0.51 m^3/s at 3300 engine rpm
+          rpm_ref: 3300.0,
+          dp_ref: 800.0,             // ESTIMATE: ~8 mbar rise through the oil cooler and cylinder fins at the rating point
+          eta: 5e-7,                 // ESTIMATE: acoustic efficiency (very small fraction of Q·ΔP)
+          pos: [0.40, 0.0, 0.70]     // ESTIMATE: fan in the shroud, behind the deck lid
+        }
+      },
+      phys: {
+        q_comb: 3.5,                 // ESTIMATE: slightly under PHYS0; CR is only 6.6
+        heat_loss: 0.12,
+        n_poly: 1.32,
+        burn: 55.0,
+        xr0: 0.06,
+        xr_ov: 0.10,
+        cov: 0.05,                   // ESTIMATE: modest mechanical-lifter / small-engine COV
+        cov_res: 0.35,
+        mis_res: 0.25,
+        cd: 0.65,
+        eta_v: 0.82,                 // ESTIMATE: a little under PHYS0; 30 PS on 1192 cc is a mild tune
+        wall: 0.0005,
+        hf: 0.0006,
+        ro_loss: 0.98,
+        t_prim0: 500.0, t_prima: 380.0, // ESTIMATE: cooler, lower specific output than a 911 / Hi-Po
+        k_int: 0.5,
+        r_th: 0.6,
+        k_tick: 0.12,                // ESTIMATE: mechanical lifters, modest lift — above hydraulic, below a solid Hi-Po
+        k_jet: 0.02,
+        f_floor: 200.0,              // ESTIMATE: light floor pan, short cabin
+        f_fw: 260.0,                 // ESTIMATE: thin rear bulkhead (engine is behind the cabin)
+        k_cab: 0.45,                 // ESTIMATE: thin body, engine close behind
+        cab_q: 4.0,
+        cab_model: 1,                // physical transmission-loss cabin (new car; not the legacy path)
+        leak_floor: 0.04,            // ESTIMATE: early seals
+        leak_fw: 0.05,               // ESTIMATE: rear shelf / cable holes
+        k_floor: 1.0,
+        k_ind: 0.06,
+        f_abs: 3500.0,               // ESTIMATE: little trim absorption
+        k_win: 0.3,
+        fric0: 0.95, fric1: 0.12, fric2: 0.018, // ESTIMATE: small air-cooled four, FMEP bar
+        fric_cold: 2.2,              // ESTIMATE: cold oil + generator / fan load
+        a_idle: 2.8e-5,              // ESTIMATE: throttle-plate leak sized for ~850 rpm in free mode
+        fast_idle: 1.0,
+        prime_rev: 1.2,
+        catch_x: 2.4,
+        react: 0.30,
+        k_st: 1.0,
+        k_hiss: 16.0,                // ESTIMATE: small Solex, below a 4-bbl
+        pack: 1.0,
+        bay_exh: 0.5,
+        k_nl: 1.0,
+        dw_tau: 0.25,
+        gain: 1.0
+      }
+    };
+
     // v13.2: same v13.1 geometry with rev=2 (wider-band fit + fs/2 TMM filters). Generic param only.
     if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.1'] && !DATA.cadillac59.sets['v13.2']) {
       DATA.cadillac59.sets['v13.2'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.1']));
@@ -6143,6 +6268,56 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         return pipes.length - 1;
       }
       function node(t, x, ports) { nodes.push([t, x, ports]); }
+      if (c.exhaust === '2-1-shared') {
+        // generic: two banks of N/2 primaries into a collector, optional heat exchanger,
+        // then both banks into one shared muffler with two tailpipes (boxer / Type 1 layout).
+        var bankOut = [];
+        for (var bank = 0; bank < 2; bank++) {
+          var cyls = [], i, dl = bank === 1 ? c.bank_dl : 0.0, prims = [], cy, pp, head, prevHx;
+          for (i = 1; i <= c.fire_order.length; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
+          for (i = 0; i < cyls.length; i++) {
+            cy = cyls[i];
+            pp = pipe(c.prim_len * (c.prim_x && c.prim_x[i] != null ? c.prim_x[i] : 1), c.prim_d, 0);
+            node(1, cy - 1, [[pp, 0]]);
+            prims.push(pp);
+          }
+          head = pipe(c.head_len, c.pipe_d, 1);
+          node(0, 0, prims.map(function (p) { return [p, 1]; }).concat([[head, 0]]));
+          prevHx = head;
+          if (c.hx) {
+            var hxSpec = c.hx, hxL = hxSpec[0] === 'hx' ? hxSpec[1] : hxSpec[0], hxD = hxSpec[0] === 'hx' ? hxSpec[2] : hxSpec[1], hxPk = hxSpec[0] === 'hx' ? hxSpec[3] : hxSpec[2];
+            var hxP = pipe(hxL, hxD, 1, hxPk);
+            node(0, 0, [[prevHx, 1], [hxP, 0]]);
+            prevHx = hxP;
+          }
+          var interS = pipe(c.inter_len + dl, c.pipe_d, 1);
+          node(0, 0, [[prevHx, 1], [interS, 0]]);
+          bankOut.push(interS);
+        }
+        var mufItemsS = c.muf || [], prevS, mi, mfS, dS, pS;
+        if (mufItemsS.length) {
+          var mf0 = mufItemsS[0];
+          dS = mf0[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf0[2]) : mf0[2];
+          pS = pipe(mf0[1], dS, 2, mf0[3] || 0);
+          node(0, 0, [[bankOut[0], 1], [bankOut[1], 1], [pS, 0]]);
+          prevS = pS;
+          for (mi = 1; mi < mufItemsS.length; mi++) {
+            mfS = mufItemsS[mi];
+            if (mfS[0] === 'hx') pS = pipe(mfS[1], mfS[2], 2, mfS[3]);
+            else { dS = mfS[0] === 'chamber' ? c.pipe_d * Math.sqrt(mfS[2]) : mfS[2]; pS = pipe(mfS[1], dS, 2, mfS[3] || 0); }
+            node(0, 0, [[prevS, 1], [pS, 0]]);
+            prevS = pS;
+          }
+        } else {
+          prevS = pipe(0.04, c.pipe_d, 2, 0);
+          node(0, 0, [[bankOut[0], 1], [bankOut[1], 1], [prevS, 0]]);
+        }
+        var tdS = (c.tail_d != null ? c.tail_d : c.pipe_d);
+        var tailL = pipe(c.tail_len, tdS, 2), tailR = pipe(c.tail_len, tdS, 2);
+        node(0, 0, [[prevS, 1], [tailL, 0], [tailR, 0]]);
+        node(2, 0, [[tailL, 1]]);
+        node(2, 1, [[tailR, 1]]);
+      } else {
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0, pendingTmm = null;
         for (i = 1; i <= c.fire_order.length; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
@@ -6269,6 +6444,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
               var aOut = pipe(lOut, Math.sqrt(Math.max(dX * dX - dOut * dOut, 1e-8)), gX, mf[3]), eOut = pipe(lOut, dOut, gX, 0);
               node(0, 0, [[prev, 1], [aOut, 0], [eOut, 0]]); node(3, 0, [[aOut, 1]]); prev = eOut;
             }
+          } else if (mf[0] === 'hx') {
+            // generic heat exchanger / heater box: exhaust gas stays in the core pipe;
+            // the jacket is cabin air, not an exhaust volume. Modelled as a finned pipe
+            // with extra wall packing (mf[3]) for the finned-surface loss.
+            var pHx = pipe(mf[1], mf[2], 1, mf[3]);
+            node(0, 0, [[prev, 1], [pHx, 0]]);
+            prev = pHx;
           } else {
             var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
             // v16 generic (set key muf_t1): plain items up to and including the first chamber take the group-1 gas
@@ -6292,6 +6474,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           node(0, 0, [[prev, 1], [tail, 0]]);
         }
         node(2, c.cross_mouth ? 1 - bank : bank, [[tail, 1]]);   // 997.1: each bank's cat pipe crosses to the other side
+      }
       }
       if (c.int_run) {
         // generic intake runners (v11): one 1D pipe (or nseg chain) per cylinder, intake valve (4) to bank / single plenum (5)
@@ -6331,7 +6514,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
     function V8pSynth(spec, listener, fs, opts) {
       opts = opts || {};
-      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350' };
+      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350', BEETLE: 'beetle56' };
       var key = spec.car_key || ENGINE_KEYS[spec.engineKey] || 'gt350';
       var D = DATA[key];
       if (!D) throw new Error('v8p: no data for ' + key);
@@ -6744,6 +6927,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       this.RQ = null; this.RS = null;
       if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
       this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
+      this._fan = this._fanSetup(pr);
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -6997,7 +7181,75 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
       this._thermal(dtb, firing); this._pipes();
       post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off, this.RQ, this.RS);
+      if (this._fan) this._coolFan(n, K, L, R, off);
       if (this.RN) this._noiseRun(n, L, R, off);
+    };
+
+    // Generic engine-driven centrifugal cooling fan. Present only when c.fan is set
+    // (n_blades, ratio, diameter, reference volume flow). Existing cars have no fan
+    // field, so this source is never constructed and never runs for them.
+    // Blade-passing tones + turbulent broadband from shaft-speed affinities
+    // (Q ~ n, ΔP ~ n^2, acoustic power ~ Q ΔP^2 × efficiency).
+    V8pSynth.prototype._fanSetup = function (pr) {
+      var f = this.c.fan; if (!f || !f.n_blades) return null;
+      var pos = f.pos || this.c.intake, earL = pr.ears[0], earR = pr.ears[1];
+      function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
+      var rL = Math.max(dist(earL, pos), 0.25), rR = Math.max(dist(earR, pos), 0.25);
+      var fs = this.fs, maxD = 512, dL = Math.min(maxD - 1, Math.round(rL / C_AIR * fs)), dR = Math.min(maxD - 1, Math.round(rR / C_AIR * fs));
+      var sh = 1.0;
+      if (pr.outside && !pr.bay) sh = this.c.eng_shadow !== undefined ? this.c.eng_shadow : (pr.shadow || 1);
+      var gL = sh / rL, gR = sh / rR;
+      if (!pr.outside) {
+        // rear-engine cars: the fan is behind the rear bulkhead / parcel shelf
+        var cab = (this.P.k_cab || 0.35) * 0.6;
+        gL = cab / rL; gR = cab / rR;
+      }
+      return {
+        nbl: f.n_blades, ratio: f.ratio || 2.0, D: f.d || 0.22,
+        Qref: f.Q_ref || 0.51, rpmRef: f.rpm_ref || 3300.0,
+        dPref: f.dp_ref || 800.0, eta: f.eta !== undefined ? f.eta : 5e-7,
+        k: f.k !== undefined ? f.k : 1.0,
+        ph: 0.0, lp: 0.0, cabY: 0.0,
+        buf: new Float64Array(maxD), wi: 0, dL: dL, dR: dR, gL: gL, gR: gR,
+        outside: !!pr.outside, fFw: this.P.f_fw || 320.0
+      };
+    };
+    V8pSynth.prototype._coolFan = function (n, K, L, R, off) {
+      var F = this._fan, fs = this.fs, i, rpm, shaftHz, bpf, U, Qf, dP, W, pRms, aTone, aBb, x, y, s, wi, buf, nz, aLp, aCab;
+      var TWOPI = 6.283185307179586, RHO_C = RHO_AIR * C_AIR;
+      buf = F.buf; wi = F.wi;
+      aCab = 1.0 - Math.exp(-2.0 * Math.PI * F.fFw / fs);
+      for (i = 0; i < n; i++) {
+        rpm = K[K_RPM0] + (K[K_RPM1] - K[K_RPM0]) * (i / n);
+        if (!(rpm > 50.0)) { buf[wi] = 0.0; wi = (wi + 1) & 511; continue; }
+        shaftHz = (rpm / 60.0) * F.ratio;
+        bpf = shaftHz * F.nbl;
+        U = TWOPI * shaftHz * (F.D * 0.5);
+        Qf = F.Qref * (rpm / F.rpmRef);
+        if (Qf < 0.0) Qf = 0.0;
+        dP = F.dPref * (rpm / F.rpmRef) * (rpm / F.rpmRef);
+        W = F.eta * F.k * Qf * dP * dP;
+        if (W < 0.0) W = 0.0;
+        // monopole free-field p_rms at 1 m from sound power; 1/r is in gL/gR
+        pRms = Math.sqrt((W / (4.0 * Math.PI)) * RHO_C);
+        aTone = pRms * 0.55;
+        aBb = pRms * 0.45;
+        F.ph += TWOPI * bpf / fs;
+        if (F.ph > TWOPI) F.ph -= TWOPI * Math.floor(F.ph / TWOPI);
+        x = aTone * (Math.sin(F.ph) + 0.35 * Math.sin(2.0 * F.ph));
+        nz = (rnd(this.S) - 0.5) * 3.4641016151377544;
+        // turbulence: one-pole near ~2 × BPF (blade-wake scale)
+        aLp = 1.0 - Math.exp(-2.0 * Math.PI * Math.max(2.0 * bpf, 80.0) / fs);
+        F.lp += aLp * (nz * aBb - F.lp);
+        y = x + F.lp;
+        if (!F.outside) { F.cabY += aCab * (y - F.cabY); y = F.cabY; }
+        buf[wi] = y;
+        s = buf[(wi - F.dL) & 511] * F.gL;
+        L[off + i] += s;
+        R[off + i] += buf[(wi - F.dR) & 511] * F.gR;
+        wi = (wi + 1) & 511;
+      }
+      F.wi = wi;
     };
     // ---- EngineVoice / ListenerSource interface
     V8pSynth.prototype.render = function (n, rpm, thr, L, R, off) {
@@ -8528,13 +8780,16 @@ var SoundModels = (function () {
   if (typeof ENGINE_MODULES !== 'undefined') register({
     id: 'v9p', label: 'v12 · p1', note: 'Sound model v12 (the shared physics kernel, formerly called v9.11 / v9p): each car\'s own engine on the same physics approach (blow-down cylinders, its own exhaust network, intake, valve train), electric starter and crank torque balance; refit on the gated recordings. This is parameter-set p1 for the GT350 and the Cadillac (the Cadillac default). Since v1.12.7 the Cadillac also has listening-test sets p2, p3, p4, p5 and p7, and a diagnostic test p6, in its own picker (p7 since v1.12.7; p6 since v1.12.6; p5 since v1.12.5; p4 since v1.12.4; p2 and p3 since v1.12.3). v12 (since v1.12.0, was v11): same physics, plus the newer generic muffler blocks and the kernel split.',
     cars: { GT350: { car_key: 'gt350', idle_rpm: 850, redline: 6800, name: '1967 Shelby GT350 (289 Hi-Po)' }, CADDY: { car_key: 'cadillac59', idle_rpm: 520, redline: 5000, name: '1959 Cadillac Series 62 (390)' },
-      P997: { car_key: 'p997', idle_rpm: 670, redline: 7300, name: '2006 Porsche 911 Carrera 4S (997.1, 3.8 flat-six)' } },   // v1.11.0: the 911's only sound
-    outGain: { GT350: 0.8, CADDY: 0.85, P997: 0.8 },
+      P997: { car_key: 'p997', idle_rpm: 670, redline: 7300, name: '2006 Porsche 911 Carrera 4S (997.1, 3.8 flat-six)' },   // v1.11.0: the 911's only sound
+      BEETLE: { car_key: 'beetle56', idle_rpm: 850, redline: 3800, name: '1956 VW Beetle (Type 1, 1192 cc)' } },
+    outGain: { GT350: 0.8, CADDY: 0.85, P997: 0.8, BEETLE: 0.8 },
     listeners: { GT350: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } }, CADDY: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } },
-      P997: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } } },
+      P997: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } },
+      BEETLE: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } } },
     views: ['rear', 'in_cabin'], startup: true,
     gainDb: Object.assign(/*V8P_GAIN*/{ GT350: { rear: -26.9, in_cabin: -2.9 }, CADDY: { rear: -19.2, in_cabin: -0.6 } }/*END_V8P_GAIN*/,   // test/level_match_v8p.js
-      /*P997_GAIN*/{ P997: { rear: -32.5, in_cabin: -7.7 } }/*END_P997_GAIN*/),   // test/level_match_p997.js: the 911 at the GT350 v9p loudness
+      /*P997_GAIN*/{ P997: { rear: -32.5, in_cabin: -7.7 } }/*END_P997_GAIN*/,
+      /*BEETLE_GAIN*/{ BEETLE: { rear: -24.0, in_cabin: -5.0 } }/*END_BEETLE_GAIN*/),   // ESTIMATE level match only; no reference recordings yet
   });
   // BRM v9.x physics models (js/engine-brm9.js: one kernel, one fitted parameter set each). id 'v9' = v9.6 (v1.9.1 name kept).
   // brm = the BRM sound switch value / ?sound= name. gainDb: loudness-matched to the retired v8 after the limiter (test/level_match_v9.js).
@@ -8722,7 +8977,50 @@ var Vehicles = (function () {
       rear: { type: 'disc', heatCap: 3600, coolBase: 0.012, coolSpeed: 0.0011 },
     },
   };
-  return { GT350: GT350, CADDY: CADDY, BRM: BRM, P997: P997, list: [GT350, CADDY, BRM, P997] };
+
+  // 1956 VW Beetle Type 1, Europe Export / De Luxe Typ 11 model 113, L240 Agave Green.
+  // Factory: Aug 1955 supplement (30 PS DIN / 36 hp SAE). Body colour #979A84 (highlight #A5A893, shadow #7E816C) is sampled from the owner photo (private), mid-tone panels (median of 30-70th percentile luminance, overcast daylight). Warmer, more yellow sage than the earlier illustration mid-tone #949A93; the chip conversion #556759 was darker.
+  var BEETLE = {
+    id: 'beetle', label: '1956 VW Beetle', engineKey: 'BEETLE',
+    engineText: '1192 cc flat-four, 30 PS DIN (22 kW) @ 3400, 75.5 N\u00b7m @ 2000; L240 Agave, game mid-tone #979A84 (sampled from owner photo, mid-tone panels)',
+    // DIN net torque. 75.5 N\u00b7m @ 2000 and 62.0 N\u00b7m @ 3400 (30 PS) are sourced; other points ESTIMATE, faired through those anchors.
+    torque: [[0, 40], [800, 52], [1200, 65], [1600, 72], [2000, 75.5], [2500, 73],
+             [3000, 68], [3400, 62.0], [3700, 56], [4000, 48], [4200, 40]],
+    netFactor: 1.0,                    // DIN treated as net
+    idleRpm: 850,                      // ESTIMATE
+    limiterRpm: 3800,                  // ESTIMATE: a little above the 3700 SAE rating
+    tachMax: 4000, tachRed: 3800,
+    engineInertia: 0.18,               // ESTIMATE: kg m^2
+    friction: [10, 4.0, 0.45],         // ESTIMATE: small four, driveline-side friction (N\u00b7m form)
+    trans: 'manual', transText: 'VW Export 4-speed (synchromesh 2\u20134, unsynchronised 1st)',
+    gears: [3.60, 1.88, 1.23, 0.82], finalDrive: 4.4, drivelineEff: 0.88,  // sourced De Luxe; rev 4.63 not modelled as a drive gear
+    clutchMax: 180,                    // ESTIMATE: K10 180 mm plate, 268 cm\u00b2 lining, margin over 75.5 N\u00b7m
+    shiftSelect: 0.14,                 // ESTIMATE: long floor lever, slower than a short-shift
+    unsyncGears: [1],                  // sourced: Export synchromesh is 2\u20134 only
+    massKg: 730 + 75,                  // sourced: 730 kg ready-for-use + 75 kg driver
+    curbText: '730 kg ready-for-use + 75 kg driver',
+    rearFrac: 0.58,                    // ESTIMATE: rear-engine Type 1 weight bias
+    cgHeight: 0.50,                    // ESTIMATE
+    wheelbase: 2.40,                   // sourced: 2400 mm
+    tyreText: '5.60-15 on 4J\u00d715',
+    tyreRadius: 0.307,                 // sourced: 307 mm rolling radius
+    wheelInertiaRear: 0.9, wheelInertiaFront: 0.9,  // ESTIMATE: 15" steel + tyre
+    muPeak: 0.78, muSlide: 0.62,       // ESTIMATE: 1950s bias-ply on a dry road
+    crr: 0.016,                        // ESTIMATE
+    cd: 0.48,                          // ESTIMATE: secondary period / later official-range figure
+    area: 1.85,                        // ESTIMATE: 1.54 m \u00d7 1.50 m \u00d7 ~0.80 fill; with Cd 0.48 and drivelineEff 0.88, 4th balances near the factory 110 km/h @ 3400
+    crr2: 0, spinDrag: 0,
+    paint: '#979A84',
+    paintText: 'L240 Agave (Agave Green); game mid-tone #979A84, highlight #A5A893, shadow #7E816C, sampled from owner photo (private), mid-tone panels.',
+    brakes: {
+      text: 'ATE hydraulic drums, 230 \u00d7 30 mm (OE 111 405 615), no servo',
+      capG: 0.85, frontBias: 0.55, abs: false,
+      front: { type: 'drum', heatCap: 1800, coolBase: 0.010, coolSpeed: 0.0007 },
+      rear: { type: 'drum', heatCap: 1800, coolBase: 0.010, coolSpeed: 0.0007 },
+    },
+  };
+  return { GT350: GT350, CADDY: CADDY, BRM: BRM, P997: P997, BEETLE: BEETLE, list: [GT350, CADDY, BRM, P997, BEETLE] };
+
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Vehicles;
 </script>
@@ -8860,8 +9158,11 @@ var Physics = (function () {
     } else if (s.ph === 'match') {
       s.tm += dt;
       thr = s.own ? pedal : ctrl;
-      var tol = Math.max(120, 0.015 * target);
-      if ((s.tm >= (c.shiftSelect || 0.1) && Math.abs(rpm - target) < tol) || s.tm > 0.6) s.ph = 'in';
+      var unsync = (c.unsyncGears || []).indexOf(s.to) >= 0;
+      var tol = unsync ? Math.max(60, 0.008 * target) : Math.max(120, 0.015 * target);
+      var sel = (c.shiftSelect || 0.1) + (unsync ? 0.08 : 0);
+      var tmax = unsync ? 0.85 : 0.6;
+      if ((s.tm >= sel && Math.abs(rpm - target) < tol) || s.tm > tmax) s.ph = 'in';
     } else {
       s.tin += dt;
       var e = this.engage;
@@ -8918,9 +9219,19 @@ var Physics = (function () {
     if (this.shift && this.shift.rm) { this.shift.t += dt; driverThr = this.revMatchStep(this.shift, dt, pedal, rpm); }
     else if (this.shift) {
       var s = this.shift; s.t += dt;
+      var unsync = (c.unsyncGears || []).indexOf(s.to) >= 0;
       if (s.t < 0.14) { driverThr = 0; this.engageTarget = 0; }
-      else { if (!s.done) { this.gear = s.to; s.done = true; this.clutchLocked = false; this.engage = 0; } driverThr = s.t < 0.22 ? pedal * 0.4 : pedal; }
-      if (s.t > 0.55) this.shift = null;
+      else {
+        if (!s.done) {
+          var shaft = s.to > 0 ? this.ww * c.gears[s.to - 1] * c.finalDrive * RPM : 0;
+          var mismatch = Math.abs(rpm - shaft);
+          var needMatch = unsync && this.v > 1.0 && mismatch > 200;
+          var wait = unsync && this.v > 1.0 ? 0.45 : 0;
+          if (!needMatch || s.t > 0.14 + wait) { this.gear = s.to; s.done = true; this.clutchLocked = false; this.engage = 0; }
+        }
+        driverThr = s.done ? (s.t < 0.22 ? pedal * 0.4 : pedal) : 0;
+      }
+      if (s.t > ((unsync && this.v > 1.0) ? 0.85 : 0.55)) this.shift = null;
     }
 
     // ---- engine state / idle control / limiter ----
@@ -9931,8 +10242,43 @@ var EngineParams = (function () {
     return P;
   }
 
-  /** engineKey 'BRM' | 'GT350' | 'CADDY' | 'P997', soundId = the sound model now playing for that car */
-  function forCar(engineKey, soundId) { return engineKey === 'BRM' ? brm(soundId) : engineKey === 'P997' ? p997(soundId) : v8(engineKey, soundId); }
+
+  function beetle(soundId) {
+    var D = v8p('beetle56'), c = D.car, i;
+    var spacing = 0.112;   // ESTIMATE: Type 1 cylinder centre distance
+    var P = { car: 'beetle56', label: 'VW Type 1 1192 cc flat-four (1956, 30 PS DIN)', soundId: soundId, fit: 'v1 beetle56', kernel: 'engine-sound v8phys.py (shared kernel), car beetle56',
+      nCyl: 4, vAngle: 180, flat: true, rotation: 'cw-front', bore: c.bore, stroke: c.stroke, conrod: c.rod, cr: c.cr, idle: c.idle_rpm, redline: c.redline,
+      firingOrder: c.fire_order.slice(), fireDeg: [], bank: [], x: [], valveLayout: 'across', cam: 'pushrod',
+      exValve: null, inValve: null, stubs: null, headers: null, blower: null, starter: null, fan: null, charging: null, carb: null, centreGear: null,
+      crankHeight: 0.32, notes: [], src: {} };
+    for (i = 0; i < 4; i++) P.fireDeg[c.fire_order[i] - 1] = 180 * i;
+    for (i = 0; i < 4; i++) {
+      var left = c.left_bank.indexOf(i + 1) >= 0, pulley = (i + 1 === 2 || i + 1 === 4);
+      P.bank[i] = left ? 0 : 1;
+      P.x[i] = (pulley ? 0.5 : -0.5) * spacing;
+    }
+    var cx = c.camx || 1, dur = c.adv_dur, lsa = c.lsa;
+    P.exValve = { d: c.ev_d, lift: c.ev_lift, open: pmod(360 - lsa - dur / 2, 720), dur: dur, camx: cx };
+    P.inValve = { d: 0.030, lift: c.ev_lift, open: pmod(360 + lsa - dur / 2, 720), dur: dur, camx: cx };
+    P.headers = { type: '2-1-shared', len: +(c.prim_len + c.head_len).toFixed(3), primD: c.prim_d, pipeD: c.pipe_d, pipeLen: c.inter_len, crossover: 'shared-muffler', toNose: false };
+    P.starter = { type: 'Bosch EED 0.4/6 L 4', ringTeeth: c.st_teeth, ratio: +c.st_ratio.toFixed(2), pinionTeeth: 9, crankWarm: 0, poles: 4, volts: 6 };
+    P.charging = { type: 'generator', ratio: 2.0, fanBlades: (c.fan && c.fan.n_blades) || 0, wpVanes: 0 };
+    P.fan = c.fan ? { type: 'centrifugal', ratio: c.fan.ratio, blades: c.fan.n_blades, d: c.fan.d } : null;
+    P.carb = { type: c.carb };
+    note(P, 'cam', 'Cam from the sound model: ' + dur + '\u00b0 advertised duration at 1 mm (factory timing), ' + lsa + '\u00b0 LSA. Exhaust valve diameter and lift are estimates.', true);
+    note(P, 'dims', 'Bore 77 mm, stroke 64 mm, CR 6.6 (factory Aug 1955). Con-rod 129.2 mm is a community estimate.', false);
+    note(P, 'headers', 'Each head: two short primaries into a heater-box (heat exchanger; gas stays in the core). Both sides feed one transverse muffler with two tailpipes (generic exhaust type 2-1-shared). Heater-box and can lengths are estimates.', true);
+    note(P, 'starter', 'Starter: Bosch EED 0.4/6 L 4 on a 6 V battery. Ring 109 / pinion 9 (sourced-secondary). Free and lock currents are estimates from the 0.4 kW rating.', true);
+    note(P, 'fan', 'Engine-driven centrifugal cooling fan on the generator shaft, factory ratio about 1:2, 18 cu ft/s at 3300 engine rpm. Blade count 24 is an estimate.', true);
+    P.parts = { block: true, pistons: true, rods: true, crank: true, valvesEx: true, valvesIn: true, cams: true, stubs: false, headers: true, collector: true, crossover: false,
+      blower: false, centreGear: false, starter: true, fan: true, charging: true, carb: true, bay: true, ancillaries: true, glow: true };
+    note(P, 'bayLayout', 'Rear engine, crank along the car, transaxle ahead of the engine, fan and generator on the pulley end under the deck lid, Solex 28 PCI on top, twin heater boxes into a shared muffler.', false);
+    note(P, 'paint', 'Body colour in the game is L240 Agave, mid-tone #979A84 (highlight #A5A893, shadow #7E816C), sampled from owner photo (private), mid-tone panels.', false);
+    return P;
+  }
+
+  /** engineKey 'BRM' | 'GT350' | 'CADDY' | 'P997' | 'BEETLE', soundId = the sound model now playing for that car */
+  function forCar(engineKey, soundId) { return engineKey === 'BRM' ? brm(soundId) : engineKey === 'P997' ? p997(soundId) : engineKey === 'BEETLE' ? beetle(soundId) : v8(engineKey, soundId); }
   /** kinematics shared by the bay and the tests: piston pin distance from the crank axis at local angle phi (deg after firing TDC) */
   function pinDist(P, phi) { var r = 0.5 * P.stroke, a = phi * Math.PI / 180, s = Math.sin(a); return r * Math.cos(a) + Math.sqrt(P.conrod * P.conrod - r * r * s * s); }
   /** valve lift (m) of event V at the cylinder's local angle a (deg after its firing TDC, 0..720): the kernel's law sin(pi x)^camx */
@@ -10742,11 +11088,11 @@ var EngineBay = (function () {
 </script>
 <script>/* js/flat-assets.js */
 /* flat-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v4 flat; interior = v2 composition). The single-file build inlines these as data URIs. */
-var FLAT_ASSETS = {"meta": {"style": "flat", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -1.2]}}, "caddy": {"axisX": 518, "hub": [546, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [0.5, -2.0]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [767, 518], "bodyX": [6, 760], "contactY": 511, "splitY": 145, "realW": 1.55, "lamps": [], "tips": [[177, 160, 33], [185, 242, 36], [592, 154, 34], [584, 236, 37]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 666], "bodyX": [4, 934], "contactY": 661, "splitY": 517, "realW": 1.852, "lamps": [[47, 306, 186, 78], [704, 306, 189, 78], [235, 340, 468, 37]], "tips": [[196, 577, 22], [245, 577, 22], [693, 577, 22], [742, 577, 22]], "dist": 4.6, "len": 4.427}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 75, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[186, 320, 58], [1058, 320, 58]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.743, 0.78], "wheel": {"px": 1020, "logical": 510.0, "boss": [2.2, 5.0]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [0.2, 11.5]}}}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp", "brm-cockpit": "assets/flat/brm-cockpit.webp", "brm-rear": "assets/flat/brm-rear.webp", "brm-wheel": "assets/flat/brm-wheel.webp", "brm-wheel-shadow": "assets/flat/brm-wheel-shadow.webp", "brm-shifter": "assets/flat/brm-shifter.webp", "p997-cockpit": "assets/flat/p997-cockpit.webp", "p997-rear": "assets/flat/p997-rear.webp", "p997-wheel": "assets/flat/p997-wheel.webp", "p997-wheel-shadow": "assets/flat/p997-wheel-shadow.webp", "p997-shifter": "assets/flat/p997-shifter.webp"}};
+var FLAT_ASSETS = {"meta": {"style": "flat", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -1.2]}}, "caddy": {"axisX": 518, "hub": [546, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [0.5, -2.0]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [767, 518], "bodyX": [6, 760], "contactY": 511, "splitY": 145, "realW": 1.55, "lamps": [], "tips": [[177, 160, 33], [185, 242, 36], [592, 154, 34], [584, 236, 37]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 666], "bodyX": [4, 934], "contactY": 661, "splitY": 517, "realW": 1.852, "lamps": [[47, 306, 186, 78], [704, 306, 189, 78], [235, 340, 468, 37]], "tips": [[196, 577, 22], [245, 577, 22], [693, 577, 22], [742, 577, 22]], "dist": 4.6, "len": 4.427}, "beetle": {"px": [815, 780], "bodyX": [4, 810], "contactY": 775, "splitY": 660, "realW": 1.54, "lamps": [[88, 482, 35, 59], [690, 482, 36, 59]], "tips": [[309, 693, 12], [498, 693, 12]], "dist": 4.4, "len": 4.07}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 75, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[186, 320, 58], [1058, 320, 58]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.743, 0.78], "wheel": {"px": 1020, "logical": 510.0, "boss": [2.2, 5.0]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [0.2, 11.5]}}, "beetle": {"axisX": 446, "hub": [446, 462], "wheelR": 250, "view": {"hz": 120, "f": 1000, "camH": 1.1, "roadHalf": 3.4, "off": 0.32}, "mirror": [646, 60, 172, 58], "side": [[0, 20], [130, 24], [155, 200], [90, 430], [0, 450]], "shifter": [620, 520, 80, 180], "shiftPattern": "h4", "shiftPivot": [0.5, 0.86], "gauges": {"speedo": [443, 372, 42]}, "wheel": {"px": 1100, "logical": 520, "boss": [0, 2]}}}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp", "brm-cockpit": "assets/flat/brm-cockpit.webp", "brm-rear": "assets/flat/brm-rear.webp", "brm-wheel": "assets/flat/brm-wheel.webp", "brm-wheel-shadow": "assets/flat/brm-wheel-shadow.webp", "brm-shifter": "assets/flat/brm-shifter.webp", "p997-cockpit": "assets/flat/p997-cockpit.webp", "p997-rear": "assets/flat/p997-rear.webp", "p997-wheel": "assets/flat/p997-wheel.webp", "p997-wheel-shadow": "assets/flat/p997-wheel-shadow.webp", "p997-shifter": "assets/flat/p997-shifter.webp", "beetle-cockpit": "assets/flat/beetle-cockpit.webp", "beetle-rear": "assets/flat/beetle-rear.webp", "beetle-wheel": "assets/flat/beetle-wheel.webp", "beetle-wheel-shadow": "assets/flat/beetle-wheel-shadow.webp", "beetle-shifter": "assets/flat/beetle-shifter.webp"}};
 </script>
 <script>/* js/ink-assets.js */
 /* ink-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v5 ink; interior = v2 composition). The single-file build inlines these as data URIs. */
-var INK_ASSETS = {"meta": {"style": "ink", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -0.6]}}, "caddy": {"axisX": 518, "hub": [547, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [1.2, -3.6]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [776, 553], "bodyX": [6, 769], "contactY": 546, "splitY": 175, "realW": 1.55, "lamps": [], "tips": [[187, 193, 38], [195, 275, 42], [595, 189, 37], [587, 271, 41]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 653], "bodyX": [4, 935], "contactY": 648, "splitY": 507, "realW": 1.852, "lamps": [[48, 290, 184, 73], [707, 290, 187, 73], [234, 328, 468, 36]], "tips": [[190, 567, 21], [237, 567, 21], [697, 567, 21], [745, 567, 21]], "dist": 4.6, "len": 4.427}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 74, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[204, 317, 56], [1068, 318, 54]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.737, 0.78], "wheel": {"px": 1018, "logical": 509.0, "boss": [0.3, 4.9]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [1.0, 11.5]}}}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp", "brm-cockpit": "assets/ink/brm-cockpit.webp", "brm-rear": "assets/ink/brm-rear.webp", "brm-wheel": "assets/ink/brm-wheel.webp", "brm-wheel-shadow": "assets/ink/brm-wheel-shadow.webp", "brm-shifter": "assets/ink/brm-shifter.webp", "p997-cockpit": "assets/ink/p997-cockpit.webp", "p997-rear": "assets/ink/p997-rear.webp", "p997-wheel": "assets/ink/p997-wheel.webp", "p997-wheel-shadow": "assets/ink/p997-wheel-shadow.webp", "p997-shifter": "assets/ink/p997-shifter.webp"}};
+var INK_ASSETS = {"meta": {"style": "ink", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -0.6]}}, "caddy": {"axisX": 518, "hub": [547, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [1.2, -3.6]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [776, 553], "bodyX": [6, 769], "contactY": 546, "splitY": 175, "realW": 1.55, "lamps": [], "tips": [[187, 193, 38], [195, 275, 42], [595, 189, 37], [587, 271, 41]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 653], "bodyX": [4, 935], "contactY": 648, "splitY": 507, "realW": 1.852, "lamps": [[48, 290, 184, 73], [707, 290, 187, 73], [234, 328, 468, 36]], "tips": [[190, 567, 21], [237, 567, 21], [697, 567, 21], [745, 567, 21]], "dist": 4.6, "len": 4.427}, "beetle": {"px": [827, 780], "bodyX": [4, 822], "contactY": 775, "splitY": 700, "realW": 1.54, "lamps": [[92, 488, 34, 50], [703, 488, 34, 50]], "tips": [[310, 686, 11], [514, 686, 11]], "dist": 4.4, "len": 4.07}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 74, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[204, 317, 56], [1068, 318, 54]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.737, 0.78], "wheel": {"px": 1018, "logical": 509.0, "boss": [0.3, 4.9]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [1.0, 11.5]}}, "beetle": {"axisX": 430, "hub": [430, 450], "wheelR": 250, "view": {"hz": 120, "f": 1000, "camH": 1.1, "roadHalf": 3.4, "off": 0.32}, "mirror": [596, 65, 149, 52], "side": [[0, 30], [140, 40], [155, 210], [70, 400], [0, 420]], "shifter": [630, 530, 80, 175], "shiftPattern": "h4", "shiftPivot": [0.5, 0.86], "gauges": {"speedo": [446, 369, 44]}, "wheel": {"px": 1100, "logical": 520, "boss": [0, 2]}}}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp", "brm-cockpit": "assets/ink/brm-cockpit.webp", "brm-rear": "assets/ink/brm-rear.webp", "brm-wheel": "assets/ink/brm-wheel.webp", "brm-wheel-shadow": "assets/ink/brm-wheel-shadow.webp", "brm-shifter": "assets/ink/brm-shifter.webp", "p997-cockpit": "assets/ink/p997-cockpit.webp", "p997-rear": "assets/ink/p997-rear.webp", "p997-wheel": "assets/ink/p997-wheel.webp", "p997-wheel-shadow": "assets/ink/p997-wheel-shadow.webp", "p997-shifter": "assets/ink/p997-shifter.webp", "beetle-cockpit": "assets/ink/beetle-cockpit.webp", "beetle-rear": "assets/ink/beetle-rear.webp", "beetle-wheel": "assets/ink/beetle-wheel.webp", "beetle-wheel-shadow": "assets/ink/beetle-wheel-shadow.webp", "beetle-shifter": "assets/ink/beetle-shifter.webp"}};
 </script>
 <script>/* js/visuals-painted.js */
 /*
@@ -10763,9 +11109,9 @@ var PaintedVisuals = (function () {
   'use strict';
   function make(getAssets, STY) {
   var PW = 1280, PH = 720, A = null, M = null, status = 'idle', caches = {}, V16 = false;
-  function carOf(id) { return id === 'gt350' ? 'gt350' : id === 'brm' ? 'brm' : id === 'p997' ? 'p997' : 'caddy'; }
-  function trackOf(car) { return car === 'gt350' ? 1.47 : car === 'brm' ? 1.295 : car === 'p997' ? 1.548 : 1.55; }   // 997 C4S rear track 1548 mm
-  function axleOf(c, car) { return c.dist + (car === 'gt350' ? 0.9 : car === 'brm' ? 0.45 : car === 'p997' ? 0.99 : 1.35); }   // 997: rear overhang ~0.99 m
+  function carOf(id) { return id === 'gt350' ? 'gt350' : id === 'brm' ? 'brm' : id === 'p997' ? 'p997' : id === 'beetle' ? 'beetle' : 'caddy'; }
+  function trackOf(car) { return car === 'gt350' ? 1.47 : car === 'brm' ? 1.295 : car === 'p997' ? 1.548 : car === 'beetle' ? 1.25 : 1.55; }   // 997 C4S rear track 1548 mm; Beetle 1250 mm
+  function axleOf(c, car) { return c.dist + (car === 'gt350' ? 0.9 : car === 'brm' ? 0.45 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : 1.35); }   // 997: rear overhang ~0.99 m; Beetle ~1.02 m
     var T = ({
     A: { flat: true, face: '#1c2026', ink: '#f2ede1', ivory: '#efe5cc', ivInk: '#2b2520', line: null, lw: 0, needle: '#ff7a1a', cap: '#3a3f46', glass: 'flat', dash: '#f2c14e', dashLine: null, drag: '#f6f3ea',
          smoke: 'flat', lampOff: '#2a2e33', hud: { panel: 'rgba(22,26,32,0.88)', line: null, lw: 0, text: '#f4efe2', dim: '#9aa3ad', accent: '#ffb02e', bar: '#3a414a', thr: '#5cc46a', brk: '#ef5a48', font: '"Avenir Next", "Futura", "Century Gothic", "Trebuchet MS", Arial, sans-serif', r: 12, sh: 0, scale: 1 } },
@@ -10972,6 +11318,10 @@ var PaintedVisuals = (function () {
       out.angF = face(g, G.fuel[0], G.fuel[1], G.fuel[2], { max: 1, major: 0.5, minor: 0.25, noNums: true, a0: Math.PI * 0.8, a1: Math.PI * 2.2, label: 'FUEL', face: iv0 });
       g.save(); ell(g, dsp[0], dsp[1], dsp[2], dsp[2]); g.fillStyle = T.flat ? '#0f1216' : rad(g, dsp[0], dsp[1] - dsp[2] * 0.3, 1, dsp[2], [[0, '#1b2026'], [1, '#05070a']]); g.fill(); g.restore();
       if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw * 0.6; ell(g, dsp[0], dsp[1], dsp[2], dsp[2]); g.stroke(); }
+    } else if (car === 'beetle') {
+      // 1956 Export: one central VDO-style speedometer, no tachometer, no fuel gauge (reserve tap).
+      var G = m.gauges, sp = G.speedo, ivory = [[0, '#f3ead4'], [1, '#bfb08c']];
+      out.angS = face(g, sp[0], sp[1], sp[2], mph ? { max: 80, major: 10, minor: 5, mid: 5, label: 'MPH', numSize: 0.16, face: ivory, ink: '#2a211a' } : { max: 120, major: 20, minor: 5, mid: 10, label: 'KM/H', numSize: 0.16, face: ivory, ink: '#2a211a' });
     } else if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach;
       out.angS = face(g, sp[0], sp[1], sp[2], mph ? { max: 140, major: 20, minor: 5, mid: 10, label: 'MPH', numSize: 0.16 } : { max: 220, major: 40, minor: 10, mid: 20, label: 'KM/H', numSize: 0.16 });
@@ -11499,6 +11849,14 @@ var PaintedVisuals = (function () {
       g.font = Math.round(dsp[2] * 0.26) + 'px ' + FONT; g.fillStyle = '#e8eef4'; g.fillText(Math.round(isMph ? mph : s.kmh) + (isMph ? ' mph' : ' km/h'), dsp[0], dsp[1] + dsp[2] * 0.58); g.restore();
       [sp, t, G.oil, G.fuel, dsp].forEach(function (q) { glass(g, q[0], q[1], q[2]); });
       if (m.shifter) { m._shifterSprite = 'p997-shifter'; hurst(g, m, s); }
+    } else if (car === 'beetle') {
+      var G = m.gauges, sp = G.speedo, isMph = units(s) === 'mph';
+      drum(g, sp[0], sp[1] + sp[2] * 0.42, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 7, 10);
+      lamp(g, sp[0] - 18, sp[1] + sp[2] * 0.55, 3.4, '#ff3a2a', s.brake > 0.05);
+      lamp(g, sp[0] + 18, sp[1] + sp[2] * 0.55, 3.4, '#ff3a2a', !running);
+      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : s.kmh), '#ff6a1e');
+      glass(g, sp[0], sp[1], sp[2]);
+      if (m.shifter) { m._shifterSprite = 'beetle-shifter'; hurst(g, m, s); }
     } else if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach, isMph = units(s) === 'mph';
       drum(g, sp[0], sp[1] + sp[2] * 0.42, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 8.5, 12);
@@ -11744,7 +12102,7 @@ var PaintedVisuals = (function () {
       ? garageScenery(g, { axisX: V.vx, hz: V.hz, f: f, cy: 360, camH: camH, dx: 0, doorZ: doorZ }, s)
       : scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len }, s);
     var tpc = (360 - V.hz) / f, cpc = 1 / Math.sqrt(1 + tpc * tpc), spc = tpc * cpc;   // pitched camera: depth of the rear face at mid height
-    var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : 1.35), yc = SC.yOf(zc);
+    var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : 1.35), yc = SC.yOf(zc);
     var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + '-rear'];
     var run = s.engine === 'running', shake = run ? Math.sin(s.time * 70) * Math.min(1.2, 0.4 + s.rpm / 5000) : 0;
     var pitch = garage ? 0 : Math.max(-7, Math.min(7, (s.accel || 0) * 14)), roll = garage ? 0 : -steer * Math.min(1, s.kmh / 60) * 0.035;  // squat (+) / dive (-), body roll in turns
@@ -11814,11 +12172,13 @@ var PaintedVisuals = (function () {
     gt350: { in: { land: [150, 175, 1165, 645], port: [292, 30, 870, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
     caddy: { in: { land: [80, 150, 1140, 650], port: [205, 30, 830, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
     brm:   { in: { land: [40, 80, 1240, 720], port: [340, 120, 940, 720] }, out: { land: [200, 80, 1080, 760], port: [240, 40, 1040, 720] } },
-    p997:  { in: { land: [120, 160, 1180, 660], port: [200, 30, 780, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } } };
+    p997:  { in: { land: [120, 160, 1180, 660], port: [200, 30, 780, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
+    beetle:{ in: { land: [120, 160, 1180, 660], port: [240, 30, 850, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } } };
   var FOCUS16 = {
     gt350: { in: { land: [0, 165, 1280, 720], port: [240, 150, 690, 720] }, out: FOCUS15.gt350.out },
     caddy: { in: { land: [0, 165, 1280, 720], port: [212, 140, 672, 720] }, out: FOCUS15.caddy.out },
-    brm: FOCUS15.brm, p997: FOCUS15.p997 };
+    brm: FOCUS15.brm, p997: FOCUS15.p997,
+    beetle: { in: { land: [0, 165, 1280, 720], port: [200, 30, 780, 720] }, out: FOCUS15.beetle.out } };
   function focus() { return V16 ? FOCUS16 : FOCUS15; }
   var LY = null, LYt = 0;
   function layout(dash) {
@@ -11968,13 +12328,13 @@ var VisualModels = (function () {
  */
 var ProjectHistory = {
   about: [
-    'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac, a 1953 BRM P30 Mk II V16 and a 2006 Porsche 911 Carrera 4S (997.1).',
-    'The engine sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, intake, exhaust and \u2014 on the BRM \u2014 open stubs and a two-stage supercharger. All four cars use a physics model. All four cars share sound model v12, the physics kernel, plus a per-car parameter-set iteration. (v12 since v1.12.0; it was called v11.) The 911\u2019s default is v12 \u00b7 911 p7 (p4\u2019s photo-measured side boxes with internal packing); p4, p1 (the two-bank intake tube, a quieter valvetrain and a series-chamber muffler; formerly v10.1), p2, p3, p5 and p6 are in the 911 sound picker. The Cadillac default is v12 \u00b7 Cadillac p1; p2, p3, p4, p5 and p7 are in the Cadillac sound picker as listening tests, and p6 is a diagnostic test (lossy muffler/resonator internals). p7 is a picker variation only (no new URL). The BRM\u2019s older v8 order-table model has been retired.',
+    'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac, a 1953 BRM P30 Mk II V16, a 2006 Porsche 911 Carrera 4S (997.1) and a 1956 Volkswagen Beetle Type 1.',
+    'The engine sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, intake, exhaust and \u2014 on the BRM \u2014 open stubs and a two-stage supercharger. All five cars use a physics model. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21: the v20 kernel plus new generic blocks (an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust) that any car can use. (v12 since v1.12.0; it was called v11.) The 911\u2019s default is v12 \u00b7 911 p7 (p4\u2019s photo-measured side boxes with internal packing); p4, p1 (the two-bank intake tube, a quieter valvetrain and a series-chamber muffler; formerly v10.1), p2, p3, p5 and p6 are in the 911 sound picker. The Cadillac default is v12 \u00b7 Cadillac p1; p2, p3, p4, p5 and p7 are in the Cadillac sound picker as listening tests, and p6 is a diagnostic test (lossy muffler/resonator internals). p7 is a picker variation only (no new URL). The BRM\u2019s older v8 order-table model has been retired.',
     'Physics (gearbox, weight, tyres, brakes) uses the cars\u2019 real specs.'
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. All four cars share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The live site is v1.13.13. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19 and Sound v20 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
+    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.14. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19 and Sound v20 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
         sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
       { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
@@ -11990,13 +12350,14 @@ var ProjectHistory = {
       { title: 'Listener positions', text: 'In the game you can listen from inside the car (at the driver\u2019s head, with the cabin path above), from outside behind the car (about a metre behind the tailpipe mouths, with body shadow and a ground reflection), from the engine bay (near the intake, with the exhaust quieter than it is outside), or in the garage \u2014 either standing in the bay or sitting in the cabin, with the garage\u2019s own acoustics around the engine. The two tailpipe mouths are the exhaust sources; the official scorecard also compares a close recording at those mouths (the tailpipe perspective), which is not a separate item in the Position menu. A farther roadside point and an open-window cabin mix exist in the model but are not offered as game views.' },
       { title: 'Other filters', text: 'Distance and delay (sound falls with range and arrives later from a farther source), the 911\u2019s rear lid shadow, packing and wall damping in the silencers, and a little equalisation on the radiation and on the throttle hiss, are the remaining filters. Nothing you hear is a recording, and there is no added flow-noise effect on the 911 exhaust valves.' },
       { title: 'How the sound is fitted', text: 'When the model is matched to a recording of a standard car, the engine\u2019s real sizes stay as they are: bore, stroke, compression, firing order, cam timing, pipe lengths, gear ratios. What is adjusted are the model parameters \u2014 how hard the burn is, how much leftover gas there is, how much the muffler damps, how much comes through the body, and so on. Those knobs are tuned so the synthetic sound is as close as possible to the recording, judged on a scorecard of engine speed against throttle opening (a grid of rpm bands and throttle levels). A lower score is closer. The Specs page lists every one of those figures for the car you have selected.' },
-      { title: 'Where the model stands now', text: 'The physics has to stay the core, because the aim is that aftermarket parts — a different muffler, resonator, or a set of pipes — should be heard as a change of parameters, not hidden by a correction fitted to the stock car. That is why the Cadillac default is still p1 until the owner listens, why v20 ships a sourced change to the resonator (the Walker 21159 Direct-Flow can, as the generic perforated straight-through block) rather than a fitted equaliser, and why v18 was shelved. Sound v19 · Cadillac stays in the picker. Scoring is now scorer v2.4. On that official combined score v20 is worse than v19, because part-throttle, full load and idle go darker; closed-throttle mid-rev overrun is clearly better, and the cabin no longer has that bright 400 Hz pass. The two large cans about three metres apart still ring and still leave an idle hole. The cabin path is still only a first model of the body.' },
-      { title: 'What comes next', text: 'Next is the engine and exhaust, with mufflers and resonators built as swappable parts, and a direct look at the standing waves from those two cans three metres apart — the likely cause of the idle hole and the ring, which the short, unmuffled GT350 pipes never build.' }
+      { title: 'Where the model stands now', text: 'The physics has to stay the core, because the aim is that aftermarket parts — a different muffler, resonator, or a set of pipes — should be heard as a change of parameters, not hidden by a correction fitted to the stock car. That is why the Cadillac default is still p1 until the owner listens, why v20 ships a sourced change to the resonator (the Walker 21159 Direct-Flow can, as the generic perforated straight-through block) rather than a fitted equaliser, and why v18 was shelved. Sound v19 · Cadillac stays in the picker. Scoring is now scorer v2.4. On that official combined score v20 is worse than v19, because part-throttle, full load and idle go darker; closed-throttle mid-rev overrun is clearly better, and the cabin no longer has that bright 400 Hz pass. The two large cans about three metres apart still ring and still leave an idle hole. The cabin path is still only a first model of the body. The 1956 Beetle is on sound model v21, using the v20 kernel plus those new generic blocks; older cars and sound sets stay on the same models as before.' },
+      { title: 'What comes next', text: 'Next is a Cadillac coast-down fix, then rotating mass and resonator packing, then a Tesla Model X.' }
     ]
   },
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.14", date: "2026-11-21", status: "done", headline: "1956 VW Beetle Type 1: Sound v21, L240 Agave art, and a fast-idle fix", text: "The game now includes a 1956 Volkswagen Beetle Type 1 oval-window, in L240 Agave. Body colour is #979A84 (highlight #A5A893, shadow #7E816C), sampled from the owner photo (private) as the mid-tone of body panels in overcast daylight (median of the 30–70th percentile luminance). Rear and cabin art is in the same Flat and Ink styles as the other cars, with period 1956 details (oval window, split decklid louvres, small round tail lamps, chrome bumper with overriders, plate light, chrome hubcaps, blackwall tyres). Key 5 selects the car. The sound drop-down is one entry, Sound v21 · Beetle: the v20 kernel plus new generic blocks (an engine-driven centrifugal cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust network) that any car can use; no additional URL alias. After starter handoff, the HUD no longer holds the choke fast-idle override (it had been left at the flare rpm). The info page lists the Beetle, names sound model v21, and the next work is a Cadillac coast-down fix, then rotating mass and resonator packing, then a Tesla Model X. Every older sound stays bit-identical." },
       { v: "v1.13.13", date: "2026-11-21", status: "done", headline: "Sound v20 · Cadillac: v19 with the Walker 21159 resonator as a perforated straight-through can", text: "Sound v20 \u00b7 Cadillac is Sound v19, except the Walker 21159 resonator is the existing generic straight-through perforated can (perf_through3d), with the same sourced shell, gas path and idle gas state as in v15, not a plain expansion chamber. The 21158 muffler is unchanged. Two similar-length plain chambers plus the 0.5 m tail had shared a pass near 400 Hz, which made closed-throttle cabin sound too bright; the Direct-Flow resonator fills that pass. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v19 (3.32 against 2.95, floor 2.27), because part-throttle, full load and idle go darker; mid-rev overrun is clearly better, and the 2jGo lift tilt is \u22129.78 against the recording\u2019s \u221210.66 (v19 was \u22122.82). CPU stays in the same range. It is picker-only, after Sound v19 \u00b7 Cadillac; p1 stays the default; no new URL. Sound v19 stays in the drop-down. Every other sound is bit-identical." },
       { v: "v1.13.12", date: "2026-11-21", status: "done", headline: "Sound v19 · Cadillac: v17 with the outside path and a tyre and wind noise block", text: "Sound v19 · Cadillac is Sound v17 plus two generic physical blocks, with no fitted values. First, the sound leaving the tailpipe now includes pipe-outlet directivity, a ground reflection with the phase of that reflection set correctly, and air absorption. Second, tyre rolling noise, the tyre-cavity tone, wind, and the cabin\u2019s insulation are a separate noise block that follows the game\u2019s road speed. On the current scorecard (scorer v2.3, lower is closer) v19 and v17 are effectively tied: combined 2.94 and 2.95, against a recordings floor of 2.27; p1 is 3.58. The earlier outside scores (scorer v2) improve a little (far 4.97 against v17 5.15), well inside the 0.3 noise level. CPU stays in the same range as v17. It is picker-only, after Sound v17 \u00b7 Cadillac; p1 stays the default; no new URL. v18, a fitted equaliser, was shelved and was never pushed. Every other sound is bit-identical." },
       { v: "v1.13.11", date: "2026-11-20", status: "done", headline: "Sound v17 · Cadillac: v16 with the exhaust gas cooling along the pipes and flow loss at the pipe steps", text: "Sound v17 · Cadillac is v16 plus two physical effects that the model did not have yet, with no fitted values. First, the exhaust gas now cools along each pipe run, from the head pipe to the tail, by a standard heat balance: the heat transfer inside the pipe comes from the engine model\u2019s own flow (Dittus\u2013Boelter), and outside it is still air with radiation from oxidised steel (20 W/m\u00b2K, from Churchill\u2013Chu and Incropera). At idle the resonator and tail pipe now run at about 385 K instead of 505 K, so the tail pipe\u2019s resonance and the two cans\u2019 pass bands no longer line up and ring together. Second, every step in pipe size has the textbook flow loss (Borda\u2013Carnot). On the cleaned scorecard (scorer v2, lower is closer): combined 3.715 against v16 4.191 and p8 4.231; pooled 2.880 (v16 3.172, p8 3.063); ring 3.34 dB (v16 4.08, p8 4.67); cabin low-band tilt unchanged (\u22122.18 against \u22122.21 dB/oct). Same CPU as v16 and p8. It is picker-only, after Sound v16 \u00b7 Cadillac; p1 stays the default; no new URL. Every other sound is bit-identical." },
@@ -12130,8 +12491,8 @@ var ProjectHistory = {
 var EngineSpecs = (function () {
   'use strict';
   var IN = 0.0254, LBFT = 1.35582;
-  var V8P_KEY = { gt350: 'gt350', caddy: 'cadillac59', p997: 'p997' };
-  var DEFAULT_SOUND = { gt350: 'v9p', caddy: 'v9p', p997: 'v9p', brm: 'v9_11' };
+  var V8P_KEY = { gt350: 'gt350', caddy: 'cadillac59', p997: 'p997', beetle: 'beetle56' };
+  var DEFAULT_SOUND = { gt350: 'v9p', caddy: 'v9p', p997: 'v9p', brm: 'v9_11', beetle: 'v9p' };
   var SOUND_LABEL = {
     v9p: 'Sound model v12, parameter set p1',
     v9_11: 'Sound model v12 \u00b7 BRM p11 (default)'
@@ -12330,13 +12691,14 @@ var EngineSpecs = (function () {
       if (kind === 'pipe') return (i + 1) + '. Pipe ' + fmt(a, 2) + ' m long, \u00d8 ' + mm(b);
       if (kind === 'perf') return (i + 1) + '. Perforated straight-through, pipe ' + fmt(s[1], 2) + ' m, \u00d8 ' + mm(s[2]) + ', shell ' + fmt(s[3], 2) + ' m, \u00d8 ' + mm(s[4]) + ', porosity ' + fmt(s[5], 2) + ', packing ' + fmt(s[6], 2);
       if (kind === 'cavity') return (i + 1) + '. Side volume ' + fmt(a, 3) + ' m long, \u00d8 ' + mm(b) + ', neck ' + fmt(s[4], 4) + ' m \u00d8 ' + mm(s[5]) + (c ? ', packing ' + fmt(c, 2) : '') + (s.length > 9 && s[8] > 0 ? ', end-cap layer ' + fmt(s[8] * 1000, 0) + ' mm packing ' + fmt(s[9], 2) : '');
+      if (kind === 'hx') return (i + 1) + '. Heat exchanger (finned core; jacket is cabin air) ' + fmt(a, 2) + ' m long, \u00d8 ' + mm(b) + (c ? ', packing ' + fmt(c, 2) : '');
       if (kind === 'par') return (i + 1) + '. Chamber ' + fmt(s[2], 2) + ' m long, area ratio ' + fmt(s[3], 1) + (s[4] ? ', packing ' + fmt(s[4], 2) : '') + ', fed in parallel by ' + s[1].map(function (q) { return fmt(q[0], 3) + ' m \u00d8 ' + mm(q[1]); }).join(' + ');
       return (i + 1) + '. ' + kind + ' ' + [a, b, c].filter(function (x) { return x != null; }).join(', ');
     }).join('<br>');
   }
   function peaks(v) {
     var pts = v.torque, i, t, pW, bestT = pts[0], bestP = pts[0], pBest = -1;
-    var usePS = v.id === 'p997';
+    var usePS = v.id === 'p997' || v.id === 'beetle';
     var unit = usePS ? 735.49875 : 745.69987;
     for (i = 0; i < pts.length; i++) {
       t = pts[i][1];
@@ -12353,7 +12715,7 @@ var EngineSpecs = (function () {
   }
   function curveSvg(v) {
     var pts = v.torque, i, t, pW, p, maxT = 0, maxP = 0, maxR = pts[pts.length - 1][0];
-    var usePS = v.id === 'p997';
+    var usePS = v.id === 'p997' || v.id === 'beetle';
     var unit = usePS ? 735.49875 : 745.69987;
     var pows = [];
     for (i = 0; i < pts.length; i++) {
@@ -12396,7 +12758,7 @@ var EngineSpecs = (function () {
     var stroke = (car && car.stroke) || (P && P.stroke);
     var rod = (car && car.rod) || (P && P.conrod);
     var cr = (car && car.cr) || (P && P.cr);
-    var layout = v.id === 'p997' ? 'Flat-six (180\u00b0 boxer)' : v.id === 'brm' ? '135\u00b0 V16' : '90\u00b0 V8';
+    var layout = v.id === 'p997' ? 'Flat-six (180\u00b0 boxer)' : v.id === 'beetle' ? 'Flat-four (180\u00b0 boxer)' : v.id === 'brm' ? '135\u00b0 V16' : '90\u00b0 V8';
     var rows = [
       row('Engine', esc((P && P.label) || v.engineText)),
       row('Layout', layout + ', ' + n + ' cylinders'),
@@ -12479,7 +12841,7 @@ var EngineSpecs = (function () {
       return table(rows);
     }
     if (!car) return '<p class="note">No exhaust network in this sound model.</p>';
-    var typ = car.exhaust === 'tri-y' ? 'Tri-Y headers (one per bank)' : car.exhaust === 'log' ? 'Cast-iron log manifolds' : car.exhaust === '3-1' ? '3-into-1 headers (one per bank)' : esc(car.exhaust || '');
+    var typ = car.exhaust === 'tri-y' ? 'Tri-Y headers (one per bank)' : car.exhaust === 'log' ? 'Cast-iron log manifolds' : car.exhaust === '3-1' ? '3-into-1 headers (one per bank)' : car.exhaust === '2-1-shared' ? 'Two primaries per bank through a heat exchanger, both banks into one shared muffler with two tailpipes' : esc(car.exhaust || '');
     rows.push(row('System', typ));
     if (car.prim_len) rows.push(row('Primaries', fmt(car.prim_len, 2) + ' m long, \u00d8 ' + mm(car.prim_d)));
     if (car.prim_x) rows.push(row('Primary length factors', numList(car.prim_x, 2) + ' (per branch)'));
@@ -12488,8 +12850,9 @@ var EngineSpecs = (function () {
     if (car.log_seg) rows.push(row('Log segments', fmt(car.log_seg, 2) + ' m, \u00d8 ' + mm(car.log_d)));
     if (car.head_len) rows.push(row('Head runners / collector', fmt(car.head_len, 2) + ' m'));
     if (car.pipe_d) rows.push(row('Intermediate pipe', fmt(car.inter_len, 2) + ' m long, \u00d8 ' + mm(car.pipe_d)));
+    if (car.hx) { var hx = car.hx[0] === 'hx' ? car.hx.slice(1) : car.hx; rows.push(row('Heat exchanger', fmt(hx[0], 2) + ' m finned core, \u00d8 ' + mm(hx[1]) + ', packing ' + fmt(hx[2], 2) + ' (exhaust stays in the core; jacket is cabin air)')); }
     if (car.x_len) rows.push(row('H-pipe / balance', fmt(car.x_len, 2) + ' m, \u00d8 ' + mm(car.x_d)));
-    else if (car.x_len === 0) rows.push(row('Balance pipe', 'None (each bank has its own silencer)'));
+    else if (car.x_len === 0) rows.push(row('Balance pipe', car.exhaust === '2-1-shared' ? 'None (banks join in a shared muffler)' : 'None (each bank has its own silencer)'));
     if (car.muf) {
       var mufLabel = (v.id === 'p997') ? 'Catalyst and muffler' : 'Muffler / catalyst';
       var mufNote = (v.id === 'p997') ? '<p class="note">The first chamber is the cascade catalyst, placed just after the collector (total path length unchanged). v12 \u00b7 911 p1 (the default) then uses two packed series chambers and connecting pipes. v12 \u00b7 911 p2 keeps the catalyst and uses a packed perforated straight-through can in place of those two chambers. Each bank\u2019s pipe crosses to the tailpipe on the other side of the car. The table below is the default (p1) path.</p>' : '';
@@ -12665,8 +13028,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 <script>/* js/main.js */
 /* main.js: input (keyboard + multitouch), game loop, physics -> audio + UI */
 (function () {
-  var OUT_GAIN = { GT350: 0.8, CADDY: 0.85, BRM: 0.8, P997: 0.8 };
-  var ODO_START = { gt350: 38412.0, caddy: 61905.3, brm: 2847.0, p997: 87240.6 };
+  var OUT_GAIN = { GT350: 0.8, CADDY: 0.85, BRM: 0.8, P997: 0.8, BEETLE: 0.8 };
+  var ODO_START = { gt350: 38412.0, caddy: 61905.3, brm: 2847.0, p997: 87240.6, beetle: 68420.0 };
   var params = new URLSearchParams(location.search);
   // touch UI: phones and tablets. v1.8.1: iPadOS Safari (desktop mode is its default) reports itself as a Mac; it is recognised by
   // maxTouchPoints > 1 (Macs report 0), not by the user agent, and stays a touch device when a trackpad / keyboard is attached.
@@ -12702,7 +13065,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // v1.11.4: GT350 and Cadillac defaults are v9p (best scorecard fit). A ?sound= URL or a saved streetrod.sound
   // choice still applies to both V8 cars, as before. With no saved choice, each V8 car uses its own default.
   // v1.11.36: the 911 picker is v12 · 911 p1 (default; formerly v10.1 / v10itq: intake tube, quiet valvetrain, series-chamber muffler) and v12 · 911 p2 (formerly v10.2: perforated straight-through muffler). ?p997=p1|p2 (or v11.p1 / v11.p2 / v10.1 / v10.2 / v10_1 / v10_2). v1.11.37 shipped ?p997=p3 (intake runners) as a listening test; v1.11.38 removed it after the owner listened, and old p3 queries fell back to p1; since v1.11.39 ?p997=p3 is the 3-chamber side-box listening test. Older values (variocam, v10, v10it, v10nf, v10itq, fixed, fixedcam, or anything else) alias to p1.
-  function defaultV8Sound(id) { return (id === 'gt350' || id === 'caddy') ? 'v9p' : 'v2'; }
+  function defaultV8Sound(id) { return (id === 'gt350' || id === 'caddy' || id === 'beetle') ? 'v9p' : 'v2'; }
   function defaultBrmSound() { return (typeof SoundModels !== 'undefined' && SoundModels.defaultBrm) || 'p11'; }
   function brmName(v) {
     if (!v || v === 'v8') return null;   // v8 retired: callers fall back to defaultBrmSound()
@@ -12870,6 +13233,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   function soundId() {
     if (spec().engineKey === 'BRM') return brmEntry(state.brmSound).id;
     if (spec().engineKey === 'P997') return 'v9p';   // still the v9.11 kernel; VarioCam Plus is a flag on this model, not a new kernel
+    if (spec().engineKey === 'BEETLE') return 'v9p';
     var m = SoundModels.get(state.model);
     return m.hidden ? 'v2' : state.model;
   }
@@ -13230,6 +13594,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       case '2': selectCar('caddy'); break;
       case '3': selectCar('brm'); break;
       case '4': selectCar('p997'); break;
+      case '5': selectCar('beetle'); break;
       case 's': case 'S': case 'i': case 'I': ignition(); break;
       case 'm': case 'M': toggleMute(); break;
       case 'v': case 'V':
@@ -13345,6 +13710,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selCaddy.appendChild(o);
   });
   if (selCaddy) selCaddy.addEventListener('change', function () { applyCaddyPicker(selCaddy.value); selCaddy.blur(); });
+  var selBeetle = document.getElementById('selBeetle');
+  [['v1', 'Sound v21 · Beetle']].forEach(function (row) {
+    var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; if (selBeetle) selBeetle.appendChild(o);
+  });
+  if (selBeetle) selBeetle.addEventListener('change', function () { selBeetle.value = 'v1'; selBeetle.blur(); });
   selV.addEventListener('change', function () { setVisual(selV.value); selV.blur(); });
   // v1.11.12: Car and Position are native <select> lists (same pattern as Sound / Visuals), so they work in the Tesla in-car browser.
   var selCar = document.getElementById('selCar'), selView = document.getElementById('selView');
@@ -13363,6 +13733,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (selP997) selP997.value = state.p997Sound;
     document.getElementById('segCaddySound').classList.toggle('hidden', soundKey !== 'CADDY');
     if (selCaddy) selCaddy.value = (soundKey === 'CADDY' && state.model !== 'v9p') ? state.model : state.caddySound;
+    document.getElementById('segBeetleSound').classList.toggle('hidden', soundKey !== 'BEETLE');
+    if (selBeetle) selBeetle.value = 'v1';
     document.getElementById('segSound').classList.toggle('hidden', soundKey !== 'GT350');
     if (selS && soundKey === 'GT350') selS.value = state.model;
     syncSoundPicker();
@@ -13456,7 +13828,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     } else c.crankNoRep = 0;
     c.extStart = ext;
     if (ext && c.engine === 'cranking' && r && r.phase === 'run') c.extCaught = true;
-    c.idleOverride = ext && c.engine === 'running' && r && r.phase === 'run' && r.idle ? r.idle : 0;
+    c.idleOverride = ext && c.engine === 'running' && r && r.phase === 'run' && !r.handed && r.idle ? r.idle : 0;
     if (c.engine === 'running') { c.runT = (c.runT || 0) + dt; if (c.runT > 10) c.warmed = true; } else c.runT = 0;
     // the tach follows the audio while it is in charge of the engine speed (cranking, flare, run-on, coast-down)
     state.tachRpm = ext && r && r.phase !== 'off' && (r.phase !== 'run' || !r.handed) ? r.rpm : null;

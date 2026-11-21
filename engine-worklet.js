@@ -3294,6 +3294,130 @@ function engineModuleBrm9(core) {
 function engineModuleV8p(core) {
     // ---- model data (tools/export_v8p_params.py: engine-sound v8phys.CARS + PHYS merged with fitted_params_v8phys.json)
     var DATA = /*V8P_DATA*/{"gt350":{"car":{"name":"1967 Shelby GT350 (289 Hi-Po)","bore":0.1016,"stroke":0.072898,"rod":0.130937,"cr":10.5,"fire_order":[1,5,4,2,6,3,7,8],"left_bank":[5,6,7,8],"adv_dur":306,"lsa":114,"ev_d":0.04064,"ev_lift":0.0116078,"camx":0.9,"lifters":"solid","idle_rpm":850,"redline":6800,"inertia":0.2,"carb":"1x4 Holley 715 cfm","th_area_wot":0.005771714879094934,"v_man":0.0026,"v_ac":0.006,"sn_len":0.05,"sn_d":0.1,"th_len":0.06,"exhaust":"tri-y","prim_len":0.55,"prim_d":0.038099999999999995,"sec_len":0.35,"sec_d":0.047625,"head_len":0.5,"pipe_d":0.05715,"x_len":0.3,"x_d":0.0508,"inter_len":1.2,"muf":[["chamber",0.45,6,0.35]],"tail_len":0.85,"bank_dl":0.12,"tri_pairs":[[1,2],[3,4],[5,7],[6,8]],"mouth":[[-0.05,0.3,0.3],[-0.05,-0.3,0.3]],"intake":[3.75,0,0.85],"covers":[[3.55,0.32,0.75],[3.55,-0.32,0.75]],"starter_pos":[3.2,-0.3,0.35],"head":[1.75,0.35,1],"cabin_len":1.9,"cabin_h":1.05,"st_ratio":15.7,"st_teeth":157,"st_free_rpm":4800,"st_i_free":80,"st_i_lock":550,"st_v_test":10.6,"r_batt":0.013,"st_kind":"ford_pe","v_batt":12.4,"st_i_sat":200,"spark0":12},"phys":{"q_comb":4.4528726927691595,"heat_loss":0.13964927768935703,"n_poly":1.32,"burn":61.12339112063403,"xr0":0.06,"xr_ov":0.03468261820807481,"cov":0.12291346956848595,"cov_res":0.9118891425544978,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.002,"hf":0.00013531634473443194,"ro_loss":0.98,"t_prim0":750,"t_prima":420,"k_int":1.4578821185363917,"r_th":0.6,"k_tick":1.3099889610031585,"k_jet":0.33401186308125413,"f_floor":15,"f_fw":72.41426333042916,"k_cab":0.35,"cab_q":4.312931693945894,"cab_model":1,"leak_floor":0.3,"leak_fw":0.003,"k_floor":1.000048686830272,"k_ind":0.029701259811889123,"f_abs":8000,"k_win":0.3,"fric0":1.347449491470554,"fric1":0.12,"fric2":0.018,"fric_cold":2.14,"a_idle":7.285542239127752e-05,"fast_idle":1,"prime_rev":0.6,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":24.59325797938332,"pack":0.06625559824334058,"bay_exh":0.8421933433992767,"k_nl":0.971139841482906,"dw_tau":0.4434368437152191,"gain":1,"k_st_mesh":0.38,"k_st_comm":0.2,"k_st_mot":0.16,"k_st_bb":1,"k_st_out":1,"k_st_cab":1.28,"k_st_bb2":0.5,"k_st_bbhi":0.22,"k_st_am":0.55,"k_st_am_far":0.58,"k_st_am_out":0.5,"k_st_am_cab":0.52,"st_lead":0.04}},"cadillac59":{"car":{"name":"1959 Cadillac Series 62 (390)","bore":0.1016,"stroke":0.098425,"rod":0.16827499999999998,"cr":10.5,"fire_order":[1,8,4,3,6,5,7,2],"left_bank":[1,3,5,7],"adv_dur":264,"lsa":114,"ev_d":0.039624,"ev_lift":0.01016,"camx":1.1,"lifters":"hydraulic","idle_rpm":520,"redline":5000,"inertia":0.45,"carb":"1x4 Carter AFB","th_area_wot":0.004979984443005094,"v_man":0.0032,"v_ac":0.009,"sn_len":0.12,"sn_d":0.075,"th_len":0.06,"exhaust":"log","port_len":0.12,"port_d":0.044449999999999996,"log_seg":0.11,"log_d":0.0508,"head_len":0.6,"pipe_d":0.0508,"x_len":0.25,"x_d":0.0508,"inter_len":1.5,"muf":[["chamber",0.25,8,0],["pipe",0.3,0.038099999999999995,0],["chamber",0.25,8,0],["pipe",0.35,0.0508,0],["chamber",0.35,5,0.1]],"tail_len":0.6,"bank_dl":0.25,"mouth":[[-0.1,0.55,0.45],[-0.1,-0.55,0.45]],"intake":[4.55,0,0.95],"covers":[[4.35,0.33,0.8],[4.35,-0.33,0.8]],"starter_pos":[3.95,0.3,0.35],"head":[2.3,0.4,1.05],"cabin_len":2.3,"cabin_h":1.05,"st_ratio":15.1,"st_teeth":166,"st_free_rpm":4350,"st_i_free":82,"st_i_lock":330,"st_v_test":10.6,"r_batt":0.012,"st_kind":"delco","v_batt":12.4,"st_i_sat":200,"spark0":5},"phys":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03},"sets":{"p2":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["chamber",0.25,8.0,0.0],["pipe",0.3,0.038099999999999995,0.0],["chamber",0.25,8.0,0.0],["pipe",0.35,0.044449999999999996,0.0],["chamber",0.35,5.0,0.1]]},"p3":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["chamber",0.1285875,6.296875000000001,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,0.0,3],["chamber",0.1285875,6.296875000000001,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",0.35,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,0.0,3]]},"p4":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,0.0,3,0.0015,0.003175,0.13],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",0.35,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,0.0,3,0.0015,0.003175,0.13]]},"p5":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,0.0,3,0.0015,0.003175,0.13],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,0.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",3.07,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,0.0,3,0.0015,0.003175,0.13]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11},"p6":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,2.0,3,0.0015,0.003175,2.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",3.07,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,2.0,3,0.0015,0.003175,2.0]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11},"p7":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["pipe",0.3857625,0.0508,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.0508,0.02,0.0],["perf",0.257175,0.044449999999999996,0.257175,0.12747536036426804,0.2,2.0,3,0.0015,0.003175,2.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.044449999999999996,0.02,0.0],["pipe",0.3857625,0.044449999999999996,0.0],["cavity",0.1285875,0.12747536036426804,2.0,0.0508,0.038099999999999995,0.02,0.0],["pipe",3.07,0.044449999999999996,0.0],["perf",0.5715,0.044449999999999996,0.5715,0.13017499999999999,0.2,2.0,3,0.0015,0.003175,2.0]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11,"r_ac":3900.0},"v13":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["tmm","triflow",0.21140420000000001,0.18455639999999998,0.11838939999999998,0.08255,0.19685,0.0508,0.044449999999999996,0.044449999999999996,0.1,0.0015,0.000762,0.11,650,0.08,0.0254],["pipe",3.07,0.044449999999999996,0.0],["tmm","perf_through",0.5715,0.13017499999999999,0.044449999999999996,0.2,3,0.22,0.45,0.33,0.0015,0.003175,550,0.06]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11,"r_ac":3900.0},"v13.1":{"q_comb":4.6,"heat_loss":0.08922799694585837,"n_poly":1.32,"burn":41.53321036001948,"xr0":0.06,"xr_ov":0.02,"cov":0.05032318942436391,"cov_res":0.4177863300939433,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.000965438109878401,"hf":0.0002345835862811804,"ro_loss":0.98,"t_prim0":731.0371827564371,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":1.1587881555704223,"k_jet":0.005,"f_floor":15,"f_fw":400,"k_cab":0.35,"cab_q":1.5,"cab_model":1,"leak_floor":0.3,"leak_fw":0.00529734107537258,"k_floor":1.003419309652263,"k_ind":0.03265282579623439,"f_abs":8000,"k_win":0.3,"fric0":1.8479475605609046,"fric1":0.12,"fric2":0.018,"fric_cold":1.2,"a_idle":5.1887408207057674e-05,"fast_idle":1,"prime_rev":0.7443756334908427,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":6.541746651658922,"pack":1.7434902998281796,"bay_exh":0.4409732071662665,"k_nl":0.7884990991797303,"dw_tau":0.8054969365610245,"gain":1,"k_st_mesh":0.42,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":0.9,"k_st_out":1,"k_st_cab":1.2,"k_st_bb2":0.48,"k_st_bbhi":0.22,"k_st_am":0.5,"k_st_am_far":0.55,"k_st_am_out":0.48,"k_st_am_cab":0.48,"st_lead":0.03,"rod":0.1651,"ev_d":0.038099999999999995,"ev_lift":0.01143,"adv_dur":282.0,"lsa":114.0,"in_dur":282.0,"in_lsa":114.0,"ex_dur":282.0,"ex_lsa":112.0,"x_len":0.0,"tail_d":0.044449999999999996,"v_ac":0.009163954184270904,"sn_d":0.1016,"sn_len":0.1016,"muf":[["tmm","triflow",0.21140420000000001,0.18455639999999998,0.11838939999999998,0.08255,0.19685,0.0508,0.044449999999999996,0.044449999999999996,0.1,0.0015,0.000762,0.11,650,0.08,0.0254,1],["pipe",3.07,0.044449999999999996,0.0],["tmm","perf_through",0.5715,0.13017499999999999,0.044449999999999996,0.2,3,0.22,0.45,0.33,0.0015,0.003175,550,0.06,1]],"tail_len":0.5,"cabin_len":2.19,"cabin_h":1.11,"r_ac":3900.0}}},"p997":{"car":{"name":"2006 Porsche 911 Carrera 4S (997.1, M97.01 3.8)","bore":0.099,"stroke":0.0828,"rod":0.127,"cr":11.8,"fire_order":[1,6,2,4,3,5],"left_bank":[4,5,6],"adv_dur":252,"lsa":116,"ev_d":0.048648946545634474,"ev_lift":0.01,"camx":1,"lifters":"hydraulic","idle_rpm":670,"redline":7300,"inertia":0.16,"carb":"EFI, 1 electronic throttle body, two-stage resonance manifold","th_area_wot":0.004536459791783661,"v_man":0.0045,"v_ac":0.008,"sn_len":0.25,"sn_d":0.09,"th_len":0.1,"exhaust":"3-1","prim_len":0.3,"prim_x":[1,1.08,1.16],"prim_d":0.042,"head_len":0.25,"pipe_d":0.057,"x_len":0,"inter_len":0.6,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["chamber",0.22,10,0.5],["pipe",0.12,0.045,0],["chamber",0.22,10,0.5]],"tail_len":0.12,"bank_dl":0.04,"cross_mouth":true,"mouth":[[-0.02,0.52,0.3],[-0.02,-0.52,0.3]],"intake":[0.55,0,0.95],"covers":[[0.75,0.42,0.42],[0.75,-0.42,0.42]],"starter_pos":[1.3,0.22,0.35],"head":[2.15,0.35,1],"cabin_len":1.9,"cabin_h":1,"rear_engine":true,"eng_shadow":0.8,"st_ratio":54.888888888888886,"st_teeth":130,"st_free_rpm":16000,"st_i_free":70,"st_i_lock":850,"st_v_test":11.5,"st_v_lock":6,"r_batt":0.008,"st_kind":"bosch_pm","v_batt":12.5,"st_i_sat":10000,"spark0":10},"phys":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":0,"k_jet":0.36735134466175745,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.0035613790028847887,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":8000,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":40,"pack":2.212846561320972,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14},"sets":{"p1":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25},"p2":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["perf",0.44,0.057,0.44,0.18,0.12,0.5],["pipe",0.12,0.045,0]]},"p3":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["chamber",0.12,11,0.1],["par",[[0.2,0.052,0],[0.0049,0.032744007085266764,0],[0.2,0.018,0]],0.16,11,0.1],["par",[[0.2,0.052,0],[0.0049,0.032744007085266764,0]],0.12,11,0.5],["pipe",0.1,0.058,0]]},"p4":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["pipe",0.16,0.062,0],["cavity",0.12,0.24183051916579923,0,0.005,0.24183051916579923,0.001,0],["cavity",0.06,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0],["cavity",0.105,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0,0.025,0.5],["pipe",0.16,0.062,0],["pipe",0.25,0.057,0]]},"p5":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["pipe",0.2,0.057,0],["par",[[0.0049,0.06752777206453653,0]],0.1344,18,0.5],["par",[[0.3,0.057,0]],0.1216,18,0],["par",[[0.0049,0.07647352483049281,0]],0.064,18,0],["pipe",0.3,0.057,0],["pipe",0.25,0.057,0]]},"p6":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.32,0.05,0],["pipe",0.16,0.062,0],["cavity",0.12,0.24183051916579923,0,0.005,0.24183051916579923,0.001,0],["cavity",0.06,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0],["cavity",0.105,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0,0.025,0.5],["pipe",0.16,0.062,0],["pipe",0.25,0.057,0]]},"p7":{"q_comb":4.6,"heat_loss":0.06610091648405512,"n_poly":1.32,"burn":59.99578391306203,"xr0":0.05,"xr_ov":0.02,"cov":0.06304950659730628,"cov_res":0.07350737085237899,"mis_res":0.25,"cd":0.65,"eta_v":0.85,"wall":0.0004324461745975085,"hf":0.0007752814319838385,"ro_loss":0.98,"t_prim0":737.582808083124,"t_prima":420,"k_int":2,"r_th":0.6,"k_tick":295.0049331123548,"k_jet":0.49517551650628466,"f_floor":15,"f_fw":374.7941575801626,"k_cab":0.35,"cab_q":2.510320898642034,"cab_model":1,"leak_floor":0.3,"leak_fw":0.004429059907930195,"k_floor":0.9663133290728505,"k_ind":0.5,"f_abs":2586.2046359831593,"k_win":0.3,"fric0":1.0197330664957027,"fric1":0.12,"fric2":0.018,"fric_cold":1.8,"a_idle":3.5e-05,"fast_idle":1,"prime_rev":2,"catch_x":2.4,"react":0.3,"k_st":1,"k_hiss":16.19051453942309,"pack":2.325741107606418,"bay_exh":0.17202969592712633,"k_nl":0.9301919446001485,"dw_tau":0.10000000000000002,"gain":1,"choke_tau":6,"k_st_mesh":0.32,"k_st_comm":0.16,"k_st_mot":0.14,"k_st_bb":1.7,"k_st_out":1.15,"k_st_cab":1,"k_st_bb2":1.25,"k_st_bbhi":0.38,"k_st_am":0.86,"k_st_am_far":0.88,"k_st_am_out":0.7,"k_st_am_cab":0.58,"st_lead":0.14,"k_vf":0,"vf_n":2.2074897731823055,"tick_alpha":0,"vf_width":45,"vf_floor":0,"vf_rpm_ref":4500,"vf_rpm_exp":2.5,"k_psharp":2,"pack_r":0.2,"cat_early":1,"int_res":1,"int_kres":3e-07,"int_tube_l":0.3,"int_tube_d":0.045,"int_flap_lo":2600,"int_flap_hi":5100,"int_flap_thr":0.3,"cover_q1":2,"cover_q2":2,"vcam":1,"vcam_lift_lo":3.6,"vcam_lift_hi":11,"vcam_on_rpm":3000,"vcam_on_thr":0.28,"vcam_off_rpm":2500,"vcam_off_thr":0.18,"vcam_phase_rpm":4600,"vcam_range":40,"vcam_load0":0.35,"vcam_load1":0.65,"vcam_load_floor":0.15,"vcam_pull_rpm":6000,"vcam_pull_min":0.55,"vcam_pull_span":2500,"vcam_flap_lo":3000,"vcam_flap_hi":5500,"vcam_flap_thr":0.35,"vcam_flap_vol":0.55,"int_settle":0.25,"muf":[["chamber",0.3,4,0.15],["pipe",0.2,0.05,0],["pipe",0.16,0.062,0.2],["cavity",0.12,0.24183051916579923,0.3,0.005,0.24183051916579923,0.001,0],["cavity",0.06,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0],["cavity",0.105,0.24183051916579923,0,0.0049,0.07647352483049281,0.001,0,0.025,0.5],["pipe",0.16,0.062,0],["pipe",0.25,0.057,0]]}}}}/*END_V8P_DATA*/;
+    // 1956 VW Beetle Type 1 (Export 113) — parameters only; no per-car code path.
+    // Sourced figures from factory Aug 1955 supplement / shop manual unless marked ESTIMATE.
+    DATA.beetle56 = {
+      car: {
+        name: "1956 VW Beetle (Type 1, 1192 cc, 30 PS DIN)",
+        bore: 0.077,                 // sourced: 77 mm
+        stroke: 0.064,               // sourced: 64 mm
+        rod: 0.1292,                 // ESTIMATE: community 5.086 in rod, no factory page
+        cr: 6.6,                     // sourced: Aug 1955 supplement
+        fire_order: [1, 4, 3, 2],    // sourced: Type 1
+        left_bank: [3, 4],           // sourced convention: 3 left-front, 4 left-rear
+        nCyl: 4,
+        v_angle: 180,
+        adv_dur: 220.0,              // derived: timing at 1 mm, IVO 2.5 BTDC / IVC 37.5 ABDC
+        lsa: 107.5,                  // derived from the same timing
+        ev_d: 0.0285,                // ESTIMATE: exhaust head ~1.5 mm under the 30.0 mm intake
+        ev_lift: 0.0074,             // ESTIMATE: ~7.4 mm net lift, 1:1 rocker minus lash
+        camx: 1.0,                   // ESTIMATE: modest sinusoidal cam
+        lifters: "mechanical",
+        idle_rpm: 850.0,             // ESTIMATE: no factory idle rpm in the supplement; typical warm Type 1
+        redline: 3800.0,             // ESTIMATE: a little above the 3700 SAE rating, below a 4000 hard limit
+        inertia: 0.18,               // ESTIMATE: small flywheel + crank + 180 mm clutch, kg m^2
+        carb: "Solex 28 PCI, 21.5 mm venturi, oil-bath cleaner",
+        th_area_wot: 0.00061575,     // sourced geometry: 28 mm throttle bore
+        v_man: 0.0008,               // ESTIMATE: short single-port dual-manifold volume
+        v_ac: 0.0015,                // ESTIMATE: oil-bath cleaner volume
+        sn_len: 0.08,                // ESTIMATE
+        sn_d: 0.05,                  // ESTIMATE
+        th_len: 0.04,                // ESTIMATE
+        rear_engine: true,
+        eng_shadow: 0.8,             // engine under the rear lid / grille
+        exhaust: "2-1-shared",
+        prim_len: 0.10,              // ESTIMATE: short port stub into the heat exchanger
+        prim_d: 0.030,               // ESTIMATE: ~30 mm ID, period 36 hp stacks
+        prim_x: [1.0, 1.12],         // ESTIMATE: slight front/rear stub difference
+        head_len: 0.06,              // ESTIMATE: collector into the heater-box inlet
+        pipe_d: 0.032,               // ESTIMATE: 32 mm ID after the collector
+        hx: ["hx", 0.42, 0.032, 0.08], // ESTIMATE: heater-box core ~0.42 m, finned wall pack 0.08
+        x_len: 0,
+        inter_len: 0.18,             // ESTIMATE: HE outlet to the transverse muffler
+        muf: [["chamber", 0.40, 12, 0.15]], // ESTIMATE: OE 111 251 051 G transverse can ~0.40 m
+        tail_len: 0.25,              // ESTIMATE
+        tail_d: 0.032,               // ESTIMATE: twin tips, same ID
+        bank_dl: 0.03,               // ESTIMATE: small bank length difference
+        // positions, car frame: x forward from the rear bumper, y left, z up
+        mouth: [[0.02, 0.28, 0.22], [0.02, -0.28, 0.22]], // ESTIMATE: twin tips under the rear apron
+        intake: [0.55, 0.0, 0.78],   // ESTIMATE: carb on top of the fan shroud
+        covers: [[0.70, 0.28, 0.55], [0.70, -0.28, 0.55]], // ESTIMATE: valve covers
+        starter_pos: [1.05, 0.18, 0.28], // ESTIMATE: starter on the left of the transaxle bell
+        head: [1.70, 0.28, 0.95],    // ESTIMATE: driver's ear in the short cabin
+        cabin_len: 1.50,             // ESTIMATE: cabin length, wheelbase 2.40 m less front trunk
+        cabin_h: 1.05,               // ESTIMATE
+        // Bosch EED 0.4/6 L 4, 6 V. Ratio and teeth sourced-secondary (109/9). Currents / free speed estimated.
+        st_ratio: 12.11111111111111, // sourced-secondary: 109 / 9, direct-drive
+        st_teeth: 109,               // sourced-secondary: pre-1967 flywheel
+        st_free_rpm: 7000.0,         // ESTIMATE: armature no-load; must sit well above cranking × 109/9 (~300 rpm × 12.11 ≈ 3600)
+        st_i_free: 40.0,             // ESTIMATE: free current for 0.4 kW 6 V
+        st_i_lock: 250.0,            // ESTIMATE: stall current, 6 V
+        st_v_test: 5.5,              // ESTIMATE: 6 V system test voltage
+        st_v_lock: 3.0,              // ESTIMATE: lock terminal voltage under drop
+        r_batt: 0.010,               // ESTIMATE: 6 V battery IR + short thick cables; 20 mΩ collapsed the 6 V rail at stall
+        st_kind: "bosch_eed",        // series-wound (same path as Delco unless ford_pe / bosch_pm)
+        v_batt: 6.3,                 // sourced family: 6 V system, charged
+        st_i_sat: 200.0,             // ESTIMATE: series-field saturation, same order as other series starters
+        spark0: 7.5,                 // ESTIMATE: typical Type 1 initial advance, deg BTDC
+        fan: {
+          n_blades: 24,              // ESTIMATE: unconfirmed; common aftermarket count, not on the factory page
+          ratio: 2.0,                // sourced: generator / fan ~1:2
+          d: 0.22,                   // ESTIMATE: impeller diameter ~220 mm inside the shroud
+          Q_ref: 0.51,               // sourced: 18 cu ft/s = 0.51 m^3/s at 3300 engine rpm
+          rpm_ref: 3300.0,
+          dp_ref: 800.0,             // ESTIMATE: ~8 mbar rise through the oil cooler and cylinder fins at the rating point
+          eta: 5e-7,                 // ESTIMATE: acoustic efficiency (very small fraction of Q·ΔP)
+          pos: [0.40, 0.0, 0.70]     // ESTIMATE: fan in the shroud, behind the deck lid
+        }
+      },
+      phys: {
+        q_comb: 3.5,                 // ESTIMATE: slightly under PHYS0; CR is only 6.6
+        heat_loss: 0.12,
+        n_poly: 1.32,
+        burn: 55.0,
+        xr0: 0.06,
+        xr_ov: 0.10,
+        cov: 0.05,                   // ESTIMATE: modest mechanical-lifter / small-engine COV
+        cov_res: 0.35,
+        mis_res: 0.25,
+        cd: 0.65,
+        eta_v: 0.82,                 // ESTIMATE: a little under PHYS0; 30 PS on 1192 cc is a mild tune
+        wall: 0.0005,
+        hf: 0.0006,
+        ro_loss: 0.98,
+        t_prim0: 500.0, t_prima: 380.0, // ESTIMATE: cooler, lower specific output than a 911 / Hi-Po
+        k_int: 0.5,
+        r_th: 0.6,
+        k_tick: 0.12,                // ESTIMATE: mechanical lifters, modest lift — above hydraulic, below a solid Hi-Po
+        k_jet: 0.02,
+        f_floor: 200.0,              // ESTIMATE: light floor pan, short cabin
+        f_fw: 260.0,                 // ESTIMATE: thin rear bulkhead (engine is behind the cabin)
+        k_cab: 0.45,                 // ESTIMATE: thin body, engine close behind
+        cab_q: 4.0,
+        cab_model: 1,                // physical transmission-loss cabin (new car; not the legacy path)
+        leak_floor: 0.04,            // ESTIMATE: early seals
+        leak_fw: 0.05,               // ESTIMATE: rear shelf / cable holes
+        k_floor: 1.0,
+        k_ind: 0.06,
+        f_abs: 3500.0,               // ESTIMATE: little trim absorption
+        k_win: 0.3,
+        fric0: 0.95, fric1: 0.12, fric2: 0.018, // ESTIMATE: small air-cooled four, FMEP bar
+        fric_cold: 2.2,              // ESTIMATE: cold oil + generator / fan load
+        a_idle: 2.8e-5,              // ESTIMATE: throttle-plate leak sized for ~850 rpm in free mode
+        fast_idle: 1.0,
+        prime_rev: 1.2,
+        catch_x: 2.4,
+        react: 0.30,
+        k_st: 1.0,
+        k_hiss: 16.0,                // ESTIMATE: small Solex, below a 4-bbl
+        pack: 1.0,
+        bay_exh: 0.5,
+        k_nl: 1.0,
+        dw_tau: 0.25,
+        gain: 1.0
+      }
+    };
+
     // v13.2: same v13.1 geometry with rev=2 (wider-band fit + fs/2 TMM filters). Generic param only.
     if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.1'] && !DATA.cadillac59.sets['v13.2']) {
       DATA.cadillac59.sets['v13.2'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.1']));
@@ -5622,6 +5746,56 @@ function engineModuleV8p(core) {
         return pipes.length - 1;
       }
       function node(t, x, ports) { nodes.push([t, x, ports]); }
+      if (c.exhaust === '2-1-shared') {
+        // generic: two banks of N/2 primaries into a collector, optional heat exchanger,
+        // then both banks into one shared muffler with two tailpipes (boxer / Type 1 layout).
+        var bankOut = [];
+        for (var bank = 0; bank < 2; bank++) {
+          var cyls = [], i, dl = bank === 1 ? c.bank_dl : 0.0, prims = [], cy, pp, head, prevHx;
+          for (i = 1; i <= c.fire_order.length; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
+          for (i = 0; i < cyls.length; i++) {
+            cy = cyls[i];
+            pp = pipe(c.prim_len * (c.prim_x && c.prim_x[i] != null ? c.prim_x[i] : 1), c.prim_d, 0);
+            node(1, cy - 1, [[pp, 0]]);
+            prims.push(pp);
+          }
+          head = pipe(c.head_len, c.pipe_d, 1);
+          node(0, 0, prims.map(function (p) { return [p, 1]; }).concat([[head, 0]]));
+          prevHx = head;
+          if (c.hx) {
+            var hxSpec = c.hx, hxL = hxSpec[0] === 'hx' ? hxSpec[1] : hxSpec[0], hxD = hxSpec[0] === 'hx' ? hxSpec[2] : hxSpec[1], hxPk = hxSpec[0] === 'hx' ? hxSpec[3] : hxSpec[2];
+            var hxP = pipe(hxL, hxD, 1, hxPk);
+            node(0, 0, [[prevHx, 1], [hxP, 0]]);
+            prevHx = hxP;
+          }
+          var interS = pipe(c.inter_len + dl, c.pipe_d, 1);
+          node(0, 0, [[prevHx, 1], [interS, 0]]);
+          bankOut.push(interS);
+        }
+        var mufItemsS = c.muf || [], prevS, mi, mfS, dS, pS;
+        if (mufItemsS.length) {
+          var mf0 = mufItemsS[0];
+          dS = mf0[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf0[2]) : mf0[2];
+          pS = pipe(mf0[1], dS, 2, mf0[3] || 0);
+          node(0, 0, [[bankOut[0], 1], [bankOut[1], 1], [pS, 0]]);
+          prevS = pS;
+          for (mi = 1; mi < mufItemsS.length; mi++) {
+            mfS = mufItemsS[mi];
+            if (mfS[0] === 'hx') pS = pipe(mfS[1], mfS[2], 2, mfS[3]);
+            else { dS = mfS[0] === 'chamber' ? c.pipe_d * Math.sqrt(mfS[2]) : mfS[2]; pS = pipe(mfS[1], dS, 2, mfS[3] || 0); }
+            node(0, 0, [[prevS, 1], [pS, 0]]);
+            prevS = pS;
+          }
+        } else {
+          prevS = pipe(0.04, c.pipe_d, 2, 0);
+          node(0, 0, [[bankOut[0], 1], [bankOut[1], 1], [prevS, 0]]);
+        }
+        var tdS = (c.tail_d != null ? c.tail_d : c.pipe_d);
+        var tailL = pipe(c.tail_len, tdS, 2), tailR = pipe(c.tail_len, tdS, 2);
+        node(0, 0, [[prevS, 1], [tailL, 0], [tailR, 0]]);
+        node(2, 0, [[tailL, 1]]);
+        node(2, 1, [[tailR, 1]]);
+      } else {
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0, pendingTmm = null;
         for (i = 1; i <= c.fire_order.length; i++) if ((left[i] === 1) === (bank === 0)) cyls.push(i);
@@ -5748,6 +5922,13 @@ function engineModuleV8p(core) {
               var aOut = pipe(lOut, Math.sqrt(Math.max(dX * dX - dOut * dOut, 1e-8)), gX, mf[3]), eOut = pipe(lOut, dOut, gX, 0);
               node(0, 0, [[prev, 1], [aOut, 0], [eOut, 0]]); node(3, 0, [[aOut, 1]]); prev = eOut;
             }
+          } else if (mf[0] === 'hx') {
+            // generic heat exchanger / heater box: exhaust gas stays in the core pipe;
+            // the jacket is cabin air, not an exhaust volume. Modelled as a finned pipe
+            // with extra wall packing (mf[3]) for the finned-surface loss.
+            var pHx = pipe(mf[1], mf[2], 1, mf[3]);
+            node(0, 0, [[prev, 1], [pHx, 0]]);
+            prev = pHx;
           } else {
             var d = mf[0] === 'chamber' ? c.pipe_d * Math.sqrt(mf[2]) : mf[2];
             // v16 generic (set key muf_t1): plain items up to and including the first chamber take the group-1 gas
@@ -5771,6 +5952,7 @@ function engineModuleV8p(core) {
           node(0, 0, [[prev, 1], [tail, 0]]);
         }
         node(2, c.cross_mouth ? 1 - bank : bank, [[tail, 1]]);   // 997.1: each bank's cat pipe crosses to the other side
+      }
       }
       if (c.int_run) {
         // generic intake runners (v11): one 1D pipe (or nseg chain) per cylinder, intake valve (4) to bank / single plenum (5)
@@ -5810,7 +5992,7 @@ function engineModuleV8p(core) {
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
     function V8pSynth(spec, listener, fs, opts) {
       opts = opts || {};
-      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350' };
+      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350', BEETLE: 'beetle56' };
       var key = spec.car_key || ENGINE_KEYS[spec.engineKey] || 'gt350';
       var D = DATA[key];
       if (!D) throw new Error('v8p: no data for ' + key);
@@ -6223,6 +6405,7 @@ function engineModuleV8p(core) {
       this.RQ = null; this.RS = null;
       if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
       this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
+      this._fan = this._fanSetup(pr);
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -6476,7 +6659,75 @@ function engineModuleV8p(core) {
       this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
       this._thermal(dtb, firing); this._pipes();
       post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off, this.RQ, this.RS);
+      if (this._fan) this._coolFan(n, K, L, R, off);
       if (this.RN) this._noiseRun(n, L, R, off);
+    };
+
+    // Generic engine-driven centrifugal cooling fan. Present only when c.fan is set
+    // (n_blades, ratio, diameter, reference volume flow). Existing cars have no fan
+    // field, so this source is never constructed and never runs for them.
+    // Blade-passing tones + turbulent broadband from shaft-speed affinities
+    // (Q ~ n, ΔP ~ n^2, acoustic power ~ Q ΔP^2 × efficiency).
+    V8pSynth.prototype._fanSetup = function (pr) {
+      var f = this.c.fan; if (!f || !f.n_blades) return null;
+      var pos = f.pos || this.c.intake, earL = pr.ears[0], earR = pr.ears[1];
+      function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
+      var rL = Math.max(dist(earL, pos), 0.25), rR = Math.max(dist(earR, pos), 0.25);
+      var fs = this.fs, maxD = 512, dL = Math.min(maxD - 1, Math.round(rL / C_AIR * fs)), dR = Math.min(maxD - 1, Math.round(rR / C_AIR * fs));
+      var sh = 1.0;
+      if (pr.outside && !pr.bay) sh = this.c.eng_shadow !== undefined ? this.c.eng_shadow : (pr.shadow || 1);
+      var gL = sh / rL, gR = sh / rR;
+      if (!pr.outside) {
+        // rear-engine cars: the fan is behind the rear bulkhead / parcel shelf
+        var cab = (this.P.k_cab || 0.35) * 0.6;
+        gL = cab / rL; gR = cab / rR;
+      }
+      return {
+        nbl: f.n_blades, ratio: f.ratio || 2.0, D: f.d || 0.22,
+        Qref: f.Q_ref || 0.51, rpmRef: f.rpm_ref || 3300.0,
+        dPref: f.dp_ref || 800.0, eta: f.eta !== undefined ? f.eta : 5e-7,
+        k: f.k !== undefined ? f.k : 1.0,
+        ph: 0.0, lp: 0.0, cabY: 0.0,
+        buf: new Float64Array(maxD), wi: 0, dL: dL, dR: dR, gL: gL, gR: gR,
+        outside: !!pr.outside, fFw: this.P.f_fw || 320.0
+      };
+    };
+    V8pSynth.prototype._coolFan = function (n, K, L, R, off) {
+      var F = this._fan, fs = this.fs, i, rpm, shaftHz, bpf, U, Qf, dP, W, pRms, aTone, aBb, x, y, s, wi, buf, nz, aLp, aCab;
+      var TWOPI = 6.283185307179586, RHO_C = RHO_AIR * C_AIR;
+      buf = F.buf; wi = F.wi;
+      aCab = 1.0 - Math.exp(-2.0 * Math.PI * F.fFw / fs);
+      for (i = 0; i < n; i++) {
+        rpm = K[K_RPM0] + (K[K_RPM1] - K[K_RPM0]) * (i / n);
+        if (!(rpm > 50.0)) { buf[wi] = 0.0; wi = (wi + 1) & 511; continue; }
+        shaftHz = (rpm / 60.0) * F.ratio;
+        bpf = shaftHz * F.nbl;
+        U = TWOPI * shaftHz * (F.D * 0.5);
+        Qf = F.Qref * (rpm / F.rpmRef);
+        if (Qf < 0.0) Qf = 0.0;
+        dP = F.dPref * (rpm / F.rpmRef) * (rpm / F.rpmRef);
+        W = F.eta * F.k * Qf * dP * dP;
+        if (W < 0.0) W = 0.0;
+        // monopole free-field p_rms at 1 m from sound power; 1/r is in gL/gR
+        pRms = Math.sqrt((W / (4.0 * Math.PI)) * RHO_C);
+        aTone = pRms * 0.55;
+        aBb = pRms * 0.45;
+        F.ph += TWOPI * bpf / fs;
+        if (F.ph > TWOPI) F.ph -= TWOPI * Math.floor(F.ph / TWOPI);
+        x = aTone * (Math.sin(F.ph) + 0.35 * Math.sin(2.0 * F.ph));
+        nz = (rnd(this.S) - 0.5) * 3.4641016151377544;
+        // turbulence: one-pole near ~2 × BPF (blade-wake scale)
+        aLp = 1.0 - Math.exp(-2.0 * Math.PI * Math.max(2.0 * bpf, 80.0) / fs);
+        F.lp += aLp * (nz * aBb - F.lp);
+        y = x + F.lp;
+        if (!F.outside) { F.cabY += aCab * (y - F.cabY); y = F.cabY; }
+        buf[wi] = y;
+        s = buf[(wi - F.dL) & 511] * F.gL;
+        L[off + i] += s;
+        R[off + i] += buf[(wi - F.dR) & 511] * F.gR;
+        wi = (wi + 1) & 511;
+      }
+      F.wi = wi;
     };
     // ---- EngineVoice / ListenerSource interface
     V8pSynth.prototype.render = function (n, rpm, thr, L, R, off) {
