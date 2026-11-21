@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.11)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.12)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -1007,6 +1007,7 @@ function engineWorkletMain(modules) {
     report() { return this.cur.report ? this.cur.report() : null; }
     settling() { return !!(this.cur.settling && this.cur.settling()); }   // v1.11.43: silent pre-roll still running
     bay(o) { return this.cur.bay ? this.cur.bay(o) : false; }   // v1.10 engine bay: kernel crank state if the model has one
+    ownNoise() { return !!(this.cur.ownNoise && this.cur.ownNoise()); }   // v19: the source renders its own tyre / wind noise
     gainOf(pos) { const l = this.listeners[pos]; return Math.pow(10, ((l && l.gain_db) || 0) / 20); }
     setView(v) {
       const pos = this.views[v] || this.views[0];
@@ -1135,14 +1136,14 @@ function engineWorkletMain(modules) {
         }
         if (this.xfade >= 1) { this.src = this.nsrc; this.outGain = this.nsrc.outGain; this.modelId = this.nsrc.modelId; this.nsrc = null; }
       }
-      const fs = this.fs;
+      const fs = this.fs, ownN = !!(this.src.ownNoise && this.src.ownNoise());
       for (let k = 0; k < n; k++) {
         this.starterLvl += ((this.src.selfGated ? 0 : this.starterTarget) - this.starterLvl) * this.gainK;
         this.speedS += (this.speed - this.speedS) * 0.0005; this.skidS += (this.skid - this.skidS) * 0.002;
         const w = wv[k];
         const eL = tL[k], eR = tR[k];
         const v = this.speedS, vr = v / 40;
-        const road = Math.min(0.08, 0.05 * vr * vr);
+        const road = ownN ? 0 : Math.min(0.08, 0.05 * vr * vr);   // v19 sets render their own sourced road / wind noise (skid stays here)
         let wn = 0;   // wind: broadband, gusty, rising ~ v^3 in power; off since v1.10.4 (MIXER_WIND = 0: not engine sound, every car)
         if (MIXER_WIND > 0 && v > 3) {
           this.windLfo += 2 * Math.PI * 0.3 / fs; if (this.windLfo > 6.2832) this.windLfo -= 6.2832;
@@ -3961,6 +3962,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       DATA.cadillac59.sets['v17'].t_axial = 20;
     }
 
+    // Sound 'v19' (Cadillac, picker-only): v17 plus generic outside-path propagation and the road-noise
+    // block. Sourced: Levine & Schwinger 1948 / Ando 1968 directivity; ISO 9613-1 air absorption (20 C, 70 % RH: estimate);
+    // Delany & Bazley 1970 ground with Nord2000 class G (dense asphalt / concrete) sigma = 20 000 kPa s/m2 (Plovsing 2006;
+    // surface of the recordings unknown: estimate); mic-geometry coherence: height sd 0.3 m, distance sd 0.5 m (ESTIMATES,
+    // hand-held video camera). Noise: CNOSSOS-EU 2015/996 cat. 1; 8.20-15 bias-ply tyre, section ~208 mm, rim 15 in,
+    // overall ~0.72 m -> cavity mean diameter ~0.55 m (tyre size tables: estimate); 1959 wheelbase 130 in = 3.30 m (AMA),
+    // rear axle ~1.47 m ahead of the bumper (estimate); interior: mass law 9 kg/m2 floor (0.9 mm steel + trim: estimate),
+    // cavity peak +6 dB re 250 Hz (estimate), wind 65 dB(A) at 100 km/h with v^5.5 (George 1990 range 5-6; anchor estimate).
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v17'] && !DATA.cadillac59.sets['v19']) {
+      DATA.cadillac59.sets['v19'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v17']));
+      DATA.cadillac59.sets['v19'].out_path = { dir: 1, air: 1, ground: 20000, coh_h: 0.3, coh_d: 0.5, T: 20, RH: 70 };
+      DATA.cadillac59.sets['v19'].noise = { tyre_w: 208, d_mean: 0.55, wheelbase: 3.30, axle_x: 1.37, floor_m: 9, r_near: 1.0, cav_q: 8, cav_db: 6, wind_db100: 65, wind_n: 5.5, shape: 1 };
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -5843,7 +5858,84 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       return y;
     }
     /** post: sources -> listener (v8phys._post). BQ flat (rows of 5), BS flat (rows of 2), PATH flat (rows of 5), y interleaved L/R */
-    function post(n, fs, out, PV, PST, H, PATH, NPATH, BQ, BS, yL, yR, off) {
+    // ---- v19 generic outside-path and road-noise helpers (set keys out_path / noise; unused by older sets) ----
+    function besselJ1(x) { var s = 0.0, t = x / 2, m; for (m = 0; m < 30; m++) { s += t; t *= -(x * x / 4) / ((m + 1) * (m + 2)); if (Math.abs(t) < 1e-14) break; } return s; }
+    // |R| of an unflanged pipe end: Rousseau (1996) fits to Levine & Schwinger (1948)
+    function lsAbsR(ka) {
+      if (ka < 1e-6) return 1.0;
+      if (ka < 1.0) return Math.exp(-ka * ka / 2) * (1 + Math.pow(ka, 4) / 6 * (Math.log(1 / (1.781 * ka)) + 19 / 12));
+      return Math.sqrt(Math.PI * ka) * Math.exp(-ka) * (1 + 3 / (32 * ka * ka));
+    }
+    // Levine & Schwinger (1948) eq. VII.5 as corrected by Ando (1968): power gain of an unflanged pipe, normalised so the
+    // sphere average is 1 (an isotropic source = 1). Returns the PRESSURE factor sqrt(G). ka is clamped at 1.84 (first
+    // cross mode of the pipe; the plane-wave solution is not valid above it).
+    function lsGainRaw(th, ka, R) {
+      var x = ka * Math.sin(th), j = Math.abs(x) < 1e-8 ? 1.0 : 2 * besselJ1(x) / x, c = Math.cos(th), s2 = 1 - c * c;
+      return j * j * ((1 + c) * (1 + c) + 2 * s2 * R + (1 - c) * (1 - c) * R * R) / 4;
+    }
+    function lsDir(th, ka) {
+      ka = Math.min(ka, 1.84); var R = lsAbsR(ka), N = 0.0, i, M = 48;
+      for (i = 0; i < M; i++) { var t = (i + 0.5) * Math.PI / M; N += lsGainRaw(t, ka, R) * Math.sin(t) * Math.PI / M; }
+      N /= 2;
+      return Math.sqrt(lsGainRaw(th, ka, R) / N);
+    }
+    // ISO 9613-1 (1993) pure-tone atmospheric absorption, dB/m (T in C, RH in %, 101.325 kPa)
+    function isoAlpha(f, Tc, RH) {
+      var T = Tc + 273.15, T0 = 293.15, T01 = 273.16, C = -6.8346 * Math.pow(T01 / T, 1.261) + 4.6151, h = RH * Math.pow(10, C);
+      var frO = 24 + 4.04e4 * h * (0.02 + h) / (0.391 + h), frN = Math.pow(T / T0, -0.5) * (9 + 280 * h * Math.exp(-4.170 * (Math.pow(T / T0, -1 / 3) - 1)));
+      return 8.686 * f * f * (1.84e-11 * Math.sqrt(T / T0) + Math.pow(T / T0, -2.5) * (0.01275 * Math.exp(-2239.1 / T) / (frO + f * f / frO) + 0.1068 * Math.exp(-3352.0 / T) / (frN + f * f / frN)));
+    }
+    // plane-wave ground reflection, Delany & Bazley (1970) impedance (Embleton et al. 1983 form, sigma in kPa s/m2); e^{jwt}
+    function dbRefl(f, sigma, sinPsi) {
+      var X = f / sigma, zr = 1 + 9.08 * Math.pow(X, -0.75), zi = -11.9 * Math.pow(X, -0.73);
+      var ar = zr * sinPsi - 1, ai = zi * sinPsi, br = zr * sinPsi + 1, bi = zi * sinPsi, d = br * br + bi * bi;
+      return [(ar * br + ai * bi) / d, (ai * br - ar * bi) / d];
+    }
+    // magnitude fit of one RBJ biquad to a smooth target (dB) on a log grid by a small grid search: high shelf for direct
+    // rows (directivity + incoherent ground energy + air), low-pass x gain for ground-image rows. Phase is not fitted.
+    function rbjShelf(f0, gdb, fs) {
+      var A = Math.pow(10, gdb / 40), w = 2 * Math.PI * f0 / fs, cw = Math.cos(w), al = Math.sin(w) / 2 * Math.sqrt(2), sa = 2 * Math.sqrt(A) * al;
+      var b0 = A * ((A + 1) + (A - 1) * cw + sa), b1 = -2 * A * ((A - 1) + (A + 1) * cw), b2 = A * ((A + 1) + (A - 1) * cw - sa);
+      var a0 = (A + 1) - (A - 1) * cw + sa, a1 = 2 * ((A - 1) - (A + 1) * cw), a2 = (A + 1) - (A - 1) * cw - sa;
+      return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+    }
+    function bqDb(b, f, fs) {
+      var w = 2 * Math.PI * f / fs, c1 = Math.cos(w), s1 = Math.sin(w), c2 = Math.cos(2 * w), s2 = Math.sin(2 * w);
+      var nr = b[0] + b[1] * c1 + b[2] * c2, ni = -b[1] * s1 - b[2] * s2, dr = 1 + b[3] * c1 + b[4] * c2, di = -b[3] * s1 - b[4] * s2;
+      return 10 * Math.log10((nr * nr + ni * ni) / (dr * dr + di * di) + 1e-30);
+    }
+    function fitMag(Tdb, F, fs, kind) {
+      var best = null, be = 1e30, i, j, q, fl = -40;
+      var use = []; for (q = 0; q < F.length; q++) if (F[q] >= 40 && F[q] <= 12000) use.push(q);
+      for (i = 0; i < 24; i++) {
+        var fc = (kind === 'lp' ? 80 : 150) * Math.pow((kind === 'lp' ? 16000 / 80 : 10000 / 150), i / 23);
+        var opts = kind === 'lp' ? [0.5, 0.6, 0.707] : [];
+        if (kind === 'lp') {
+          for (j = 0; j < opts.length; j++) {
+            var b = rbj('lp', fc, opts[j], fs), off = 0, nw = 0, e = 0;
+            // image rows: errors weighted by target power, so the fit follows the band where the reflection is audible
+            for (q = 0; q < use.length; q++) if (Tdb[use[q]] > fl) { var wq = Math.pow(10, Tdb[use[q]] / 10); off += wq * (Tdb[use[q]] - bqDb(b, F[use[q]], fs)); nw += wq; }
+            off = nw ? off / nw : 0;
+            for (q = 0; q < use.length; q++) { var m = bqDb(b, F[use[q]], fs) + off, t = Tdb[use[q]]; var d = Math.max(m, fl) - Math.max(t, fl); e += Math.max(Math.pow(10, t / 10), 1e-3) * d * d; }
+            if (e < be) { be = e; var g = Math.pow(10, off / 20); best = [b[0] * g, b[1] * g, b[2] * g, b[3], b[4]]; }
+          }
+        } else {
+          for (j = 0; j < 49; j++) {
+            var gd = -12 + 0.5 * j, bs = rbjShelf(fc, gd, fs), off2 = 0;
+            for (q = 0; q < use.length; q++) off2 += Tdb[use[q]] - bqDb(bs, F[use[q]], fs);
+            off2 /= use.length; var e2 = 0;
+            for (q = 0; q < use.length; q++) { var d2 = bqDb(bs, F[use[q]], fs) + off2 - Tdb[use[q]]; e2 += d2 * d2; }
+            if (e2 < be) { be = e2; var g2 = Math.pow(10, off2 / 20); best = [bs[0] * g2, bs[1] * g2, bs[2] * g2, bs[3], bs[4]]; }
+          }
+        }
+      }
+      return best;
+    }
+    // CNOSSOS-EU (Directive (EU) 2015/996, Appendix F, Table F-1; the 2021/1226 table is ~2.5-3.5 dB(A) louder) category 1 (light motor vehicles) rolling-noise coefficients,
+    // octave bands 63 Hz - 8 kHz: L_WR = A_R + B_R log10(v / 70 km/h), dB re 1 pW
+    var CN_F = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
+    var CN_AR = [79.7, 85.7, 84.5, 90.2, 97.3, 93.9, 84.1, 74.3], CN_BR = [30.0, 41.5, 38.9, 25.7, 32.5, 37.2, 39.0, 40.0];
+    function post(n, fs, out, PV, PST, H, PATH, NPATH, BQ, BS, yL, yR, off, RQ, RS) {
       var k, e, j, m;
       for (k = 0; k < n; k++) {
         var ko = k * NO, hi = PST[3] | 0;
@@ -5870,6 +5962,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
             if ((PATH[pr + 1] | 0) !== e) continue;
             var s = PATH[pr] | 0, D = PATH[pr + 3], i0 = D | 0, fr = D - i0, hb = s * HB;
             var v = (1.0 - fr) * H[hb + ((hi - i0) & (HB - 1))] + fr * H[hb + ((hi - i0 - 1) & (HB - 1))];
+            if (RQ) { var q5 = j * 5;   // v19 out_path row filter (a flat row is a gain only: a1 = a2 = 0)
+              if (RQ[q5 + 3] !== 0 || RQ[q5 + 4] !== 0) { var q2 = j * 2, yq = RQ[q5] * v + RS[q2]; RS[q2] = RQ[q5 + 1] * v - RQ[q5 + 3] * yq + RS[q2 + 1]; RS[q2 + 1] = RQ[q5 + 2] * v - RQ[q5 + 4] * yq; v = yq; } else v *= RQ[q5]; }
             var rt = PATH[pr + 4] | 0;
             if (rt === 0) r0 += PATH[pr + 2] * v; else if (rt === 1) r1 += PATH[pr + 2] * v; else if (rt === 2) r2 += PATH[pr + 2] * v; else r3 += PATH[pr + 2] * v;
           }
@@ -6429,6 +6523,170 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         this.NA[nd * 2 + 1] = 1.0 - Math.exp(-2 * Math.PI * Math.min(fc, 0.45 * fs) / fs);
       }
     };
+    // v19 generic (set key out_path): per-row outside propagation filter, fitted once per listener as one biquad.
+    // Pipe-outlet directivity (Levine & Schwinger 1948 / Ando 1968), ISO 9613-1 air absorption, Delany-Bazley ground
+    // reflection (plane wave), and a coherence factor for the ground image from the uncertainty of the microphone
+    // geometry (Gaussian phase spread; Salomons 2001, Nord2000 / Plovsing 2006). Row gains keep 1/r and the delay.
+    V8pSynth.prototype._outPath = function (rows, pr, srcs) {
+      var op = this.P.out_path, fs = this.fs, N = rows.length, F = [], q, j, i;
+      for (q = 0; q < 36; q++) F.push(40 * Math.pow(Math.min(16000, 0.45 * fs) / 40, q / 35));
+      var RQ = new Float64Array(N * 5), a = (this.P.tail_d || this.c.pipe_d) / 2, ax = op.axis || [-1, 0, 0];
+      var Tc = op.T !== undefined ? op.T : 20, RH = op.RH !== undefined ? op.RH : 70;
+      this.outFit = [];
+      for (j = 0; j < N; j++) {
+        var rw = rows[j], s = rw[0], img = rw[5] | 0, ear = pr.ears[rw[1]], pos = srcs[s], z = img ? -pos[2] : pos[2];
+        var dx = ear[0] - pos[0], dy = ear[1] - pos[1], dz = ear[2] - z, r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        var th = Math.acos(Math.max(-1, Math.min(1, (dx * ax[0] + dy * ax[1] + dz * (img ? -ax[2] : ax[2])) / r)));
+        var useDir = op.dir && s <= 1, sigD = 0.0, sinPsi = (pos[2] + ear[2]) / r;
+        if (img && op.ground) this.PATH[j * 5 + 2] /= (pr.ground || 1);
+        if (img && op.coh_h) {
+          var hs = pos[2], hr = ear[2], dh = Math.sqrt(dx * dx + dy * dy);
+          var dl = function (h, d) { return Math.sqrt(d * d + (hs + h) * (hs + h)) - Math.sqrt(d * d + (hs - h) * (hs - h)); };
+          var gh = (dl(hr + 0.01, dh) - dl(hr - 0.01, dh)) / 0.02, gd = (dl(hr, dh + 0.01) - dl(hr, dh - 0.01)) / 0.02;
+          sigD = Math.sqrt(gh * gh * op.coh_h * op.coh_h + gd * gd * (op.coh_d || 0) * (op.coh_d || 0));
+        }
+        if (!useDir && !op.air && !img) { RQ[j * 5] = 1; continue; }
+        var T = [], imgRow = -1;
+        if (!img && op.coh_h) for (i = 0; i < N; i++) if (rows[i][0] === s && rows[i][1] === rw[1] && (rows[i][5] | 0)) imgRow = i;
+        for (q = 0; q < F.length; q++) {
+          var f = F[q], re = 1.0, im = 0.0;
+          if (useDir) re *= lsDir(th, 2 * Math.PI * f * a / C_AIR);
+          if (op.air) re *= Math.pow(10, -isoAlpha(f, Tc, RH) * r / 20);
+          if (img && op.ground) { var g = dbRefl(f, op.ground, sinPsi), t = re; re = t * g[0]; im = t * g[1]; }
+          if (img && sigD > 0) { var k = 2 * Math.PI * f * sigD / C_AIR, cf = Math.exp(-0.5 * k * k); re *= cf; im *= cf; }
+          if (imgRow >= 0) {   // incoherent part of the ground image, (1 - C^2) |Q|^2 (r / ri)^2, added in power (Nord2000 energy split)
+            var ri_ = rows[imgRow][6], pI = srcs[s], eI = ear, zI = -pI[2], dI = Math.sqrt((eI[0] - pI[0]) * (eI[0] - pI[0]) + (eI[1] - pI[1]) * (eI[1] - pI[1]) + (eI[2] - zI) * (eI[2] - zI));
+            var sinI = (pI[2] + eI[2]) / dI, gI = op.ground ? dbRefl(f, op.ground, sinI) : [pr.ground || 0.8, 0], dhI = Math.sqrt((eI[0] - pI[0]) * (eI[0] - pI[0]) + (eI[1] - pI[1]) * (eI[1] - pI[1]));
+            var hsI = pI[2], hrI = eI[2], dlI = function (h, d) { return Math.sqrt(d * d + (hsI + h) * (hsI + h)) - Math.sqrt(d * d + (hsI - h) * (hsI - h)); };
+            var ghI = (dlI(hrI + 0.01, dhI) - dlI(hrI - 0.01, dhI)) / 0.02, gdI = (dlI(hrI, dhI + 0.01) - dlI(hrI, dhI - 0.01)) / 0.02;
+            var sgI = Math.sqrt(ghI * ghI * op.coh_h * op.coh_h + gdI * gdI * (op.coh_d || 0) * (op.coh_d || 0)), kI = 2 * Math.PI * f * sgI / C_AIR, CI = Math.exp(-0.5 * kI * kI);
+            var thI = Math.acos(Math.max(-1, Math.min(1, ((eI[0] - pI[0]) * ax[0] + (eI[1] - pI[1]) * ax[1] + (eI[2] - zI) * -ax[2]) / dI)));
+            var DI = useDir ? lsDir(thI, 2 * Math.PI * f * a / C_AIR) : 1.0, AI = op.air ? Math.pow(10, -isoAlpha(f, Tc, RH) * dI / 20) : 1.0;
+            var eInc = (1 - CI * CI) * (gI[0] * gI[0] + gI[1] * gI[1]) * DI * DI * AI * AI * (r / ri_) * (r / ri_);
+            re = Math.sqrt(re * re + eInc);
+          }
+          var mg = Math.sqrt(re * re + im * im); if (!(mg >= 1e-3)) { if (mg > 1e-30) { re = re / mg * 1e-3; im = im / mg * 1e-3; } else { re = 1e-3; im = 0.0; } }
+          T.push([re, im]);
+        }
+        var Tdb = T.map(function (t) { return 20 * Math.log10(Math.sqrt(t[0] * t[0] + t[1] * t[1]) + 1e-30); });
+        var mT = 0, nT = 0, dT = 0; for (q = 0; q < F.length; q++) if (F[q] <= 12000) { mT += Tdb[q]; nT++; } mT /= nT;
+        for (q = 0; q < F.length; q++) if (F[q] <= 12000) dT = Math.max(dT, Math.abs(Tdb[q] - mT));
+        if (dT < 1.0) { RQ[j * 5] = Math.pow(10, mT / 20); this.outFit.push({ row: j, s: s, img: img, flat: true, r: r }); continue; }   // within 1 dB of flat (e.g. air absorption only, a few metres): gain only
+        var b = fitMag(Tdb, F, fs, img ? 'lp' : 'hs'); for (i = 0; i < 5; i++) RQ[j * 5 + i] = b[i];
+        // the targets are zero-phase (Gaussian coherence, near-real Rp, real directivity): remove the biquad's low-frequency group delay
+        // from the row delay so direct/image interference below the cut-off keeps its geometric phase
+        var gB = b[0] + b[1] + b[2], gA = 1 + b[3] + b[4], tau0 = (b[1] + 2 * b[2]) / gB - (b[3] + 2 * b[4]) / gA;
+        if (tau0 > 0) this.PATH[j * 5 + 3] = Math.max(1, this.PATH[j * 5 + 3] - tau0);
+        this.outFit.push({ row: j, s: s, img: img, th: th, r: r, sigD: sigD, b: b, T: T, F: F });
+      }
+      this.RQ = RQ; this.RS = new Float64Array(N * 2);
+    };
+    // v19 generic (set key noise): tyre/road rolling noise (CNOSSOS-EU category 1, octave bands, speed law, tyre width),
+    // tyre-cavity resonance c/(pi d_mean) (Sakata et al. 1990), interior wind noise ~ v^n (George 1990, SAE 900315).
+    // Pressure in Pa at the ear times the listener gain PV[5], so its level is physical relative to the engine.
+    var NOISE_OFF = (typeof process !== 'undefined' && process.env && process.env.NON_ENGINE_NOISE === '0');
+    // Cost: one white-noise source through a 3-biquad cascade (low shelf, peak, high shelf) fitted at setup to the target spectrum
+    // at 8 table speeds (log-spaced), plus a tyre-cavity peak inside; the level is calibrated per block from the exact target power.
+    function nzPeak(f0, gdb, q, fs) {
+      var A = Math.pow(10, gdb / 40), w = 2 * Math.PI * f0 / fs, al = Math.sin(w) / (2 * q), cw = Math.cos(w), a0 = 1 + al / A;
+      return [(1 + al * A) / a0, -2 * cw / a0, (1 - al * A) / a0, -2 * cw / a0, (1 - al / A) / a0];
+    }
+    function nzLowShelf(f0, gdb, fs) {
+      var A = Math.pow(10, gdb / 40), w = 2 * Math.PI * f0 / fs, cw = Math.cos(w), al = Math.sin(w) / 2 * Math.sqrt(2), sa = 2 * Math.sqrt(A) * al;
+      var b0 = A * ((A + 1) - (A - 1) * cw + sa), b1 = 2 * A * ((A - 1) - (A + 1) * cw), b2 = A * ((A + 1) - (A - 1) * cw - sa);
+      var a0 = (A + 1) + (A - 1) * cw + sa, a1 = -2 * ((A - 1) + (A + 1) * cw), a2 = (A + 1) + (A - 1) * cw - sa;
+      return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+    }
+    V8pSynth.prototype._noiseTarget = function (kmh, F) {   // target pressure PSD (Pa^2/Hz, unweighted) at the ear, per F point
+      var o = this.P.noise, R = this.RN, ve = Math.max(kmh, 20), dW = (o.width_db_10mm !== undefined ? o.width_db_10mm : 0.3) * ((o.tyre_w || 195) - 195) / 10;
+      var rc = RHO_AIR * C_AIR, D = [], i, q, out = [];
+      for (i = 0; i < 8; i++) {   // octave band power -> mean PSD over the octave (bandwidth f / sqrt(2))
+        var Lw = CN_AR[i] + CN_BR[i] * Math.log10(ve / 70) + dW - R.TL[i];
+        D.push(Math.log10(rc * Math.pow(10, Lw / 10) * 1e-12 / (2 * Math.PI) * R.geo / (CN_F[i] / Math.SQRT2)));
+      }
+      var Pw = 0.0;
+      if (!R.out) Pw = Math.pow(10, ((o.wind_db100 !== undefined ? o.wind_db100 : 65) + 10 * (o.wind_n || 5.5) * Math.log10(Math.max(kmh, 1) / 100) + 10 * Math.log10(o.shape || 1)) / 10) * 4e-10;
+      for (q = 0; q < F.length; q++) {
+        var x = Math.log2(F[q] / 63), k = Math.max(0, Math.min(6, Math.floor(x))), t = Math.max(-1, Math.min(2, x - k));
+        var d = Math.pow(10, D[k] + (D[k + 1] - D[k]) * t);
+        out.push(d + Pw * R.windShape[q]);
+      }
+      return out;
+    };
+    V8pSynth.prototype._noiseSetup = function (pr) {
+      var o = this.P.noise, fs = this.fs, R = { st: new Float64Array(8), dl: new Float32Array(1024), di: 0, seed: 12345, v: 0, k: -1, gain: 0 }, i, q;
+      this.RN = R;
+      var wb = o.wheelbase || 2.7, xr = o.axle_x !== undefined ? o.axle_x : 1.3, axles = [[xr, 0, 0.05], [xr + wb, 0, 0.05]];
+      R.out = !!pr.outside; R.geo = 0.0;
+      if (R.out) for (var a = 0; a < 2; a++) { var e = pr.ears[0], dx = e[0] - axles[a][0], dy = e[1] - axles[a][1], dz = e[2] - axles[a][2]; R.geo += 0.5 / Math.max(0.25, dx * dx + dy * dy + dz * dz); }
+      else R.geo = 2 * (1 / (o.r_near || 1.0) / (o.r_near || 1.0));   // interior: two tyres per axle side at r_near, then the body TL
+      R.TL = CN_F.map(function (f) { return R.out ? 0.0 : Math.max(0.0, 20 * Math.log10((o.floor_m || 9) * f) - 47.0); });
+      R.fcav = C_AIR / (Math.PI * (o.d_mean || 0.55));
+      R.cav = R.out ? null : nzPeak(R.fcav, o.cav_db !== undefined ? o.cav_db : 6, o.cav_q || 8, fs);
+      var F = []; for (q = 0; q < 28; q++) F.push(44 * Math.pow(11300 / 44, q / 27));
+      var wbp = rbj('bp', 700.0, 0.5, fs), wlp = rbj('lp', 3000.0, 0.7, fs), wI = 0.0, wS = [];
+      for (q = 0; q < F.length; q++) wS.push(Math.pow(10, (bqDb(wbp, F[q], fs) + bqDb(wlp, F[q], fs)) / 10));
+      for (q = 1; q < F.length; q++) wI += 0.5 * (wS[q] + wS[q - 1]) * (F[q] - F[q - 1]);
+      R.windShape = wS.map(function (w) { return w / wI; }); R.F = F;
+      R.tab = [15, 22, 32, 45, 63, 90, 125, 180]; R.bqs = [];
+      var self = this;
+      R.tab.forEach(function (kmh) {
+        var T = self._noiseTarget(kmh, F).map(function (d) { return 10 * Math.log10(d); });
+        var p = [150, 0, 1000, 0, 0.7, 4000, 0], lim = [[60, 600], [-30, 30], [200, 6000], [-30, 30], [0.3, 2.5], [1500, 9000], [-30, 30]];
+        var mk = function (p) { return [nzLowShelf(p[0], p[1], fs), nzPeak(p[2], p[3], p[4], fs), nzPeak(p[5], p[6], 0.5, fs)]; };
+        // only points within 30 dB of the A-weighted maximum count (IEC 61672 A-weighting): the fit follows what is audible
+        var TA = T.map(function (t, q) { var f2 = F[q] * F[q], ra = 12194 * 12194 * f2 * f2 / ((f2 + 20.6 * 20.6) * Math.sqrt((f2 + 107.7 * 107.7) * (f2 + 737.9 * 737.9)) * (f2 + 12194 * 12194)); return t + 20 * Math.log10(ra) + 2.0; });
+        var mxA = Math.max.apply(null, TA), W = TA.map(function (t) { return t >= mxA - 30 ? 1 : 0; }), nW = W.reduce(function (a, b) { return a + b; }, 0);
+        var err = function (p) { var B = mk(p), m = [], off = 0, e = 0;
+          for (var q = 0; q < F.length; q++) { var v = bqDb(B[0], F[q], fs) + bqDb(B[1], F[q], fs) + bqDb(B[2], F[q], fs); m.push(v); off += W[q] * (T[q] - v); }
+          off /= nW; for (q = 0; q < F.length; q++) { var d = m[q] + off - T[q]; e += W[q] ? d * d : (d > 0 ? d * d : 0); } return e; };   // outside the band: no overshoot
+        var be = err(p), step = [0.3, 6, 0.4, 6, 0.4, 0.3, 6];
+        for (var it = 0; it < 60; it++) {   // coordinate descent (log steps for frequencies / Q)
+          var moved = false;
+          for (var j = 0; j < 7; j++) for (var sg = -1; sg <= 1; sg += 2) {
+            var t = p.slice(), lg = (j === 0 || j === 2 || j === 4 || j === 5);
+            t[j] = lg ? p[j] * Math.exp(sg * step[j]) : p[j] + sg * step[j];
+            t[j] = Math.max(lim[j][0], Math.min(lim[j][1], t[j]));
+            var et = err(t); if (et < be) { be = et; p = t; moved = true; }
+          }
+          if (!moved) for (j = 0; j < 7; j++) step[j] *= 0.5;
+        }
+        var B = mk(p), H2 = 0.0, Lp = [];   // integral of |H|^2 over the fit band (broadband cascade; the cavity peak adds its own power on top)
+        for (q = 0; q < F.length; q++) Lp.push(Math.pow(10, (bqDb(B[0], F[q], fs) + bqDb(B[1], F[q], fs) + bqDb(B[2], F[q], fs)) / 10));
+        for (q = 1; q < F.length; q++) H2 += 0.5 * (Lp[q] + Lp[q - 1]) * (F[q] - F[q - 1]);
+        R.bqs.push({ B: B, H2: H2, rms: Math.sqrt(be / nW) });
+      });
+      return R;
+    };
+    V8pSynth.prototype._noiseLevels = function (vms) {   // per block: table shape for this speed and the exact target power
+      var R = this.RN, kmh = vms * 3.6, fade = kmh >= 20 ? 1 : (kmh / 20) * (kmh / 20), k = 0, q, F = R.F;
+      for (q = 1; q < R.tab.length; q++) if (Math.abs(Math.log(kmh / R.tab[q])) < Math.abs(Math.log(kmh / R.tab[k]))) k = q;
+      if (k !== R.k) { R.k = k; R.B = R.bqs[k].B; }
+      var T = this._noiseTarget(kmh, F), P = 0.0;
+      for (q = 1; q < F.length; q++) P += 0.5 * (T[q] + T[q - 1]) * (F[q] - F[q - 1]);
+      R.P = P * fade;
+      R.gain = Math.sqrt(R.P / ((1 / 3) * (2 / this.fs) * R.bqs[k].H2));   // uniform noise variance 1/3, one-sided PSD 2 var / fs
+    };
+    V8pSynth.prototype._noiseRun = function (n, L, R2, off) {
+      var R = this.RN, v = this.game.speed || 0;
+      R.v += (v - R.v) * Math.min(1, n / (0.25 * this.fs));
+      if (R.v < 0.3) return;
+      if (!(Math.abs(R.v - (R.vl || 0)) <= 0.005 * R.v)) { this._noiseLevels(R.v); R.vl = R.v; }   // re-level on a 0.5 % speed change (< 0.1 dB)
+      var B = R.B, b0 = B[0], b1 = B[1], b2 = B[2], c = R.cav, S = R.st, gain = R.gain * this.PV[5], dl = R.dl, k, seed = R.seed, di = R.di;
+      var a0 = b0[0], a1 = b0[1], a2 = b0[2], a3 = b0[3], a4 = b0[4], e0 = b1[0], e1 = b1[1], e2 = b1[2], e3 = b1[3], e4 = b1[4];
+      var h0 = b2[0], h1 = b2[1], h2 = b2[2], h3 = b2[3], h4 = b2[4], s0 = S[0], s1 = S[1], s2 = S[2], s3 = S[3], s4 = S[4], s5 = S[5], s6 = S[6], s7 = S[7];
+      var c0 = c ? c[0] : 1, c1 = c ? c[1] : 0, c2 = c ? c[2] : 0, c3 = c ? c[3] : 0, c4 = c ? c[4] : 0, g = gain * 2 / 4294967296;
+      for (k = 0; k < n; k++) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var x = seed - 2147483648;
+        var y = a0 * x + s0; s0 = a1 * x - a3 * y + s1; s1 = a2 * x - a4 * y; x = y;
+        y = e0 * x + s2; s2 = e1 * x - e3 * y + s3; s3 = e2 * x - e4 * y; x = y;
+        y = h0 * x + s4; s4 = h1 * x - h3 * y + s5; s5 = h2 * x - h4 * y; x = y;
+        y = c0 * x + s6; s6 = c1 * x - c3 * y + s7; s7 = c2 * x - c4 * y;
+        y *= g;
+        L[off + k] += y; R2[off + k] += dl[(di - 331) & 1023]; dl[di] = y; di = (di + 1) & 1023;
+      }
+      S[0] = s0; S[1] = s1; S[2] = s2; S[3] = s3; S[4] = s4; S[5] = s5; S[6] = s6; S[7] = s7; R.seed = seed; R.di = di;
+    };
     V8pSynth.prototype._listener = function (name, keepState) {
       var c = this.c, P = this.P, fs = this.fs, pr = perspective(c, name), rows = [], e, s;
       this.persp = pr; this.posName = name;
@@ -6440,10 +6698,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           if (front && !pr.bay) sh = c.eng_shadow !== undefined ? c.eng_shadow : pr.shadow;   // job 8: rear engine behind the lid grille
           if (!front && pr.bay) sh = P.bay_exh;
           if (s === 5) sh = Math.max(sh, 0.7) * (P.k_st_out !== undefined ? P.k_st_out : 1.0);   // starter: bellhousing / body diffraction, still heard from behind
-          rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
+          rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0, 0, r]);
           if (s !== 5) {   // starter is under the bellhousing: a specular ground image puts static comb notches (~0.9/2.7/4.5 kHz) in the grind
             var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
-            rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0]);
+            rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0, 1, ri]);
           }
         } else {
           var cabG = s === 5 ? 0.22 * (P.k_st_cab !== undefined ? P.k_st_cab : 1.0) : 1.0;   // starter in the cabin: clearly audible, not 20 dB over idle
@@ -6458,6 +6716,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       }
       this.NPATH = rows.length; this.PATH = new Float64Array(rows.length * 5);
       rows.forEach(function (rw, j) { for (var t = 0; t < 5; t++) this.PATH[j * 5 + t] = rw[t]; }, this);
+      this.RQ = null; this.RS = null;
+      if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
+      this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -6632,7 +6893,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       kv8(m, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
       this._thermal(m / this.fs, K[K_IGN] > 0.5);
       this._pipes();
-      post(m, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, this._stL, this._stR, 0);
+      post(m, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, this._stL, this._stR, 0, this.RQ, this.RS);
       this._settleLeft -= m;
       if (this._settleLeft > 0) { for (j = 0; j < n; j++) { L[off + j] = 0; R[off + j] = 0; } return; }
       // pre-roll done: render the held first audible block now (its K; Q is untouched since)
@@ -6710,7 +6971,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var firing = K[K_IGN] > 0.5 && (this.S[S_NFIRE] > nf0 || this.ctlr.recentFire());
       this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
       this._thermal(dtb, firing); this._pipes();
-      post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off);
+      post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off, this.RQ, this.RS);
+      if (this.RN) this._noiseRun(n, L, R, off);
     };
     // ---- EngineVoice / ListenerSource interface
     V8pSynth.prototype.render = function (n, rpm, thr, L, R, off) {
@@ -6718,12 +6980,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       var gm = this.selfGated ? this.game : null;
       for (var s = 0; s < n;) { var m = Math.min(256, n - s); this.block(m, rpm, thr, gm, L, R, off + s); s += m; }
     };
+    V8pSynth.prototype.ownNoise = function () { return !!this.P.noise; };
     V8pSynth.prototype.ctl = function (m) {
       var g = this.game;
       if (m.running !== undefined) { g.running = !!m.running; g.has = true; }
       if (m.starter !== undefined) { g.starter = !!m.starter; g.has = true; }
       if (m.warm !== undefined) g.warm = !!m.warm;
       if (m.gear !== undefined) g.gear = m.gear;
+      if (m.speed !== undefined) g.speed = m.speed;   // m/s (v19 road noise; ignored by sets without noise)
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
@@ -11685,7 +11949,7 @@ var ProjectHistory = {
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. All four cars share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The live site is v1.13.11. The Cadillac default is still v12 · Cadillac p1. Sound v17 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is v16 plus two generic physical effects, with no fitted values — the exhaust gas cools along each pipe run, and every step in pipe size has the textbook flow loss (Borda–Carnot). On the cleaned scorecard (scorer v2, lower is closer) v17 scores a combined 3.715 and a ring of 3.34 dB, against v16 4.191 and 4.08. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, and Sound v13–v17 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
+    intro: 'All four cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. All four cars share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The live site is v1.13.12. The Cadillac default is still v12 · Cadillac p1. Sound v19 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v17 plus a generic outside-path block and a tyre and wind noise block, with no fitted values. The outside path adds pipe-outlet directivity, ground reflection with the phase of that reflection set correctly, and air absorption. The noise block adds rolling noise, the tyre-cavity tone, wind, and cabin insulation, and it follows the game’s road speed. On the current scorecard (scorer v2.3, lower is closer) v19 and v17 are effectively tied: combined 2.94 and 2.95, against a recordings floor of 2.27; p1 is 3.58. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17 and Sound v19 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
         sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
       { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
@@ -11701,13 +11965,14 @@ var ProjectHistory = {
       { title: 'Listener positions', text: 'In the game you can listen from inside the car (at the driver\u2019s head, with the cabin path above), from outside behind the car (about a metre behind the tailpipe mouths, with body shadow and a ground reflection), from the engine bay (near the intake, with the exhaust quieter than it is outside), or in the garage \u2014 either standing in the bay or sitting in the cabin, with the garage\u2019s own acoustics around the engine. The two tailpipe mouths are the exhaust sources; the official scorecard also compares a close recording at those mouths (the tailpipe perspective), which is not a separate item in the Position menu. A farther roadside point and an open-window cabin mix exist in the model but are not offered as game views.' },
       { title: 'Other filters', text: 'Distance and delay (sound falls with range and arrives later from a farther source), the 911\u2019s rear lid shadow, packing and wall damping in the silencers, and a little equalisation on the radiation and on the throttle hiss, are the remaining filters. Nothing you hear is a recording, and there is no added flow-noise effect on the 911 exhaust valves.' },
       { title: 'How the sound is fitted', text: 'When the model is matched to a recording of a standard car, the engine\u2019s real sizes stay as they are: bore, stroke, compression, firing order, cam timing, pipe lengths, gear ratios. What is adjusted are the model parameters \u2014 how hard the burn is, how much leftover gas there is, how much the muffler damps, how much comes through the body, and so on. Those knobs are tuned so the synthetic sound is as close as possible to the recording, judged on a scorecard of engine speed against throttle opening (a grid of rpm bands and throttle levels). A lower score is closer. The Specs page lists every one of those figures for the car you have selected.' },
-      { title: 'Where the model stands now', text: 'The physics has to stay the core, because the aim is that aftermarket parts — a different muffler, resonator, or a set of pipes — should be heard as a change of parameters, not hidden by a correction fitted to the stock car. That is why the Cadillac default is still p1 until the owner listens, why v17 was shipped as sourced physics rather than a fitted equaliser, and why v18 was shelved. The remaining Cadillac gap on the cleaned scorecard is no longer a small scoring noise: v17 is clearly closer than v16, but the two large cans about three metres apart still ring and still leave an idle hole, and the cabin and outside paths are only a first model of the body.' },
-      { title: 'What comes next', text: 'The next work is in this order. First, tyre and wind noise as a separate block, almost the same for every car, scaled by the tyres and the body shape, so it can be judged apart from the engine. Then a more accurate cabin path and a more accurate outside path. After that, mufflers and resonators built as swappable parts, and a direct look at the standing waves from those two cans three metres apart — the likely cause of the idle hole and the ring, which the short, unmuffled GT350 pipes never build.' }
+      { title: 'Where the model stands now', text: 'The physics has to stay the core, because the aim is that aftermarket parts — a different muffler, resonator, or a set of pipes — should be heard as a change of parameters, not hidden by a correction fitted to the stock car. That is why the Cadillac default is still p1 until the owner listens, why v19 ships sourced physics (the outside path and the noise block) rather than a fitted equaliser, and why v18 was shelved. Scoring is now scorer v2.3. The remaining Cadillac gap is no longer a small scoring noise: v19 and v17 are effectively tied, and clearly closer than earlier sets, but the two large cans about three metres apart still ring and still leave an idle hole. The cabin path is still only a first model of the body. Mid- and high-rev throttle-off still needs a look.' },
+      { title: 'What comes next', text: 'The work is in this order. The outside path came first (pipe-outlet directivity, ground reflection, air absorption), then tyre and wind noise as a separate block, almost the same for every car, scaled by the tyres and the body shape, so it can be judged apart from the engine — both are now in Sound v19 · Cadillac. Next is the engine and exhaust, with mufflers and resonators built as swappable parts, and a direct look at the standing waves from those two cans three metres apart — the likely cause of the idle hole and the ring, which the short, unmuffled GT350 pipes never build.' }
     ]
   },
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.12", date: "2026-11-21", status: "done", headline: "Sound v19 · Cadillac: v17 with the outside path and a tyre and wind noise block", text: "Sound v19 · Cadillac is Sound v17 plus two generic physical blocks, with no fitted values. First, the sound leaving the tailpipe now includes pipe-outlet directivity, a ground reflection with the phase of that reflection set correctly, and air absorption. Second, tyre rolling noise, the tyre-cavity tone, wind, and the cabin\u2019s insulation are a separate noise block that follows the game\u2019s road speed. On the current scorecard (scorer v2.3, lower is closer) v19 and v17 are effectively tied: combined 2.94 and 2.95, against a recordings floor of 2.27; p1 is 3.58. The earlier outside scores (scorer v2) improve a little (far 4.97 against v17 5.15), well inside the 0.3 noise level. CPU stays in the same range as v17. It is picker-only, after Sound v17 \u00b7 Cadillac; p1 stays the default; no new URL. v18, a fitted equaliser, was shelved and was never pushed. Every other sound is bit-identical." },
       { v: "v1.13.11", date: "2026-11-20", status: "done", headline: "Sound v17 · Cadillac: v16 with the exhaust gas cooling along the pipes and flow loss at the pipe steps", text: "Sound v17 · Cadillac is v16 plus two physical effects that the model did not have yet, with no fitted values. First, the exhaust gas now cools along each pipe run, from the head pipe to the tail, by a standard heat balance: the heat transfer inside the pipe comes from the engine model\u2019s own flow (Dittus\u2013Boelter), and outside it is still air with radiation from oxidised steel (20 W/m\u00b2K, from Churchill\u2013Chu and Incropera). At idle the resonator and tail pipe now run at about 385 K instead of 505 K, so the tail pipe\u2019s resonance and the two cans\u2019 pass bands no longer line up and ring together. Second, every step in pipe size has the textbook flow loss (Borda\u2013Carnot). On the cleaned scorecard (scorer v2, lower is closer): combined 3.715 against v16 4.191 and p8 4.231; pooled 2.880 (v16 3.172, p8 3.063); ring 3.34 dB (v16 4.08, p8 4.67); cabin low-band tilt unchanged (\u22122.18 against \u22122.21 dB/oct). Same CPU as v16 and p8. It is picker-only, after Sound v16 \u00b7 Cadillac; p1 stays the default; no new URL. Every other sound is bit-identical." },
       { v: "v1.13.10", date: "2026-11-19", status: "done", headline: "Sound v16 · Cadillac: plain long chambers in the real Walker shells, worked out backwards from the recordings", text: "Sound v16 · Cadillac follows the inverse-cans analysis: rendering v15 with its cans swapped for straight pipe and comparing it with the real recordings shows the cans should cut about evenly from 125 Hz to 2 kHz, while v15's cans acted as a strong low-pass. v16 keeps v15's engine and pipes and uses one plain long chamber per can in the sourced Walker shells (muffler 21158, resonator 21159), with the realistic louvre damping worked out for p9 and the first can's gas at the hotter temperature of the pipe feeding it. Tracing the pipe network showed no numerical error in how the cans join the pipes: the remaining 250 Hz bump comes from the tail pipe ringing near 450 Hz, which is real physics. Picker-only, after Sound v15 · Cadillac; p1 stays the default." },
       { v: "v1.13.9", date: "2026-11-19", status: "done", headline: "v12 · Cadillac p10: p9 with damping at the upper end of the plausible range", text: "v12 · Cadillac p10 is p9 with more damping, set by the same physics at the upper end of what is plausible: the exhaust flow of steady cruising, the fewest louvres the patent drawing allows, the extra resistance of exhaust flowing across the louvres, and the high end of the measured perforate resistance. That gives about 1 to 6 dB of damping in the muffler and 0.7 to 3.4 dB in the resonator, rising with pitch, about twice p9. It is the realistic ceiling for these cans without packing. It is set with the same generic packing terms: 0.39 in the muffler, 0.24 in the resonator, plus a broadband part of 0.31. p10 is the closest of p8–p10 at 2,400–3,600 rpm and further at lower rpm. Same CPU as p8. Added after p9 on Cadillac's one drop-down, picker-only; p1 stays the default; no new URL; no Cadillac-only code; every older entry stays bit-identical." },
@@ -11819,7 +12084,6 @@ var ProjectHistory = {
       { v: "v1.1", date: "2026-11-11", status: "done", headline: "Inside and outside views, period interiors, touch controls", text: "Sound on iPhone fixed; inside / outside view; period interiors for both cars; touch controls." },
     ] },
     { title: "Site and fixes", items: [
-      { v: "v1.13.11", date: "2026-11-21", status: "done", headline: "The info page now matches the model's actual status", text: "The in-game info page (About / How the sound model works) is updated to the model as it stands after v1.13.11: Sound v17 \u00b7 Cadillac is live in the picker, the Cadillac default is still p1, a fitted equaliser (v18) was shelved on 21 November 2026 and was never pushed — because it would hide the sound of aftermarket parts — and the next work is a separate tyre and wind noise block, then better cabin and outside paths, then swappable mufflers and resonators plus the two-can standing-wave question. The sound models themselves are unchanged. Every existing set stays bit-identical." },
       { v: "v1.11.18", date: "2026-11-14", status: "done", headline: "Info, Specs and History now describe the BRM\u2019s v9.11 default", text: "\u201cHow the sound model works\u201d (the info button, and the link from Specs) now says that all four cars use a physics model, that the 911\u2019s default is VarioCam Plus, and that the BRM\u2019s default is v9.11. The Specs page for the BRM lists the v9.11 physics parameters (combustion, open stubs, supercharger, fuel, afterburn and the listening path) instead of the retired v8 order-table calibration, and the intake section describes the SU carburettor and two-stage blower. History marks v8 as retired. The on-page help for key B and the BRM sound menu match the new default." },
       { v: "v1.11.14", date: "2026-11-14", status: "done", headline: "The info button now explains how the sound model works", text: "The i button (About / History) now opens with a plain-language explanation of how the sound model works: combustion pulses, gas exchange, the exhaust and muffler, intake and valve train, and the path into the cabin — and how the sound is fitted. Engine sizes and gearing stay fixed; only the model parameters are tuned, then scored on an rpm-by-throttle card. The same explanation is linked from the Specs page. No sound or physics changes." },
       { v: "v1.11.6", date: "2026-11-13", status: "done", headline: "History panel grouped by area, with headlines and details", text: "The About / History panel is grouped by area (sound models, cars, driving and controls, visuals and engine bay, site and fixes). Each release has a one-line headline; tap it to open the full note. Versions and dates are unchanged. The panel still works on a Tesla browser and on older iPads." },
@@ -12446,11 +12710,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (/^v11\.(cadillac|caddy)\.p\d+$/.test(v)) return 'v9p';   // v1.12.3: v12.cadillac.p2 etc. still the v12 kernel; the set is caddyName()
     return v;
   }
-  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16 and v17 are picker-only (no URL)
+  function defaultCaddySound() { return 'p1'; }   // p1 stays the Cadillac default; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17 and v19 are picker-only (no URL)
   function caddyName(v, allowPicker) {
     if (!v) return defaultCaddySound();
     v = String(v).toLowerCase().replace(/^v12/, 'v11');
-    // Picker values only. No ?caddy=p7 / ?caddy=p8 / ?caddy=p9 / ?caddy=p10 / ?caddy=v13 / ?caddy=v13.1 / ?caddy=v13.2 / ?caddy=v13.4 / ?caddy=v14 / ?caddy=v14.1 / ?caddy=v15 / ?caddy=v16 / ?caddy=v17 / ?cadillac=… / ?sound=… aliases (allowPicker is false on the URL path).
+    // Picker values only. No ?caddy=p7 / ?caddy=p8 / ?caddy=p9 / ?caddy=p10 / ?caddy=v13 / ?caddy=v13.1 / ?caddy=v13.2 / ?caddy=v13.4 / ?caddy=v14 / ?caddy=v14.1 / ?caddy=v15 / ?caddy=v16 / ?caddy=v17 / ?caddy=v19 / ?cadillac=… / ?sound=… aliases (allowPicker is false on the URL path).
     if (allowPicker && v === 'p7') return 'p7';
     if (allowPicker && v === 'p8') return 'p8';
     if (allowPicker && v === 'p9') return 'p9';
@@ -12458,6 +12722,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (allowPicker && v === 'v15') return 'v15';
     if (allowPicker && v === 'v16') return 'v16';
     if (allowPicker && v === 'v17') return 'v17';
+    if (allowPicker && v === 'v19') return 'v19';
     if (allowPicker && v === 'v14.1') return 'v14.1';
     if (allowPicker && v === 'v14') return 'v14';
     if (allowPicker && v === 'v13.4') return 'v13.4';
@@ -12507,17 +12772,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;   // unknown tokens (bare p7, v9.7 already handled) must not fall through to kernel v1
   if (!soundChoice) soundChoice = v8Name(lsGet('streetrod.sound', null));
   if (soundChoice && !isRegisteredKernel(soundChoice)) soundChoice = null;
-  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16 and v17 stay picker-only: not accepted from ?sound=
+  var caddyQuery = caddyParam || ((startId === 'caddy' && soundParam && /^p[123456]$/i.test(soundParam)) ? soundParam : '');   // p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17 and v19 stay picker-only: not accepted from ?sound=
   // Bare ?car=caddy&sound=p5 is a Cadillac set, not a kernel id. p5 is not a BRM set (the shipped BRM list is p1–p4, p6, p8–p11), so brmName('p5') is null and v8Name('p5') would otherwise fall through to SoundModels.get → v1.
-  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 / ?sound=v14 / ?sound=v14.1 / ?sound=v15 / ?sound=v16 / ?sound=v17 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4/v14/v14.1/v15 alias on the URL path).
-  if (startId === 'caddy' && soundParam && /^(p[123456789]|p10|v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17)$/i.test(soundParam)) soundChoice = null;
-  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17)$/i.test(soundParam)) soundChoice = null;
+  // Guard only: a bare ?car=caddy&sound=p7 or ?sound=v13 / ?sound=v13.1 / ?sound=v13.2 / ?sound=v13.4 / ?sound=v14 / ?sound=v14.1 / ?sound=v15 / ?sound=v16 / ?sound=v17 / ?sound=v19 must not fall through to kernel v1. It does not select those picker-only sets (caddyName has no p7/v13/v13.1/v13.2/v13.4/v14/v14.1/v15 alias on the URL path).
+  if (startId === 'caddy' && soundParam && /^(p[123456789]|p10|v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17|v19)$/i.test(soundParam)) soundChoice = null;
+  if (soundParam && /^(v13|v13\.1|v13\.2|v13\.4|v14|v14\.1|v15|v16|v17|v19)$/i.test(soundParam)) soundChoice = null;
   // ?car=brm&sound=p7 (or any unshipped pN): stay on the BRM with the default set (p11). Do not select kernel v1.
   if (startId === 'brm') soundChoice = null;
   var state = { carId: startId, units: 'kmh', view: params.get('view') === 'inside' ? 1 : params.get('view') === 'garage' ? 3 : 0,
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
     p997Sound: p997Name(p997Param),   // v1.12.2: default p7; ?p997=p1|p2|p3|p4|p5|p6 select the other sets
-    caddySound: caddyName(caddyQuery, false),   // default p1; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16 and v17 are picker-only (no ?caddy= / ?sound= URL)
+    caddySound: caddyName(caddyQuery, false),   // default p1; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17 and v19 are picker-only (no ?caddy= / ?sound= URL)
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   // A Cadillac set query (?caddy=p5, ?sound=v12.cadillac.p5, or ?car=caddy&sound=p5) always uses the v12 kernel.
@@ -12609,7 +12874,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     'v14.1': 'Sound v14.1 · Cadillac',
     'v15': 'Sound v15 · Cadillac',
     'v16': 'Sound v16 · Cadillac',
-    'v17': 'Sound v17 · Cadillac'
+    'v17': 'Sound v17 · Cadillac',
+    'v19': 'Sound v19 · Cadillac'
   };
   function setCaddySound(v) {
     state.caddySound = caddyName(v, true);
@@ -12658,7 +12924,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       { value: 'kern:v4', label: 'Sound v4 (pop/bang fix)' }
     ];
     if (key === 'CADDY') {
-      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'v13', 'v13.1', 'v13.2', 'v13.4', 'v14', 'v14.1', 'v15', 'v16', 'v17'].map(function (p) {
+      return early.concat(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'v13', 'v13.1', 'v13.2', 'v13.4', 'v14', 'v14.1', 'v15', 'v16', 'v17', 'v19'].map(function (p) {
         return { value: 'caddy:' + p, label: CADDY_LABEL[p] };
       }));
     }
@@ -13046,8 +13312,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   if (selP997) selP997.addEventListener('change', function () { setP997Sound(selP997.value); selP997.blur(); });
   var selCaddy = document.getElementById('selCaddy');
-  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p10, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac, Sound v14 · Cadillac, Sound v14.1 · Cadillac, Sound v15 · Cadillac, Sound v16 · Cadillac and Sound v17 · Cadillac), filled once.
-  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['p8', CADDY_LABEL.p8], ['p9', CADDY_LABEL.p9], ['p10', CADDY_LABEL.p10], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']], ['v14', CADDY_LABEL['v14']], ['v14.1', CADDY_LABEL['v14.1']], ['v15', CADDY_LABEL['v15']], ['v16', CADDY_LABEL['v16']], ['v17', CADDY_LABEL['v17']]].forEach(function (row) {
+  // Cadillac's one list is the full history (v1–v4, v12 · Cadillac p1–p10, then Sound v13 · Cadillac, Sound v13.1 · Cadillac, Sound v13.2 · Cadillac, Sound v13.4 · Cadillac, Sound v14 · Cadillac, Sound v14.1 · Cadillac, Sound v15 · Cadillac, Sound v16 · Cadillac, Sound v17 · Cadillac and Sound v19 · Cadillac), filled once.
+  [['v1', 'Sound v1 (procedural)'], ['v2', 'Sound v2 (physical exhaust)'], ['v3', 'Sound v3 (start-up sequence)'], ['v4', 'Sound v4 (pop/bang fix)'], ['p1', CADDY_LABEL.p1], ['p2', CADDY_LABEL.p2], ['p3', CADDY_LABEL.p3], ['p4', CADDY_LABEL.p4], ['p5', CADDY_LABEL.p5], ['p6', CADDY_LABEL.p6], ['p7', CADDY_LABEL.p7], ['p8', CADDY_LABEL.p8], ['p9', CADDY_LABEL.p9], ['p10', CADDY_LABEL.p10], ['v13', CADDY_LABEL.v13], ['v13.1', CADDY_LABEL['v13.1']], ['v13.2', CADDY_LABEL['v13.2']], ['v13.4', CADDY_LABEL['v13.4']], ['v14', CADDY_LABEL['v14']], ['v14.1', CADDY_LABEL['v14.1']], ['v15', CADDY_LABEL['v15']], ['v16', CADDY_LABEL['v16']], ['v17', CADDY_LABEL['v17']], ['v19', CADDY_LABEL['v19']]].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; selCaddy.appendChild(o);
   });
   if (selCaddy) selCaddy.addEventListener('change', function () { applyCaddyPicker(selCaddy.value); selCaddy.blur(); });

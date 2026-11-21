@@ -1,3 +1,25 @@
+## v1.13.12 (tag `v1.13.12`), 2026-11-21 (Sound v19 · Cadillac: the outside path and a tyre and wind noise block)
+
+* **Sound v19 · Cadillac** is Sound v17 (same engine, pipes, cans, gas cooling and listener) plus two generic physical blocks. Nothing is fitted to the scorecard. It is picker-only, right after Sound v17 · Cadillac on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=v19` or `?sound=v19` alias and no new URL. Generic parameters only; no Cadillac-only code.
+* **Outside path (new generic set key `out_path`).** Used only by v19; older sets are unchanged.
+  * Pipe-outlet directivity: Levine & Schwinger (1948) / Ando (1968).
+  * Ground reflection: Delany & Bazley (1970) impedance, Nord2000 class G dense asphalt / concrete, σ = 20 000 kPa s/m² (Plovsing 2006; the surface in the recordings is unknown: estimate), plus a coherence factor for the ground image from the uncertainty of a hand-held microphone (height sd 0.3 m, distance sd 0.5 m: estimates). The reflection filter is fitted in magnitude and then has its low-frequency group delay removed, so the ground image keeps the right phase.
+  * Air absorption: ISO 9613-1, 20 °C, 70 % RH (RH is an estimate).
+* **Tyre and wind noise block (new generic set key `noise`).** Used only by v19; older sets are unchanged. When a set has its own noise, the old mixer road roar is switched off (skid stays in the mixer). Scoring renders keep `NON_ENGINE_NOISE=0` and `MIXER_WIND=0`.
+  * Rolling noise: CNOSSOS-EU 2015/996 category 1, with tyre width. 8.20-15 bias-ply, section about 208 mm, rim 15 in, overall about 0.72 m, cavity mean diameter about 0.55 m (tyre size tables: estimate). Wheelbase 130 in = 3.30 m (AMA 1959).
+  * Tyre-cavity tone: c/(π d_mean) (Sakata et al. 1990); peak +6 dB re 250 Hz (estimate).
+  * Wind: 65 dB(A) at 100 km/h, with speed law v^5.5 (George 1990, SAE 900315, exponent range 5–6; anchor estimate).
+  * Cabin insulation: mass-law floor, 9 kg/m² (0.9 mm steel + trim: estimate). The block follows the game's road speed.
+* **Scorecard, scorer v2.3** (cleaned throttle-off labels, idle in its own row, lower is closer):
+  * Combined: v19 2.940, v17 2.949, p1 3.584, recordings floor 2.274. v19 and v17 are effectively tied (0.009 apart, well inside the 0.3 noise level).
+  * Pooled: v19 2.103, v17 2.110, p1 2.300. Ring: v19 3.35 dB, v17 3.35, p1 5.14.
+  * Cabin is identical in v19 and v17 (pooled 2.057, ring 3.32). The small gap is at the tail (v19 2.924 vs v17 3.048).
+  * On the earlier scorer v2, which still scored the outside path: combined v19 3.659 vs v17 3.715; outside far 4.97 vs 5.15; tail 2.65 vs 2.72 (Δ −0.056, bootstrap 95 % −0.075…−0.038), also well under 0.3.
+* **Not shipped.** v18 (a fitted per-position output EQ and ring notches) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap.
+* **CPU.** Same 26 waveguides as v17. Node, 48 kHz, 2000 rpm / 0.4, best of 3, on the release tree: v17 188.8 / 194.5 / 187.8 ms per audio second in the cabin / at the tail / outside far; v19 187.1 / 195.1 / 190.0. v19 with the noise block at 25 m/s stays in the same range (188–195). Reasonable for iPhone and Tesla.
+* **Info page.** How the sound model works now says v19 is live, v18 is shelved, p1 stays the default, scoring is v2.3, and the roadmap order is the outside path first, then the tyre and wind noise block (both now in v19), then the engine and exhaust with swappable mufflers.
+* **Unchanged.** Every older entry stays bit-identical. BRM, GT350 and 911 are untouched.
+
 ## v1.13.11 (tag `v1.13.11`), 2026-11-20 (Sound v17 · Cadillac: gas cooling along the exhaust and flow loss at the pipe steps)
 
 * **Sound v17 · Cadillac** is v16 (same sourced Walker shells, 3.07 m connector, 0.5 m tail and p9 damping) plus two generic physical effects. Nothing is fitted to the scorecard. It is picker-only, right after Sound v16 · Cadillac on Cadillac's one drop-down. p1 stays the default. There is no `?caddy=v17` or `?sound=v17` alias and no new URL. Generic parameters only; no Cadillac-only code.

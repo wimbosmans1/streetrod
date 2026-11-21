@@ -569,6 +569,7 @@
     report() { return this.cur.report ? this.cur.report() : null; }
     settling() { return !!(this.cur.settling && this.cur.settling()); }   // v1.11.43: silent pre-roll still running
     bay(o) { return this.cur.bay ? this.cur.bay(o) : false; }   // v1.10 engine bay: kernel crank state if the model has one
+    ownNoise() { return !!(this.cur.ownNoise && this.cur.ownNoise()); }   // v19: the source renders its own tyre / wind noise
     gainOf(pos) { const l = this.listeners[pos]; return Math.pow(10, ((l && l.gain_db) || 0) / 20); }
     setView(v) {
       const pos = this.views[v] || this.views[0];
@@ -697,14 +698,14 @@
         }
         if (this.xfade >= 1) { this.src = this.nsrc; this.outGain = this.nsrc.outGain; this.modelId = this.nsrc.modelId; this.nsrc = null; }
       }
-      const fs = this.fs;
+      const fs = this.fs, ownN = !!(this.src.ownNoise && this.src.ownNoise());
       for (let k = 0; k < n; k++) {
         this.starterLvl += ((this.src.selfGated ? 0 : this.starterTarget) - this.starterLvl) * this.gainK;
         this.speedS += (this.speed - this.speedS) * 0.0005; this.skidS += (this.skid - this.skidS) * 0.002;
         const w = wv[k];
         const eL = tL[k], eR = tR[k];
         const v = this.speedS, vr = v / 40;
-        const road = Math.min(0.08, 0.05 * vr * vr);
+        const road = ownN ? 0 : Math.min(0.08, 0.05 * vr * vr);   // v19 sets render their own sourced road / wind noise (skid stays here)
         let wn = 0;   // wind: broadband, gusty, rising ~ v^3 in power; off since v1.10.4 (MIXER_WIND = 0: not engine sound, every car)
         if (MIXER_WIND > 0 && v > 3) {
           this.windLfo += 2 * Math.PI * 0.3 / fs; if (this.windLfo > 6.2832) this.windLfo -= 6.2832;
@@ -3440,6 +3441,20 @@ function engineModuleV8p(core) {
       DATA.cadillac59.sets['v17'].t_axial = 20;
     }
 
+    // Sound 'v19' (Cadillac, picker-only): v17 plus generic outside-path propagation and the road-noise
+    // block. Sourced: Levine & Schwinger 1948 / Ando 1968 directivity; ISO 9613-1 air absorption (20 C, 70 % RH: estimate);
+    // Delany & Bazley 1970 ground with Nord2000 class G (dense asphalt / concrete) sigma = 20 000 kPa s/m2 (Plovsing 2006;
+    // surface of the recordings unknown: estimate); mic-geometry coherence: height sd 0.3 m, distance sd 0.5 m (ESTIMATES,
+    // hand-held video camera). Noise: CNOSSOS-EU 2015/996 cat. 1; 8.20-15 bias-ply tyre, section ~208 mm, rim 15 in,
+    // overall ~0.72 m -> cavity mean diameter ~0.55 m (tyre size tables: estimate); 1959 wheelbase 130 in = 3.30 m (AMA),
+    // rear axle ~1.47 m ahead of the bumper (estimate); interior: mass law 9 kg/m2 floor (0.9 mm steel + trim: estimate),
+    // cavity peak +6 dB re 250 Hz (estimate), wind 65 dB(A) at 100 km/h with v^5.5 (George 1990 range 5-6; anchor estimate).
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v17'] && !DATA.cadillac59.sets['v19']) {
+      DATA.cadillac59.sets['v19'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v17']));
+      DATA.cadillac59.sets['v19'].out_path = { dir: 1, air: 1, ground: 20000, coh_h: 0.3, coh_d: 0.5, T: 20, RH: 70 };
+      DATA.cadillac59.sets['v19'].noise = { tyre_w: 208, d_mean: 0.55, wheelbase: 3.30, axle_x: 1.37, floor_m: 9, r_near: 1.0, cav_q: 8, cav_db: 6, wind_db100: 65, wind_n: 5.5, shape: 1 };
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -5322,7 +5337,84 @@ function engineModuleV8p(core) {
       return y;
     }
     /** post: sources -> listener (v8phys._post). BQ flat (rows of 5), BS flat (rows of 2), PATH flat (rows of 5), y interleaved L/R */
-    function post(n, fs, out, PV, PST, H, PATH, NPATH, BQ, BS, yL, yR, off) {
+    // ---- v19 generic outside-path and road-noise helpers (set keys out_path / noise; unused by older sets) ----
+    function besselJ1(x) { var s = 0.0, t = x / 2, m; for (m = 0; m < 30; m++) { s += t; t *= -(x * x / 4) / ((m + 1) * (m + 2)); if (Math.abs(t) < 1e-14) break; } return s; }
+    // |R| of an unflanged pipe end: Rousseau (1996) fits to Levine & Schwinger (1948)
+    function lsAbsR(ka) {
+      if (ka < 1e-6) return 1.0;
+      if (ka < 1.0) return Math.exp(-ka * ka / 2) * (1 + Math.pow(ka, 4) / 6 * (Math.log(1 / (1.781 * ka)) + 19 / 12));
+      return Math.sqrt(Math.PI * ka) * Math.exp(-ka) * (1 + 3 / (32 * ka * ka));
+    }
+    // Levine & Schwinger (1948) eq. VII.5 as corrected by Ando (1968): power gain of an unflanged pipe, normalised so the
+    // sphere average is 1 (an isotropic source = 1). Returns the PRESSURE factor sqrt(G). ka is clamped at 1.84 (first
+    // cross mode of the pipe; the plane-wave solution is not valid above it).
+    function lsGainRaw(th, ka, R) {
+      var x = ka * Math.sin(th), j = Math.abs(x) < 1e-8 ? 1.0 : 2 * besselJ1(x) / x, c = Math.cos(th), s2 = 1 - c * c;
+      return j * j * ((1 + c) * (1 + c) + 2 * s2 * R + (1 - c) * (1 - c) * R * R) / 4;
+    }
+    function lsDir(th, ka) {
+      ka = Math.min(ka, 1.84); var R = lsAbsR(ka), N = 0.0, i, M = 48;
+      for (i = 0; i < M; i++) { var t = (i + 0.5) * Math.PI / M; N += lsGainRaw(t, ka, R) * Math.sin(t) * Math.PI / M; }
+      N /= 2;
+      return Math.sqrt(lsGainRaw(th, ka, R) / N);
+    }
+    // ISO 9613-1 (1993) pure-tone atmospheric absorption, dB/m (T in C, RH in %, 101.325 kPa)
+    function isoAlpha(f, Tc, RH) {
+      var T = Tc + 273.15, T0 = 293.15, T01 = 273.16, C = -6.8346 * Math.pow(T01 / T, 1.261) + 4.6151, h = RH * Math.pow(10, C);
+      var frO = 24 + 4.04e4 * h * (0.02 + h) / (0.391 + h), frN = Math.pow(T / T0, -0.5) * (9 + 280 * h * Math.exp(-4.170 * (Math.pow(T / T0, -1 / 3) - 1)));
+      return 8.686 * f * f * (1.84e-11 * Math.sqrt(T / T0) + Math.pow(T / T0, -2.5) * (0.01275 * Math.exp(-2239.1 / T) / (frO + f * f / frO) + 0.1068 * Math.exp(-3352.0 / T) / (frN + f * f / frN)));
+    }
+    // plane-wave ground reflection, Delany & Bazley (1970) impedance (Embleton et al. 1983 form, sigma in kPa s/m2); e^{jwt}
+    function dbRefl(f, sigma, sinPsi) {
+      var X = f / sigma, zr = 1 + 9.08 * Math.pow(X, -0.75), zi = -11.9 * Math.pow(X, -0.73);
+      var ar = zr * sinPsi - 1, ai = zi * sinPsi, br = zr * sinPsi + 1, bi = zi * sinPsi, d = br * br + bi * bi;
+      return [(ar * br + ai * bi) / d, (ai * br - ar * bi) / d];
+    }
+    // magnitude fit of one RBJ biquad to a smooth target (dB) on a log grid by a small grid search: high shelf for direct
+    // rows (directivity + incoherent ground energy + air), low-pass x gain for ground-image rows. Phase is not fitted.
+    function rbjShelf(f0, gdb, fs) {
+      var A = Math.pow(10, gdb / 40), w = 2 * Math.PI * f0 / fs, cw = Math.cos(w), al = Math.sin(w) / 2 * Math.sqrt(2), sa = 2 * Math.sqrt(A) * al;
+      var b0 = A * ((A + 1) + (A - 1) * cw + sa), b1 = -2 * A * ((A - 1) + (A + 1) * cw), b2 = A * ((A + 1) + (A - 1) * cw - sa);
+      var a0 = (A + 1) - (A - 1) * cw + sa, a1 = 2 * ((A - 1) - (A + 1) * cw), a2 = (A + 1) - (A - 1) * cw - sa;
+      return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+    }
+    function bqDb(b, f, fs) {
+      var w = 2 * Math.PI * f / fs, c1 = Math.cos(w), s1 = Math.sin(w), c2 = Math.cos(2 * w), s2 = Math.sin(2 * w);
+      var nr = b[0] + b[1] * c1 + b[2] * c2, ni = -b[1] * s1 - b[2] * s2, dr = 1 + b[3] * c1 + b[4] * c2, di = -b[3] * s1 - b[4] * s2;
+      return 10 * Math.log10((nr * nr + ni * ni) / (dr * dr + di * di) + 1e-30);
+    }
+    function fitMag(Tdb, F, fs, kind) {
+      var best = null, be = 1e30, i, j, q, fl = -40;
+      var use = []; for (q = 0; q < F.length; q++) if (F[q] >= 40 && F[q] <= 12000) use.push(q);
+      for (i = 0; i < 24; i++) {
+        var fc = (kind === 'lp' ? 80 : 150) * Math.pow((kind === 'lp' ? 16000 / 80 : 10000 / 150), i / 23);
+        var opts = kind === 'lp' ? [0.5, 0.6, 0.707] : [];
+        if (kind === 'lp') {
+          for (j = 0; j < opts.length; j++) {
+            var b = rbj('lp', fc, opts[j], fs), off = 0, nw = 0, e = 0;
+            // image rows: errors weighted by target power, so the fit follows the band where the reflection is audible
+            for (q = 0; q < use.length; q++) if (Tdb[use[q]] > fl) { var wq = Math.pow(10, Tdb[use[q]] / 10); off += wq * (Tdb[use[q]] - bqDb(b, F[use[q]], fs)); nw += wq; }
+            off = nw ? off / nw : 0;
+            for (q = 0; q < use.length; q++) { var m = bqDb(b, F[use[q]], fs) + off, t = Tdb[use[q]]; var d = Math.max(m, fl) - Math.max(t, fl); e += Math.max(Math.pow(10, t / 10), 1e-3) * d * d; }
+            if (e < be) { be = e; var g = Math.pow(10, off / 20); best = [b[0] * g, b[1] * g, b[2] * g, b[3], b[4]]; }
+          }
+        } else {
+          for (j = 0; j < 49; j++) {
+            var gd = -12 + 0.5 * j, bs = rbjShelf(fc, gd, fs), off2 = 0;
+            for (q = 0; q < use.length; q++) off2 += Tdb[use[q]] - bqDb(bs, F[use[q]], fs);
+            off2 /= use.length; var e2 = 0;
+            for (q = 0; q < use.length; q++) { var d2 = bqDb(bs, F[use[q]], fs) + off2 - Tdb[use[q]]; e2 += d2 * d2; }
+            if (e2 < be) { be = e2; var g2 = Math.pow(10, off2 / 20); best = [bs[0] * g2, bs[1] * g2, bs[2] * g2, bs[3], bs[4]]; }
+          }
+        }
+      }
+      return best;
+    }
+    // CNOSSOS-EU (Directive (EU) 2015/996, Appendix F, Table F-1; the 2021/1226 table is ~2.5-3.5 dB(A) louder) category 1 (light motor vehicles) rolling-noise coefficients,
+    // octave bands 63 Hz - 8 kHz: L_WR = A_R + B_R log10(v / 70 km/h), dB re 1 pW
+    var CN_F = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
+    var CN_AR = [79.7, 85.7, 84.5, 90.2, 97.3, 93.9, 84.1, 74.3], CN_BR = [30.0, 41.5, 38.9, 25.7, 32.5, 37.2, 39.0, 40.0];
+    function post(n, fs, out, PV, PST, H, PATH, NPATH, BQ, BS, yL, yR, off, RQ, RS) {
       var k, e, j, m;
       for (k = 0; k < n; k++) {
         var ko = k * NO, hi = PST[3] | 0;
@@ -5349,6 +5441,8 @@ function engineModuleV8p(core) {
             if ((PATH[pr + 1] | 0) !== e) continue;
             var s = PATH[pr] | 0, D = PATH[pr + 3], i0 = D | 0, fr = D - i0, hb = s * HB;
             var v = (1.0 - fr) * H[hb + ((hi - i0) & (HB - 1))] + fr * H[hb + ((hi - i0 - 1) & (HB - 1))];
+            if (RQ) { var q5 = j * 5;   // v19 out_path row filter (a flat row is a gain only: a1 = a2 = 0)
+              if (RQ[q5 + 3] !== 0 || RQ[q5 + 4] !== 0) { var q2 = j * 2, yq = RQ[q5] * v + RS[q2]; RS[q2] = RQ[q5 + 1] * v - RQ[q5 + 3] * yq + RS[q2 + 1]; RS[q2 + 1] = RQ[q5 + 2] * v - RQ[q5 + 4] * yq; v = yq; } else v *= RQ[q5]; }
             var rt = PATH[pr + 4] | 0;
             if (rt === 0) r0 += PATH[pr + 2] * v; else if (rt === 1) r1 += PATH[pr + 2] * v; else if (rt === 2) r2 += PATH[pr + 2] * v; else r3 += PATH[pr + 2] * v;
           }
@@ -5908,6 +6002,170 @@ function engineModuleV8p(core) {
         this.NA[nd * 2 + 1] = 1.0 - Math.exp(-2 * Math.PI * Math.min(fc, 0.45 * fs) / fs);
       }
     };
+    // v19 generic (set key out_path): per-row outside propagation filter, fitted once per listener as one biquad.
+    // Pipe-outlet directivity (Levine & Schwinger 1948 / Ando 1968), ISO 9613-1 air absorption, Delany-Bazley ground
+    // reflection (plane wave), and a coherence factor for the ground image from the uncertainty of the microphone
+    // geometry (Gaussian phase spread; Salomons 2001, Nord2000 / Plovsing 2006). Row gains keep 1/r and the delay.
+    V8pSynth.prototype._outPath = function (rows, pr, srcs) {
+      var op = this.P.out_path, fs = this.fs, N = rows.length, F = [], q, j, i;
+      for (q = 0; q < 36; q++) F.push(40 * Math.pow(Math.min(16000, 0.45 * fs) / 40, q / 35));
+      var RQ = new Float64Array(N * 5), a = (this.P.tail_d || this.c.pipe_d) / 2, ax = op.axis || [-1, 0, 0];
+      var Tc = op.T !== undefined ? op.T : 20, RH = op.RH !== undefined ? op.RH : 70;
+      this.outFit = [];
+      for (j = 0; j < N; j++) {
+        var rw = rows[j], s = rw[0], img = rw[5] | 0, ear = pr.ears[rw[1]], pos = srcs[s], z = img ? -pos[2] : pos[2];
+        var dx = ear[0] - pos[0], dy = ear[1] - pos[1], dz = ear[2] - z, r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        var th = Math.acos(Math.max(-1, Math.min(1, (dx * ax[0] + dy * ax[1] + dz * (img ? -ax[2] : ax[2])) / r)));
+        var useDir = op.dir && s <= 1, sigD = 0.0, sinPsi = (pos[2] + ear[2]) / r;
+        if (img && op.ground) this.PATH[j * 5 + 2] /= (pr.ground || 1);
+        if (img && op.coh_h) {
+          var hs = pos[2], hr = ear[2], dh = Math.sqrt(dx * dx + dy * dy);
+          var dl = function (h, d) { return Math.sqrt(d * d + (hs + h) * (hs + h)) - Math.sqrt(d * d + (hs - h) * (hs - h)); };
+          var gh = (dl(hr + 0.01, dh) - dl(hr - 0.01, dh)) / 0.02, gd = (dl(hr, dh + 0.01) - dl(hr, dh - 0.01)) / 0.02;
+          sigD = Math.sqrt(gh * gh * op.coh_h * op.coh_h + gd * gd * (op.coh_d || 0) * (op.coh_d || 0));
+        }
+        if (!useDir && !op.air && !img) { RQ[j * 5] = 1; continue; }
+        var T = [], imgRow = -1;
+        if (!img && op.coh_h) for (i = 0; i < N; i++) if (rows[i][0] === s && rows[i][1] === rw[1] && (rows[i][5] | 0)) imgRow = i;
+        for (q = 0; q < F.length; q++) {
+          var f = F[q], re = 1.0, im = 0.0;
+          if (useDir) re *= lsDir(th, 2 * Math.PI * f * a / C_AIR);
+          if (op.air) re *= Math.pow(10, -isoAlpha(f, Tc, RH) * r / 20);
+          if (img && op.ground) { var g = dbRefl(f, op.ground, sinPsi), t = re; re = t * g[0]; im = t * g[1]; }
+          if (img && sigD > 0) { var k = 2 * Math.PI * f * sigD / C_AIR, cf = Math.exp(-0.5 * k * k); re *= cf; im *= cf; }
+          if (imgRow >= 0) {   // incoherent part of the ground image, (1 - C^2) |Q|^2 (r / ri)^2, added in power (Nord2000 energy split)
+            var ri_ = rows[imgRow][6], pI = srcs[s], eI = ear, zI = -pI[2], dI = Math.sqrt((eI[0] - pI[0]) * (eI[0] - pI[0]) + (eI[1] - pI[1]) * (eI[1] - pI[1]) + (eI[2] - zI) * (eI[2] - zI));
+            var sinI = (pI[2] + eI[2]) / dI, gI = op.ground ? dbRefl(f, op.ground, sinI) : [pr.ground || 0.8, 0], dhI = Math.sqrt((eI[0] - pI[0]) * (eI[0] - pI[0]) + (eI[1] - pI[1]) * (eI[1] - pI[1]));
+            var hsI = pI[2], hrI = eI[2], dlI = function (h, d) { return Math.sqrt(d * d + (hsI + h) * (hsI + h)) - Math.sqrt(d * d + (hsI - h) * (hsI - h)); };
+            var ghI = (dlI(hrI + 0.01, dhI) - dlI(hrI - 0.01, dhI)) / 0.02, gdI = (dlI(hrI, dhI + 0.01) - dlI(hrI, dhI - 0.01)) / 0.02;
+            var sgI = Math.sqrt(ghI * ghI * op.coh_h * op.coh_h + gdI * gdI * (op.coh_d || 0) * (op.coh_d || 0)), kI = 2 * Math.PI * f * sgI / C_AIR, CI = Math.exp(-0.5 * kI * kI);
+            var thI = Math.acos(Math.max(-1, Math.min(1, ((eI[0] - pI[0]) * ax[0] + (eI[1] - pI[1]) * ax[1] + (eI[2] - zI) * -ax[2]) / dI)));
+            var DI = useDir ? lsDir(thI, 2 * Math.PI * f * a / C_AIR) : 1.0, AI = op.air ? Math.pow(10, -isoAlpha(f, Tc, RH) * dI / 20) : 1.0;
+            var eInc = (1 - CI * CI) * (gI[0] * gI[0] + gI[1] * gI[1]) * DI * DI * AI * AI * (r / ri_) * (r / ri_);
+            re = Math.sqrt(re * re + eInc);
+          }
+          var mg = Math.sqrt(re * re + im * im); if (!(mg >= 1e-3)) { if (mg > 1e-30) { re = re / mg * 1e-3; im = im / mg * 1e-3; } else { re = 1e-3; im = 0.0; } }
+          T.push([re, im]);
+        }
+        var Tdb = T.map(function (t) { return 20 * Math.log10(Math.sqrt(t[0] * t[0] + t[1] * t[1]) + 1e-30); });
+        var mT = 0, nT = 0, dT = 0; for (q = 0; q < F.length; q++) if (F[q] <= 12000) { mT += Tdb[q]; nT++; } mT /= nT;
+        for (q = 0; q < F.length; q++) if (F[q] <= 12000) dT = Math.max(dT, Math.abs(Tdb[q] - mT));
+        if (dT < 1.0) { RQ[j * 5] = Math.pow(10, mT / 20); this.outFit.push({ row: j, s: s, img: img, flat: true, r: r }); continue; }   // within 1 dB of flat (e.g. air absorption only, a few metres): gain only
+        var b = fitMag(Tdb, F, fs, img ? 'lp' : 'hs'); for (i = 0; i < 5; i++) RQ[j * 5 + i] = b[i];
+        // the targets are zero-phase (Gaussian coherence, near-real Rp, real directivity): remove the biquad's low-frequency group delay
+        // from the row delay so direct/image interference below the cut-off keeps its geometric phase
+        var gB = b[0] + b[1] + b[2], gA = 1 + b[3] + b[4], tau0 = (b[1] + 2 * b[2]) / gB - (b[3] + 2 * b[4]) / gA;
+        if (tau0 > 0) this.PATH[j * 5 + 3] = Math.max(1, this.PATH[j * 5 + 3] - tau0);
+        this.outFit.push({ row: j, s: s, img: img, th: th, r: r, sigD: sigD, b: b, T: T, F: F });
+      }
+      this.RQ = RQ; this.RS = new Float64Array(N * 2);
+    };
+    // v19 generic (set key noise): tyre/road rolling noise (CNOSSOS-EU category 1, octave bands, speed law, tyre width),
+    // tyre-cavity resonance c/(pi d_mean) (Sakata et al. 1990), interior wind noise ~ v^n (George 1990, SAE 900315).
+    // Pressure in Pa at the ear times the listener gain PV[5], so its level is physical relative to the engine.
+    var NOISE_OFF = (typeof process !== 'undefined' && process.env && process.env.NON_ENGINE_NOISE === '0');
+    // Cost: one white-noise source through a 3-biquad cascade (low shelf, peak, high shelf) fitted at setup to the target spectrum
+    // at 8 table speeds (log-spaced), plus a tyre-cavity peak inside; the level is calibrated per block from the exact target power.
+    function nzPeak(f0, gdb, q, fs) {
+      var A = Math.pow(10, gdb / 40), w = 2 * Math.PI * f0 / fs, al = Math.sin(w) / (2 * q), cw = Math.cos(w), a0 = 1 + al / A;
+      return [(1 + al * A) / a0, -2 * cw / a0, (1 - al * A) / a0, -2 * cw / a0, (1 - al / A) / a0];
+    }
+    function nzLowShelf(f0, gdb, fs) {
+      var A = Math.pow(10, gdb / 40), w = 2 * Math.PI * f0 / fs, cw = Math.cos(w), al = Math.sin(w) / 2 * Math.sqrt(2), sa = 2 * Math.sqrt(A) * al;
+      var b0 = A * ((A + 1) - (A - 1) * cw + sa), b1 = 2 * A * ((A - 1) - (A + 1) * cw), b2 = A * ((A + 1) - (A - 1) * cw - sa);
+      var a0 = (A + 1) + (A - 1) * cw + sa, a1 = -2 * ((A - 1) + (A + 1) * cw), a2 = (A + 1) + (A - 1) * cw - sa;
+      return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+    }
+    V8pSynth.prototype._noiseTarget = function (kmh, F) {   // target pressure PSD (Pa^2/Hz, unweighted) at the ear, per F point
+      var o = this.P.noise, R = this.RN, ve = Math.max(kmh, 20), dW = (o.width_db_10mm !== undefined ? o.width_db_10mm : 0.3) * ((o.tyre_w || 195) - 195) / 10;
+      var rc = RHO_AIR * C_AIR, D = [], i, q, out = [];
+      for (i = 0; i < 8; i++) {   // octave band power -> mean PSD over the octave (bandwidth f / sqrt(2))
+        var Lw = CN_AR[i] + CN_BR[i] * Math.log10(ve / 70) + dW - R.TL[i];
+        D.push(Math.log10(rc * Math.pow(10, Lw / 10) * 1e-12 / (2 * Math.PI) * R.geo / (CN_F[i] / Math.SQRT2)));
+      }
+      var Pw = 0.0;
+      if (!R.out) Pw = Math.pow(10, ((o.wind_db100 !== undefined ? o.wind_db100 : 65) + 10 * (o.wind_n || 5.5) * Math.log10(Math.max(kmh, 1) / 100) + 10 * Math.log10(o.shape || 1)) / 10) * 4e-10;
+      for (q = 0; q < F.length; q++) {
+        var x = Math.log2(F[q] / 63), k = Math.max(0, Math.min(6, Math.floor(x))), t = Math.max(-1, Math.min(2, x - k));
+        var d = Math.pow(10, D[k] + (D[k + 1] - D[k]) * t);
+        out.push(d + Pw * R.windShape[q]);
+      }
+      return out;
+    };
+    V8pSynth.prototype._noiseSetup = function (pr) {
+      var o = this.P.noise, fs = this.fs, R = { st: new Float64Array(8), dl: new Float32Array(1024), di: 0, seed: 12345, v: 0, k: -1, gain: 0 }, i, q;
+      this.RN = R;
+      var wb = o.wheelbase || 2.7, xr = o.axle_x !== undefined ? o.axle_x : 1.3, axles = [[xr, 0, 0.05], [xr + wb, 0, 0.05]];
+      R.out = !!pr.outside; R.geo = 0.0;
+      if (R.out) for (var a = 0; a < 2; a++) { var e = pr.ears[0], dx = e[0] - axles[a][0], dy = e[1] - axles[a][1], dz = e[2] - axles[a][2]; R.geo += 0.5 / Math.max(0.25, dx * dx + dy * dy + dz * dz); }
+      else R.geo = 2 * (1 / (o.r_near || 1.0) / (o.r_near || 1.0));   // interior: two tyres per axle side at r_near, then the body TL
+      R.TL = CN_F.map(function (f) { return R.out ? 0.0 : Math.max(0.0, 20 * Math.log10((o.floor_m || 9) * f) - 47.0); });
+      R.fcav = C_AIR / (Math.PI * (o.d_mean || 0.55));
+      R.cav = R.out ? null : nzPeak(R.fcav, o.cav_db !== undefined ? o.cav_db : 6, o.cav_q || 8, fs);
+      var F = []; for (q = 0; q < 28; q++) F.push(44 * Math.pow(11300 / 44, q / 27));
+      var wbp = rbj('bp', 700.0, 0.5, fs), wlp = rbj('lp', 3000.0, 0.7, fs), wI = 0.0, wS = [];
+      for (q = 0; q < F.length; q++) wS.push(Math.pow(10, (bqDb(wbp, F[q], fs) + bqDb(wlp, F[q], fs)) / 10));
+      for (q = 1; q < F.length; q++) wI += 0.5 * (wS[q] + wS[q - 1]) * (F[q] - F[q - 1]);
+      R.windShape = wS.map(function (w) { return w / wI; }); R.F = F;
+      R.tab = [15, 22, 32, 45, 63, 90, 125, 180]; R.bqs = [];
+      var self = this;
+      R.tab.forEach(function (kmh) {
+        var T = self._noiseTarget(kmh, F).map(function (d) { return 10 * Math.log10(d); });
+        var p = [150, 0, 1000, 0, 0.7, 4000, 0], lim = [[60, 600], [-30, 30], [200, 6000], [-30, 30], [0.3, 2.5], [1500, 9000], [-30, 30]];
+        var mk = function (p) { return [nzLowShelf(p[0], p[1], fs), nzPeak(p[2], p[3], p[4], fs), nzPeak(p[5], p[6], 0.5, fs)]; };
+        // only points within 30 dB of the A-weighted maximum count (IEC 61672 A-weighting): the fit follows what is audible
+        var TA = T.map(function (t, q) { var f2 = F[q] * F[q], ra = 12194 * 12194 * f2 * f2 / ((f2 + 20.6 * 20.6) * Math.sqrt((f2 + 107.7 * 107.7) * (f2 + 737.9 * 737.9)) * (f2 + 12194 * 12194)); return t + 20 * Math.log10(ra) + 2.0; });
+        var mxA = Math.max.apply(null, TA), W = TA.map(function (t) { return t >= mxA - 30 ? 1 : 0; }), nW = W.reduce(function (a, b) { return a + b; }, 0);
+        var err = function (p) { var B = mk(p), m = [], off = 0, e = 0;
+          for (var q = 0; q < F.length; q++) { var v = bqDb(B[0], F[q], fs) + bqDb(B[1], F[q], fs) + bqDb(B[2], F[q], fs); m.push(v); off += W[q] * (T[q] - v); }
+          off /= nW; for (q = 0; q < F.length; q++) { var d = m[q] + off - T[q]; e += W[q] ? d * d : (d > 0 ? d * d : 0); } return e; };   // outside the band: no overshoot
+        var be = err(p), step = [0.3, 6, 0.4, 6, 0.4, 0.3, 6];
+        for (var it = 0; it < 60; it++) {   // coordinate descent (log steps for frequencies / Q)
+          var moved = false;
+          for (var j = 0; j < 7; j++) for (var sg = -1; sg <= 1; sg += 2) {
+            var t = p.slice(), lg = (j === 0 || j === 2 || j === 4 || j === 5);
+            t[j] = lg ? p[j] * Math.exp(sg * step[j]) : p[j] + sg * step[j];
+            t[j] = Math.max(lim[j][0], Math.min(lim[j][1], t[j]));
+            var et = err(t); if (et < be) { be = et; p = t; moved = true; }
+          }
+          if (!moved) for (j = 0; j < 7; j++) step[j] *= 0.5;
+        }
+        var B = mk(p), H2 = 0.0, Lp = [];   // integral of |H|^2 over the fit band (broadband cascade; the cavity peak adds its own power on top)
+        for (q = 0; q < F.length; q++) Lp.push(Math.pow(10, (bqDb(B[0], F[q], fs) + bqDb(B[1], F[q], fs) + bqDb(B[2], F[q], fs)) / 10));
+        for (q = 1; q < F.length; q++) H2 += 0.5 * (Lp[q] + Lp[q - 1]) * (F[q] - F[q - 1]);
+        R.bqs.push({ B: B, H2: H2, rms: Math.sqrt(be / nW) });
+      });
+      return R;
+    };
+    V8pSynth.prototype._noiseLevels = function (vms) {   // per block: table shape for this speed and the exact target power
+      var R = this.RN, kmh = vms * 3.6, fade = kmh >= 20 ? 1 : (kmh / 20) * (kmh / 20), k = 0, q, F = R.F;
+      for (q = 1; q < R.tab.length; q++) if (Math.abs(Math.log(kmh / R.tab[q])) < Math.abs(Math.log(kmh / R.tab[k]))) k = q;
+      if (k !== R.k) { R.k = k; R.B = R.bqs[k].B; }
+      var T = this._noiseTarget(kmh, F), P = 0.0;
+      for (q = 1; q < F.length; q++) P += 0.5 * (T[q] + T[q - 1]) * (F[q] - F[q - 1]);
+      R.P = P * fade;
+      R.gain = Math.sqrt(R.P / ((1 / 3) * (2 / this.fs) * R.bqs[k].H2));   // uniform noise variance 1/3, one-sided PSD 2 var / fs
+    };
+    V8pSynth.prototype._noiseRun = function (n, L, R2, off) {
+      var R = this.RN, v = this.game.speed || 0;
+      R.v += (v - R.v) * Math.min(1, n / (0.25 * this.fs));
+      if (R.v < 0.3) return;
+      if (!(Math.abs(R.v - (R.vl || 0)) <= 0.005 * R.v)) { this._noiseLevels(R.v); R.vl = R.v; }   // re-level on a 0.5 % speed change (< 0.1 dB)
+      var B = R.B, b0 = B[0], b1 = B[1], b2 = B[2], c = R.cav, S = R.st, gain = R.gain * this.PV[5], dl = R.dl, k, seed = R.seed, di = R.di;
+      var a0 = b0[0], a1 = b0[1], a2 = b0[2], a3 = b0[3], a4 = b0[4], e0 = b1[0], e1 = b1[1], e2 = b1[2], e3 = b1[3], e4 = b1[4];
+      var h0 = b2[0], h1 = b2[1], h2 = b2[2], h3 = b2[3], h4 = b2[4], s0 = S[0], s1 = S[1], s2 = S[2], s3 = S[3], s4 = S[4], s5 = S[5], s6 = S[6], s7 = S[7];
+      var c0 = c ? c[0] : 1, c1 = c ? c[1] : 0, c2 = c ? c[2] : 0, c3 = c ? c[3] : 0, c4 = c ? c[4] : 0, g = gain * 2 / 4294967296;
+      for (k = 0; k < n; k++) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var x = seed - 2147483648;
+        var y = a0 * x + s0; s0 = a1 * x - a3 * y + s1; s1 = a2 * x - a4 * y; x = y;
+        y = e0 * x + s2; s2 = e1 * x - e3 * y + s3; s3 = e2 * x - e4 * y; x = y;
+        y = h0 * x + s4; s4 = h1 * x - h3 * y + s5; s5 = h2 * x - h4 * y; x = y;
+        y = c0 * x + s6; s6 = c1 * x - c3 * y + s7; s7 = c2 * x - c4 * y;
+        y *= g;
+        L[off + k] += y; R2[off + k] += dl[(di - 331) & 1023]; dl[di] = y; di = (di + 1) & 1023;
+      }
+      S[0] = s0; S[1] = s1; S[2] = s2; S[3] = s3; S[4] = s4; S[5] = s5; S[6] = s6; S[7] = s7; R.seed = seed; R.di = di;
+    };
     V8pSynth.prototype._listener = function (name, keepState) {
       var c = this.c, P = this.P, fs = this.fs, pr = perspective(c, name), rows = [], e, s;
       this.persp = pr; this.posName = name;
@@ -5919,10 +6177,10 @@ function engineModuleV8p(core) {
           if (front && !pr.bay) sh = c.eng_shadow !== undefined ? c.eng_shadow : pr.shadow;   // job 8: rear engine behind the lid grille
           if (!front && pr.bay) sh = P.bay_exh;
           if (s === 5) sh = Math.max(sh, 0.7) * (P.k_st_out !== undefined ? P.k_st_out : 1.0);   // starter: bellhousing / body diffraction, still heard from behind
-          rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0]);
+          rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0, 0, r]);
           if (s !== 5) {   // starter is under the bellhousing: a specular ground image puts static comb notches (~0.9/2.7/4.5 kHz) in the grind
             var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
-            rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0]);
+            rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0, 1, ri]);
           }
         } else {
           var cabG = s === 5 ? 0.22 * (P.k_st_cab !== undefined ? P.k_st_cab : 1.0) : 1.0;   // starter in the cabin: clearly audible, not 20 dB over idle
@@ -5937,6 +6195,9 @@ function engineModuleV8p(core) {
       }
       this.NPATH = rows.length; this.PATH = new Float64Array(rows.length * 5);
       rows.forEach(function (rw, j) { for (var t = 0; t < 5; t++) this.PATH[j * 5 + t] = rw[t]; }, this);
+      this.RQ = null; this.RS = null;
+      if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
+      this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -6111,7 +6372,7 @@ function engineModuleV8p(core) {
       kv8(m, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
       this._thermal(m / this.fs, K[K_IGN] > 0.5);
       this._pipes();
-      post(m, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, this._stL, this._stR, 0);
+      post(m, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, this._stL, this._stR, 0, this.RQ, this.RS);
       this._settleLeft -= m;
       if (this._settleLeft > 0) { for (j = 0; j < n; j++) { L[off + j] = 0; R[off + j] = 0; } return; }
       // pre-roll done: render the held first audible block now (its K; Q is untouched since)
@@ -6189,7 +6450,8 @@ function engineModuleV8p(core) {
       var firing = K[K_IGN] > 0.5 && (this.S[S_NFIRE] > nf0 || this.ctlr.recentFire());
       this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
       this._thermal(dtb, firing); this._pipes();
-      post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off);
+      post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off, this.RQ, this.RS);
+      if (this.RN) this._noiseRun(n, L, R, off);
     };
     // ---- EngineVoice / ListenerSource interface
     V8pSynth.prototype.render = function (n, rpm, thr, L, R, off) {
@@ -6197,12 +6459,14 @@ function engineModuleV8p(core) {
       var gm = this.selfGated ? this.game : null;
       for (var s = 0; s < n;) { var m = Math.min(256, n - s); this.block(m, rpm, thr, gm, L, R, off + s); s += m; }
     };
+    V8pSynth.prototype.ownNoise = function () { return !!this.P.noise; };
     V8pSynth.prototype.ctl = function (m) {
       var g = this.game;
       if (m.running !== undefined) { g.running = !!m.running; g.has = true; }
       if (m.starter !== undefined) { g.starter = !!m.starter; g.has = true; }
       if (m.warm !== undefined) g.warm = !!m.warm;
       if (m.gear !== undefined) g.gear = m.gear;
+      if (m.speed !== undefined) g.speed = m.speed;   // m/s (v19 road noise; ignored by sets without noise)
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
