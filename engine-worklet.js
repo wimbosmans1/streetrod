@@ -3604,6 +3604,17 @@ function engineModuleV8p(core) {
       }
     }
 
+    // Sound 'v21' (Cadillac, picker-only): v20 plus generic set key t_ac = 4 s.
+    // After each pipe's acoustic temperature is chosen (including t_axial), that T is
+    // first-order lagged and used only for waveguide delay / c. Motive: gas travel and
+    // wall thermal mass, so F_D must not follow cycle-resolved T every 128-sample block,
+    // especially at closed throttle when mdot is small. Unset t_ac = current behaviour,
+    // so every older set stays bit-identical. p1 stays the default; no new URL.
+    if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v20'] && !DATA.cadillac59.sets['v21']) {
+      DATA.cadillac59.sets['v21'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v20']));
+      DATA.cadillac59.sets['v21'].t_ac = 4.0;
+    }
+
     var P_ATM = 101325.0, R_GAS = 287.0, G_EX = 1.30, G_AIR = 1.40, T_AMB = 293.0, C_AIR = 343.0, RHO_AIR = 1.2;
     /* Generic transfer-matrix muffler elements (v13).
      * Frequency-domain 2x2 TMM from standard elements (tube, area change, Helmholtz
@@ -6176,6 +6187,18 @@ function engineModuleV8p(core) {
         var g = this.PG[p], L = g[0], d = g[1], A = g[2], grp = g[3], pack = g[4];
         var T = grp === 0 ? tp : (grp === 1 ? tm : tt);
         if (TAX && (grp === 1 || grp === 2)) T = TAX[p];
+        // Generic set key t_ac (seconds): first-order lag of this pipe's chosen T (incl. t_axial)
+        // for waveguide delay / c only. Unset or 0 = current behaviour (bit-identical).
+        var tAcP = P.t_ac || 0;
+        if (tAcP > 0 && grp !== 3) {
+          if (!this._tPipe) { this._tPipe = new Float64Array(this.NP); this._tPipe.fill(0); }
+          if (!(this._tPipe[p] > 0)) this._tPipe[p] = T;
+          var dtP = this._dtPipes > 0 ? this._dtPipes : (128 / fs);
+          var kaP = 1 - Math.exp(-dtP / tAcP);
+          if (kaP > 1) kaP = 1;
+          this._tPipe[p] += (T - this._tPipe[p]) * kaP;
+          T = this._tPipe[p];
+        }
         var c = grp === 3 ? C_AIR : Math.sqrt(G_EX * R_GAS * T);   // grp 3: intake runners, ambient air
         var Le = L + (tail[p] ? 0.61 * d / 2 : (runPl[p] ? 0.85 * d / 2 : 0.0)), f = p * NF;
         this.PF[f + F_C] = c; this.PF[f + F_A] = A;
@@ -6578,7 +6601,7 @@ function engineModuleV8p(core) {
       if (!this._stL) { this._stL = new Float64Array(256); this._stR = new Float64Array(256); }
       for (j = 0; j < m * NO; j++) out[j] = 0.0;
       kv8(m, this.fs, K, this.Q, this.S, this.CY, this.PF, this.NP, this.NODE, this.NN, this.NW, this.AB, this.BB, this.AT, this.NA, out);
-      this._thermal(m / this.fs, K[K_IGN] > 0.5);
+      this._dtPipes = m / this.fs; this._thermal(m / this.fs, K[K_IGN] > 0.5);
       this._pipes();
       post(m, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, this._stL, this._stR, 0, this.RQ, this.RS);
       this._settleLeft -= m;
@@ -6657,7 +6680,7 @@ function engineModuleV8p(core) {
       }
       var firing = K[K_IGN] > 0.5 && (this.S[S_NFIRE] > nf0 || this.ctlr.recentFire());
       this.ctlr.noteFire(this.S[S_NFIRE] - nf0);
-      this._thermal(dtb, firing); this._pipes();
+      this._dtPipes = dtb; this._thermal(dtb, firing); this._pipes();
       post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off, this.RQ, this.RS);
       if (this._fan) this._coolFan(n, K, L, R, off);
       if (this.RN) this._noiseRun(n, L, R, off);
