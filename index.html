@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.22)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.23)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -6767,7 +6767,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       applySetCar(this.c, this.P);
       // v1.14 draft (job 1): generic parts layer (default off). js/parts.js sends only the keys a non-stock build changes;
       // absent for every stock build and every other car, so the code path and the audio stay bit-identical.
-      if (spec.parts) { if (spec.parts.car) Object.assign(this.c, spec.parts.car); if (spec.parts.phys) Object.assign(this.P, spec.parts.phys); }
+      if (spec.parts) {
+        if (spec.parts.car) Object.assign(this.c, spec.parts.car); if (spec.parts.phys) Object.assign(this.P, spec.parts.phys);
+        // v1.13.23 generic: anchored multipliers on the selected sound set's own literals (e.g. idle air with displacement,
+        // intake radiation with air-cleaner insertion loss), so a parts build works on every set in the drop-down.
+        if (spec.parts.scale) for (var _sk in spec.parts.scale) if (typeof this.P[_sk] === 'number') this.P[_sk] *= spec.parts.scale[_sk];
+      }
       this.spec = { idle_rpm: this.c.idle_rpm, redline: this.c.redline, name: this.c.name, car_key: key };
       this.vcam = !!(this.P.vcam || spec.variocam_plus || opts.variocam_plus);
       this.variocamPlus = this.vcam;
@@ -7187,6 +7192,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
       this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
       this._fan = this._fanSetup(pr);
+      this._blow = this.c.blower ? this._fanSetup(pr, this.c.blower) : null;   // v1.13.23 generic PD blower (default off)
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -7453,6 +7459,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       this._dtPipes = dtb; this._thermal(dtb, firing); this._pipes();
       post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off, this.RQ, this.RS);
       if (this._fan) this._coolFan(n, K, L, R, off);
+      if (this._blow) this._coolFan(n, K, L, R, off, this._blow);
       if (this.RN) this._noiseRun(n, L, R, off);
     };
 
@@ -7461,8 +7468,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     // field, so this source is never constructed and never runs for them.
     // Blade-passing tones + turbulent broadband from shaft-speed affinities
     // (Q ~ n, ΔP ~ n^2, acoustic power ~ Q ΔP^2 × efficiency).
-    V8pSynth.prototype._fanSetup = function (pr) {
-      var f = this.c.fan; if (!f || !f.n_blades) return null;
+    // v1.13.23: the same rotor source also serves a generic positive-displacement blower (c.blower, f.pd = 1; default off):
+    // vane/lobe-passing tone at n_blades × ratio × crank speed, acoustic power = eta × Q × dP (gas power × acoustic
+    // efficiency), Q ~ n, dP ~ n × (thr0 + (1 - thr0) × throttle) (boost builds with load; low at idle / cruise).
+    V8pSynth.prototype._fanSetup = function (pr, f0) {
+      var f = f0 || this.c.fan; if (!f || !f.n_blades) return null;
       var pos = f.pos || this.c.intake, earL = pr.ears[0], earR = pr.ears[1];
       function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
       var rL = Math.max(dist(earL, pos), 0.25), rR = Math.max(dist(earR, pos), 0.25);
@@ -7482,11 +7492,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         k: f.k !== undefined ? f.k : 1.0,
         ph: 0.0, lp: 0.0, cabY: 0.0,
         buf: new Float64Array(maxD), wi: 0, dL: dL, dR: dR, gL: gL, gR: gR,
-        outside: !!pr.outside, fFw: this.P.f_fw || 320.0
+        outside: !!pr.outside, fFw: this.P.f_fw || 320.0,
+        pd: !!f.pd, thr0: f.thr0 !== undefined ? f.thr0 : 0.15
       };
     };
-    V8pSynth.prototype._coolFan = function (n, K, L, R, off) {
-      var F = this._fan, fs = this.fs, i, rpm, shaftHz, bpf, U, Qf, dP, W, pRms, aTone, aBb, x, y, s, wi, buf, nz, aLp, aCab;
+    V8pSynth.prototype._coolFan = function (n, K, L, R, off, F0) {
+      var F = F0 || this._fan, fs = this.fs, i, rpm, shaftHz, bpf, U, Qf, dP, W, pRms, aTone, aBb, x, y, s, wi, buf, nz, aLp, aCab;
       var TWOPI = 6.283185307179586, RHO_C = RHO_AIR * C_AIR;
       buf = F.buf; wi = F.wi;
       aCab = 1.0 - Math.exp(-2.0 * Math.PI * F.fFw / fs);
@@ -7498,8 +7509,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         U = TWOPI * shaftHz * (F.D * 0.5);
         Qf = F.Qref * (rpm / F.rpmRef);
         if (Qf < 0.0) Qf = 0.0;
+        if (F.pd) {
+          var thrB = K[K_THR0] + (K[K_THR1] - K[K_THR0]) * (i / n); if (thrB < 0.0) thrB = 0.0; if (thrB > 1.0) thrB = 1.0;
+          dP = F.dPref * (rpm / F.rpmRef) * (F.thr0 + (1.0 - F.thr0) * thrB);
+          W = F.eta * F.k * Qf * dP;
+        } else {
         dP = F.dPref * (rpm / F.rpmRef) * (rpm / F.rpmRef);
         W = F.eta * F.k * Qf * dP * dP;
+        }
         if (W < 0.0) W = 0.0;
         // monopole free-field p_rms at 1 m from sound power; 1/r is in gL/gR
         pRms = Math.sqrt((W / (4.0 * Math.PI)) * RHO_C);
@@ -7573,7 +7590,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       this.PV[4] = this.P.k_cab || 0.45;
       this.PV[5] = 0.25 * (this.P.gain || 1);
       this.RN = (this.P.noise && (typeof NOISE_OFF === 'undefined' || !NOISE_OFF)) ? this._noiseSetup(this.persp) : null;
-      this._fan = null;
+      this._fan = null; this._blow = null;
       this.PG = []; this.NODE = []; this.NN = 0; this.NW = 0; this.NP = 0;
       this._ev = this._ev || this._evSetup();
     };
@@ -10146,6 +10163,13 @@ var Parts = (function () {
     ['car', 'phys'].forEach(function (g) {
       Object.keys(c[g]).forEach(function (k) { if (JSON.stringify(c[g][k]) !== JSON.stringify(s[g][k])) { out[g][k] = c[g][k]; any = true; } });
     });
+    // v1.13.23 anchored multipliers on the selected sound set's own literals (the worklet multiplies P[key]):
+    //  a_idle: idle air bleed scales with swept volume (idle screw reset for the same idle speed and manifold vacuum);
+    //  k_int: intake radiation scales with the change in air-cleaner insertion loss (attrs.ac_il, dB; estimates).
+    var sc = {}, nsc = 0, vdS = s.tm.bore * s.tm.bore * s.tm.stroke, vdB = c.tm.bore * c.tm.bore * c.tm.stroke;
+    if (vdB !== vdS) { sc.a_idle = vdB / vdS; nsc++; }
+    if (s.attrs.ac_il !== undefined && c.attrs.ac_il !== undefined && c.attrs.ac_il !== s.attrs.ac_il) { sc.k_int = Math.pow(10, (s.attrs.ac_il - c.attrs.ac_il) / 20); nsc++; }
+    if (nsc) { out.scale = sc; any = true; }
     return any ? out : null;
   }
 
@@ -10275,7 +10299,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   add({ id: 'lb.30ps', slot: 'longblock', label: 'VW 30 PS 1192 cc engine (factory, 36 hp)', desc: 'Stock 1956: 77 × 64 mm, CR 6.6, Solex 28 PCI · 1955–60', years: [1955, 1960],
     src: 'Factory manual Aug 1955 supplement p. 1-11 to 1-16: 77 × 64 mm, CR 6.6, Solex 28 PCI 21.5 mm venturi, 30 PS @ 3400, 75.5 N·m @ 2000',
     sub: { crank: 'VW 64 mm forged crankshaft', cylinders: 'VW 77 mm barrels & pistons', heads: 'VW single-port heads (CR 6.6)', cam: 'VW camshaft (220° at 1 mm)', carb: 'Solex 28 PCI carburettor', ignition: 'Bosch VJU 4 BR 8 distributor' },
-    attrs: { case: '36hp', eng: 'b30', lifter: 'onepiece', crank: 'stock36', ports: 'single', carbkind: 'single', teeth: 109, volts_need: 6 },
+    attrs: { case: '36hp', eng: 'b30', lifter: 'onepiece', crank: 'stock36', ports: 'single', carbkind: 'single', teeth: 109, volts_need: 6, ac_il: 10 },   // ac_il: oil-bath air cleaner insertion loss, dB (ESTIMATE)
     sound: STOCK.longblock.sound, vehicle: STOCK.longblock.vehicle, tm: TM30, prov: STOCK.longblock.prov });
   add({ id: 'exh.stock', slot: 'exhaust', label: 'VW heat exchangers (factory)', desc: 'Cabin heat, 2-1 into the muffler · 1955–60', years: [1955, 1960], attrs: { exh: 'hx' }, sound: STOCK.exhaust.sound, prov: STOCK.exhaust.prov });
   add({ id: 'muf.stock', slot: 'muffler', label: 'VW transverse muffler, twin tips (factory)', desc: 'OE 111 251 051 G · 1955–60', years: [1955, 1960], sound: STOCK.muffler.sound, prov: STOCK.muffler.prov });
@@ -10293,27 +10317,27 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     src: 'GW Käfer engine data (ss): 34 PS @ 3600, 82.4 N·m @ 2000, CR 7.0, 87 RON; VW Newsroom: Solex 28 PICT, separate generator stand',
     sub: { crank: 'VW 64 mm crankshaft', cylinders: 'VW 77 mm barrels & pistons', heads: 'VW single-port heads (CR 7.0)', cam: 'VW 1200 camshaft', carb: 'Solex 28 PICT carburettor', ignition: 'VW 1200 distributor' },
     attrs: { case: '40hp', eng: 'e34', lifter: 'separate', crank: 'stock40', ports: 'single', carbkind: 'single', teeth: 109, volts_need: 6 },
-    sound: { car: { name: '1956 VW Beetle, 34 PS 1200 swap', carb: 'Solex 28 PICT', redline: 4000 } },
+    sound: { car: { name: '1956 VW Beetle, 34 PS 1200 swap', carb: 'Solex 28 PICT', redline: 4000, ev_d: 0.030 } },
     vehicle: { engineText: '34 PS 1200 swap: 1192 cc, 34 PS @ 3600, 82.4 N·m @ 2000 (factory); curve from the parts model', limiterRpm: 4000 },
     tm: { vc: sw(0.064, 0.077, 7.0), iv_d: 0.0315, up: [['venturi Solex 28 PICT', 1, 0.0225, 1.0, 4, 0]], down: [['manifold branch', 2, 0.029, 1.5, 2, 1], ['single port', 2, 0.029, 1.2, 2, 1]] },
-    prov: { cr: 's', 'tm.iv_d': 'e', 'tm.venturi': 'e', 'tm.down': 'e: manifold / port Ø calibrated to the factory PS rating', limiterRpm: 'e' } });
+    prov: { cr: 's', 'tm.iv_d': 's', ev_d: 's: 31.5 / 30 mm valves (flat4.de)', 'tm.venturi': 'e', 'tm.down': 'e: manifold / port Ø calibrated to the factory PS rating', limiterRpm: 'e' } });
   add({ id: 'lb.1300', slot: 'longblock', inherits: 'lb.30ps', label: 'VW 1300 40 PS engine (F-series)', desc: '77 × 69 mm, CR 7.3, Solex 30 PICT-1 · Aug 1965–', years: [1965, 1969],
     src: 'GW Käfer engine data (ss): 77 × 69 mm, 1285 cc, CR 7.3, 40 PS @ 4000, 87.3 N·m @ 2000, 87 RON; Solex 30 PICT-1',
     sub: { crank: 'VW 69 mm crankshaft', cylinders: 'VW 77 mm barrels & pistons', heads: 'VW 1300 single-port heads (CR 7.3)', cam: 'VW 1300 camshaft', carb: 'Solex 30 PICT-1 carburettor', ignition: 'VW 1300 distributor' },
     attrs: { case: '40hp', eng: 'e1300', lifter: 'separate', crank: 'stock40', ports: 'single', carbkind: 'single', teeth: 109, volts_need: 6 },
-    sound: { car: { name: '1956 VW Beetle, 1300 swap', stroke: 0.069, carb: 'Solex 30 PICT-1', th_area_wot: PI4 * 0.030 * 0.030, redline: 4400 } },
+    sound: { car: { name: '1956 VW Beetle, 1300 swap', stroke: 0.069, carb: 'Solex 30 PICT-1', th_area_wot: PI4 * 0.030 * 0.030, redline: 4400, ev_d: 0.030 } },
     vehicle: { engineText: '1300 swap: 1285 cc, 40 PS @ 4000, 87.3 N·m @ 2000 (factory); curve from the parts model', limiterRpm: 4400, tachMax: 5000, tachRed: 4400 },
     tm: { stroke: 0.069, vc: sw(0.069, 0.077, 7.3), iv_d: 0.033, up: [['venturi Solex 30 PICT-1', 1, 0.024, 1.0, 4, 0]], down: [['manifold branch', 2, 0.032, 1.5, 2, 1], ['single port', 2, 0.032, 1.2, 2, 1]] },
-    prov: { stroke: 's', cr: 's', th_area_wot: 'd', 'tm.iv_d': 'e', 'tm.venturi': 'e', 'tm.down': 'e: manifold / port Ø calibrated to the factory PS rating', limiterRpm: 'e' } });
+    prov: { stroke: 's', cr: 's', th_area_wot: 'd', 'tm.iv_d': 's', ev_d: 's: 33 / 30 mm valves (VW manual, flat4.de)', 'tm.venturi': 'e', 'tm.down': 'e: manifold / port Ø calibrated to the factory PS rating', limiterRpm: 'e' } });
   add({ id: 'lb.1500', slot: 'longblock', inherits: 'lb.30ps', label: 'VW 1500 44 PS engine (H-series), 12 V', desc: '83 × 69 mm, CR 7.5, Solex 30 PICT-1 · Aug 1966–', years: [1966, 1969],
     src: 'GW Käfer engine data (ss): 83 × 69 mm, 1493 cc, CR 7.5, 44 PS @ 4000, 100 N·m @ 2000, 91 RON; 12 V from MY 1967 (jbugs)',
     sub: { crank: 'VW 69 mm crankshaft', cylinders: 'VW 83 mm barrels & pistons', heads: 'VW 1500 single-port heads (CR 7.5)', cam: 'VW 1500 camshaft', carb: 'Solex 30 PICT-1 carburettor', ignition: 'VW 1500 distributor' },
     attrs: { case: '40hp', eng: 'e1500', lifter: 'separate', crank: 'stock40', ports: 'single', carbkind: 'single', teeth: 130, volts_need: 12 },
     requires: [{ attr: 'volts', in: [12], msg: 'The 1500 is a 12 V engine (generator, 130-tooth flywheel): choose the 12 V conversion' }],
-    sound: { car: { name: '1956 VW Beetle, 1500 swap', bore: 0.083, stroke: 0.069, carb: 'Solex 30 PICT-1', th_area_wot: PI4 * 0.030 * 0.030, redline: 4400 } },
+    sound: { car: { name: '1956 VW Beetle, 1500 swap', bore: 0.083, stroke: 0.069, carb: 'Solex 30 PICT-1', th_area_wot: PI4 * 0.030 * 0.030, redline: 4400, ev_d: 0.032 } },
     vehicle: { engineText: '1500 swap: 1493 cc, 44 PS @ 4000, 100 N·m @ 2000 (factory); curve from the parts model', limiterRpm: 4400, tachMax: 5000, tachRed: 4400 },
     tm: { bore: 0.083, stroke: 0.069, vc: sw(0.069, 0.083, 7.5), iv_d: 0.0355, up: [['venturi Solex 30 PICT-1', 1, 0.024, 1.0, 4, 0]], down: [['manifold branch', 2, 0.033, 1.5, 2, 1], ['single port', 2, 0.033, 1.2, 2, 1]] },
-    prov: { bore: 's', stroke: 's', cr: 's', 'tm.iv_d': 'e', 'tm.venturi': 'e', 'tm.down': 'e: manifold / port Ø calibrated to the factory PS rating', limiterRpm: 'e' } });
+    prov: { bore: 's', stroke: 's', cr: 's', 'tm.iv_d': 's', ev_d: 's: 35.5 / 32 mm valves (VW manual, flat4.de)', 'tm.venturi': 'e', 'tm.down': 'e: manifold / port Ø calibrated to the factory PS rating', limiterRpm: 'e' } });
 
   add({ id: 'crank.okrasa', slot: 'crank', label: 'Okrasa 69.5 mm stroker crankshaft', desc: 'Chrome-moly, 1295 cc, 8-dowel flywheel (TSV kit part) · 1955–69', years: [1955, 1969],
     src: 'Oettinger history; pre67vw: 69.5 mm crank, 1295 cc, 8-dowel flywheel, rod-to-cam clearancing',
@@ -10346,16 +10370,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     warn: 'Engle W110: 1960s availability not verified; timing converted to 1 mm checking height (estimate)',
     sound: { car: { adv_dur: 250, lsa: 108 } }, tm: { ivc: 55 }, prov: { adv_dur: 'e', lsa: 's', 'tm.ivc': 'e' } });
   add({ id: 'carb.okrasa', slot: 'carb', label: 'Okrasa twin Solex 32 PBIC carburettors & manifolds', desc: 'For Okrasa dual-port heads (TS/TSV kit part) · 1951–69', years: [1951, 1969],
-    src: 'Okrasa programme list; pre67vw: two 32 PBIC on own manifolds', attrs: { carbkind: 'twin' },
+    src: 'Okrasa programme list; pre67vw: two 32 PBIC on own manifolds', attrs: { carbkind: 'twin', ac_il: 1 },   // ac_il: two small mesh filters instead of the oil-bath cleaner (ESTIMATE)
     requires: [{ attr: 'ports', in: ['twin'], msg: 'Okrasa twin-carb manifolds bolt to Okrasa dual-port heads only' }],
     sound: { car: { carb: '2 × Solex 32 PBIC (Okrasa)', th_area_wot: 2 * PI4 * 0.032 * 0.032, v_man: 0.0012 } },
     tm: { up: [['venturi 2 × 32 PBIC', 2, 0.024, 1.0, 2, 0]], down: [['runner', 4, 0.028, 1.5, 1, 0], ['twin port', 4, 0.027, 1.2, 1, 0]] },
-    prov: { th_area_wot: 'd', v_man: 'e', 'tm.venturi': 'e', 'tm.down': 'e' } });
+    prov: { th_area_wot: 'd', v_man: 'e', ac_il: 'e: oil bath ~10 dB vs small mesh filters ~1 dB', 'tm.venturi': 'e', 'tm.down': 'e' } });
   add({ id: 'fi.judson', slot: 'fi', label: 'Judson vane supercharger', desc: 'Belt drive 1.3 × crank, draws through the stock Solex, ~5 psi · 1956–69', years: [1956, 1969],
     src: 'R&T 9/1957, Motor Sport 6/1959: sliding vane, 1.3 × crank, ~5 psi at peak revs, stock Solex draw-through; max 22° advance',
     attrs: { fi: 'judson' }, requires: [{ attr: 'carbkind', in: ['single'], msg: 'Judson draws through the single stock carb' }],
-    warn: 'Judson: fit a slim generator pulley (or Porsche 356 pulley); max 22° advance. Sound: blower block not in the sound model yet (engine sound unchanged)',
-    tm: { blower: { vb: 0.0006, ratio: 1.3, eta_c: 0.6, n_leak: 250, eta_mech: 0.85 } }, prov: { 'tm.blower.ratio': 's', 'tm.blower.vb': 'e', 'tm.blower.eta_c': 'e' } });
+    warn: 'Judson: fit a slim generator pulley (or Porsche 356 pulley); max 22° advance',
+    // sound: generic PD blower block. 4 sliding vanes (Club VeeDub 1988, Hemmings 2018), 1.3 × crank; Q from vb; ~5 psi (34.5 kPa) at peak revs;
+    // acoustic efficiency 1e-4 of gas power (ESTIMATE; period ads called it quiet); boost builds with throttle (thr0 0.15, ESTIMATE).
+    sound: { car: { blower: { pd: 1, n_blades: 4, ratio: 1.3, Q_ref: 0.0006 * 1.3 * 3700 / 60, rpm_ref: 3700, dp_ref: 34500, eta: 1e-4, thr0: 0.15, pos: [0.50, 0.12, 0.80] } } },
+    tm: { blower: { vb: 0.0006, ratio: 1.3, eta_c: 0.6, n_leak: 250, eta_mech: 0.85 } }, prov: { 'tm.blower.ratio': 's', 'tm.blower.vb': 'e', 'tm.blower.eta_c': 'e', 'blower.n_blades': 's', 'blower.eta': 'e', 'blower.pos': 'e' } });
   add({ id: 'ign.010', slot: 'ignition', label: 'Bosch 010 centrifugal distributor', desc: 'Centrifugal advance only · 1960–', years: [1960, 1969],
     src: 'sparkingplugs.com; TheSamba: Transporter distributor, popular swap', note: 'No WOT torque change in the model (full advance is similar)' });
   add({ id: 'exh.empi', slot: 'exhaust', label: 'EMPI extractor header', desc: 'Replaces the heat exchangers (no cabin heat) · 1963–', years: [1963, 1969],
@@ -10364,7 +10391,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   add({ id: 'muf.abarth', slot: 'muffler', label: 'Abarth 4-tip exhaust', desc: 'For the stock heat-exchanger layout · 1955–60', years: [1955, 1960],
     src: 'oldspeed Abarth archive; TheSamba: 1955–57 with heat riser, 1958–60 without',
     conflicts: [{ attr: 'exh', in: ['extractor'], msg: 'Abarth muffler bolts to the stock heat-exchanger layout, not the EMPI extractor' }],
-    sound: { car: { muf: [['chamber', 0.30, 8, 0.10]] } }, tm: { a_tail: 4 * PI4 * 0.028 * 0.028, k_exh: 0.9 }, prov: { muf: 'e', 'tm.a_tail': 'e', 'tm.k_exh': 'e' } });
+    sound: { car: { muf: [['chamber', 0.30, 8, 0.10]], tail_d: 0.028 * Math.SQRT2 } }, tm: { a_tail: 4 * PI4 * 0.028 * 0.028, k_exh: 0.9 }, prov: { muf: 'e', tail_d: 'e: two 28 mm tips per side as one equal-area pipe (same as tm.a_tail)', 'tm.a_tail': 'e', 'tm.k_exh': 'e' } });
   add({ id: 'cool.okrasa', slot: 'cooling', label: 'Okrasa extra oil cooler & Fram filter', desc: 'Copper-coil cooler behind the fan housing · 1951–69', years: [1951, 1969],
     src: 'pre67vw: copper-coil cooler behind the fan housing, Fram filter', attrs: { cooling: 'extra' } });
   add({ id: 'el.12v', slot: 'electrical', label: 'VW 12 V conversion (1967 parts)', desc: '12 V generator and starter, 130-tooth flywheel · 1967–', years: [1967, 1969],
@@ -13628,6 +13655,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.23", date: "2026-11-22", status: "done", headline: "Beetle: part swaps you can hear", text: "Part swaps now change the sound clearly and for physical reasons. Bigger engines no longer idle quieter (the idle air scales with displacement) and use their real VW valve sizes. The Okrasa twin carbs breathe through small mesh filters instead of the oil-bath cleaner, so the intake is louder. The Abarth\u2019s four tips are in the sound. The Judson supercharger whines at 4 vanes \u00d7 1.3 \u00d7 crank speed from a new generic blower block. Stock builds and every sound set are bit-identical." },
       { v: "v1.13.22", date: "2026-11-22", status: "done", headline: "Beetle: swap 1960s parts in the engine bay", text: "The 1956 Beetle is now described as interchangeable parts (engine, crank, barrels, heads, cam, carburettor, forced induction, distributor, exhaust, muffler, cooling, electrics, fuel). A Swap parts button appears only in the Beetle\u2019s engine bay view. It lists period parts by brand and type: VW 1200 / 1300 / 1500 engines, the Okrasa TS and TSV kits (dual-port heads, twin Solex 32 PBIC carbs, 69.5 mm stroker crank), the Judson vane supercharger, the Porsche 356 crank, the EMPI extractor header, the Abarth 4-tip exhaust, the Bosch 010 distributor and more. Impossible combinations are blocked (for example Okrasa heads without the twin carbs, or a 12 V 1500 in a 6 V car). Risky ones show a warning (octane, cooling, stock crank, clutch). Torque follows a lean physics model anchored on the stock curve, and the engine sound follows the swapped geometry. The stock Beetle reproduces the previous data exactly. The game now uses one friction model for the Beetle (Barnes-Moss FMEP plus the cooling fan; estimate): full-throttle acceleration and top speed are unchanged, with less engine braking. Every sound set stays bit-identical, and the other cars are untouched." },
       { v: "v1.13.21", date: "2026-11-22", status: "done", headline: "Model X visuals redrawn to official 2021+ pictures", text: "Redraws the 2023 Model X in the same illustrated green-screen technique as the Cadillac, 997 and Beetle (the first ship used flat polygon fills, which read as a kid\u2019s 2D drawing). Rear: two wraparound lamps, dark TESLA trim, a single raked glass hatch, spoiler lip, closed falcon-wing doors in the garage, near-flush 20-inch wheels, matte-black wrap. Cabin: cream seats and lower dash, dark upper dash and headliner, official open-top yoke (no top rim, flat bottom bar, inverted-trapezoid TESLA hub) as a rotating sprite, upright 17-inch screen. The Specs dialog now has an EV path (motors, sourced 7.56 / 9.04 ratios, chassis, tyre/wind sound) so it opens instead of throwing on a missing torque curve. Older sets stay bit-identical." },
       { v: "v1.13.20", date: "2026-11-22", status: "done", headline: "2023 Model X Long Range Dual Motor", text: "Adds the 2023 Tesla Model X Long Range Dual Motor (matt-black wrap, Cream interior, yoke) as a sixth car, drawn through the existing ink and flat paths plus a generic EV bay (motors, reductions, inverters, frunk at the front, floor pack; ICE parts off). Official proportions: length 5,057 mm, width 1,999 mm, height 1,680 mm, wheelbase 2,965 mm. The shared sound model gains generic EV building blocks used only when a set sets P.ev (PMSM and inverter orders, gear mesh from the official 7.56 / 9.04 ratios, AVAS, regen sign). Sound v1 · Model X, the one Model X picker entry, has those tonal levels at 0: you hear the existing tyre/road and wind block only. Combustion and waveguides are not built for an EV. Older sets stay bit-identical." },

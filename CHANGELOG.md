@@ -1,3 +1,13 @@
+## v1.13.23 (tag `v1.13.23`), 2026-11-22 (Beetle: part swaps you can hear)
+
+* **Why v1.13.22 swaps sounded the same.** The parts reached the sound engine, but only as small geometry changes: engine swaps moved the level by about 1 dB at full throttle and made idle 1 to 3 dB *quieter* (the idle air bleed was not scaled with the bigger engine), twin carbs changed nothing you hear, and the Judson had no sound at all. Only the Abarth and EMPI changed the sound, and only around some engine speeds.
+* **Idle air scales with displacement.** For a non-stock build the idle air bleed is the sound set's own value × swept volume / stock (the idle screw is reset for the same idle speed), so bigger engines no longer idle quieter. A generic `spec.parts.scale` multiplies the selected sound set's own value, so it works with every Beetle set in the drop-down.
+* **Valve sizes from the VW data.** 1200 34 PS 31.5/30 mm, 1300 33/30 mm, 1500 35.5/32 mm (VW manual, flat4.de). The 1500 is about 1.5 dB louder and darker at 2500 rpm full throttle.
+* **Okrasa twin carbs breathe through two small mesh filters instead of the oil-bath cleaner** (insertion loss 10 dB to 1 dB, estimate). The intake is about 2 dB louder in the cabin at 2500 rpm, about 6 dB louder at 4000 rpm, and about 6 dB louder at part throttle.
+* **Abarth 4-tip exhaust:** the four 28 mm tips are now in the sound as well (two per side, as one pipe of the same area). It is about 11 dB louder around 2500 rpm full throttle and about 1 to 3 dB louder at 4000 rpm.
+* **Judson vane supercharger whine.** A new generic positive-displacement blower block (default off) reuses the rotor source of the cooling fan. The whine is at 4 vanes × 1.3 × crank speed (about 350 Hz at 4000 rpm). The acoustic power is 1e-4 of the gas power (estimate), with boost building with throttle. The blower's own tone is about 33 to 42 dB above the stock spectrum at full throttle.
+* Stock builds send nothing new: all 111 reference renders are bit-identical; parts gate PASS.
+
 ## v1.13.22 (tag `v1.13.22`), 2026-11-22 (Beetle: swap 1960s parts in the engine bay)
 
 * **Interchangeable parts, starting with the 1956 Beetle.** The car is now described as parts in module slots: engine (long block), crankshaft, cylinders/pistons, cylinder heads, camshaft, carburettor/manifold, forced induction, distributor, exhaust manifold, muffler, oil/cooling, electrics/starter and fuel. The stock parts reproduce the previous Beetle sound data and vehicle data exactly; a build gate (`tools/parts/check-parts.mjs`) proves it.

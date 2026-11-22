@@ -6221,7 +6221,12 @@ function engineModuleV8p(core) {
       applySetCar(this.c, this.P);
       // v1.14 draft (job 1): generic parts layer (default off). js/parts.js sends only the keys a non-stock build changes;
       // absent for every stock build and every other car, so the code path and the audio stay bit-identical.
-      if (spec.parts) { if (spec.parts.car) Object.assign(this.c, spec.parts.car); if (spec.parts.phys) Object.assign(this.P, spec.parts.phys); }
+      if (spec.parts) {
+        if (spec.parts.car) Object.assign(this.c, spec.parts.car); if (spec.parts.phys) Object.assign(this.P, spec.parts.phys);
+        // v1.13.23 generic: anchored multipliers on the selected sound set's own literals (e.g. idle air with displacement,
+        // intake radiation with air-cleaner insertion loss), so a parts build works on every set in the drop-down.
+        if (spec.parts.scale) for (var _sk in spec.parts.scale) if (typeof this.P[_sk] === 'number') this.P[_sk] *= spec.parts.scale[_sk];
+      }
       this.spec = { idle_rpm: this.c.idle_rpm, redline: this.c.redline, name: this.c.name, car_key: key };
       this.vcam = !!(this.P.vcam || spec.variocam_plus || opts.variocam_plus);
       this.variocamPlus = this.vcam;
@@ -6641,6 +6646,7 @@ function engineModuleV8p(core) {
       if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
       this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
       this._fan = this._fanSetup(pr);
+      this._blow = this.c.blower ? this._fanSetup(pr, this.c.blower) : null;   // v1.13.23 generic PD blower (default off)
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -6907,6 +6913,7 @@ function engineModuleV8p(core) {
       this._dtPipes = dtb; this._thermal(dtb, firing); this._pipes();
       post(n, this.fs, out, this.PV, this.PST, this.H, this.PATH, this.NPATH, this.BQ, this.BS, L, R, off, this.RQ, this.RS);
       if (this._fan) this._coolFan(n, K, L, R, off);
+      if (this._blow) this._coolFan(n, K, L, R, off, this._blow);
       if (this.RN) this._noiseRun(n, L, R, off);
     };
 
@@ -6915,8 +6922,11 @@ function engineModuleV8p(core) {
     // field, so this source is never constructed and never runs for them.
     // Blade-passing tones + turbulent broadband from shaft-speed affinities
     // (Q ~ n, ΔP ~ n^2, acoustic power ~ Q ΔP^2 × efficiency).
-    V8pSynth.prototype._fanSetup = function (pr) {
-      var f = this.c.fan; if (!f || !f.n_blades) return null;
+    // v1.13.23: the same rotor source also serves a generic positive-displacement blower (c.blower, f.pd = 1; default off):
+    // vane/lobe-passing tone at n_blades × ratio × crank speed, acoustic power = eta × Q × dP (gas power × acoustic
+    // efficiency), Q ~ n, dP ~ n × (thr0 + (1 - thr0) × throttle) (boost builds with load; low at idle / cruise).
+    V8pSynth.prototype._fanSetup = function (pr, f0) {
+      var f = f0 || this.c.fan; if (!f || !f.n_blades) return null;
       var pos = f.pos || this.c.intake, earL = pr.ears[0], earR = pr.ears[1];
       function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz); }
       var rL = Math.max(dist(earL, pos), 0.25), rR = Math.max(dist(earR, pos), 0.25);
@@ -6936,11 +6946,12 @@ function engineModuleV8p(core) {
         k: f.k !== undefined ? f.k : 1.0,
         ph: 0.0, lp: 0.0, cabY: 0.0,
         buf: new Float64Array(maxD), wi: 0, dL: dL, dR: dR, gL: gL, gR: gR,
-        outside: !!pr.outside, fFw: this.P.f_fw || 320.0
+        outside: !!pr.outside, fFw: this.P.f_fw || 320.0,
+        pd: !!f.pd, thr0: f.thr0 !== undefined ? f.thr0 : 0.15
       };
     };
-    V8pSynth.prototype._coolFan = function (n, K, L, R, off) {
-      var F = this._fan, fs = this.fs, i, rpm, shaftHz, bpf, U, Qf, dP, W, pRms, aTone, aBb, x, y, s, wi, buf, nz, aLp, aCab;
+    V8pSynth.prototype._coolFan = function (n, K, L, R, off, F0) {
+      var F = F0 || this._fan, fs = this.fs, i, rpm, shaftHz, bpf, U, Qf, dP, W, pRms, aTone, aBb, x, y, s, wi, buf, nz, aLp, aCab;
       var TWOPI = 6.283185307179586, RHO_C = RHO_AIR * C_AIR;
       buf = F.buf; wi = F.wi;
       aCab = 1.0 - Math.exp(-2.0 * Math.PI * F.fFw / fs);
@@ -6952,8 +6963,14 @@ function engineModuleV8p(core) {
         U = TWOPI * shaftHz * (F.D * 0.5);
         Qf = F.Qref * (rpm / F.rpmRef);
         if (Qf < 0.0) Qf = 0.0;
+        if (F.pd) {
+          var thrB = K[K_THR0] + (K[K_THR1] - K[K_THR0]) * (i / n); if (thrB < 0.0) thrB = 0.0; if (thrB > 1.0) thrB = 1.0;
+          dP = F.dPref * (rpm / F.rpmRef) * (F.thr0 + (1.0 - F.thr0) * thrB);
+          W = F.eta * F.k * Qf * dP;
+        } else {
         dP = F.dPref * (rpm / F.rpmRef) * (rpm / F.rpmRef);
         W = F.eta * F.k * Qf * dP * dP;
+        }
         if (W < 0.0) W = 0.0;
         // monopole free-field p_rms at 1 m from sound power; 1/r is in gL/gR
         pRms = Math.sqrt((W / (4.0 * Math.PI)) * RHO_C);
@@ -7027,7 +7044,7 @@ function engineModuleV8p(core) {
       this.PV[4] = this.P.k_cab || 0.45;
       this.PV[5] = 0.25 * (this.P.gain || 1);
       this.RN = (this.P.noise && (typeof NOISE_OFF === 'undefined' || !NOISE_OFF)) ? this._noiseSetup(this.persp) : null;
-      this._fan = null;
+      this._fan = null; this._blow = null;
       this.PG = []; this.NODE = []; this.NN = 0; this.NW = 0; this.NP = 0;
       this._ev = this._ev || this._evSetup();
     };
