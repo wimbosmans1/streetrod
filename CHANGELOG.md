@@ -1,3 +1,10 @@
+## v1.13.21 (tag `v1.13.21`), 2026-11-22 (Model X visuals redrawn to official 2021+ pictures)
+
+* **Model X redrawn in the same illustrated technique as the Cadillac, 997 and Beetle.** The first Model X ship used simple filled polygons, which read as flat 2D drawings. This version uses the same green-screen illustrated path as the other cars (smooth shading, highlights, accurate curvature; ink adds even outlines). Official 2021+ refresh direction: two wraparound rear lamps with dark TESLA trim between them (not a full-width light bar), a single raked glass hatch, spoiler lip, wide hips, near-flush 20-inch wheels, matte-black wrap with low-sheen shading. Falcon-wing doors stay **closed** in the garage.
+* **Cabin and yoke.** Cream seats, lower dash and door cards; dark upper dash and headliner; walnut strip; upright 17-inch centre screen and a thin cluster visor. The steering control is a separate rotating sprite of the official 2021+ Tesla yoke: no top rim, open top, a flat bottom bar, two upright side grips with rounded tops, a large inverted-trapezoid TESLA hub, and scroll wheels on the spokes — not a closed round wheel.
+* **Specs dialog.** The Model X Specs page now has an EV path (motors, sourced 7.56 / 9.04 reductions, chassis, tyre/wind sound) so it opens. It no longer assumes an ICE torque curve.
+* **Unchanged.** Sound v1 · Model X remains tyre/road and wind only. Every older set stays bit-identical. Cadillac, GT350, 911, BRM and Beetle are untouched.
+
 ## v1.13.20 (tag `v1.13.20`), 2026-11-22 (2023 Model X Long Range Dual Motor)
 
 * **Sixth car: 2023 Tesla Model X Long Range Dual Motor.** Matt-black wrap, Cream interior, yoke, drawn through the existing ink and flat paths (no per-car shader). Garage uses the falcon-wing rear; the EV bay is the generic motor / reduction / inverter / frunk / floor-pack drawing (ICE parts off). Official proportions: length 5,057 mm, width 1,999 mm, height 1,680 mm, wheelbase 2,965 mm, rear track 1,710 mm.
