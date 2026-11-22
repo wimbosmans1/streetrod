@@ -5201,10 +5201,11 @@ function engineModuleV8p(core) {
       Q_ETAV = 22, Q_VD = 23, Q_VMAN = 24, Q_ATHW = 25, Q_AIDLE = 26, Q_FIDLE = 27, Q_ROL = 28, Q_J = 29, Q_F0 = 30, Q_F1 = 31, Q_F2 = 32,
       Q_FCOLD = 33, Q_STG = 34, Q_STKE = 35, Q_STRM = 36, Q_STRB = 37, Q_STIF = 38, Q_STJM = 39, Q_TEETH = 40, Q_VBAT = 41, Q_SOLID = 42,
       Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, Q_KMESH = 56, Q_KCOMM = 57, Q_KMOT = 58, Q_KBB = 59, Q_KAM = 60, Q_KBB2 = 61, Q_KBBHI = 62, Q_LEAD = 63, Q_TICKA = 64, Q_KVF = 65, Q_VFN = 66, Q_VFW = 67, Q_VFF = 68, Q_VFR = 69, Q_VFX = 70, Q_VWX = 71, Q_PSH = 72, Q_CYV = 73,
-      Q_INTRES = 74, Q_VBANK = 75, Q_LTUBE = 76, Q_ATUBE = 77, Q_ROPEN = 78, Q_RCLOSE = 79, Q_KRES = 80, Q_F0RPM = 81, Q_F1RPM = 82, Q_FTHR = 83, Q_INTRUN = 84, Q_IRATTACH = 85, NQ = 86;
+      Q_INTRES = 74, Q_VBANK = 75, Q_LTUBE = 76, Q_ATUBE = 77, Q_ROPEN = 78, Q_RCLOSE = 79, Q_KRES = 80, Q_F0RPM = 81, Q_F1RPM = 82, Q_FTHR = 83, Q_INTRUN = 84, Q_IRATTACH = 85,
+      Q_CHG = 86, Q_CHGDP = 87, Q_CHGRPM = 88, Q_CHGTHR0 = 89, Q_CHGN0 = 90, Q_CHGN1 = 91, Q_CHGWG = 92, Q_CHGTU = 93, Q_CHGTD = 94, NQ = 95;   // v1.13.25 generic charge (boost) block, 0 = off
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
-      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, S_PL = 36, S_PR = 37, S_QC = 38, NS = 39;
+      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, S_PL = 36, S_PR = 37, S_QC = 38, S_BST = 39, NS = 40;
     var C_PHI = 0, C_M = 1, C_K = 2, C_OPEN = 3, C_PIVC = 4, C_VIVC = 5, C_TIVC = 6, C_RP = 7, C_VALID = 8, C_P = 9, C_Q = 10, C_E = 11,
       C_XRES = 12, C_ADV = 13, C_DUR = 14, C_OFF = 15, C_BANK = 16, C_PIPE = 17, C_VN = 18, C_QLP = 19, NC = 20;
     var F_D = 0, F_A = 1, F_GAIN = 2, F_LP = 3, F_SA = 4, F_SB = 5, F_C = 6, F_RP = 7, NF = 8;
@@ -5302,7 +5303,7 @@ function engineModuleV8p(core) {
         var piv = pman;
         CY[c + C_PIVC] = piv; CY[c + C_VIVC] = vol(Q, Q[Q_IVC]);
         var xres = Q[Q_XR0] * Math.pow(P_ATM / piv, 1.0 / g) + Q[Q_XROV] * Q[Q_OVL] / 100.0 * (P_ATM / piv - 1.0) * Math.sqrt(1000.0 / (rpm > 100.0 ? rpm : 100.0));
-        if (xres > 0.6) xres = 0.6;
+        if (xres > 0.6) xres = 0.6; if (xres < 0.0) xres = 0.0;
         CY[c + C_XRES] = xres; CY[c + C_TIVC] = T_AMB + 30.0 + 500.0 * xres;
         var r1 = rnd(S), r2 = rnd(S);
         var gs = (rnd(S) + rnd(S) + rnd(S) + rnd(S) - 2.0) * 1.7320508075688772;
@@ -5609,11 +5610,32 @@ function engineModuleV8p(core) {
         var thr = K[K_THR0] + (K[K_THR1] - K[K_THR0]) * u;
         var a_th = Q[Q_AIDLE] * (1.0 + Q[Q_FIDLE] * K[K_CHOKE]) + Q[Q_ATHW] * (1.0 - Math.cos(thr * Math.PI / 2.0));
         var w = S[S_W];
-        var m_th = Q[Q_CD] * a_th * P_ATM / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / P_ATM, G_AIR);
-        var m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
+        var m_th, m_en;
+        if (Q[Q_CHG] > 0.0) {
+          // v1.13.25 generic charge block (default off: Q_CHG = 0 takes the unchanged branch below). The throttle sees the
+          // compressor outlet pressure P_ATM + boost instead of P_ATM, and the manifold cap is lifted to that pressure.
+          // Q_CHG 1: positive-displacement blower, boost ~ shaft speed x load (same law as its whine source);
+          // Q_CHG 2: exhaust turbocharger, boost ~ ((rpm - n0) / (n1 - n0))^2 x throttle^2, capped by the wastegate,
+          // first-order spool lag (tau up / down). Charge temperature rise is not modelled here (it is in js/parts.js).
+          var rpmC = (w > 0.0 ? w : 0.0) * 60.0 / (2.0 * Math.PI), thC = thr < 0.0 ? 0.0 : (thr > 1.0 ? 1.0 : thr), dpt;
+          if (Q[Q_CHG] < 1.5) dpt = Q[Q_CHGDP] * (rpmC / Q[Q_CHGRPM]) * (Q[Q_CHGTHR0] + (1.0 - Q[Q_CHGTHR0]) * thC);
+          else { var xs = (rpmC - Q[Q_CHGN0]) / (Q[Q_CHGN1] - Q[Q_CHGN0]); if (xs < 0.0) xs = 0.0; if (xs > 1.0) xs = 1.0; dpt = Q[Q_CHGDP] * xs * xs * thC * thC; }
+          if (dpt > Q[Q_CHGWG]) dpt = Q[Q_CHGWG]; if (!(dpt > 0.0)) dpt = 0.0;
+          var tauC = dpt > S[S_BST] ? Q[Q_CHGTU] : Q[Q_CHGTD]; if (tauC < dt) tauC = dt;
+          S[S_BST] += (dpt - S[S_BST]) * (dt / tauC);
+          var pup = P_ATM + S[S_BST];
+          m_th = Q[Q_CD] * a_th * pup / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / pup, G_AIR);
+          m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
+          S[S_PMAN] += R_GAS * T_AMB / Q[Q_VMAN] * (m_th - m_en) * dt;
+          if (S[S_PMAN] < 0.12 * P_ATM) S[S_PMAN] = 0.12 * P_ATM;
+          if (S[S_PMAN] > pup) S[S_PMAN] = pup;
+        } else {
+        m_th = Q[Q_CD] * a_th * P_ATM / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / P_ATM, G_AIR);
+        m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
         S[S_PMAN] += R_GAS * T_AMB / Q[Q_VMAN] * (m_th - m_en) * dt;
         if (S[S_PMAN] < 0.12 * P_ATM) S[S_PMAN] = 0.12 * P_ATM;
         if (S[S_PMAN] > P_ATM) S[S_PMAN] = P_ATM;
+        }
         var pman = S[S_PMAN];
         // electric starter
         var G = Q[Q_STG], ke = Q[Q_STKE], Rm = Q[Q_STRM] + Q[Q_STRB];
@@ -6010,10 +6032,16 @@ function engineModuleV8p(core) {
           node(0, 0, [[bankOut[0], 1], [bankOut[1], 1], [prevS, 0]]);
         }
         var tdS = (c.tail_d != null ? c.tail_d : c.pipe_d);
+        if (c.tail_n === 1) {   // v1.13.25 generic: one tailpipe (e.g. a merged header's stinger); default two
+          var tail1 = pipe(c.tail_len, tdS, 2);
+          node(0, 0, [[prevS, 1], [tail1, 0]]);
+          node(2, 0, [[tail1, 1]]);
+        } else {
         var tailL = pipe(c.tail_len, tdS, 2), tailR = pipe(c.tail_len, tdS, 2);
         node(0, 0, [[prevS, 1], [tailL, 0], [tailR, 0]]);
         node(2, 0, [[tailL, 1]]);
         node(2, 1, [[tailR, 1]]);
+        }
       } else {
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0, pendingTmm = null;
@@ -6238,6 +6266,9 @@ function engineModuleV8p(core) {
       if (this.P.port_bc) netCar.port_bc = 1;
       if (this.P.muf) netCar.muf = this.P.muf;   // generic: any car may select a muffler list via parameters
       else if (this.P.muf_cavity) netCar.muf = mufAsCavity(netCar, this.P.muf_core_pack || 0.0);
+      // v1.13.25 generic turbo (c.turbo, default off): the turbine housing sits between the collector and the muffler as a
+      // volute volume (chamber) and the wheel passage as a short lossy throat (packed pipe): it damps the exhaust pulses.
+      if (this.c.turbo) { var tbn = this.c.turbo; netCar.muf = [['chamber', tbn.vol_len, tbn.vol_ratio, 0], ['hx', tbn.th_len, tbn.th_d, tbn.th_pack]].concat(netCar.muf || []); }
       if (this.P.int_run) {   // generic intake-runner block (parameters only; off unless a set enables it)
         netCar.int_run = 1;
         netCar.int_run_l = this.P.int_run_l !== undefined ? this.P.int_run_l : 0.216;
@@ -6371,6 +6402,16 @@ function engineModuleV8p(core) {
       Q[Q_KBB2] = P.k_st_bb2 !== undefined ? P.k_st_bb2 : 0.5;
       Q[Q_KBBHI] = P.k_st_bbhi !== undefined ? P.k_st_bbhi : 0.15;
       Q[Q_LEAD] = P.st_lead !== undefined ? P.st_lead : 0.04;
+      // v1.13.25 generic charge block: only a PD blower with boost: 1 or a turbo (c.turbo) switches it on
+      var bl = c.blower, tb = c.turbo;
+      if (tb) {
+        Q[Q_CHG] = 2.0; Q[Q_CHGDP] = tb.dp_max !== undefined ? tb.dp_max : tb.dp_wg; Q[Q_CHGWG] = tb.dp_wg;
+        Q[Q_CHGN0] = tb.n0; Q[Q_CHGN1] = tb.n1; Q[Q_CHGTU] = tb.tau_up !== undefined ? tb.tau_up : 0.8; Q[Q_CHGTD] = tb.tau_dn !== undefined ? tb.tau_dn : 0.3;
+        Q[Q_CHGRPM] = 1.0;
+      } else if (bl && bl.boost) {
+        Q[Q_CHG] = 1.0; Q[Q_CHGDP] = bl.dp_ref; Q[Q_CHGRPM] = bl.rpm_ref; Q[Q_CHGTHR0] = bl.thr0 !== undefined ? bl.thr0 : 0.15;
+        Q[Q_CHGWG] = bl.dp_max !== undefined ? bl.dp_max : 1e9; Q[Q_CHGTU] = 0.05; Q[Q_CHGTD] = 0.05;
+      }
       return Q;
     };
     V8pSynth.prototype._pipes = function () {
@@ -6646,7 +6687,7 @@ function engineModuleV8p(core) {
       if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
       this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
       this._fan = this._fanSetup(pr);
-      this._blow = this.c.blower ? this._fanSetup(pr, this.c.blower) : null;   // v1.13.23 generic PD blower (default off)
+      this._blow = this.c.blower ? this._fanSetup(pr, this.c.blower) : (this.c.turbo && this.c.turbo.turbo_whine ? this._fanSetup(pr, this.c.turbo) : null);   // v1.13.23 generic PD blower / v1.13.25 turbo (default off)
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -6947,7 +6988,8 @@ function engineModuleV8p(core) {
         ph: 0.0, lp: 0.0, cabY: 0.0,
         buf: new Float64Array(maxD), wi: 0, dL: dL, dR: dR, gL: gL, gR: gR,
         outside: !!pr.outside, fFw: this.P.f_fw || 320.0,
-        pd: !!f.pd, thr0: f.thr0 !== undefined ? f.thr0 : 0.15
+        pd: !!f.pd, thr0: f.thr0 !== undefined ? f.thr0 : 0.15,
+        tb: !!f.turbo_whine, uMin: f.u_min || 0.0, psiW: f.psi_w || 0.65
       };
     };
     V8pSynth.prototype._coolFan = function (n, K, L, R, off, F0) {
@@ -6958,6 +7000,15 @@ function engineModuleV8p(core) {
       for (i = 0; i < n; i++) {
         rpm = K[K_RPM0] + (K[K_RPM1] - K[K_RPM0]) * (i / n);
         if (!(rpm > 50.0)) { buf[wi] = 0.0; wi = (wi + 1) & 511; continue; }
+        if (F.tb) {
+          // v1.13.25 turbo whine: shaft speed from the compressor work for the live boost (Euler: cp T0 (pr^0.286 - 1) =
+          // psi_w U2^2), with a floor u_min from the exhaust flow at no boost; air flow ~ rpm x pressure ratio
+          var prT = 1.0 + this.S[S_BST] / P_ATM, U2 = Math.sqrt(1005.0 * T_AMB * (Math.pow(prT, 0.2857) - 1.0) / F.psiW);
+          var uf = F.uMin * (rpm / F.rpmRef); if (U2 < uf) U2 = uf;
+          shaftHz = U2 / (Math.PI * F.D); bpf = shaftHz * F.nbl;
+          Qf = F.Qref * (rpm / F.rpmRef) * prT; dP = this.S[S_BST] + 0.02 * F.dPref * (rpm / F.rpmRef);
+          W = F.eta * F.k * Qf * dP; if (W < 0.0) W = 0.0;
+        } else {
         shaftHz = (rpm / 60.0) * F.ratio;
         bpf = shaftHz * F.nbl;
         U = TWOPI * shaftHz * (F.D * 0.5);
@@ -6971,6 +7022,7 @@ function engineModuleV8p(core) {
         dP = F.dPref * (rpm / F.rpmRef) * (rpm / F.rpmRef);
         W = F.eta * F.k * Qf * dP * dP;
         }
+        }
         if (W < 0.0) W = 0.0;
         // monopole free-field p_rms at 1 m from sound power; 1/r is in gL/gR
         pRms = Math.sqrt((W / (4.0 * Math.PI)) * RHO_C);
@@ -6978,6 +7030,9 @@ function engineModuleV8p(core) {
         aBb = pRms * 0.45;
         F.ph += TWOPI * bpf / fs;
         if (F.ph > TWOPI) F.ph -= TWOPI * Math.floor(F.ph / TWOPI);
+        if (F.tb) {   // v1.13.25 turbo whine: no tone or harmonic above 0.45 fs (no aliasing at 44.1 / 48 kHz)
+          x = bpf < 0.45 * fs ? aTone * (Math.sin(F.ph) + (2.0 * bpf < 0.45 * fs ? 0.35 * Math.sin(2.0 * F.ph) : 0.0)) : 0.0;
+        } else
         x = aTone * (Math.sin(F.ph) + 0.35 * Math.sin(2.0 * F.ph));
         nz = (rnd(this.S) - 0.5) * 3.4641016151377544;
         // turbulence: one-pole near ~2 × BPF (blade-wake scale)

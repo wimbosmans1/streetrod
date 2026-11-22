@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.24)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.25)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -441,7 +441,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
     <div id="dragCard" class="hidden"></div>
     <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
-    <div id="partsDlg" class="hidden" role="dialog" aria-labelledby="partsTitle"><div class="partsBox"><div class="partsHead"><button class="tb aboutX" data-act="partsClose" aria-label="Close">&times;</button><h2 id="partsTitle">Swap parts (1960s)</h2></div><div id="partsBody" class="partsScroll"></div><div class="partsBtns"><span id="partsState" class="pstate"></span><button class="tb pApply" id="bPartsApply" data-act="partsApply">Apply</button><button class="tb" data-act="partsStock">Stock</button><button class="tb" data-act="partsClose">Close</button></div></div></div>
+    <div id="partsDlg" class="hidden" role="dialog" aria-labelledby="partsTitle"><div class="partsBox"><div class="partsHead"><button class="tb aboutX" data-act="partsClose" aria-label="Close">&times;</button><h2 id="partsTitle">Swap parts</h2></div><div id="partsBody" class="partsScroll"></div><div class="partsBtns"><span id="partsState" class="pstate"></span><button class="tb pApply" id="bPartsApply" data-act="partsApply">Apply</button><button class="tb" data-act="partsStock">Stock</button><button class="tb" data-act="partsClose">Close</button></div></div></div>
     <div id="specsDlg" class="hidden" role="dialog" aria-modal="true" aria-labelledby="specsTitle"><div class="aboutBox"><button class="tb aboutX" data-act="specsClose" aria-label="Close">&times;</button><h2 id="specsTitle">Engine specifications</h2><div id="specsBody"></div></div></div>
   </div>
   <aside>
@@ -5773,10 +5773,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q_ETAV = 22, Q_VD = 23, Q_VMAN = 24, Q_ATHW = 25, Q_AIDLE = 26, Q_FIDLE = 27, Q_ROL = 28, Q_J = 29, Q_F0 = 30, Q_F1 = 31, Q_F2 = 32,
       Q_FCOLD = 33, Q_STG = 34, Q_STKE = 35, Q_STRM = 36, Q_STRB = 37, Q_STIF = 38, Q_STJM = 39, Q_TEETH = 40, Q_VBAT = 41, Q_SOLID = 42,
       Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, Q_KMESH = 56, Q_KCOMM = 57, Q_KMOT = 58, Q_KBB = 59, Q_KAM = 60, Q_KBB2 = 61, Q_KBBHI = 62, Q_LEAD = 63, Q_TICKA = 64, Q_KVF = 65, Q_VFN = 66, Q_VFW = 67, Q_VFF = 68, Q_VFR = 69, Q_VFX = 70, Q_VWX = 71, Q_PSH = 72, Q_CYV = 73,
-      Q_INTRES = 74, Q_VBANK = 75, Q_LTUBE = 76, Q_ATUBE = 77, Q_ROPEN = 78, Q_RCLOSE = 79, Q_KRES = 80, Q_F0RPM = 81, Q_F1RPM = 82, Q_FTHR = 83, Q_INTRUN = 84, Q_IRATTACH = 85, NQ = 86;
+      Q_INTRES = 74, Q_VBANK = 75, Q_LTUBE = 76, Q_ATUBE = 77, Q_ROPEN = 78, Q_RCLOSE = 79, Q_KRES = 80, Q_F0RPM = 81, Q_F1RPM = 82, Q_FTHR = 83, Q_INTRUN = 84, Q_IRATTACH = 85,
+      Q_CHG = 86, Q_CHGDP = 87, Q_CHGRPM = 88, Q_CHGTHR0 = 89, Q_CHGN0 = 90, Q_CHGN1 = 91, Q_CHGWG = 92, Q_CHGTU = 93, Q_CHGTD = 94, NQ = 95;   // v1.13.25 generic charge (boost) block, 0 = off
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
-      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, S_PL = 36, S_PR = 37, S_QC = 38, NS = 39;
+      S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, S_PL = 36, S_PR = 37, S_QC = 38, S_BST = 39, NS = 40;
     var C_PHI = 0, C_M = 1, C_K = 2, C_OPEN = 3, C_PIVC = 4, C_VIVC = 5, C_TIVC = 6, C_RP = 7, C_VALID = 8, C_P = 9, C_Q = 10, C_E = 11,
       C_XRES = 12, C_ADV = 13, C_DUR = 14, C_OFF = 15, C_BANK = 16, C_PIPE = 17, C_VN = 18, C_QLP = 19, NC = 20;
     var F_D = 0, F_A = 1, F_GAIN = 2, F_LP = 3, F_SA = 4, F_SB = 5, F_C = 6, F_RP = 7, NF = 8;
@@ -5874,7 +5875,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var piv = pman;
         CY[c + C_PIVC] = piv; CY[c + C_VIVC] = vol(Q, Q[Q_IVC]);
         var xres = Q[Q_XR0] * Math.pow(P_ATM / piv, 1.0 / g) + Q[Q_XROV] * Q[Q_OVL] / 100.0 * (P_ATM / piv - 1.0) * Math.sqrt(1000.0 / (rpm > 100.0 ? rpm : 100.0));
-        if (xres > 0.6) xres = 0.6;
+        if (xres > 0.6) xres = 0.6; if (xres < 0.0) xres = 0.0;
         CY[c + C_XRES] = xres; CY[c + C_TIVC] = T_AMB + 30.0 + 500.0 * xres;
         var r1 = rnd(S), r2 = rnd(S);
         var gs = (rnd(S) + rnd(S) + rnd(S) + rnd(S) - 2.0) * 1.7320508075688772;
@@ -6181,11 +6182,32 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         var thr = K[K_THR0] + (K[K_THR1] - K[K_THR0]) * u;
         var a_th = Q[Q_AIDLE] * (1.0 + Q[Q_FIDLE] * K[K_CHOKE]) + Q[Q_ATHW] * (1.0 - Math.cos(thr * Math.PI / 2.0));
         var w = S[S_W];
-        var m_th = Q[Q_CD] * a_th * P_ATM / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / P_ATM, G_AIR);
-        var m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
+        var m_th, m_en;
+        if (Q[Q_CHG] > 0.0) {
+          // v1.13.25 generic charge block (default off: Q_CHG = 0 takes the unchanged branch below). The throttle sees the
+          // compressor outlet pressure P_ATM + boost instead of P_ATM, and the manifold cap is lifted to that pressure.
+          // Q_CHG 1: positive-displacement blower, boost ~ shaft speed x load (same law as its whine source);
+          // Q_CHG 2: exhaust turbocharger, boost ~ ((rpm - n0) / (n1 - n0))^2 x throttle^2, capped by the wastegate,
+          // first-order spool lag (tau up / down). Charge temperature rise is not modelled here (it is in js/parts.js).
+          var rpmC = (w > 0.0 ? w : 0.0) * 60.0 / (2.0 * Math.PI), thC = thr < 0.0 ? 0.0 : (thr > 1.0 ? 1.0 : thr), dpt;
+          if (Q[Q_CHG] < 1.5) dpt = Q[Q_CHGDP] * (rpmC / Q[Q_CHGRPM]) * (Q[Q_CHGTHR0] + (1.0 - Q[Q_CHGTHR0]) * thC);
+          else { var xs = (rpmC - Q[Q_CHGN0]) / (Q[Q_CHGN1] - Q[Q_CHGN0]); if (xs < 0.0) xs = 0.0; if (xs > 1.0) xs = 1.0; dpt = Q[Q_CHGDP] * xs * xs * thC * thC; }
+          if (dpt > Q[Q_CHGWG]) dpt = Q[Q_CHGWG]; if (!(dpt > 0.0)) dpt = 0.0;
+          var tauC = dpt > S[S_BST] ? Q[Q_CHGTU] : Q[Q_CHGTD]; if (tauC < dt) tauC = dt;
+          S[S_BST] += (dpt - S[S_BST]) * (dt / tauC);
+          var pup = P_ATM + S[S_BST];
+          m_th = Q[Q_CD] * a_th * pup / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / pup, G_AIR);
+          m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
+          S[S_PMAN] += R_GAS * T_AMB / Q[Q_VMAN] * (m_th - m_en) * dt;
+          if (S[S_PMAN] < 0.12 * P_ATM) S[S_PMAN] = 0.12 * P_ATM;
+          if (S[S_PMAN] > pup) S[S_PMAN] = pup;
+        } else {
+        m_th = Q[Q_CD] * a_th * P_ATM / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / P_ATM, G_AIR);
+        m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
         S[S_PMAN] += R_GAS * T_AMB / Q[Q_VMAN] * (m_th - m_en) * dt;
         if (S[S_PMAN] < 0.12 * P_ATM) S[S_PMAN] = 0.12 * P_ATM;
         if (S[S_PMAN] > P_ATM) S[S_PMAN] = P_ATM;
+        }
         var pman = S[S_PMAN];
         // electric starter
         var G = Q[Q_STG], ke = Q[Q_STKE], Rm = Q[Q_STRM] + Q[Q_STRB];
@@ -6582,10 +6604,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           node(0, 0, [[bankOut[0], 1], [bankOut[1], 1], [prevS, 0]]);
         }
         var tdS = (c.tail_d != null ? c.tail_d : c.pipe_d);
+        if (c.tail_n === 1) {   // v1.13.25 generic: one tailpipe (e.g. a merged header's stinger); default two
+          var tail1 = pipe(c.tail_len, tdS, 2);
+          node(0, 0, [[prevS, 1], [tail1, 0]]);
+          node(2, 0, [[tail1, 1]]);
+        } else {
         var tailL = pipe(c.tail_len, tdS, 2), tailR = pipe(c.tail_len, tdS, 2);
         node(0, 0, [[prevS, 1], [tailL, 0], [tailR, 0]]);
         node(2, 0, [[tailL, 1]]);
         node(2, 1, [[tailR, 1]]);
+        }
       } else {
       for (var bank = 0; bank < 2; bank++) {
         var cyls = [], i, head, prev, dl = bank === 1 ? c.bank_dl : 0.0, pendingTmm = null;
@@ -6810,6 +6838,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (this.P.port_bc) netCar.port_bc = 1;
       if (this.P.muf) netCar.muf = this.P.muf;   // generic: any car may select a muffler list via parameters
       else if (this.P.muf_cavity) netCar.muf = mufAsCavity(netCar, this.P.muf_core_pack || 0.0);
+      // v1.13.25 generic turbo (c.turbo, default off): the turbine housing sits between the collector and the muffler as a
+      // volute volume (chamber) and the wheel passage as a short lossy throat (packed pipe): it damps the exhaust pulses.
+      if (this.c.turbo) { var tbn = this.c.turbo; netCar.muf = [['chamber', tbn.vol_len, tbn.vol_ratio, 0], ['hx', tbn.th_len, tbn.th_d, tbn.th_pack]].concat(netCar.muf || []); }
       if (this.P.int_run) {   // generic intake-runner block (parameters only; off unless a set enables it)
         netCar.int_run = 1;
         netCar.int_run_l = this.P.int_run_l !== undefined ? this.P.int_run_l : 0.216;
@@ -6943,6 +6974,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q[Q_KBB2] = P.k_st_bb2 !== undefined ? P.k_st_bb2 : 0.5;
       Q[Q_KBBHI] = P.k_st_bbhi !== undefined ? P.k_st_bbhi : 0.15;
       Q[Q_LEAD] = P.st_lead !== undefined ? P.st_lead : 0.04;
+      // v1.13.25 generic charge block: only a PD blower with boost: 1 or a turbo (c.turbo) switches it on
+      var bl = c.blower, tb = c.turbo;
+      if (tb) {
+        Q[Q_CHG] = 2.0; Q[Q_CHGDP] = tb.dp_max !== undefined ? tb.dp_max : tb.dp_wg; Q[Q_CHGWG] = tb.dp_wg;
+        Q[Q_CHGN0] = tb.n0; Q[Q_CHGN1] = tb.n1; Q[Q_CHGTU] = tb.tau_up !== undefined ? tb.tau_up : 0.8; Q[Q_CHGTD] = tb.tau_dn !== undefined ? tb.tau_dn : 0.3;
+        Q[Q_CHGRPM] = 1.0;
+      } else if (bl && bl.boost) {
+        Q[Q_CHG] = 1.0; Q[Q_CHGDP] = bl.dp_ref; Q[Q_CHGRPM] = bl.rpm_ref; Q[Q_CHGTHR0] = bl.thr0 !== undefined ? bl.thr0 : 0.15;
+        Q[Q_CHGWG] = bl.dp_max !== undefined ? bl.dp_max : 1e9; Q[Q_CHGTU] = 0.05; Q[Q_CHGTD] = 0.05;
+      }
       return Q;
     };
     V8pSynth.prototype._pipes = function () {
@@ -7218,7 +7259,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (P.out_path && pr.outside) this._outPath(rows, pr, srcs);
       this.RN = (P.noise && !NOISE_OFF) ? this._noiseSetup(pr) : null;
       this._fan = this._fanSetup(pr);
-      this._blow = this.c.blower ? this._fanSetup(pr, this.c.blower) : null;   // v1.13.23 generic PD blower (default off)
+      this._blow = this.c.blower ? this._fanSetup(pr, this.c.blower) : (this.c.turbo && this.c.turbo.turbo_whine ? this._fanSetup(pr, this.c.turbo) : null);   // v1.13.23 generic PD blower / v1.13.25 turbo (default off)
       function coverBq(freq, q0) {
         var q = (freq === 2300.0) ? (P.cover_q1 !== undefined ? P.cover_q1 : q0) : (P.cover_q2 !== undefined ? P.cover_q2 : q0);
         return q <= 0 ? [1, 0, 0, 0, 0] : rbj('bp', freq, q, fs);
@@ -7519,7 +7560,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         ph: 0.0, lp: 0.0, cabY: 0.0,
         buf: new Float64Array(maxD), wi: 0, dL: dL, dR: dR, gL: gL, gR: gR,
         outside: !!pr.outside, fFw: this.P.f_fw || 320.0,
-        pd: !!f.pd, thr0: f.thr0 !== undefined ? f.thr0 : 0.15
+        pd: !!f.pd, thr0: f.thr0 !== undefined ? f.thr0 : 0.15,
+        tb: !!f.turbo_whine, uMin: f.u_min || 0.0, psiW: f.psi_w || 0.65
       };
     };
     V8pSynth.prototype._coolFan = function (n, K, L, R, off, F0) {
@@ -7530,6 +7572,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       for (i = 0; i < n; i++) {
         rpm = K[K_RPM0] + (K[K_RPM1] - K[K_RPM0]) * (i / n);
         if (!(rpm > 50.0)) { buf[wi] = 0.0; wi = (wi + 1) & 511; continue; }
+        if (F.tb) {
+          // v1.13.25 turbo whine: shaft speed from the compressor work for the live boost (Euler: cp T0 (pr^0.286 - 1) =
+          // psi_w U2^2), with a floor u_min from the exhaust flow at no boost; air flow ~ rpm x pressure ratio
+          var prT = 1.0 + this.S[S_BST] / P_ATM, U2 = Math.sqrt(1005.0 * T_AMB * (Math.pow(prT, 0.2857) - 1.0) / F.psiW);
+          var uf = F.uMin * (rpm / F.rpmRef); if (U2 < uf) U2 = uf;
+          shaftHz = U2 / (Math.PI * F.D); bpf = shaftHz * F.nbl;
+          Qf = F.Qref * (rpm / F.rpmRef) * prT; dP = this.S[S_BST] + 0.02 * F.dPref * (rpm / F.rpmRef);
+          W = F.eta * F.k * Qf * dP; if (W < 0.0) W = 0.0;
+        } else {
         shaftHz = (rpm / 60.0) * F.ratio;
         bpf = shaftHz * F.nbl;
         U = TWOPI * shaftHz * (F.D * 0.5);
@@ -7543,6 +7594,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         dP = F.dPref * (rpm / F.rpmRef) * (rpm / F.rpmRef);
         W = F.eta * F.k * Qf * dP * dP;
         }
+        }
         if (W < 0.0) W = 0.0;
         // monopole free-field p_rms at 1 m from sound power; 1/r is in gL/gR
         pRms = Math.sqrt((W / (4.0 * Math.PI)) * RHO_C);
@@ -7550,6 +7602,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
         aBb = pRms * 0.45;
         F.ph += TWOPI * bpf / fs;
         if (F.ph > TWOPI) F.ph -= TWOPI * Math.floor(F.ph / TWOPI);
+        if (F.tb) {   // v1.13.25 turbo whine: no tone or harmonic above 0.45 fs (no aliasing at 44.1 / 48 kHz)
+          x = bpf < 0.45 * fs ? aTone * (Math.sin(F.ph) + (2.0 * bpf < 0.45 * fs ? 0.35 * Math.sin(2.0 * F.ph) : 0.0)) : 0.0;
+        } else
         x = aTone * (Math.sin(F.ph) + 0.35 * Math.sin(2.0 * F.ph));
         nz = (rnd(this.S) - 0.5) * 3.4641016151377544;
         // turbulence: one-pole near ~2 × BPF (blade-wake scale)
@@ -10133,8 +10188,15 @@ var Parts = (function () {
     var x = tm.ivc - TM.k_ivc * Sp, ve = TM.ve_max * Math.max(0.05, 1 - TM.a * x * x);
     var Z = (tm.bore / tm.iv_d) * (tm.bore / tm.iv_d) * Sp / (tm.cdv * 343);
     if (Z > 0.55) ve *= Math.exp(-((Z - 0.55) / 0.35) * ((Z - 0.55) / 0.35));
-    var Qe = vd * n / 120 * ve, b = tm.blower, Pdrive = 0, pr = 1, dpIn, rhoM;
-    if (b) {
+    var Qe = vd * n / 120 * ve, b = tm.blower, tu = tm.turbo, Pdrive = 0, pr = 1, dpIn, rhoM, dpTurb = 0;
+    if (tu) {   // v1.13.25 exhaust turbocharger (steady WOT): boost rises as ((n - n0) / (n1 - n0))^2 to the wastegate setting;
+      // compressor heating with eta_c; no shaft drive from the crank, but the turbine raises exhaust back pressure (k_bp × boost)
+      var xt = Math.max(0, Math.min(1, (n - tu.n0) / (tu.n1 - tu.n0))), dpb = Math.min(tu.dp_wg, (tu.dp_max || tu.dp_wg) * xt * xt);
+      pr = 1 + dpb / P0;
+      var dTt = T0 * (Math.pow(pr, 0.2857) - 1) / tu.eta_c, rhoT = RHO0 * pr * T0 / (T0 + dTt);
+      var dpuT = dpChain(Qe * rhoT / RHO0, tm.up, RHO0), dpdT = dpChain(Qe, tm.down, rhoT);
+      rhoM = rhoT * (1 - (dpuT + dpdT) / (P0 * pr)); dpIn = dpuT + dpdT; dpTurb = (tu.k_bp || 1.2) * dpb;
+    } else if (b) {
       var nb = n * b.ratio, Qb = b.vb * nb / 60 * Math.max(0, 1 - b.n_leak / nb);
       var dpu = dpChain(Qb, tm.up, RHO0, true), rin = RHO0 * (1 - dpu / P0);
       pr = Qb * rin / (Qe * RHO0);
@@ -10144,7 +10206,7 @@ var Parts = (function () {
     } else { dpIn = dpChain(Qe, tm.up, RHO0) + dpChain(Qe, tm.down, RHO0); rhoM = RHO0 * (1 - dpIn / P0); }
     var rhoE = P0 / (RG * 900), vt = rhoM * Qe * 1.08 / rhoE / tm.a_tail, dpEx = tm.k_exh * 0.5 * rhoE * vt * vt;
     var etaI = TM.kc * (1 - Math.pow(tm.cr, 1 - GAM)), imep = etaI * ve * rhoM * LHV / AFR;
-    var k = n / 1000, f = tm.fmep, fmep = (f[0] + f[1] * k + f[2] * k * k) * 1e5, pmep = dpEx + (b ? 0 : 0.5 * dpIn);
+    var k = n / 1000, f = tm.fmep, fmep = (f[0] + f[1] * k + f[2] * k * k) * 1e5, pmep = dpEx + dpTurb + ((b || tu) ? 0 : 0.5 * dpIn);
     return { T: (imep - fmep - pmep) * vd / (4 * Math.PI) - Pdrive / (2 * Math.PI * n / 60), pr: pr };
   }
   function crFrom(tm) { // compression ratio from the swept volume and the combustion chamber (head chamber + deck)
@@ -10173,7 +10235,7 @@ var Parts = (function () {
     if (n <= last) return interp(tab, n);
     return tab[tab.length - 1][1] * Math.max(0, torqueAt(ts, n).T) / torqueAt(ts, last).T;
   }
-  function ratio(ts, tb, n) { var a = torqueAt(ts, Math.max(n, 800)).T, b = torqueAt(tb, Math.max(n, 800)).T; return a > 1 ? Math.max(0.3, Math.min(2.5, b / a)) : 1; }
+  function ratio(ts, tb, n) { var a = torqueAt(ts, Math.max(n, 800)).T, b = torqueAt(tb, Math.max(n, 800)).T; return a > 1 ? Math.max(0.3, Math.min(5.0, b / a)) : 1; }   // v1.13.25: cap 2.5 -> 5 (turbo and big-bore builds)
   function interp(tab, x) {
     if (x <= tab[0][0]) return tab[0][1];
     for (var i = 1; i < tab.length; i++) if (x <= tab[i][0]) { var a = tab[i - 1], b = tab[i]; return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); }
@@ -10200,15 +10262,19 @@ var Parts = (function () {
   }
 
   /** hard + soft rules. Generic: parts declare requires / conflicts on attributes; soft rules use the composed numbers. */
-  function check(def, build) {
-    build = full(def, build);
+  function check(def, build, opts) {
+    build = full(def, build); opts = opts || {};
     var c = compose(def, build), s = compose(def, def.stock), hard = [], soft = [], R = def.rules || {};
     def.slots.forEach(function (sl) {
       var p = partOf(def, sl.id, build[sl.id]);
       (p.requires || []).forEach(function (r) { var v = c.attrs[r.attr]; if (r.in.indexOf(v) < 0) hard.push({ part: p.label, msg: r.msg }); });
       (p.conflicts || []).forEach(function (r) { var v = c.attrs[r.attr]; if (r.in.indexOf(v) >= 0) hard.push({ part: p.label, msg: r.msg }); });
-      if (p.years && R.years && (p.years[0] > R.years[1] || p.years[1] < R.years[0])) soft.push({ rule: 'period', part: p.label, msg: p.label + ': ' + p.years[0] + '–' + p.years[1] + ', outside the ' + R.years[0] + 's environment' });
+      if (opts.maxYear) { if (p.years && p.years[0] > opts.maxYear) soft.push({ rule: 'period', part: p.label, msg: p.label + ': from ' + (p.yl || p.years[0]) + ', later than the chosen era (up to ' + opts.maxYear + ')' }); }
+      else if (p.years && R.years && (p.years[0] > R.years[1] || p.years[1] < R.years[0])) soft.push({ rule: 'period', part: p.label, msg: p.label + ': ' + p.years[0] + '–' + p.years[1] + ', outside the ' + R.years[0] + 's environment' });
       if (p.warn) soft.push({ rule: 'part', part: p.label, msg: p.warn });
+    });
+    (R.match || []).forEach(function (m) {   // v1.13.25 generic: two attributes that must agree (e.g. head ports vs manifold ports)
+      var a = c.attrs[m.a], b2 = c.attrs[m.b]; if (a !== undefined && b2 !== undefined && a !== b2) hard.push({ part: m.label || m.a, msg: m.msg.replace('{a}', a).replace('{b}', b2) });
     });
     var info = summary(def, c, s);
     if (R.octane && c.attrs.ron !== undefined) {   // knock: effective CR at peak boost vs the fuel's octane (estimate table)
@@ -10225,7 +10291,7 @@ var Parts = (function () {
       var i0 = summary(def, compose(def, b0), s);
       if (info.psMax < i0.psMax * (1 + R.noGain)) soft.push({ rule: 'match', part: def.parts[build[sl.id]].label, msg: def.parts[build[sl.id]].label + ': little or no gain with the other parts (' + (info.psMax - i0.psMax >= 0 ? '+' : '') + (info.psMax - i0.psMax).toFixed(1) + ' PS, model)' });
     });
-    return { ok: hard.length === 0, hard: hard, soft: soft, info: info, build: build };
+    return { ok: hard.length === 0, hard: hard, soft: soft, info: info, build: build, attrs: c.attrs };
   }
   function lerpTab(t, x) { if (x <= t[0][0]) return t[0][1]; for (var i = 1; i < t.length; i++) if (x <= t[i][0]) return t[i - 1][1] + (t[i][1] - t[i - 1][1]) * (x - t[i - 1][0]) / (t[i][0] - t[i - 1][0]); var a = t[t.length - 2], b = t[t.length - 1]; return b[1] + (b[1] - a[1]) * (x - b[0]) / (b[0] - a[0]); }
   /** headline numbers for the menu: displacement, CR, anchored peak torque / power */
@@ -10304,16 +10370,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       { id: 'muffler', label: 'Muffler', group: 'exhaust' },
       { id: 'cooling', label: 'Oil / cooling' },
       { id: 'electrical', label: 'Electrics / starter' },
-      { id: 'fuel', label: 'Fuel' }
+      { id: 'fuel', label: 'Fuel' },
+      { id: 'clutch', label: 'Clutch / flywheel' },
+      { id: 'gearbox', label: 'Gearbox / final drive' },
+      { id: 'tyres', label: 'Tyres' }
     ],
     stock: { body: 'body.stock', drivetrain: 'drive.stock', longblock: 'lb.30ps', crank: 'crank.oem', cylinders: 'cyl.oem', heads: 'heads.oem', cam: 'cam.oem',
-      carb: 'carb.oem', fi: 'fi.none', ignition: 'ign.oem', exhaust: 'exh.stock', muffler: 'muf.stock', cooling: 'cool.stock', electrical: 'el.6v', fuel: 'fuel.regular' },
+      carb: 'carb.oem', fi: 'fi.none', ignition: 'ign.oem', exhaust: 'exh.stock', muffler: 'muf.stock', cooling: 'cool.stock', electrical: 'el.6v', fuel: 'fuel.regular',
+      clutch: 'clutch.stock', gearbox: 'gear.stock', tyres: 'tyre.stock' },
     rules: {
       years: [1960, 1969],
       octane: [[6.6, 84], [7.0, 87], [7.5, 91]],   // RON the factory asked for at each CR (30 PS / 34 PS / 1300-44 / 1500; GW Käfer engine data, ss); linear beyond
       cooling: { stock: 1.4, extra: 1.8 },          // ESTIMATE: power headroom of the stock shroud cooler / with the Okrasa extra cooler
       crank: { kind: 'stock36', factor: 1.3 },      // ESTIMATE: 36 hp crank known to crack when caned (TheSamba, Club VeeDub)
-      clutchMargin: 0.9, noGain: 0.02
+      clutchMargin: 0.9, noGain: 0.02,
+      // v1.13.25 generic attribute match (hard rule): head ports and manifold ports must be the same family
+      match: [{ a: 'ports', b: 'carbport', label: 'Heads / manifolds', msg: 'Cylinder heads ({a}) and carburettor manifolds ({b}) do not fit together' }],
+      eras: [1969, 1979, 1999, 2026],   // menu era filter (up to …); default the first
+      caseNames: { '36hp': '36 hp case', '40hp': '40 hp case', doghouse: 'doghouse (1600) case', type4: 'Type 4 case' }
     },
     parts: {}
   };
@@ -10325,7 +10399,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   add({ id: 'lb.30ps', slot: 'longblock', label: 'VW 30 PS 1192 cc engine (factory, 36 hp)', desc: 'Stock 1956: 77 × 64 mm, CR 6.6, Solex 28 PCI · 1955–60', years: [1955, 1960],
     src: 'Factory manual Aug 1955 supplement p. 1-11 to 1-16: 77 × 64 mm, CR 6.6, Solex 28 PCI 21.5 mm venturi, 30 PS @ 3400, 75.5 N·m @ 2000',
     sub: { crank: 'VW 64 mm forged crankshaft', cylinders: 'VW 77 mm barrels & pistons', heads: 'VW single-port heads (CR 6.6)', cam: 'VW camshaft (220° at 1 mm)', carb: 'Solex 28 PCI carburettor', ignition: 'Bosch VJU 4 BR 8 distributor' },
-    attrs: { case: '36hp', eng: 'b30', lifter: 'onepiece', crank: 'stock36', ports: 'single', carbkind: 'single', teeth: 109, volts_need: 6, ac_il: 10 },   // ac_il: oil-bath air cleaner insertion loss, dB (ESTIMATE)
+    attrs: { case: '36hp', eng: 'b30', lifter: 'onepiece', crank: 'stock36', ports: 'single-port', carbport: 'single-port', carbkind: 'single', teeth: 109, volts_need: 6, ac_il: 10, exh: 'hx', muf: 'stock' },   // ac_il: oil-bath air cleaner insertion loss, dB (ESTIMATE)
     sound: STOCK.longblock.sound, vehicle: STOCK.longblock.vehicle, tm: TM30, prov: STOCK.longblock.prov });
   add({ id: 'exh.stock', slot: 'exhaust', label: 'VW heat exchangers (factory)', desc: 'Cabin heat, 2-1 into the muffler · 1955–60', years: [1955, 1960], attrs: { exh: 'hx' }, sound: STOCK.exhaust.sound, prov: STOCK.exhaust.prov });
   add({ id: 'muf.stock', slot: 'muffler', label: 'VW transverse muffler, twin tips (factory)', desc: 'OE 111 251 051 G · 1955–60', years: [1955, 1960], sound: STOCK.muffler.sound, prov: STOCK.muffler.prov });
@@ -10342,7 +10416,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   add({ id: 'lb.34ps', slot: 'longblock', inherits: 'lb.30ps', label: 'VW 1200 34 PS engine (D-series)', desc: 'CR 7.0, Solex 28 PICT, 34 PS @ 3600 · Aug 1960–', years: [1960, 1969],
     src: 'GW Käfer engine data (ss): 34 PS @ 3600, 82.4 N·m @ 2000, CR 7.0, 87 RON; VW Newsroom: Solex 28 PICT, separate generator stand',
     sub: { crank: 'VW 64 mm crankshaft', cylinders: 'VW 77 mm barrels & pistons', heads: 'VW single-port heads (CR 7.0)', cam: 'VW 1200 camshaft', carb: 'Solex 28 PICT carburettor', ignition: 'VW 1200 distributor' },
-    attrs: { case: '40hp', eng: 'e34', lifter: 'separate', crank: 'stock40', ports: 'single', carbkind: 'single', teeth: 109, volts_need: 6 },
+    attrs: { case: '40hp', eng: 'e34', lifter: 'separate', crank: 'stock40', ports: 'single-port', carbport: 'single-port', carbkind: 'single', teeth: 109, volts_need: 6 },
     sound: { car: { name: '1956 VW Beetle, 34 PS 1200 swap', carb: 'Solex 28 PICT', redline: 4000, ev_d: 0.030 } },
     vehicle: { engineText: '34 PS 1200 swap: 1192 cc, 34 PS @ 3600, 82.4 N·m @ 2000 (factory); curve from the parts model', limiterRpm: 4000 },
     tm: { vc: sw(0.064, 0.077, 7.0), iv_d: 0.0315, up: [['venturi Solex 28 PICT', 1, 0.0225, 1.0, 4, 0]], down: [['manifold branch', 2, 0.029, 1.5, 2, 1], ['single port', 2, 0.029, 1.2, 2, 1]] },
@@ -10350,7 +10424,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   add({ id: 'lb.1300', slot: 'longblock', inherits: 'lb.30ps', label: 'VW 1300 40 PS engine (F-series)', desc: '77 × 69 mm, CR 7.3, Solex 30 PICT-1 · Aug 1965–', years: [1965, 1969],
     src: 'GW Käfer engine data (ss): 77 × 69 mm, 1285 cc, CR 7.3, 40 PS @ 4000, 87.3 N·m @ 2000, 87 RON; Solex 30 PICT-1',
     sub: { crank: 'VW 69 mm crankshaft', cylinders: 'VW 77 mm barrels & pistons', heads: 'VW 1300 single-port heads (CR 7.3)', cam: 'VW 1300 camshaft', carb: 'Solex 30 PICT-1 carburettor', ignition: 'VW 1300 distributor' },
-    attrs: { case: '40hp', eng: 'e1300', lifter: 'separate', crank: 'stock40', ports: 'single', carbkind: 'single', teeth: 109, volts_need: 6 },
+    attrs: { case: '40hp', eng: 'e1300', lifter: 'separate', crank: 'stock40', ports: 'single-port', carbport: 'single-port', carbkind: 'single', teeth: 109, volts_need: 6 },
     sound: { car: { name: '1956 VW Beetle, 1300 swap', stroke: 0.069, carb: 'Solex 30 PICT-1', th_area_wot: PI4 * 0.030 * 0.030, redline: 4400, ev_d: 0.030 } },
     vehicle: { engineText: '1300 swap: 1285 cc, 40 PS @ 4000, 87.3 N·m @ 2000 (factory); curve from the parts model', limiterRpm: 4400, tachMax: 5000, tachRed: 4400 },
     tm: { stroke: 0.069, vc: sw(0.069, 0.077, 7.3), iv_d: 0.033, up: [['venturi Solex 30 PICT-1', 1, 0.024, 1.0, 4, 0]], down: [['manifold branch', 2, 0.032, 1.5, 2, 1], ['single port', 2, 0.032, 1.2, 2, 1]] },
@@ -10358,7 +10432,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   add({ id: 'lb.1500', slot: 'longblock', inherits: 'lb.30ps', label: 'VW 1500 44 PS engine (H-series), 12 V', desc: '83 × 69 mm, CR 7.5, Solex 30 PICT-1 · Aug 1966–', years: [1966, 1969],
     src: 'GW Käfer engine data (ss): 83 × 69 mm, 1493 cc, CR 7.5, 44 PS @ 4000, 100 N·m @ 2000, 91 RON; 12 V from MY 1967 (jbugs)',
     sub: { crank: 'VW 69 mm crankshaft', cylinders: 'VW 83 mm barrels & pistons', heads: 'VW 1500 single-port heads (CR 7.5)', cam: 'VW 1500 camshaft', carb: 'Solex 30 PICT-1 carburettor', ignition: 'VW 1500 distributor' },
-    attrs: { case: '40hp', eng: 'e1500', lifter: 'separate', crank: 'stock40', ports: 'single', carbkind: 'single', teeth: 130, volts_need: 12 },
+    attrs: { case: '40hp', eng: 'e1500', lifter: 'separate', crank: 'stock40', ports: 'single-port', carbport: 'single-port', carbkind: 'single', teeth: 130, volts_need: 12 },
     requires: [{ attr: 'volts', in: [12], msg: 'The 1500 is a 12 V engine (generator, 130-tooth flywheel): choose the 12 V conversion' }],
     sound: { car: { name: '1956 VW Beetle, 1500 swap', bore: 0.083, stroke: 0.069, carb: 'Solex 30 PICT-1', th_area_wot: PI4 * 0.030 * 0.030, redline: 4400, ev_d: 0.032 } },
     vehicle: { engineText: '1500 swap: 1493 cc, 44 PS @ 4000, 100 N·m @ 2000 (factory); curve from the parts model', limiterRpm: 4400, tachMax: 5000, tachRed: 4400 },
@@ -10369,7 +10443,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     src: 'Oettinger history; pre67vw: 69.5 mm crank, 1295 cc, 8-dowel flywheel, rod-to-cam clearancing',
     attrs: { crank: 'chromoly' }, requires: [{ attr: 'case', in: ['36hp'], msg: 'Okrasa TSV crank kit is for the 36 hp case' }],
     sound: { car: { stroke: 0.0695 } }, tm: { stroke: 0.0695 }, prov: { stroke: 's' } });
-  add({ id: 'crank.356', slot: 'crank', label: 'Porsche 356 74 mm crankshaft (stroker)', desc: 'Needs Porsche rods and clearancing · donor part', years: [1950, 1969],
+  add({ id: 'crank.356', slot: 'crank', label: 'Porsche 356 74 mm crankshaft (stroker)', desc: 'Needs Porsche rods and clearancing · donor part', years: [1950, 1969], yl: '1950s',
     src: 'TheSamba / more-push (ss): 356 1600 crank in 36 hp strokers with Porsche rods and machining',
     attrs: { crank: 'porsche' }, requires: [{ attr: 'case', in: ['36hp', '40hp'], msg: 'Type 1 case only' }],
     warn: 'Porsche 74 mm crank: needs Porsche rods, case and cam clearancing and spacers (machining assumed done)',
@@ -10378,7 +10452,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     src: 'Club VeeDub owner account (ss): 79 mm safe on 36 hp barrels', attrs: { bore: 79 },
     requires: [{ attr: 'case', in: ['36hp'], msg: '36 hp barrels fit the 36 hp case only' }, { attr: 'eng', in: ['b30'], msg: 'overbore of the stock 77 mm barrels' }],
     sound: { car: { bore: 0.079 } }, tm: { bore: 0.079 }, prov: { bore: 'ss' } });
-  add({ id: 'cyl.80', slot: 'cylinders', label: 'AA Performance 80 mm big-bore barrels & pistons', desc: 'Modern kit for the 36 hp case, 1287 cc · not 1960s', years: [1990, 2026],
+  add({ id: 'cyl.80', slot: 'cylinders', label: 'AA Performance 80 mm big-bore barrels & pistons', desc: 'Modern kit for the 36 hp case, 1287 cc · not 1960s', years: [1990, 2026], yl: 'c. 1990?',
     src: 'AA Performance listing: 80 mm for the 36 hp case, case and head machining', attrs: { bore: 80 },
     requires: [{ attr: 'case', in: ['36hp'], msg: '36 hp big bore kit' }], warn: '80 mm: case spigots and heads must be machined',
     sound: { car: { bore: 0.080 } }, tm: { bore: 0.080 }, prov: { bore: 's' } });
@@ -10389,15 +10463,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     sound: { car: { bore: 0.082 } }, tm: { bore: 0.082 }, prov: { bore: 'd' } });
   add({ id: 'heads.okrasa', slot: 'heads', label: 'Okrasa dual-port cylinder heads', desc: 'Own port per cylinder, CR 7.5 (TS/TSV kit part) · 1951–69', years: [1951, 1969],
     src: 'pre67vw / Oettinger: own port per cylinder, larger inlet valves, CR 7.5 (TS 1200)',
-    attrs: { ports: 'twin' }, requires: [{ attr: 'case', in: ['36hp'], msg: 'Okrasa heads fit the 36 hp barrels and case' }, { attr: 'carbkind', in: ['twin'], msg: 'Dual-port heads need the Okrasa twin-carb manifolds' }],
+    attrs: { ports: 'Okrasa dual-port' }, requires: [{ attr: 'case', in: ['36hp'], msg: 'Okrasa heads fit the 36 hp barrels and case' }],
     vehicle: { limiterRpm: 4600 }, tm: { vc: sw(0.064, 0.077, 7.5), iv_d: 0.032 }, prov: { cr: 's', 'tm.iv_d': 'e', limiterRpm: 'e' } });
-  add({ id: 'cam.w110', slot: 'cam', label: 'Engle W110 camshaft (reference grind)', desc: '284° adv., LSA 108° · 1960s availability not verified', years: [1960, 1969],
+  add({ id: 'cam.w110', slot: 'cam', label: 'Engle W110 camshaft (reference grind)', desc: '284° adv., 0.430 in lift, LSA 108° · 1960s availability not verified', years: [1965, 2026], yl: 'c. 1965?',
     src: 'Chirco spec: 284° adv., LSA 108°; IVC at 1 mm about 55° ABDC (ESTIMATE, convention differs)',
     warn: 'Engle W110: 1960s availability not verified; timing converted to 1 mm checking height (estimate)',
-    sound: { car: { adv_dur: 250, lsa: 108 } }, tm: { ivc: 55 }, prov: { adv_dur: 'e', lsa: 's', 'tm.ivc': 'e' } });
+    sound: { car: { adv_dur: 250, lsa: 108, ev_lift: 0.430 * 0.0254 } }, tm: { ivc: 55 }, prov: { adv_dur: 'e', lsa: 's', ev_lift: 's: 0.430 in with 1.1 rockers (v1.13.25)', 'tm.ivc': 'e' } });
   add({ id: 'carb.okrasa', slot: 'carb', label: 'Okrasa twin Solex 32 PBIC carburettors & manifolds', desc: 'For Okrasa dual-port heads (TS/TSV kit part) · 1951–69', years: [1951, 1969],
-    src: 'Okrasa programme list; pre67vw: two 32 PBIC on own manifolds', attrs: { carbkind: 'twin', ac_il: 1 },   // ac_il: two small mesh filters instead of the oil-bath cleaner (ESTIMATE)
-    requires: [{ attr: 'ports', in: ['twin'], msg: 'Okrasa twin-carb manifolds bolt to Okrasa dual-port heads only' }],
+    src: 'Okrasa programme list; pre67vw: two 32 PBIC on own manifolds', attrs: { carbkind: 'twin', carbport: 'Okrasa dual-port', ac_il: 1 },   // ac_il: two small mesh filters instead of the oil-bath cleaner (ESTIMATE)
     sound: { car: { carb: '2 × Solex 32 PBIC (Okrasa)', th_area_wot: 2 * PI4 * 0.032 * 0.032, v_man: 0.0012 } },
     tm: { up: [['venturi 2 × 32 PBIC', 2, 0.024, 1.0, 2, 0]], down: [['runner', 4, 0.028, 1.5, 1, 0], ['twin port', 4, 0.027, 1.2, 1, 0]] },
     prov: { th_area_wot: 'd', v_man: 'e', ac_il: 'e: oil bath ~10 dB vs small mesh filters ~1 dB', 'tm.venturi': 'e', 'tm.down': 'e' } });
@@ -10407,7 +10480,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     warn: 'Judson: fit a slim generator pulley (or Porsche 356 pulley); max 22° advance',
     // sound: generic PD blower block. 4 sliding vanes (Club VeeDub 1988, Hemmings 2018), 1.3 × crank; Q from vb; ~5 psi (34.5 kPa) at peak revs;
     // acoustic efficiency 1e-4 of gas power (ESTIMATE; period ads called it quiet); boost builds with throttle (thr0 0.15, ESTIMATE).
-    sound: { car: { blower: { pd: 1, n_blades: 4, ratio: 1.3, Q_ref: 0.0006 * 1.3 * 3700 / 60, rpm_ref: 3700, dp_ref: 34500, eta: 1e-4, thr0: 0.15, pos: [0.50, 0.12, 0.80] } } },
+    sound: { car: { blower: { pd: 1, n_blades: 4, ratio: 1.3, Q_ref: 0.0006 * 1.3 * 3700 / 60, rpm_ref: 3700, dp_ref: 34500, eta: 1e-4, thr0: 0.15, pos: [0.50, 0.12, 0.80], boost: 1 } } },   // v1.13.25 boost: 1 = the charge block raises the manifold pressure
     tm: { blower: { vb: 0.0006, ratio: 1.3, eta_c: 0.6, n_leak: 250, eta_mech: 0.85 } }, prov: { 'tm.blower.ratio': 's', 'tm.blower.vb': 'e', 'tm.blower.eta_c': 'e', 'blower.n_blades': 's', 'blower.eta': 'e', 'blower.pos': 'e' } });
   add({ id: 'ign.010', slot: 'ignition', label: 'Bosch 010 centrifugal distributor', desc: 'Centrifugal advance only · 1960–', years: [1960, 1969],
     src: 'sparkingplugs.com; TheSamba: Transporter distributor, popular swap', note: 'No WOT torque change in the model (full advance is similar)' });
@@ -10416,7 +10489,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     sound: { car: { hx: null, prim_len: 0.50, prim_d: 0.035, head_len: 0.10 } }, prov: { prim_len: 'e', prim_d: 'e', head_len: 'e' } });
   add({ id: 'muf.abarth', slot: 'muffler', label: 'Abarth 4-tip exhaust', desc: 'For the stock heat-exchanger layout · 1955–60', years: [1955, 1960],
     src: 'oldspeed Abarth archive; TheSamba: 1955–57 with heat riser, 1958–60 without',
-    conflicts: [{ attr: 'exh', in: ['extractor'], msg: 'Abarth muffler bolts to the stock heat-exchanger layout, not the EMPI extractor' }],
+    conflicts: [{ attr: 'exh', in: ['extractor', 'merged', 'turbo'], msg: 'Abarth muffler bolts to the stock heat-exchanger layout' }],
     sound: { car: { muf: [['chamber', 0.30, 8, 0.10]], tail_d: 0.028 * Math.SQRT2 } }, tm: { a_tail: 4 * PI4 * 0.028 * 0.028, k_exh: 0.9 }, prov: { muf: 'e', tail_d: 'e: two 28 mm tips per side as one equal-area pipe (same as tm.a_tail)', 'tm.a_tail': 'e', 'tm.k_exh': 'e' } });
   add({ id: 'cool.okrasa', slot: 'cooling', label: 'Okrasa extra oil cooler & Fram filter', desc: 'Copper-coil cooler behind the fan housing · 1951–69', years: [1951, 1969],
     src: 'pre67vw: copper-coil cooler behind the fan housing, Fram filter', attrs: { cooling: 'extra' } });
@@ -10424,13 +10497,204 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     src: 'jbugs: 12 V from MY 1967, 360 W generator; 130-tooth flywheel (Käferclub, ss)', attrs: { volts: 12 },
     sound: { car: { v_batt: 12.6, st_teeth: 130, st_ratio: 130 / 9, st_v_test: 10.6, st_v_lock: 6.0, st_i_lock: 300.0, r_batt: 0.013 } },
     prov: { v_batt: 's', st_teeth: 'ss', st_ratio: 'e', st_v_test: 'e', st_v_lock: 'e', st_i_lock: 'e', r_batt: 'e' } });
-  add({ id: 'fuel.super', slot: 'fuel', label: 'Super petrol (about 95 RON)', desc: 'Estimate for 1960s Super', attrs: { ron: 95 }, prov: { ron: 'e' } });
+  add({ id: 'fuel.super', slot: 'fuel', label: 'Super petrol (about 95 RON)', desc: 'Estimate for 1960s Super', years: [1955, 2026], yl: '1950s', attrs: { ron: 95 }, prov: { ron: 'e' } });
+
+
+  // ==== v1.13.25: catalogue 1950s to today (phase 1: parts that fit as data; phase 2: boost, turbo, single tail, drivetrain) ====
+  // yl = year label shown in the menu; '?' marks a year that is not verified. Sources: see the design Page 'Parts catalogue'.
+  // -- whole engines --
+  add({ id: 'lb.denzel', slot: 'longblock', inherits: 'lb.30ps', label: 'Denzel 1300 engine', desc: '78 × 67 mm, CR 7.7, 2 × Solex 32 PBIC, 54 PS @ 4700 · 1952–60', years: [1952, 1960], yl: '1952',
+    src: 'flat4ever (Old Speed: Denzel): 78 × 67 mm, 1281 cc, CR 7.7, valves 38/32 mm, 2 × Solex 32 PBIC, 54 PS @ 4700, 10.5 mkg @ 2700; aluminium cylinders; Denzel closed 1960',
+    sub: { crank: 'Denzel 67 mm forged crankshaft', cylinders: 'Denzel 78 mm aluminium cylinders', heads: 'Denzel heads, 38/32 mm valves', cam: 'VW camshaft', carb: '2 × Solex 32 PBIC (Denzel manifolds)', ignition: 'VW distributor' },
+    attrs: { case: '36hp', eng: 'denzel', crank: 'denzel', ports: 'Denzel', carbport: 'Denzel', carbkind: 'twin', ac_il: 1 },
+    sound: { car: { name: '1956 VW Beetle, Denzel 1300', bore: 0.078, stroke: 0.067, carb: '2 × Solex 32 PBIC (Denzel)', th_area_wot: 2 * PI4 * 0.032 * 0.032, v_man: 0.0012, redline: 5000, ev_d: 0.032 } },
+    vehicle: { engineText: 'Denzel 1300: 1281 cc, 54 PS @ 4700, 10.5 mkg @ 2700 (Denzel); curve from the parts model', limiterRpm: 5000, tachMax: 6000, tachRed: 5000 },
+    tm: { bore: 0.078, stroke: 0.067, vc: sw(0.067, 0.078, 7.7), iv_d: 0.038, up: [['venturi 2 × 32 PBIC', 2, 0.024, 1.0, 2, 0]], down: [['runner', 4, 0.030, 1.5, 1, 0], ['twin port', 4, 0.030, 1.2, 1, 0]] },
+    prov: { bore: 's', stroke: 's', cr: 's', 'tm.iv_d': 's', ev_d: 's: 32 mm exhaust valve', th_area_wot: 'd', v_man: 'e', ac_il: 'e', 'tm.venturi': 'e', 'tm.down': 'e', limiterRpm: 'e' } });
+  add({ id: 'lb.denzel_s', slot: 'longblock', inherits: 'lb.30ps', label: 'Denzel 1300 S engine', desc: '78 × 67 mm, CR 8.5, 2 × Solex 40 PII, 65 PS @ 5400 · 1952–60', years: [1952, 1960], yl: '1950s',
+    src: 'flat4ever (Old Speed: Denzel): 1300 S CR 8.5, 2 × Solex 40 PII, own cam, roller-bearing crank, 65 PS @ 5400, 12.8 mkg @ 3800',
+    sub: { crank: 'Denzel 67 mm crankshaft on roller bearings', cylinders: 'Denzel 78 mm aluminium cylinders', heads: 'Denzel heads, 38/32 mm valves', cam: 'Denzel S camshaft', carb: '2 × Solex 40 PII (Denzel manifolds)', ignition: 'VW distributor' },
+    attrs: { case: '36hp', eng: 'denzel', crank: 'denzel', ports: 'Denzel', carbport: 'Denzel', carbkind: 'twin', ac_il: 1 },
+    warn: 'Denzel 1300 S: CR 8.5 wants high-octane fuel (period race fuel)',
+    sound: { car: { name: '1956 VW Beetle, Denzel 1300 S', bore: 0.078, stroke: 0.067, carb: '2 × Solex 40 PII (Denzel)', th_area_wot: 2 * PI4 * 0.040 * 0.040, v_man: 0.0012, redline: 5600, ev_d: 0.032, adv_dur: 245 } },
+    vehicle: { engineText: 'Denzel 1300 S: 1281 cc, 65 PS @ 5400, 12.8 mkg @ 3800 (Denzel); curve from the parts model', limiterRpm: 5600, tachMax: 6000, tachRed: 5600 },
+    tm: { bore: 0.078, stroke: 0.067, vc: sw(0.067, 0.078, 8.5), iv_d: 0.038, ivc: 52, up: [['venturi 2 × 40 PII', 2, 0.030, 1.0, 2, 0]], down: [['runner', 4, 0.032, 1.5, 1, 0], ['twin port', 4, 0.032, 1.2, 1, 0]] },
+    prov: { bore: 's', stroke: 's', cr: 's', 'tm.iv_d': 's', th_area_wot: 'd', adv_dur: 'e: cam not published', 'tm.ivc': 'e', 'tm.venturi': 'e', 'tm.down': 'e', limiterRpm: 'e' } });
+  add({ id: 'lb.1600dp', slot: 'longblock', inherits: 'lb.30ps', label: 'VW 1600 dual-port 50 PS engine (1302 S), 12 V', desc: '85.5 × 69 mm, CR 7.5, Solex 34 PICT-3, doghouse cooling · 1970–', years: [1970, 2003], yl: '1970',
+    src: 'VW Newsroom (1302, 1970–72): 1302 S 1.6 l 50 PS, dual-channel intake, oil cooler moved to the fan housing; 85.5 × 69 mm (VW engine codes); Solex 34 PICT-3 from 1971 (aircooled.net)',
+    sub: { crank: 'VW 69 mm crankshaft', cylinders: 'VW 85.5 mm barrels & pistons', heads: 'VW dual-port heads (CR 7.5)', cam: 'VW 1600 camshaft', carb: 'Solex 34 PICT-3 & dual-port manifold', ignition: 'Bosch 009 distributor' },
+    attrs: { case: 'doghouse', eng: 'e1600', lifter: 'separate', crank: 'stock40', ports: 'dual-port', carbport: 'dual-port', carbkind: 'single', teeth: 130, volts_need: 12, cooling: 'doghouse' },
+    requires: [{ attr: 'volts', in: [12], msg: 'The 1600 is a 12 V engine (alternator or generator, 130-tooth flywheel): choose the 12 V conversion' }],
+    sound: { car: { name: '1956 VW Beetle, 1600 dual-port swap', bore: 0.0855, stroke: 0.069, carb: 'Solex 34 PICT-3', th_area_wot: PI4 * 0.034 * 0.034, redline: 4600, ev_d: 0.032 } },
+    vehicle: { engineText: '1600 dual-port swap: 1584 cc, 50 PS (factory); curve from the parts model', limiterRpm: 4600, tachMax: 5000, tachRed: 4600 },
+    tm: { bore: 0.0855, stroke: 0.069, vc: sw(0.069, 0.0855, 7.5), iv_d: 0.0355, up: [['venturi Solex 34 PICT-3', 1, 0.026, 1.0, 4, 0]], down: [['dual-port manifold', 2, 0.032, 1.5, 2, 1], ['dual port', 4, 0.030, 1.2, 1, 0]] },
+    prov: { bore: 's', stroke: 's', cr: 's', th_area_wot: 'd', 'tm.iv_d': 'e: 35.5 mm as the 1500', ev_d: 'e', 'tm.venturi': 'e', 'tm.down': 'e', limiterRpm: 'e', cooling: 'e: doghouse headroom' } });
+
+  // -- crankshafts (Type 1 40 hp-family cases; machining assumed done) --
+  var T1 = ['40hp', 'doghouse'];
+  add({ id: 'crank.78', slot: 'crank', label: '78 mm stroker crankshaft (SPG, Weber-Whitfield; Gene Berg forged)', desc: 'Stroker rods or spacers, case clearancing · by 1971 (Berg forged 1978)', years: [1971, 2026], yl: 'by 1971',
+    src: 'Hot Rod Feb 1971 (VW crank thing): SPG 78 / 82 mm; Gene Berg forged strokers 78 mm from 1978 (geneberg.com)', attrs: { crank: 'stroker' },
+    requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' }], warn: 'Stroker: case and cam clearancing, stroker rods or cylinder spacers (machining assumed done)',
+    sound: { car: { stroke: 0.078 } }, tm: { stroke: 0.078 }, prov: { stroke: 's' } });
+  add({ id: 'crank.82', slot: 'crank', label: 'Scat 82 mm stroker crankshaft (Porsche journals)', desc: 'Weber-Whitfield 82 mm by 1971; Scat early 1973', years: [1973, 2026], yl: '1973',
+    src: 'enginelabs (Tom Lieb, Scat): cranks from 1967; Scat 82 mm by early 1973; Hot Rod Feb 1971: Weber-Whitfield 82 mm', attrs: { crank: 'stroker' },
+    requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' }], warn: 'Stroker: case and cam clearancing, stroker rods or cylinder spacers (machining assumed done)',
+    sound: { car: { stroke: 0.082 } }, tm: { stroke: 0.082 }, prov: { stroke: 's' } });
+  add({ id: 'crank.84', slot: 'crank', label: 'Pauter 84 mm forged counterweighted crankshaft', desc: 'Forged line discontinued, billet today · year not verified', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'pauter.com: forged counterweighted 82 / 84 mm (discontinued), billet 4340 today', attrs: { crank: 'stroker' },
+    requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' }], warn: 'Stroker: case and cam clearancing, stroker rods or cylinder spacers (machining assumed done)',
+    sound: { car: { stroke: 0.084 } }, tm: { stroke: 0.084 }, prov: { stroke: 's' } });
+
+  // -- cylinders --
+  add({ id: 'cyl.83', slot: 'cylinders', label: 'VW 83 mm barrels & pistons (1500 part)', desc: 'Factory 1500 bore on a 40 hp-family case · 1966–', years: [1966, 2026], yl: '1966',
+    src: 'GW Käfer engine data (ss): 1500 = 83 × 69 mm', attrs: { bore: 83 }, requires: [{ attr: 'case', in: T1, msg: '83 mm barrels: 40 hp-family case' }],
+    sound: { car: { bore: 0.083 } }, tm: { bore: 0.083 }, prov: { bore: 's' } });
+  add({ id: 'cyl.855', slot: 'cylinders', label: 'VW 85.5 mm barrels & pistons (1600 part)', desc: 'Factory 1600 bore · 1970–', years: [1970, 2026], yl: '1970',
+    src: 'VW engine codes: 1600 = 85.5 × 69 mm', attrs: { bore: 85.5 }, requires: [{ attr: 'case', in: T1, msg: '85.5 mm barrels: 40 hp-family case' }],
+    warn: '85.5 mm on an older case: spigots machined (estimate)', sound: { car: { bore: 0.0855 } }, tm: { bore: 0.0855 }, prov: { bore: 's' } });
+  add({ id: 'cyl.905', slot: 'cylinders', label: '90.5 mm big-bore barrels & pistons', desc: '1776 cc on 69 mm, 2110 cc on 82 mm · year not verified', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Washburn engine-build calculator: 90.5 × 69 = 1776 cc, × 82 = 2110 cc', attrs: { bore: 90.5 }, requires: [{ attr: 'case', in: T1, msg: 'Big bores: 40 hp-family case' }],
+    warn: 'Big bore: case spigots and heads machined (assumed done)', sound: { car: { bore: 0.0905 } }, tm: { bore: 0.0905 }, prov: { bore: 's' } });
+  add({ id: 'cyl.92', slot: 'cylinders', label: 'AA Performance 92 mm thick-wall barrels & pistons', desc: '1835 cc on 69 mm, 2180 cc on 82 mm · year not verified', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'aapistons.com: thick-wall 92 mm kits; Washburn calculator: 1835 / 2180 cc', attrs: { bore: 92 }, requires: [{ attr: 'case', in: T1, msg: 'Big bores: 40 hp-family case' }],
+    warn: 'Big bore: case spigots and heads machined (assumed done)', sound: { car: { bore: 0.092 } }, tm: { bore: 0.092 }, prov: { bore: 's' } });
+  add({ id: 'cyl.94', slot: 'cylinders', label: '94 mm big-bore barrels & pistons', desc: '1915 / 2276 / 2332 cc on 69 / 82 / 84 mm · 1990s (estimate)', years: [1995, 2026], yl: 'c. 1995?',
+    src: 'Washburn calculator: 94 × 69 = 1915 cc, × 82 = 2276 cc, × 84 = 2332 cc', attrs: { bore: 94 }, requires: [{ attr: 'case', in: T1, msg: 'Big bores: 40 hp-family case' }],
+    warn: '94 mm: case and heads machined, thin cylinder walls (assumed done)', sound: { car: { bore: 0.094 } }, tm: { bore: 0.094 }, prov: { bore: 's' } });
+
+  // -- heads --
+  add({ id: 'heads.vwdp', slot: 'heads', label: 'VW 1600 dual-port cylinder heads (factory part)', desc: 'Own port per cylinder, needs a dual-port manifold · 1970–', years: [1970, 2026], yl: '1970',
+    src: 'VW Newsroom (1302): dual-channel intake 1970', attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'Dual-port heads: 40 hp-family case' }],
+    tm: { vc: sw(0.069, 0.0855, 7.5), iv_d: 0.0355 }, sound: { car: { ev_d: 0.032 } }, prov: { cr: 'd: chamber for CR 7.5 on 85.5 × 69', 'tm.iv_d': 'e', ev_d: 'e' } });
+  add({ id: 'heads.cb044', slot: 'heads', label: 'CB Performance 044 CNC Wedge Port heads', desc: '42 × 37.5 mm valves, for big-bore engines · late 2003–', years: [2003, 2026], yl: '2003',
+    src: 'shoptalkforums (CB 044 Wedge Port, late 2003): 42 × 37.5 or 44 × 37.5 mm valves; cbperformance.com 044 Magnum Plus 42 × 37.5', attrs: { ports: 'dual-port' },
+    requires: [{ attr: 'case', in: T1, msg: 'CB 044 heads: 40 hp-family case' }], warn: 'CB 044: chamber volume not published; about 72 cc with deck assumed (CR about 8.9 on 94 × 82)',
+    tm: { vc: 72e-6, iv_d: 0.042 }, sound: { car: { ev_d: 0.0375 } }, prov: { 'tm.iv_d': 's', ev_d: 's', 'tm.vc': 'e: 72 cc chamber + deck' } });
+
+  // -- cams (Engle; 1.1 rockers; LSA 108 for all; timing converted to the model's 1 mm convention as for the W110: −34°) --
+  [['w100', 'W100', 276, 0.420, 51], ['w120', 'W120', 294, 0.435, 60], ['w125', 'W125', 301, 0.460, 63.5]].forEach(function (k) {
+    add({ id: 'cam.' + k[0], slot: 'cam', label: 'Engle ' + k[1] + ' camshaft', desc: k[2] + '° adv., ' + k[3].toFixed(3) + ' in lift, LSA 108° · year not verified', years: [1965, 2026], yl: 'c. 1965?',
+      src: 'carcraftstore (Engle cam specs): ' + k[1] + ' ' + k[3].toFixed(3) + ' in / ' + k[2] + '°, LSA 108; Engle founded 1941',
+      sound: { car: { adv_dur: k[2] - 34, lsa: 108, ev_lift: k[3] * 0.0254 } }, tm: { ivc: k[4] }, prov: { adv_dur: 'e: −34° to the 1 mm convention (as W110)', lsa: 's', ev_lift: 's', 'tm.ivc': 'e' } });
+  });
+
+  // -- carburettors --
+  add({ id: 'carb.zenith', slot: 'carb', label: 'EMPI Zenith 32 NDIX twin-choke kit', desc: 'Single twin-choke on the stock single-port manifold · mid-1960s', years: [1965, 2026], yl: 'c. 1965',
+    src: 'oldspeed (Speedwell 1965 catalogue): EMPI Zenith 32 NDIX kit with an all-centrifugal distributor', attrs: { carbkind: 'twinchoke', carbport: 'single-port', ac_il: 4 },
+    sound: { car: { carb: 'Zenith 32 NDIX', th_area_wot: 2 * PI4 * 0.032 * 0.032 } }, tm: { up: [['venturi 2 × 24 (NDIX)', 2, 0.024, 1.0, 2, 0]] },
+    prov: { th_area_wot: 'd: two 32 mm throats', 'tm.venturi': 'e', ac_il: 'e' } });
+  add({ id: 'carb.speedwell', slot: 'carb', label: 'Speedwell Sprint twin Stromberg CD150 kit', desc: 'One constant-vacuum carb per head, about +6 hp · 1965–66', years: [1965, 1966], yl: '1965',
+    src: 'oldspeed (Speedwell 1965); Motor Sport Feb 1967: twin Stromberg CD150, about +6 hp', attrs: { carbkind: 'twin', carbport: 'single-port', ac_il: 2 },
+    sound: { car: { carb: '2 × Stromberg CD150 (Speedwell)', th_area_wot: 2 * PI4 * 0.0381 * 0.0381, v_man: 0.0012 } }, tm: { up: [['CD150 piston (effective)', 2, 0.028, 1.0, 2, 0]] },
+    prov: { th_area_wot: 'd: 1.5 in throats', v_man: 'e', 'tm.venturi': 'e: effective CV opening', ac_il: 'e' } });
+  add({ id: 'carb.pict3', slot: 'carb', label: 'Solex 34 PICT-3 & dual-port manifold (factory)', desc: 'For dual-port heads · 1971–74', years: [1971, 1974], yl: '1971',
+    src: 'aircooled.net (VW carburettor options): 34 PICT-3 1971–74', attrs: { carbkind: 'single', carbport: 'dual-port' },
+    sound: { car: { carb: 'Solex 34 PICT-3', th_area_wot: PI4 * 0.034 * 0.034 } }, tm: { up: [['venturi Solex 34 PICT-3', 1, 0.026, 1.0, 4, 0]], down: [['dual-port manifold', 2, 0.032, 1.5, 2, 1], ['dual port', 4, 0.030, 1.2, 1, 0]] },
+    prov: { th_area_wot: 'd', 'tm.venturi': 'e', 'tm.down': 'e' } });
+  add({ id: 'carb.kadron', slot: 'carb', label: 'Kadron twin Brosol-Solex H40/44 EIS', desc: 'Two side-draft carbs for dual-port heads · about 1971', years: [1971, 2026], yl: 'c. 1971',
+    src: 'shoptalkforums: Kadron = 2 × Brosol Solex H40/44 EIS, about 1971', attrs: { carbkind: 'twin', carbport: 'dual-port', ac_il: 2 },
+    sound: { car: { carb: '2 × Brosol H40/44 EIS (Kadron)', th_area_wot: 2 * PI4 * 0.040 * 0.040, v_man: 0.0012 } }, tm: { up: [['venturi 2 × H40/44', 2, 0.030, 1.0, 2, 0]], down: [['runner', 4, 0.032, 1.5, 1, 0], ['dual port', 4, 0.030, 1.2, 1, 0]] },
+    prov: { th_area_wot: 'd: 40 mm throats', v_man: 'e', 'tm.venturi': 'e', 'tm.down': 'e', ac_il: 'e' } });
+  add({ id: 'carb.idf40', slot: 'carb', label: 'Weber 40 IDF dual carburettors', desc: 'Two twin-choke down-drafts, one choke per cylinder · VW kits late 1970s', years: [1977, 2026], yl: 'late 1970s',
+    src: 'classiccarbs (Weber IDF from about 1965); aircooled.net: dual 40 IDF kits for VW, CB among the first importers', attrs: { carbkind: 'twin', carbport: 'dual-port', ac_il: 1 },
+    sound: { car: { carb: '2 × Weber 40 IDF', th_area_wot: 4 * PI4 * 0.040 * 0.040, v_man: 0.0010 } }, tm: { up: [['venturi 4 × 28 (IDF)', 4, 0.028, 1.0, 1, 0]], down: [['runner', 4, 0.034, 1.5, 1, 0], ['dual port', 4, 0.030, 1.2, 1, 0]] },
+    prov: { th_area_wot: 'd: four 40 mm chokes', v_man: 'e', 'tm.venturi': 'e: 28 mm venturis', 'tm.down': 'e', ac_il: 'e' } });
+  add({ id: 'carb.drla36', slot: 'carb', label: 'Dellorto DRLA 36 dual carburettors', desc: 'The Dellorto equivalent of the IDF · year not verified', years: [1978, 2026], yl: 'c. 1978?',
+    src: 'aircooled.net: Dellorto DRLA equivalent to the 40 IDF', attrs: { carbkind: 'twin', carbport: 'dual-port', ac_il: 1 },
+    sound: { car: { carb: '2 × Dellorto DRLA 36', th_area_wot: 4 * PI4 * 0.036 * 0.036, v_man: 0.0010 } }, tm: { up: [['venturi 4 × 28 (DRLA)', 4, 0.028, 1.0, 1, 0]], down: [['runner', 4, 0.034, 1.5, 1, 0], ['dual port', 4, 0.030, 1.2, 1, 0]] },
+    prov: { th_area_wot: 'd: four 36 mm chokes', v_man: 'e', 'tm.venturi': 'e', 'tm.down': 'e', ac_il: 'e' } });
+
+  // -- forced induction --
+  add({ id: 'fi.shorrock', slot: 'fi', label: 'Shorrock C75BV vane supercharger (EMPI kit)', desc: 'Eccentric-drum vane blower with its own Stromberg CD, about 7 psi · 1964–', years: [1964, 1969], yl: '1964',
+    src: 'mg-tabc (Shorrock ABC): eccentric drum, 4 vanes, about 7 psi max, Stromberg CD; oldspeed (EMPI PSSV-500): 40 → 72 hp; Autocar test 10 Apr 1964',
+    attrs: { fi: 'shorrock' }, requires: [{ attr: 'carbkind', in: ['single'], msg: 'The Shorrock kit replaces the single stock carb with its own Stromberg CD' }],
+    warn: 'Shorrock: belt-driven; drive ratio and rotor volume are estimates (sized for about 7 psi at peak revs)',
+    sound: { car: { blower: { pd: 1, boost: 1, n_blades: 4, ratio: 1.0, Q_ref: 0.00075 * 1.0 * 4500 / 60, rpm_ref: 4500, dp_ref: 48000, eta: 1e-4, thr0: 0.15, pos: [0.50, -0.12, 0.80] } } },
+    tm: { blower: { vb: 0.00075, ratio: 1.0, eta_c: 0.6, n_leak: 250, eta_mech: 0.85 } },
+    prov: { 'blower.n_blades': 's', 'blower.dp_ref': 's: about 7 psi max', 'tm.blower.vb': 'e', 'tm.blower.ratio': 'e', 'blower.eta': 'e', 'blower.pos': 'e' } });
+  // turbos: generic turbo block (sound: c.turbo = charge + turbine damping + whine; torque: tm.turbo). Housing, wheel and spool numbers are ESTIMATES:
+  // volute 0.12 m × 5 × pipe area; wheel passage 21 mm (≈ 3.5 cm² turbine nozzle) × 40 mm with packing 0.6 (damps 150–1500 Hz by about 3–6 dB in the model);
+  // compressor 6 full blades, 55 mm wheel; spool tau 0.7–1.0 s up, 0.3 s down; boost ~ ((rpm − n0) / (n1 − n0))² × throttle².
+  function turbo(o) {
+    var tb = { dp_wg: o.dp, n0: o.n0, n1: o.n1, tau_up: o.tau || 0.8, tau_dn: 0.3, vol_len: 0.12, vol_ratio: 5, th_len: 0.04, th_d: o.thd || 0.021, th_pack: 0.6,
+      turbo_whine: 1, n_blades: 6, d: o.d || 0.055, Q_ref: 0.045, rpm_ref: 4000, dp_ref: o.dp, eta: 3e-5, u_min: 70, pos: [0.30, 0.20, 0.45] };
+    return { sound: { car: { turbo: tb } }, tm: { turbo: { dp_wg: o.dp, n0: o.n0, n1: o.n1, eta_c: o.eta_c || 0.6, k_bp: 1.2 } },
+      prov: { 'turbo.dp_wg': o.dpSrc, 'turbo.n0/n1': 'e', 'turbo.tau_up': 'e', 'turbo.housing': 'e', 'turbo.whine': 'e', 'tm.turbo.eta_c': 'e', 'tm.turbo.k_bp': 'e' } };
+  }
+  var TREQ = [{ attr: 'exh', in: ['turbo'], msg: 'A turbo needs the turbo header (choose it in Exhaust manifold, or pick the kit)' }];
+  add(Object.assign({ id: 'fi.rajay', slot: 'fi', label: 'Rajay 377B25 turbocharger kit', desc: 'Draw-through, about 10 psi; 115–120 hp on a 1600 · 1970–71', years: [1970, 1979], yl: '1970',
+    src: 'Hot Rod Oct 1971 (The New Equalizers): Rajay 377B25, about 10 psi, 115–120 hp on a 1600', attrs: { fi: 'turbo' }, requires: TREQ, warn: 'Turbo: spool lag; boost and spool rpm are estimates around the period figures' },
+    turbo({ dp: 69000, n0: 2000, n1: 4000, dpSrc: 's: about 10 psi' })));
+  add(Object.assign({ id: 'fi.schwitzer', slot: 'fi', label: 'Schwitzer 3LD-168 turbocharger kit (Crane)', desc: 'Up to 12 psi at 5000; 45 → 90 hp · 1971', years: [1971, 1979], yl: '1971',
+    src: 'Pelican Parts forum (turbocharging memory lane): Schwitzer 3LD-168, up to 12 psi at 5000, 45 → 90 hp; Crane marketed the kit', attrs: { fi: 'turbo' }, requires: TREQ, warn: 'Turbo: spool lag; spool rpm is an estimate' },
+    turbo({ dp: 82700, n0: 2400, n1: 5000, tau: 1.0, d: 0.060, dpSrc: 's: 12 psi at 5000' })));
+  add(Object.assign({ id: 'fi.garrett', slot: 'fi', label: 'Garrett turbocharger, 0.5 bar street build', desc: '1585 cc with 0.5 bar: 90 PS · 1998 article', years: [1998, 2026], yl: '1998',
+    src: 'flat4.de (Turbo): 1585 cc, Garrett turbo, 0.5 bar, 90 PS (1998)', attrs: { fi: 'turbo' }, requires: TREQ, warn: 'Turbo: spool lag; turbo model and spool rpm are estimates' },
+    turbo({ dp: 50000, n0: 1800, n1: 3600, tau: 0.7, d: 0.050, dpSrc: 's: 0.5 bar' })));
+  add(Object.assign({ id: 'fi.cbrad', slot: 'fi', label: 'CB Performance RAD blow-through turbo (Garrett X-2860)', desc: 'Modern kit for big engines; boost assumed 10 psi · today', years: [2015, 2026], yl: 'today',
+    src: 'cbperformance.com (RAD turbo kits, X-2860): 300–400 hp builds; boost setting not published', attrs: { fi: 'turbo' }, requires: TREQ, warn: 'CB RAD: boost not published, 10 psi assumed; built for big-bore engines' },
+    turbo({ dp: 69000, n0: 2600, n1: 4400, tau: 0.9, d: 0.060, thd: 0.024, eta_c: 0.7, dpSrc: 'e: 10 psi assumed' })));
+
+  // -- ignition --
+  add({ id: 'ign.009', slot: 'ignition', label: 'Bosch 009 centrifugal distributor', desc: 'Centrifugal advance only · 1971–', years: [1971, 2026], yl: '1971',
+    src: 'aircooled.net (VW distributor options): Bosch 009 from 1971', note: 'No WOT torque change in the model (full advance is similar)' });
+
+  // -- exhaust --
+  add({ id: 'exh.turbo', slot: 'exhaust', label: 'Turbo header (part of the turbo kits)', desc: 'Four pipes into the turbine, no cabin heat', years: [1970, 2026], yl: '1970',
+    src: 'Turbo kits (Rajay, Schwitzer, Garrett, CB): own header into the turbine', attrs: { exh: 'turbo' }, warn: 'Turbo header: no cabin heat',
+    requires: [{ attr: 'fi', in: ['turbo'], msg: 'The turbo header only fits with a turbo' }],
+    sound: { car: { hx: null, prim_len: 0.45, prim_d: 0.035, head_len: 0.10 } }, prov: { prim_len: 'e', prim_d: 'e', head_len: 'e' } });
+  add({ id: 'exh.vsmerged', slot: 'exhaust', label: 'Vintage Speed 1-5/8 in merged header', desc: 'Four pipes into one merge collector and a stinger, no cabin heat · 2006–', years: [2006, 2026], yl: '2006',
+    src: 'vintagespeed.pro: 1-5/8 in merged header with swivel stinger (brand founded 2006)', attrs: { exh: 'merged' }, warn: 'Merged header: no cabin heat, very loud',
+    requires: [{ attr: 'muf', in: ['stinger'], msg: 'The merged header ends in its own stinger (choose Stinger in Muffler, or pick the kit)' }],
+    sound: { car: { hx: null, prim_len: 0.80, prim_d: 0.038, head_len: 0.20 } }, prov: { prim_d: 'd: 1-5/8 in OD, 16 ga wall', prim_len: 'e', head_len: 'e: merge collector' } });
+
+  // -- mufflers --
+  add({ id: 'muf.stinger', slot: 'muffler', label: 'Vintage Speed swivel stinger (no muffler)', desc: 'One open tailpipe, with the merged header · 2006–', years: [2006, 2026], yl: '2006',
+    src: 'vintagespeed.pro: merged header with swivel stinger', attrs: { muf: 'stinger' },
+    requires: [{ attr: 'exh', in: ['merged'], msg: 'The stinger bolts to the merged header only' }],
+    sound: { car: { muf: [], tail_n: 1, tail_d: 0.045, tail_len: 0.35, mouth: [[0.02, 0.0, 0.25], [0.02, 0.0, 0.25]] } }, prov: { tail_n: 's: one stinger', tail_d: 'e', tail_len: 'e', mouth: 'e: centre' } });
+  var HXONLY = [{ attr: 'exh', in: ['extractor', 'merged', 'turbo'], msg: 'This muffler bolts to the stock heat-exchanger layout' }];
+  add({ id: 'muf.vssport', slot: 'muffler', label: 'Vintage Speed sport exhaust', desc: 'Stainless, resonator, twin tips · 2006–', years: [2006, 2026], yl: '2006',
+    src: 'heritagepartscentre (Vintage Speed sport exhaust): stainless, resonator, twin tips', conflicts: HXONLY,
+    sound: { car: { muf: [['chamber', 0.30, 6, 0.08]], tail_d: 0.038 } }, tm: { a_tail: 2 * PI4 * 0.038 * 0.038, k_exh: 1.0 },
+    prov: { muf: 'e: smaller can, little packing', tail_d: 'e', 'tm.a_tail': 'e', 'tm.k_exh': 'e' } });
+  add({ id: 'muf.empiqp', slot: 'muffler', label: 'EMPI Dual Quiet Pack mufflers', desc: 'Two packed mufflers, twin tips · today (start not verified)', years: [2010, 2026], yl: 'today',
+    src: 'paruzzi.com (exhaust systems): EMPI Dual Quiet Pack', conflicts: HXONLY,
+    sound: { car: { muf: [['chamber', 0.45, 10, 0.25]], tail_d: 0.032 } }, prov: { muf: 'e: more packing than stock', tail_d: 'e' } });
+
+  // -- clutch / gearbox / tyres (vehicle data only; the game reads them, the sound model does not) --
+  add({ id: 'clutch.stock', slot: 'clutch', label: 'VW 180 mm clutch & flywheel (factory)', desc: '180 N·m capacity (estimate)', years: [1955, 1960] });
+  add({ id: 'clutch.kennedy', slot: 'clutch', label: 'Kennedy Stage 1 clutch (200 mm, 1700 lb)', desc: 'About 180 lb-ft (244 N·m); needs a 200 mm flywheel · today', years: [2015, 2026], yl: 'today',
+    src: 'kennedyeng.com (clutches): Stage 1, 200 mm, 1700 lb plate, about 180 lb-ft', warn: 'Kennedy 200 mm: needs a 200 mm (12 V-type) flywheel',
+    vehicle: { clutchMax: 244 }, prov: { clutchMax: 's: about 180 lb-ft' } });
+  var GSRC = 'Kennedy Engineered Products gear chart (richardatwell mirror); Limebug gearbox codes; Engle / So Cal Imports (Freeway Flyer)';
+  add({ id: 'gear.stock', slot: 'gearbox', label: 'VW Export 4-speed, crash 1st (factory)', desc: 'Ratios as shipped in the game (4.4 final drive)', years: [1955, 1960] });
+  add({ id: 'gear.6165', slot: 'gearbox', label: 'VW all-synchro 4-speed, 4.375 (1961–65)', desc: '3.80 / 2.06 / 1.32 / 0.89 · 1961', years: [1961, 2026], yl: '1961',
+    src: GSRC, warn: 'Later gearbox in a 1956 car: later mounts and axles assumed', vehicle: { gears: [3.80, 2.06, 1.32, 0.89], finalDrive: 4.375, unsyncGears: [], transText: 'VW all-synchro 4-speed (1961–65), 4.375' }, prov: { gears: 's', finalDrive: 's' } });
+  add({ id: 'gear.ac', slot: 'gearbox', label: 'VW 1500 gearbox (AC), 4.125', desc: '3.80 / 2.06 / 1.26 / 0.89 · 1967', years: [1967, 2026], yl: '1967',
+    src: GSRC, warn: 'Later gearbox in a 1956 car: later mounts and axles assumed', vehicle: { gears: [3.80, 2.06, 1.26, 0.89], finalDrive: 4.125, unsyncGears: [], transText: 'VW 1500 gearbox (AC), 4.125' }, prov: { gears: 's', finalDrive: 's' } });
+  add({ id: 'gear.as', slot: 'gearbox', label: 'VW 1600 gearbox (AS), 3.875', desc: '3.78 / 2.06 / 1.26 / 0.93 · Aug 1972', years: [1972, 2026], yl: '1972',
+    src: GSRC, warn: 'Later gearbox in a 1956 car: later mounts and axles assumed', vehicle: { gears: [3.78, 2.06, 1.26, 0.93], finalDrive: 3.875, unsyncGears: [], transText: 'VW 1600 gearbox (AS), 3.875' }, prov: { gears: 's', finalDrive: 's' } });
+  add({ id: 'gear.ffly', slot: 'gearbox', label: "'Freeway Flyer' gearbox, 3.88 with 0.89 4th", desc: 'Taller 4th for cruising; needs about 80+ hp · year not verified', years: [1980, 2026], yl: 'c. 1980?',
+    src: GSRC, warn: 'Freeway Flyer: Engle advises about 80+ hp', vehicle: { gears: [3.78, 2.06, 1.26, 0.89], finalDrive: 3.875, unsyncGears: [], transText: "'Freeway Flyer' 3.88 / 0.89" }, prov: { gears: 's', finalDrive: 's' } });
+  add({ id: 'tyre.stock', slot: 'tyres', label: '5.60-15 cross-ply (factory)', desc: 'As shipped in the game', years: [1955, 1960] });
+  add({ id: 'tyre.radial', slot: 'tyres', label: 'Michelin X 165 R 15 radial', desc: 'More grip, less rolling drag (estimates) · year not verified', years: [1965, 2026], yl: 'c. 1965?',
+    src: 'Michelin X radial (from 1949); size geometry derived; grip and rolling drag ESTIMATES', vehicle: { tyreText: '165 R 15 radial', tyreRadius: 0.304, muPeak: 0.85, muSlide: 0.70, crr: 0.012 },
+    prov: { tyreRadius: 'd', muPeak: 'e', muSlide: 'e', crr: 'e' } });
 
   // 12 V conversion vs the 6 V flywheel of a 30/34 PS/1300 engine is included in the kit; the 1500 needs it (rule on lb.1500)
   // kits: period packages that fill several slots at once (data only; the generic menu shows them as presets)
   def.kits = [
     { id: 'kit.okrasa_ts', label: 'Okrasa TS 1200 kit: dual-port heads, twin Solex carbs', desc: 'Okrasa programme list; pre67vw', set: { heads: 'heads.okrasa', carb: 'carb.okrasa' } },
-    { id: 'kit.okrasa_tsv', label: 'Okrasa TSV 1300 kit: dual-port heads, twin Solex carbs, stroker crank', desc: 'Oettinger history; pre67vw', set: { heads: 'heads.okrasa', carb: 'carb.okrasa', crank: 'crank.okrasa', cooling: 'cool.okrasa' } }
+    { id: 'kit.okrasa_tsv', label: 'Okrasa TSV 1300 kit: dual-port heads, twin Solex carbs, stroker crank', desc: 'Oettinger history; pre67vw', set: { heads: 'heads.okrasa', carb: 'carb.okrasa', crank: 'crank.okrasa', cooling: 'cool.okrasa' } },
+    { id: 'kit.speedwell', label: 'Speedwell Sprint 1350 kit: twin Stromberg carbs, 82 mm big bore', desc: 'Speedwell 1965: on the 1200 34 PS (40 hp case), 82 × 64 mm = 1352 cc', set: { longblock: 'lb.34ps', carb: 'carb.speedwell', cylinders: 'cyl.82' } },
+    { id: 'kit.rajay', label: 'Rajay turbo kit: turbocharger and header', desc: 'Hot Rod 1971', set: { fi: 'fi.rajay', exhaust: 'exh.turbo' } },
+    { id: 'kit.schwitzer', label: 'Schwitzer / Crane turbo kit: turbocharger and header', desc: '1971', set: { fi: 'fi.schwitzer', exhaust: 'exh.turbo' } },
+    { id: 'kit.garrett', label: 'Garrett turbo, 0.5 bar: turbocharger and header', desc: 'flat4.de 1998', set: { fi: 'fi.garrett', exhaust: 'exh.turbo' } },
+    { id: 'kit.cbrad', label: 'CB Performance RAD turbo kit: turbocharger and header', desc: 'CB Performance', set: { fi: 'fi.cbrad', exhaust: 'exh.turbo' } },
+    { id: 'kit.vsmerged', label: 'Vintage Speed merged header and stinger', desc: 'Vintage Speed', set: { exhaust: 'exh.vsmerged', muffler: 'muf.stinger' } },
+    { id: 'kit.1600dp', label: 'VW 1600 dual-port engine with 12 V', desc: 'VW 1970', set: { longblock: 'lb.1600dp', electrical: 'el.12v' } }
   ];
   if (!root.PartsDefs) root.PartsDefs = {};
   root.PartsDefs.beetle56 = def;
@@ -13681,6 +13945,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.25", date: "2026-11-22", status: "done", headline: "Beetle: parts from the 1950s to today, boost and turbos you can hear", text: "The Swap parts menu now covers the Beetle\u2019s parts world from the 1950s to today: 75 parts in 18 slots, each with its year (uncertain years are marked, e.g. \u2018c. 1975?\u2019) and an era filter (parts up to 1969, 1979, 1999 or today; 1969 by default). New: Denzel 1300 engines, the VW 1600 dual-port, 78 to 84 mm cranks, 83 to 94 mm barrels, VW and CB Performance heads, Engle cams, Zenith, Speedwell, Kadron, Weber IDF and Dellorto carbs, the Shorrock supercharger, Rajay, Schwitzer, Garrett and CB Performance turbo kits, the Bosch 009, the Vintage Speed merged header with its single stinger, EMPI and Vintage Speed mufflers, and new clutch, gearbox and tyre slots. The checker knows engine cases and 6 V / 12 V. Superchargers now get louder with boost, and turbos have spool lag, a wastegate, compressor whine and turbine muffling. The stock car, every sound set and the other cars are unchanged." },
       { v: "v1.13.24", date: "2026-11-22", status: "done", headline: "Swap parts menu fits the iPhone screen; Apply always visible", text: "On touch screens the parts list could not be scrolled with a finger, so Apply was out of reach below the screen edge. The panel now fits the visible screen, including Safari\u2019s toolbars and the notch. Apply, Stock and Close stay pinned at the bottom, and only the parts list scrolls, by finger. Apply turns green and the footer says how many changes are waiting. Phone layouts are tighter (labels above the menus in portrait, compact rows in landscape). Sound unchanged." },
       { v: "v1.13.23", date: "2026-11-22", status: "done", headline: "Beetle: part swaps you can hear", text: "Part swaps now change the sound clearly and for physical reasons. Bigger engines no longer idle quieter (the idle air scales with displacement) and use their real VW valve sizes. The Okrasa twin carbs breathe through small mesh filters instead of the oil-bath cleaner, so the intake is louder. The Abarth\u2019s four tips are in the sound. The Judson supercharger whines at 4 vanes \u00d7 1.3 \u00d7 crank speed from a new generic blower block. Stock builds and every sound set are bit-identical." },
       { v: "v1.13.22", date: "2026-11-22", status: "done", headline: "Beetle: swap 1960s parts in the engine bay", text: "The 1956 Beetle is now described as interchangeable parts (engine, crank, barrels, heads, cam, carburettor, forced induction, distributor, exhaust, muffler, cooling, electrics, fuel). A Swap parts button appears only in the Beetle\u2019s engine bay view. It lists period parts by brand and type: VW 1200 / 1300 / 1500 engines, the Okrasa TS and TSV kits (dual-port heads, twin Solex 32 PBIC carbs, 69.5 mm stroker crank), the Judson vane supercharger, the Porsche 356 crank, the EMPI extractor header, the Abarth 4-tip exhaust, the Bosch 010 distributor and more. Impossible combinations are blocked (for example Okrasa heads without the twin carbs, or a 12 V 1500 in a 6 V car). Risky ones show a warning (octane, cooling, stock crank, clutch). Torque follows a lean physics model anchored on the stock curve, and the engine sound follows the swapped geometry. The stock Beetle reproduces the previous data exactly. The game now uses one friction model for the Beetle (Barnes-Moss FMEP plus the cooling fan; estimate): full-throttle acceleration and top speed are unchanged, with less engine braking. Every sound set stays bit-identical, and the other cars are untouched." },
@@ -14699,7 +14964,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   // ---- v1.14 draft (job 1): parts menu (engine bay view only). Generic: any car with a PartsDefs entry gets it. ----
   // A stock build sends nothing new (vehicle = the shipped object, no sound overrides): today's game and sound exactly.
-  var partsApplied = {}, partsPending = null;
+  var partsApplied = {}, partsPending = null, partsEra = {};   // v1.13.25: era filter per car (up to year), default the first era
   function partsDef() {
     var d = window.PartsDefs; if (!d || typeof Parts === 'undefined') return null;
     for (var k in d) if (d[k].vehicleId === state.carId) return d[k];
@@ -14717,25 +14982,38 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   function renderParts() {
     var d = partsDef(), body = document.getElementById('partsBody'); if (!d) return;
     var lb = d.parts[partsPending.longblock] || {}, html = '', keepY = body.scrollTop;
+    // v1.13.25: era filter (parts up to a year; default the first era) and the year in every option. A part that is already
+    // chosen stays listed even when it is later than the filter (the period rule then warns).
+    var R = d.rules || {}, eras = R.eras || [], maxY = partsEra[state.carId] || eras[0] || 9999;
+    var yearOf = function (p) { return p.oem || !p.years ? '' : (p.yl || String(p.years[0])); };
+    var inEra = function (p) { return !p.years || p.oem || p.years[0] <= maxY; };
+    if (eras.length) html += '<label class="prow"><span>Era</span><select data-era="1">' + eras.map(function (y, i) {
+      return '<option value="' + y + '"' + (y === maxY ? ' selected' : '') + '>' + (i === eras.length - 1 ? 'Parts up to today' : 'Parts up to ' + y) + '</option>'; }).join('') + '</select></label>';
     if (d.kits && d.kits.length) {   // period kits: presets that fill several slots
-      html += '<label class="prow"><span>Kit</span><select data-kit="1"><option value="">Choose a kit…</option>' + d.kits.map(function (k) { return '<option value="' + k.id + '">' + esc(k.label) + '</option>'; }).join('') + '</select></label>';
+      var kitY = function (k) { var y = 0; Object.keys(k.set).forEach(function (s) { var p = d.parts[k.set[s]]; if (p && p.years) y = Math.max(y, p.years[0]); }); return y; };
+      var kits = d.kits.filter(function (k) { return kitY(k) <= maxY; });
+      if (kits.length) html += '<label class="prow"><span>Kit</span><select data-kit="1"><option value="">Choose a kit…</option>' + kits.map(function (k) { return '<option value="' + k.id + '">' + esc(k.label + ' (' + kitY(k) + ')') + '</option>'; }).join('') + '</select></label>';
     }
     d.slots.forEach(function (sl) {
       if (sl.menu === false) return;
-      var opts = Object.keys(d.parts).filter(function (id) { return d.parts[id].slot === sl.id; });
+      var opts = Object.keys(d.parts).filter(function (id) { return d.parts[id].slot === sl.id && (inEra(d.parts[id]) || partsPending[sl.id] === id); });
       var name = function (p) { return p.oem && lb.sub && lb.sub[sl.id] ? 'Factory: ' + lb.sub[sl.id] : p.label; };
       var cur = d.parts[partsPending[sl.id]] || {};
       html += '<label class="prow"><span>' + esc(sl.label) + '</span><select data-slot="' + sl.id + '">' + opts.map(function (id) {
-        return '<option value="' + id + '"' + (partsPending[sl.id] === id ? ' selected' : '') + '>' + esc(name(d.parts[id])) + '</option>';
+        var yt = yearOf(d.parts[id]);
+        return '<option value="' + id + '"' + (partsPending[sl.id] === id ? ' selected' : '') + '>' + esc(name(d.parts[id]) + (yt ? ' (' + yt + ')' : '')) + '</option>';
       }).join('') + '</select></label>';
       if (cur.desc) html += '<div class="pdesc">' + esc(cur.desc) + '</div>';   // v1.13.24: the part name is already in the select
     });
-    var r = Parts.check(d, partsPending), i = r.info;
-    html += '<div class="pinfo">' + i.cc + ' cc · CR ' + i.cr.toFixed(1) + ' · ' + i.tMax.toFixed(0) + ' N·m @ ' + i.tRpm + ' · ' + i.psMax.toFixed(1) + ' PS @ ' + i.psRpm + '</div>';
+    var r = Parts.check(d, partsPending, { maxYear: maxY }), i = r.info, at = r.attrs || {};
+    var tag = (R.caseNames && R.caseNames[at.case] ? R.caseNames[at.case] : '') + (at.volts ? ' · ' + at.volts + ' V' : '');   // v1.13.25 compatibility tags
+    html += '<div class="pinfo">' + i.cc + ' cc · CR ' + i.cr.toFixed(1) + ' · ' + i.tMax.toFixed(0) + ' N·m @ ' + i.tRpm + ' · ' + i.psMax.toFixed(1) + ' PS @ ' + i.psRpm + (i.prMax > 1.01 ? ' · ' + ((i.prMax - 1) * 14.7).toFixed(1) + ' psi' : '') + (tag ? '<br>' + esc(tag) : '') + '</div>';
     r.hard.forEach(function (m) { html += '<div class="pmsg hard">Blocked: ' + esc(m.part) + ': ' + esc(m.msg) + '</div>'; });
     r.soft.forEach(function (m) { html += '<div class="pmsg soft">' + esc(m.msg) + '</div>'; });
     html += '<div class="pnote">Curves: the stock table × a lean parts model (estimate). Sound follows the swapped parts. Changes take effect when you press Apply.</div>';
     body.innerHTML = html; body.scrollTop = keepY;
+    var es = body.querySelector('select[data-era]');
+    if (es) es.addEventListener('change', function () { partsEra[state.carId] = +es.value; renderParts(); });
     var ks = body.querySelector('select[data-kit]');
     if (ks) ks.addEventListener('change', function () { var k = d.kits.filter(function (x) { return x.id === ks.value; })[0]; if (k) { Object.assign(partsPending, k.set); renderParts(); } });
     body.querySelectorAll('select[data-slot]').forEach(function (sel) {
@@ -14750,7 +15028,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   function applyParts(build) {
     var d = partsDef(); if (!d) return;
-    var chk = Parts.check(d, build); if (!chk.ok) { flash('Blocked: ' + chk.hard[0].msg, 2.5); return; }
+    var chk = Parts.check(d, build, { maxYear: partsEra[state.carId] || ((d.rules || {}).eras || [])[0] }); if (!chk.ok) { flash('Blocked: ' + chk.hard[0].msg, 2.5); return; }
     var c = car(), base = Vehicles[Object.keys(Vehicles).filter(function (k) { return Vehicles[k] && Vehicles[k].id === state.carId; })[0]];
     partsApplied[state.carId] = Parts.isStock(d, build) ? null : Object.assign({}, chk.build);
     c.c = Parts.vehicle(d, partsBuild(), base);   // the shipped object itself for a stock build
