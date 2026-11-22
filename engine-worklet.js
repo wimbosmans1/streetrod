@@ -6219,6 +6219,9 @@ function engineModuleV8p(core) {
       var pack = (variant && D.sets && D.sets[variant]) ? D.sets[variant] : D.phys;
       this.key = key; this.c = Object.assign({}, D.car); this.P = Object.assign({}, pack, opts.phys || {}); this.fs = fs;
       applySetCar(this.c, this.P);
+      // v1.14 draft (job 1): generic parts layer (default off). js/parts.js sends only the keys a non-stock build changes;
+      // absent for every stock build and every other car, so the code path and the audio stay bit-identical.
+      if (spec.parts) { if (spec.parts.car) Object.assign(this.c, spec.parts.car); if (spec.parts.phys) Object.assign(this.P, spec.parts.phys); }
       this.spec = { idle_rpm: this.c.idle_rpm, redline: this.c.redline, name: this.c.name, car_key: key };
       this.vcam = !!(this.P.vcam || spec.variocam_plus || opts.variocam_plus);
       this.variocamPlus = this.vcam;
