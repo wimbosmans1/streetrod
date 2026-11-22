@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.23)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.24)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -326,8 +326,17 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 
 /* v1.14 draft (job 1): parts menu, engine bay only. Explicit hide rules (.tb / .sel display would otherwise win). */
 #bParts.hidden, #partsDlg.hidden { display: none; }
-#partsDlg { position: absolute; top: 56px; right: max(8px, env(safe-area-inset-right)); bottom: 8px; z-index: 29; width: min(420px, calc(100% - 16px)); display: flex; pointer-events: none; }
-.partsBox { pointer-events: auto; position: relative; align-self: flex-start; max-height: 100%; width: 100%; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; background: rgba(243,233,210,.96); color: #2a2016; border-radius: 12px; padding: 12px 14px; font: 13px/1.35 Georgia, serif; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
+/* v1.13.24: the panel fits the visible viewport (iPhone Safari toolbars, notch / home bar, Tesla): header and footer stay put,
+   only the slot list scrolls (by finger too: see the stage touchmove rule in main.js). Native <select> pickers are OS popups. */
+#partsDlg { position: absolute; z-index: 29; display: flex; pointer-events: none;
+  top: max(56px, calc(env(safe-area-inset-top) + 48px)); right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom));
+  width: min(440px, calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right))); }
+.partsBox { pointer-events: auto; position: relative; align-self: flex-start; display: flex; flex-direction: column; width: 100%; box-sizing: border-box;
+  max-height: 100%; max-height: min(100%, calc(100vh - 64px)); max-height: min(100%, calc(100svh - 64px)); max-height: min(100%, calc(100dvh - 64px));
+  overflow: hidden; background: rgba(243,233,210,.97); color: #2a2016; border-radius: 12px; font: 13px/1.35 Georgia, serif; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
+.partsHead { flex: none; position: relative; box-sizing: border-box; min-height: 50px; padding: 10px 56px 4px 14px; }
+.partsHead .aboutX { top: 6px; right: 6px; }
+.partsScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; padding: 0 14px 6px; }
 .partsBox h2 { margin: 0 40px 6px 0; font-size: 18px; }
 .partsBox .prow { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 3px 0; }
 .partsBox .prow span { flex: 0 0 38%; font-weight: bold; }
@@ -339,8 +348,25 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 .partsBox .pmsg.hard { background: #c0392b; color: #fff; }
 .partsBox .pmsg.soft { background: #f0c36d; color: #2a2016; }
 .partsBox .pnote { color: #6a5a42; font-size: 12px; margin: 4px 0 0; }
-.partsBtns { display: flex; gap: 8px; margin-top: 8px; }
+.partsBtns { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 14px 10px; border-top: 1px solid rgba(42,32,22,.25); background: rgba(232,220,192,.98); border-radius: 0 0 12px 12px; }
+.partsBtns .pstate { flex: 1 1 100%; font-size: 12px; color: #5a4a34; }
+.partsBtns .tb { min-height: 36px; }
 .partsBtns .tb[disabled] { opacity: .45; }
+.partsBtns .pApply.pending { background: #2e7d32; color: #fff; font-weight: bold; box-shadow: 0 0 0 3px rgba(46,125,50,.35); }
+/* short viewports (landscape phones, Safari with toolbars): tighter header and rows, panel from the top edge */
+@media (max-height: 460px) {
+  #partsDlg { top: max(6px, env(safe-area-inset-top)); bottom: max(6px, env(safe-area-inset-bottom)); }
+  .partsBox { max-height: 100%; }
+  .partsHead { min-height: 42px; padding: 6px 50px 2px 12px; } .partsHead .aboutX { top: 3px; right: 4px; min-width: 36px; min-height: 36px; font-size: 22px !important; } .partsBox h2 { font-size: 15px; margin: 4px 0 2px; }
+  .partsScroll { padding: 0 12px 4px; } .partsBox .pdesc { font-size: 11px; margin-bottom: 3px; }
+  .partsBtns { padding: 6px 12px 8px; gap: 6px; } .partsBtns .pstate { flex: 1 1 auto; }
+}
+/* narrow portrait phones: full width, labels above the selects so long part names fit */
+@media (max-width: 480px) {
+  #partsDlg { left: max(8px, env(safe-area-inset-left)); width: auto; }
+  .partsBox .prow { flex-wrap: wrap; } .partsBox .prow span { flex: 1 1 100%; } .partsBox select { flex: 1 1 100%; font-size: 16px; }
+  .partsBox .pdesc { margin-left: 0; }
+}
 </style>
 <script>
 /* v1.8.2: self-reporting on real devices. Any uncaught error or rejected promise is shown in a red box at the bottom of the page
@@ -415,7 +441,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
     <div id="dragCard" class="hidden"></div>
     <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
-    <div id="partsDlg" class="hidden" role="dialog" aria-labelledby="partsTitle"><div class="partsBox"><button class="tb aboutX" data-act="partsClose" aria-label="Close">&times;</button><h2 id="partsTitle">Swap parts (1960s)</h2><div id="partsBody"></div><div class="partsBtns"><button class="tb" id="bPartsApply" data-act="partsApply">Apply</button><button class="tb" data-act="partsStock">Stock</button></div></div></div>
+    <div id="partsDlg" class="hidden" role="dialog" aria-labelledby="partsTitle"><div class="partsBox"><div class="partsHead"><button class="tb aboutX" data-act="partsClose" aria-label="Close">&times;</button><h2 id="partsTitle">Swap parts (1960s)</h2></div><div id="partsBody" class="partsScroll"></div><div class="partsBtns"><span id="partsState" class="pstate"></span><button class="tb pApply" id="bPartsApply" data-act="partsApply">Apply</button><button class="tb" data-act="partsStock">Stock</button><button class="tb" data-act="partsClose">Close</button></div></div></div>
     <div id="specsDlg" class="hidden" role="dialog" aria-modal="true" aria-labelledby="specsTitle"><div class="aboutBox"><button class="tb aboutX" data-act="specsClose" aria-label="Close">&times;</button><h2 id="specsTitle">Engine specifications</h2><div id="specsBody"></div></div></div>
   </div>
   <aside>
@@ -13655,6 +13681,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.24", date: "2026-11-22", status: "done", headline: "Swap parts menu fits the iPhone screen; Apply always visible", text: "On touch screens the parts list could not be scrolled with a finger, so Apply was out of reach below the screen edge. The panel now fits the visible screen, including Safari\u2019s toolbars and the notch. Apply, Stock and Close stay pinned at the bottom, and only the parts list scrolls, by finger. Apply turns green and the footer says how many changes are waiting. Phone layouts are tighter (labels above the menus in portrait, compact rows in landscape). Sound unchanged." },
       { v: "v1.13.23", date: "2026-11-22", status: "done", headline: "Beetle: part swaps you can hear", text: "Part swaps now change the sound clearly and for physical reasons. Bigger engines no longer idle quieter (the idle air scales with displacement) and use their real VW valve sizes. The Okrasa twin carbs breathe through small mesh filters instead of the oil-bath cleaner, so the intake is louder. The Abarth\u2019s four tips are in the sound. The Judson supercharger whines at 4 vanes \u00d7 1.3 \u00d7 crank speed from a new generic blower block. Stock builds and every sound set are bit-identical." },
       { v: "v1.13.22", date: "2026-11-22", status: "done", headline: "Beetle: swap 1960s parts in the engine bay", text: "The 1956 Beetle is now described as interchangeable parts (engine, crank, barrels, heads, cam, carburettor, forced induction, distributor, exhaust, muffler, cooling, electrics, fuel). A Swap parts button appears only in the Beetle\u2019s engine bay view. It lists period parts by brand and type: VW 1200 / 1300 / 1500 engines, the Okrasa TS and TSV kits (dual-port heads, twin Solex 32 PBIC carbs, 69.5 mm stroker crank), the Judson vane supercharger, the Porsche 356 crank, the EMPI extractor header, the Abarth 4-tip exhaust, the Bosch 010 distributor and more. Impossible combinations are blocked (for example Okrasa heads without the twin carbs, or a 12 V 1500 in a 6 V car). Risky ones show a warning (octane, cooling, stock crank, clutch). Torque follows a lean physics model anchored on the stock curve, and the engine sound follows the swapped geometry. The stock Beetle reproduces the previous data exactly. The game now uses one friction model for the Beetle (Barnes-Moss FMEP plus the cooling fan; estimate): full-throttle acceleration and top speed are unchanged, with less engine braking. Every sound set stays bit-identical, and the other cars are untouched." },
       { v: "v1.13.21", date: "2026-11-22", status: "done", headline: "Model X visuals redrawn to official 2021+ pictures", text: "Redraws the 2023 Model X in the same illustrated green-screen technique as the Cadillac, 997 and Beetle (the first ship used flat polygon fills, which read as a kid\u2019s 2D drawing). Rear: two wraparound lamps, dark TESLA trim, a single raked glass hatch, spoiler lip, closed falcon-wing doors in the garage, near-flush 20-inch wheels, matte-black wrap. Cabin: cream seats and lower dash, dark upper dash and headliner, official open-top yoke (no top rim, flat bottom bar, inverted-trapezoid TESLA hub) as a rotating sprite, upright 17-inch screen. The Specs dialog now has an EV path (motors, sourced 7.56 / 9.04 ratios, chassis, tyre/wind sound) so it opens instead of throwing on a missing torque curve. Older sets stay bit-identical." },
@@ -14689,7 +14716,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function renderParts() {
     var d = partsDef(), body = document.getElementById('partsBody'); if (!d) return;
-    var lb = d.parts[partsPending.longblock] || {}, html = '';
+    var lb = d.parts[partsPending.longblock] || {}, html = '', keepY = body.scrollTop;
     if (d.kits && d.kits.length) {   // period kits: presets that fill several slots
       html += '<label class="prow"><span>Kit</span><select data-kit="1"><option value="">Choose a kit…</option>' + d.kits.map(function (k) { return '<option value="' + k.id + '">' + esc(k.label) + '</option>'; }).join('') + '</select></label>';
     }
@@ -14701,20 +14728,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       html += '<label class="prow"><span>' + esc(sl.label) + '</span><select data-slot="' + sl.id + '">' + opts.map(function (id) {
         return '<option value="' + id + '"' + (partsPending[sl.id] === id ? ' selected' : '') + '>' + esc(name(d.parts[id])) + '</option>';
       }).join('') + '</select></label>';
-      html += '<div class="pdesc">' + esc(name(cur)) + (cur.desc ? ' — ' + esc(cur.desc) : '') + '</div>';
+      if (cur.desc) html += '<div class="pdesc">' + esc(cur.desc) + '</div>';   // v1.13.24: the part name is already in the select
     });
     var r = Parts.check(d, partsPending), i = r.info;
     html += '<div class="pinfo">' + i.cc + ' cc · CR ' + i.cr.toFixed(1) + ' · ' + i.tMax.toFixed(0) + ' N·m @ ' + i.tRpm + ' · ' + i.psMax.toFixed(1) + ' PS @ ' + i.psRpm + '</div>';
     r.hard.forEach(function (m) { html += '<div class="pmsg hard">Blocked: ' + esc(m.part) + ': ' + esc(m.msg) + '</div>'; });
     r.soft.forEach(function (m) { html += '<div class="pmsg soft">' + esc(m.msg) + '</div>'; });
-    html += '<div class="pnote">Curves: the stock table × a lean parts model (estimate). Sound follows the swapped geometry; a blower is not in the sound model yet.' + (Parts.isStock(d, partsPending) ? '' : '') + '</div>';
-    body.innerHTML = html;
+    html += '<div class="pnote">Curves: the stock table × a lean parts model (estimate). Sound follows the swapped parts. Changes take effect when you press Apply.</div>';
+    body.innerHTML = html; body.scrollTop = keepY;
     var ks = body.querySelector('select[data-kit]');
     if (ks) ks.addEventListener('change', function () { var k = d.kits.filter(function (x) { return x.id === ks.value; })[0]; if (k) { Object.assign(partsPending, k.set); renderParts(); } });
     body.querySelectorAll('select[data-slot]').forEach(function (sel) {
       sel.addEventListener('change', function () { partsPending[sel.dataset.slot] = sel.value; renderParts(); });
     });
     var ap = document.getElementById('bPartsApply'); ap.disabled = !r.ok; ap.title = r.ok ? 'Apply this build' : 'Fix the blocked parts first';
+    // v1.13.24: the footer says whether the menu differs from the running build, and Apply lights up when it does
+    var cur = partsBuild(), nDiff = d.slots.filter(function (sl) { return (partsPending[sl.id] || d.stock[sl.id]) !== (cur[sl.id] || d.stock[sl.id]); }).length;
+    var st = document.getElementById('partsState');
+    if (st) st.textContent = !r.ok ? 'Blocked: see the red note' : nDiff ? nDiff + ' change' + (nDiff > 1 ? 's' : '') + ' – press Apply' : 'Running this build';
+    ap.classList.toggle('pending', r.ok && nDiff > 0);
   }
   function applyParts(build) {
     var d = partsDef(); if (!d) return;
@@ -15161,7 +15193,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   })();
   // no scrolling / pinch / double-tap zoom on the stage
   ['gesturestart', 'gesturechange', 'dblclick'].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
-  document.getElementById('stage').addEventListener('touchmove', function (e) { if (!(e.target.closest && e.target.closest('.aboutBox'))) e.preventDefault(); }, { passive: false });
+  document.getElementById('stage').addEventListener('touchmove', function (e) { if (!(e.target.closest && e.target.closest('.aboutBox, .partsScroll'))) e.preventDefault(); }, { passive: false });   // v1.13.24: the parts list scrolls by finger too
 
   // model / visuals selectors (built from the registries)
   var selS = document.getElementById('selSound'), selV = document.getElementById('selVisual');

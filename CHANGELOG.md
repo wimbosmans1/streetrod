@@ -1,3 +1,11 @@
+## v1.13.24 (tag `v1.13.24`), 2026-11-22 (Swap parts menu fits the iPhone screen; Apply always visible)
+
+* **What was wrong.** On touch screens (iPhone, Tesla) the Swap parts list could not be scrolled with a finger: the game blocks finger drags on the stage (for steering and pedals), and only the About and Specs boxes were exempt. The Apply and Stock buttons sat at the bottom of the list, below the visible area (on an iPhone in portrait about 300 px below the screen edge), so they could not be reached.
+* **Fix.** The panel now fits the visible screen (Safari's toolbars, notch and home bar included: `dvh`/`svh`, safe-area insets). The header stays at the top and the footer with **Apply · Stock · Close** at the bottom, always visible. Only the list of parts scrolls in between, and it scrolls by finger.
+* **Apply is obvious.** The footer says "N changes – press Apply" and the Apply button turns green while the menu differs from the running build ("Running this build" otherwise). Apply stays explicit, so a half-chosen build never restarts the engine sound.
+* **Phones.** In portrait, labels sit above the menus and the menus use 16 px text (no Safari zoom). Short screens (landscape phone) get a compact header and rows. The panel runs from the top edge. The descriptions no longer repeat the part name, so the list is shorter. The parts' native pickers are the phone's or the browser's own popups and are not clipped.
+* Checked in WebKit at 390×844 and 390×664 (portrait, Safari toolbars) and 844×390 and 750×342 (landscape), and in Chromium with a Tesla user agent at 1920×1200 and 1200×900. Every slot and the Apply button can be reached, and Apply by tap applies the Okrasa TSV kit. Sound and the stock car are unchanged: 111 of 111 renders are bit-identical.
+
 ## v1.13.23 (tag `v1.13.23`), 2026-11-22 (Beetle: part swaps you can hear)
 
 * **Why v1.13.22 swaps sounded the same.** The parts reached the sound engine, but only as small geometry changes: engine swaps moved the level by about 1 dB at full throttle and made idle 1 to 3 dB *quieter* (the idle air bleed was not scaled with the bigger engine), twin carbs changed nothing you hear, and the Judson had no sound at all. Only the Abarth and EMPI changed the sound, and only around some engine speeds.
