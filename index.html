@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.19)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.20)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -368,10 +368,11 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     <canvas id="dash"></canvas>
     <div id="topbar">
       <button class="tb" id="bIgn" data-act="ign">&#9679; Start engine</button>
-      <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option><option value="beetle">1956 VW Beetle</option></select></label>
+      <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option><option value="beetle">1956 VW Beetle</option><option value="modelx">2023 Model X</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound: v12 · BRM p11 (default) or an earlier v12 · BRM p1–p10 set (formerly v9.1–v9.11)"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
       <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v12 · 911 p7 (default since v1.12.2; p4 with internal packing), p4 (photo-measured reverse-flow side boxes; default v1.11.42–v1.12.1), p1 (series-chamber muffler), p2 (perforated straight-through muffler), p3 (3-chamber side boxes; listening test), p5 (series 3-chamber side boxes from the Fabspeed video; listening test) or p6 (p4 with its high note earlier; listening test)"><select id="selP997" aria-label="911 engine sound option"></select></label>
       <label class="sel brmsel hidden" id="segBeetleSound" title="Beetle engine sound: Sound v21 · Beetle (default) and Sound v24 · Beetle (hot idle 750 rpm). No additional URL alias."><select id="selBeetle" aria-label="Beetle engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segModelxSound" title="Model X engine sound: Sound v1 · Model X (tyre/road and wind only)."><select id="selModelx" aria-label="Model X engine sound option"><option value="v1">Sound v1 · Model X</option></select></label>
       <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2–p10, Sound v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20, v21, v22 and v23 · Cadillac. p1 stays the default; p7 and everything after it is picker-only, with no new URL. v18 is not on the site."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
@@ -3955,6 +3956,67 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       DATA.beetle56.sets['v24'] = _b24;
     }
 
+    // 2023 Model X Long Range Dual Motor — Sound v1, spec-only first pass then fitted to the chosen LR refs.
+    // Generic EV blocks (P.ev); combustion / waveguides are never built for this car.
+    DATA.modelx23 = {
+      car: {
+        name: "2023 Tesla Model X Long Range Dual Motor",
+        nCyl: 0,
+        idle_rpm: 0.0,
+        redline: 16000.0,
+        // positions, car frame: x forward from the rear bumper, y left, z up
+        mouth: [[0.05, 0.0, 0.35], [0.05, 0.0, 0.35]], // ESTIMATE: no tailpipes; AVAS / body stand-in at the rear valance
+        intake: [4.40, 0.0, 0.70],                     // ESTIMATE: front motor / frunk
+        covers: [[1.20, 0.30, 0.35], [4.20, 0.0, 0.40]], // ESTIMATE: rear motor, front motor
+        starter_pos: [4.40, 0.0, 0.50],
+        head: [2.85, 0.38, 1.15],                      // ESTIMATE: driver ear, high seating, LHD, wheelbase 2.965 m
+        cabin_len: 2.40,                               // ESTIMATE
+        cabin_h: 1.06,                                 // sourced-secondary-ish: first-row head room 1,059 mm
+        pipe_d: 0.03,
+        eng_shadow: 0.9
+      },
+      phys: {
+        ev: {
+          pole_pairs: 3,               // ESTIMATE: informal 6-pole inference, not a factory Dual Motor figure
+          pwm_hz: 8000,                // ESTIMATE: VFD carrier
+          // two-stage reductions whose products match the official ratios; tooth counts are ESTIMATES
+          teethFront: { s1p: 9, s1g: 21, s2p: 25, s2g: 81 },   // 21/9 × 81/25 = 7.56
+          teethRear:  { s1p: 8, s1g: 23, s2p: 21, s2g: 66 },   // 23/8 × 66/21 ≈ 9.04
+          ratioFront: 7.56,            // sourced
+          ratioRear: 9.04,             // sourced
+          k_mot: 0,                    // off: Wim 22 Nov, tyre/road + wind only; generic PMSM block stays in the kernel
+          k_mesh: 0,                   // off: generic gear-mesh block stays in the kernel
+          k_pwm: 0,                    // off: generic PWM / inverter block stays in the kernel
+          k_avas: 0,                   // off: generic AVAS block stays in the kernel; not used, not fitted
+          avas_f: [480, 640, 800],     // ESTIMATE: generic AVAS chord, not a clone of Tesla's melody
+          harm: [1, 2, 6],             // ESTIMATE: electrical orders of pole-pair * motor rps
+          mot_cab: 0.45,               // ESTIMATE: cabin transmission of motor / gear / PWM
+          avas_cab: 0.35,              // ESTIMATE: AVAS is designed to be heard outside
+          pwm_mod: 0.35                // ESTIMATE: PWM AM depth at the electrical frequency
+        },
+        noise: {                       // existing generic CNOSSOS-EU / tyre / wind block
+          tyre_w: 270,                 // sourced sizes 265 front / 275 rear mm; mid-width ESTIMATE for the width law
+          d_mean: 0.756,               // derived: 2 × 0.378 m rear rolling radius
+          wheelbase: 2.965,            // sourced
+          axle_x: 1.104,               // sourced: rear overhang, rear axle from the rear bumper
+          floor_m: 12,                 // ESTIMATE: more cabin insulation than a 1950s body
+          r_near: 1.15,                // ESTIMATE
+          cav_q: 7, cav_db: 5,         // ESTIMATE: tyre-cavity contribution
+          wind_db100: 62,              // ESTIMATE: low Cd, mid-size crossover
+          wind_n: 5.8,                 // ESTIMATE
+          shape: 1
+        },
+        k_cab: 0.45,                   // ESTIMATE
+        cab_q: 5.0,
+        cab_model: 1,
+        f_floor: 180.0,
+        f_fw: 220.0,
+        gain: 1.0,
+        k_int: 0, k_tick: 0, k_st: 0, k_hiss: 0, k_win: 0.2
+      }
+    };
+
+
 
     // v13.2: same v13.1 geometry with rev=2 (wider-band fit + fs/2 TMM filters). Generic param only.
     if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.1'] && !DATA.cadillac59.sets['v13.2']) {
@@ -6674,7 +6736,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
     function V8pSynth(spec, listener, fs, opts) {
       opts = opts || {};
-      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350', BEETLE: 'beetle56' };
+      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350', BEETLE: 'beetle56', MODELX: 'modelx23' };
       var key = spec.car_key || ENGINE_KEYS[spec.engineKey] || 'gt350';
       var D = DATA[key];
       if (!D) throw new Error('v8p: no data for ' + key);
@@ -6687,6 +6749,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       this.variocamPlus = this.vcam;
       this._vc = {};
       this.selfGated = opts.mode !== 'run' && opts.mode !== 'raw';
+      if (this.P.ev) { this._evInit(listener, opts); return; }
       var netCar = Object.assign({}, this.c);
       if (this.P.cat_early) netCar.cat_early = 1;
       if (this.P.port_bc) netCar.port_bc = 1;
@@ -7129,6 +7192,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       }
     };
     V8pSynth.prototype.cloneWithListener = function (lis) {
+      if (this.P.ev) {
+        var ev = Object.create(V8pSynth.prototype); Object.assign(ev, this);
+        ev.S = this.S.slice(); ev.game = Object.assign({}, this.game);
+        ev.ctlr = this.ctlr.clone(ev); ev.out = new Float64Array(256);
+        ev.listener = lis; ev._evInit(lis, {}); ev.ctlr = this.ctlr.clone(ev);
+        ev.S = this.S.slice(); ev.game = Object.assign({}, this.game);
+        if (this._ev) ev._ev = JSON.parse(JSON.stringify(this._ev));
+        if (this.RN) ev.RN = this._noiseSetup(ev.persp);
+        return ev;
+      }
       var o = Object.create(V8pSynth.prototype); Object.assign(o, this);
       ['S', 'CY', 'PF', 'AB', 'BB', 'AT', 'NA', 'K', 'PST', 'Q'].forEach(function (a) { o[a] = this[a].slice(); }, this);
       o.out = new Float64Array(256 * NO); o.game = Object.assign({}, this.game);
@@ -7137,6 +7210,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       return o;
     };
     V8pSynth.prototype.setRunning = function (rpm) {
+      if (this.P.ev) { this.S[S_W] = (rpm || 0) * 2 * Math.PI / 60; this.ctlr.setRunning(); return; }
       this.S[S_W] = rpm * 2 * Math.PI / 60; this.S[S_PMAN] = 0.4 * P_ATM; this.pw = 1.0;
       this.S[S_TPRIM] = T_AMB + (this.P.t_prim0 - T_AMB); this.S[S_TTAIL] = T_AMB + 0.4 * (this.S[S_TPRIM] - T_AMB);
       this.ctlr.setRunning(); this._pipes();
@@ -7244,6 +7318,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       }
     };
     V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {
+      if (this.P.ev) { this._blockEv(n, rpm, thr, game, L, R, off); return; }
       if (this.tmmDual) this._tmmSelect();
       if (this._settleLeft > 0) { this._settleStep(n, L, R, off); return; }
       if (this.vcam) this._vc = applyVariableCam(this.Q, this.c, rpm, thr, this._vc, this.P);
@@ -7437,6 +7512,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (m.warm !== undefined) g.warm = !!m.warm;
       if (m.gear !== undefined) g.gear = m.gear;
       if (m.speed !== undefined) g.speed = m.speed;   // m/s (v19 road noise; ignored by sets without noise)
+      if (m.rpmF !== undefined) g.rpmF = m.rpmF;
+      if (m.rpmR !== undefined) g.rpmR = m.rpmR;
+      if (m.tqSign !== undefined) g.tqSign = m.tqSign;
+      if (m.range !== undefined) g.range = m.range;
+      if (m.avas !== undefined) g.avas = m.avas;
+      if (m.avasLevel !== undefined) g.avasLevel = m.avasLevel;
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
@@ -7449,6 +7530,129 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       return r;
     };
     V8pSynth.prototype.rpmNow = function () { return this.S[S_W] * 60 / (2 * Math.PI); };
+
+
+    // Generic EV building blocks. Constructed only when P.ev is set (same pattern as c.fan).
+    // ICE cars never enter these functions, so older sets stay bit-identical.
+    V8pSynth.prototype._evInit = function (listener, opts) {
+      opts = opts || {};
+      var NS0 = 32;
+      this.S = this.S || new Float64Array(NS0);
+      this.K = this.K || new Float64Array(16);
+      this.out = this.out || new Float64Array(256);
+      this.game = this.game || { running: false, starter: false, warm: false, gear: 0, has: false, speed: 0 };
+      this.ctlr = this.ctlr || new Ctl(this, false);
+      this.listener = listener;
+      this.persp = perspective(this.c, (listener && listener.position) || 'rear');
+      this.posName = (listener && listener.position) || 'rear';
+      this.PV = new Float64Array(16);
+      this.PV[4] = this.P.k_cab || 0.45;
+      this.PV[5] = 0.25 * (this.P.gain || 1);
+      this.RN = (this.P.noise && (typeof NOISE_OFF === 'undefined' || !NOISE_OFF)) ? this._noiseSetup(this.persp) : null;
+      this._fan = null;
+      this.PG = []; this.NODE = []; this.NN = 0; this.NW = 0; this.NP = 0;
+      this._ev = this._ev || this._evSetup();
+    };
+    V8pSynth.prototype._evSetup = function () {
+      var e = this.P.ev, i, o = { phF: [], phR: [], phMeshF: [0, 0], phMeshR: [0, 0], phPwmF: 0, phPwmR: 0, phAvas: [0, 0, 0], envAvas: 0 };
+      o.pp = e.pole_pairs || 3;
+      o.pwm = e.pwm_hz || 8000;
+      o.tF = e.teethFront || { s1p: 9, s1g: 21, s2p: 25, s2g: 81 };
+      o.tR = e.teethRear || { s1p: 8, s1g: 23, s2p: 21, s2g: 66 };
+      o.harm = e.harm || [1, 2, 6];
+      o.avasF = e.avas_f || [480, 640, 800];
+      o.kMot = e.k_mot !== undefined ? e.k_mot : 0;
+      o.kMesh = e.k_mesh !== undefined ? e.k_mesh : 0;
+      o.kPwm = e.k_pwm !== undefined ? e.k_pwm : 0;
+      o.kAvas = e.k_avas !== undefined ? e.k_avas : 0;
+      o.motCab = e.mot_cab !== undefined ? e.mot_cab : 0.45;
+      o.avasCab = e.avas_cab !== undefined ? e.avas_cab : 0.35;
+      o.pwmMod = e.pwm_mod !== undefined ? e.pwm_mod : 0.35;
+      for (i = 0; i < o.harm.length + 1; i++) { o.phF[i] = 0; o.phR[i] = 0; }
+      return o;
+    };
+    V8pSynth.prototype._blockEv = function (n, rpm, thr, game, L, R, off) {
+      var g = game || this.game || {}, ev = this._ev, fs = this.fs, i, k, sL, sR;
+      var running = g.has ? !!g.running : true;
+      var rpmR = (g.rpmR !== undefined && g.has) ? Math.abs(g.rpmR) : Math.abs(rpm || 0);
+      var rpmF = (g.rpmF !== undefined && g.has) ? Math.abs(g.rpmF) : rpmR * ((this.P.ev.ratioFront || 7.56) / (this.P.ev.ratioRear || 9.04));
+      var speed = (g.speed !== undefined) ? g.speed : 0;
+      var tq = (g.tqSign !== undefined) ? g.tqSign : (thr || 0);
+      var range = g.range || 'D';
+      var kmh = Math.abs(speed) * 3.6;
+      var avasLevel = g.avasLevel;
+      if (avasLevel === undefined) {
+        var avas = running && range !== 'P' && (kmh < 32 || range === 'R');
+        avasLevel = avas ? Math.min(1, 0.25 + kmh / 32) : 0;
+      }
+      if (!running) avasLevel = 0;
+      this.game.speed = speed;
+      this.S[S_W] = rpmR * 2 * Math.PI / 60;
+      var outside = !!(this.persp && this.persp.outside);
+      var evG = (this.PV && this.PV[5]) ? this.PV[5] : 0.25;   // same listener scale as the noise block (Pa * PV[5])
+      var gMot = evG * (outside ? 1.0 : ev.motCab) * ev.kMot;
+      var gMesh = evG * (outside ? 1.0 : ev.motCab) * ev.kMesh;
+      var gPwm = evG * (outside ? 1.0 : ev.motCab) * ev.kPwm;
+      var gAvas = evG * (outside ? 1.0 : ev.avasCab) * ev.kAvas;
+      var load = Math.abs(tq);
+      if (tq < 0) load = Math.min(1, load * 1.15);   // regen sign: slightly stronger electrical / PWM
+      var aMot = running ? gMot * (0.12 + 0.88 * load) : 0;
+      var aMesh = running ? gMesh * (0.20 + 0.80 * load) : 0;
+      var aPwm = running ? gPwm * load : 0;
+      ev.envAvas += ((avasLevel * gAvas) - ev.envAvas) * Math.min(1, n / (0.04 * fs));
+      var aAvas = ev.envAvas;
+      var TWOPI = 6.283185307179586, invFs = 1 / fs;
+      var feF = ev.pp * rpmF / 60, feR = ev.pp * rpmR / 60;
+      var fMeshF1 = (rpmF / 60) * ev.tF.s1p, fMeshF2 = (rpmF / 60) * ev.tF.s1p * ev.tF.s2p / ev.tF.s1g;
+      var fMeshR1 = (rpmR / 60) * ev.tR.s1p, fMeshR2 = (rpmR / 60) * ev.tR.s1p * ev.tR.s2p / ev.tR.s1g;
+      var avasMul = 1 + 0.4 * Math.min(1, kmh / 32);
+      off = off || 0;
+      for (i = 0; i < n; i++) {
+        sL = 0; sR = 0;
+        if (aMot && (feF > 2 || feR > 2)) {
+          for (k = 0; k < ev.harm.length; k++) {
+            var hk = ev.harm[k], ak = aMot / (hk === 1 ? 1 : hk);
+            ev.phF[k] += TWOPI * feF * hk * invFs; ev.phR[k] += TWOPI * feR * hk * invFs;
+            sL += ak * Math.sin(ev.phF[k]); sR += ak * Math.sin(ev.phR[k]);
+          }
+          ev.phF[ev.harm.length] += TWOPI * (rpmF / 60) * invFs;
+          ev.phR[ev.harm.length] += TWOPI * (rpmR / 60) * invFs;
+          sL += aMot * 0.25 * Math.sin(ev.phF[ev.harm.length]);
+          sR += aMot * 0.25 * Math.sin(ev.phR[ev.harm.length]);
+        }
+        if (aMesh) {
+          ev.phMeshF[0] += TWOPI * fMeshF1 * invFs; ev.phMeshF[1] += TWOPI * fMeshF2 * invFs;
+          ev.phMeshR[0] += TWOPI * fMeshR1 * invFs; ev.phMeshR[1] += TWOPI * fMeshR2 * invFs;
+          sL += aMesh * (0.7 * Math.sin(ev.phMeshF[0]) + 0.4 * Math.sin(ev.phMeshF[1]));
+          sR += aMesh * (0.7 * Math.sin(ev.phMeshR[0]) + 0.4 * Math.sin(ev.phMeshR[1]));
+        }
+        if (aPwm && ev.pwm > 0) {
+          ev.phPwmF += TWOPI * ev.pwm * invFs; ev.phPwmR += TWOPI * ev.pwm * invFs;
+          var mF = 1 + ev.pwmMod * Math.sin(ev.phF[0] || 0), mR = 1 + ev.pwmMod * Math.sin(ev.phR[0] || 0);
+          sL += aPwm * mF * Math.sin(ev.phPwmF);
+          sR += aPwm * mR * Math.sin(ev.phPwmR);
+        }
+        if (aAvas > 1e-9) {
+          for (k = 0; k < ev.avasF.length; k++) {
+            ev.phAvas[k] += TWOPI * ev.avasF[k] * avasMul * invFs;
+            var aa = aAvas * (k === 0 ? 1 : 0.7 / (k + 1));
+            var sa = aa * Math.sin(ev.phAvas[k]);
+            sL += sa; sR += sa * 0.92;
+          }
+        }
+        // wrap phases occasionally to keep them bounded (every 64 samples is enough and cheap)
+        L[off + i] = sL;
+        R[off + i] = sR;
+      }
+      if ((this._evWrap = (this._evWrap || 0) + n) > 4096) {
+        this._evWrap = 0;
+        function wrap(a) { var t = 2 * Math.PI; if (a > 4096) { for (var j = 0; j < a.length; j++) a[j] = a[j] - t * Math.floor(a[j] / t); } }
+        wrap(ev.phF); wrap(ev.phR); wrap(ev.phMeshF); wrap(ev.phMeshR); wrap(ev.phAvas);
+        ev.phPwmF -= 2 * Math.PI * Math.floor(ev.phPwmF / (2 * Math.PI));
+        ev.phPwmR -= 2 * Math.PI * Math.floor(ev.phPwmR / (2 * Math.PI));
+      }
+      if (this.RN) this._noiseRun(n, L, R, off);
+    };
 
     function Ctl(syn, cold) {
       this.syn = syn; this.phase = 'off'; this.t = 0.0; this.key = false;
@@ -7466,6 +7670,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
     Ctl.prototype.noteFire = function (n) { this.fires[this.fi] = n; this.fi = (this.fi + 1) % 16; };
     Ctl.prototype.recentFire = function () { var s = 0; for (var i = 0; i < 16; i++) s += this.fires[i]; return s > 0; };
     Ctl.prototype.keyOn = function (cold) {
+      if (this.syn.P && this.syn.P.ev) { this.setRunning(); return; }
       if (cold !== null && cold !== undefined) this.coldness = cold ? 1.0 : 0.0;
       this.phase = 'crank'; this.t_key = this.t; this.t_catch = null; this.t_rel = null; this.t_stop = null;
       this.handed = false; this.blend = 0.0;
@@ -8953,15 +9158,18 @@ var SoundModels = (function () {
     id: 'v9p', label: 'v12 · p1', note: 'Sound model v12 (the shared physics kernel, formerly called v9.11 / v9p): each car\'s own engine on the same physics approach (blow-down cylinders, its own exhaust network, intake, valve train), electric starter and crank torque balance; refit on the gated recordings. This is parameter-set p1 for the GT350 and the Cadillac (the Cadillac default). Since v1.12.7 the Cadillac also has listening-test sets p2, p3, p4, p5 and p7, and a diagnostic test p6, in its own picker (p7 since v1.12.7; p6 since v1.12.6; p5 since v1.12.5; p4 since v1.12.4; p2 and p3 since v1.12.3). v12 (since v1.12.0, was v11): same physics, plus the newer generic muffler blocks and the kernel split.',
     cars: { GT350: { car_key: 'gt350', idle_rpm: 850, redline: 6800, name: '1967 Shelby GT350 (289 Hi-Po)' }, CADDY: { car_key: 'cadillac59', idle_rpm: 520, redline: 5000, name: '1959 Cadillac Series 62 (390)' },
       P997: { car_key: 'p997', idle_rpm: 670, redline: 7300, name: '2006 Porsche 911 Carrera 4S (997.1, 3.8 flat-six)' },   // v1.11.0: the 911's only sound
-      BEETLE: { car_key: 'beetle56', idle_rpm: 850, redline: 3800, name: '1956 VW Beetle (Type 1, 1192 cc)' } },
-    outGain: { GT350: 0.8, CADDY: 0.85, P997: 0.8, BEETLE: 0.8 },
+      BEETLE: { car_key: 'beetle56', idle_rpm: 850, redline: 3800, name: '1956 VW Beetle (Type 1, 1192 cc)' },
+      MODELX: { car_key: 'modelx23', idle_rpm: 0, redline: 16000, name: '2023 Tesla Model X Long Range Dual Motor' } },
+    outGain: { GT350: 0.8, CADDY: 0.85, P997: 0.8, BEETLE: 0.8, MODELX: 0.85 },
     listeners: { GT350: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } }, CADDY: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } },
       P997: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } },
-      BEETLE: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } } },
+      BEETLE: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } },
+      MODELX: { rear: { position: 'rear' }, in_cabin: { position: 'in_cabin' } } },
     views: ['rear', 'in_cabin'], startup: true,
     gainDb: Object.assign(/*V8P_GAIN*/{ GT350: { rear: -26.9, in_cabin: -2.9 }, CADDY: { rear: -19.2, in_cabin: -0.6 } }/*END_V8P_GAIN*/,   // test/level_match_v8p.js
       /*P997_GAIN*/{ P997: { rear: -32.5, in_cabin: -7.7 } }/*END_P997_GAIN*/,
-      /*BEETLE_GAIN*/{ BEETLE: { rear: -24.0, in_cabin: -5.0 } }/*END_BEETLE_GAIN*/),   // ESTIMATE level match only; no reference recordings yet
+      /*BEETLE_GAIN*/{ BEETLE: { rear: -24.0, in_cabin: -5.0 } }/*END_BEETLE_GAIN*/,
+      { MODELX: { rear: -18.0, in_cabin: -5.0 } }),   // ESTIMATE: cabin parked next to Beetle -5; rear unfitted (no outside LR ref); ICE cars unchanged
   });
   // BRM v9.x physics models (js/engine-brm9.js: one kernel, one fitted parameter set each). id 'v9' = v9.6 (v1.9.1 name kept).
   // brm = the BRM sound switch value / ?sound= name. gainDb: loudness-matched to the retired v8 after the limiter (test/level_match_v9.js).
@@ -9193,7 +9401,56 @@ var Vehicles = (function () {
       rear: { type: 'drum', heatCap: 1800, coolBase: 0.010, coolSpeed: 0.0007 },
     },
   };
-  return { GT350: GT350, CADDY: CADDY, BRM: BRM, P997: P997, BEETLE: BEETLE, list: [GT350, CADDY, BRM, P997, BEETLE] };
+
+  var MODELX = {
+    id: 'modelx', label: '2023 Tesla Model X', engineKey: 'MODELX',
+    engineText: 'Long Range Dual Motor AWD, AC PMSM front and rear (not Plaid)',
+    // EPA 2023 Dual Motor (fueleconomy.gov id 46208): 243 and 248 kW. Front/rear not labelled; assigned front/rear in that order as an ESTIMATE.
+    powerFrontW: 243000,               // sourced: EPA 243 kW (axle assignment ESTIMATE)
+    powerRearW: 248000,                // sourced: EPA 248 kW (axle assignment ESTIMATE)
+    torqueFront: 400,                  // ESTIMATE Nm peak, sized with torqueRear so 0-100 is near the official 3.9 s
+    torqueRear: 400,                   // ESTIMATE Nm peak
+    netFactor: 1.0,
+    idleRpm: 0,                        // EV: motors at rest when stopped
+    limiterRpm: 18000,                 // ESTIMATE: motor speed cap; road-limited first
+    tachMax: 16000, tachRed: 15000,    // ESTIMATE: digital cluster, rear-motor rpm
+    engineInertia: 0.06,               // ESTIMATE: two rotor inertias, referred loosely
+    friction: [0, 0, 0],
+    trans: 'ev', transText: 'Single-speed Dual Motor AWD (P / R / N / D)',
+    gears: [1], finalDrive: 9.04,      // sourced rear ratio used as the tach/reference reduction
+    drivelineEff: 0.95,                // ESTIMATE
+    ev: {
+      ratioFront: 7.56,                // sourced: Tesla manual, Subsystems
+      ratioRear: 9.04,                 // sourced: Tesla manual, Subsystems
+      regen: 0.35,                     // ESTIMATE: lift-off regen as a fraction of peak motor torque
+      avasOffKmh: 32,                  // sourced: Tesla 2021+ manual, on below about 32 km/h and in reverse, off in Park
+      reverseKmh: 24                   // sourced: Tesla manual, reverse limited to 15 mph / 24 km/h
+    },
+    massKg: 2352 + 75,                 // sourced-secondary: 5,185 lb / 2,352 kg US curb Dual Motor + 75 kg driver
+    curbText: '5,185 lb (2,352 kg) Dual Motor curb (sourced-secondary) + 75 kg driver',
+    rearFrac: 0.48,                    // ESTIMATE
+    cgHeight: 0.62,                    // ESTIMATE: crossover, medium air-suspension
+    wheelbase: 2.965,                  // sourced: 2,965 mm
+    tyreText: '20-inch 265/45R20 front, 275/45R20 rear (default drawing; 22s not confirmed)',
+    tyreRadius: 0.378,                 // derived: 275/45R20 rear rolling radius
+    tyreRadiusFront: 0.373,            // derived: 265/45R20 front
+    wheelInertiaRear: 1.8, wheelInertiaFront: 1.6,  // ESTIMATE: 20" alloy + tyre
+    muPeak: 0.95, muSlide: 0.78,       // ESTIMATE: modern UHP summer
+    crr: 0.008,                        // ESTIMATE: low-rolling-resistance EV tyres
+    cd: 0.24,                          // sourced-secondary: commonly quoted 2021+ figure; some tables list 0.25
+    area: 2.60,                        // ESTIMATE: width 1.999 m x height 1.680 m x ~0.77 fill; official frontal area is missing
+    crr2: 0, spinDrag: 0,
+    paint: '#1C1C1E',
+    paintText: 'Matt black wrap (not factory gloss Solid Black); low-sheen finish confirmed by Wim, 22 Nov 2026',
+    brakes: {
+      text: 'Power-assisted four-wheel discs with regen blending',
+      capG: 1.05, frontBias: 0.62, abs: true,
+      front: { type: 'disc', heatCap: 4000, coolBase: 0.012, coolSpeed: 0.0010 },
+      rear: { type: 'disc', heatCap: 3200, coolBase: 0.010, coolSpeed: 0.0008 },
+    },
+  };
+  return { GT350: GT350, CADDY: CADDY, BRM: BRM, P997: P997, BEETLE: BEETLE, MODELX: MODELX, list: [GT350, CADDY, BRM, P997, BEETLE, MODELX] };
+
 
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Vehicles;
@@ -9235,7 +9492,7 @@ var Physics = (function () {
     this.thrAct = 0;                // throttle actually applied (manifold lag)
     this.idleI = 0; this.idleThr = 0;
     this.gear = 0;                  // manual: 0 = N, 1..4 ; auto: current gear 1..4
-    this.range = 'N';               // auto selector: N D S L
+    this.range = c.trans === 'ev' ? 'P' : 'N';  // EV: P R N D ; auto: N D S L
     this.clutchLocked = false; this.engage = 0;
     this.tyre = 'roll';             // roll | spin | lock
     this.frontLocked = false;
@@ -9268,6 +9525,11 @@ var Physics = (function () {
   };
 
   Vehicle.prototype.ignition = function () {
+    if (this.c.trans === 'ev') {
+      if (this.engine === 'off') { this.engine = 'running'; this.we = 0; this.warmed = true; this.crankT = 0; }
+      else { this.engine = 'off'; this.we = 0; this.v = this.v; }
+      return;
+    }
     if (this.engine === 'off') { this.engine = 'cranking'; this.crankT = 0; }
     else { this.engine = 'off'; }
   };
@@ -9285,12 +9547,14 @@ var Physics = (function () {
   // ---- driver commands ----
   Vehicle.prototype.shiftUp = function () {
     var c = this.c;
+    if (c.trans === 'ev') { var R = ['P', 'R', 'N', 'D'], i = R.indexOf(this.range); if (i < 0) i = 0; if (i < 3) this.setRange(R[i + 1]); return; }
     if (c.trans === 'auto') { var R = ['N', 'D', 'S', 'L'], i = R.indexOf(this.range); if (i < 3) this.setRange(R[i + 1]); return; }
     if (this.shift || this.gear >= c.gears.length) return;
     this.shift = this.newShift(this.gear + 1);
   };
   Vehicle.prototype.shiftDown = function () {
     var c = this.c;
+    if (c.trans === 'ev') { var R = ['P', 'R', 'N', 'D'], i = R.indexOf(this.range); if (i < 0) i = 0; if (i > 0) this.setRange(R[i - 1]); return; }
     if (c.trans === 'auto') { var R = ['N', 'D', 'S', 'L'], i = R.indexOf(this.range); if (i > 0) this.setRange(R[i - 1]); return; }
     if (this.shift || this.gear <= 0) return;
     var to = this.gear - 1;
@@ -9347,6 +9611,7 @@ var Physics = (function () {
   };
   Vehicle.prototype.setRange = function (r) {
     var prev = this.range; this.range = r;
+    if (this.c.trans === 'ev') { this.gear = (r === 'D' || r === 'R') ? 1 : 0; return; }
     if (r === 'N') { this.gear = 1; }
     else if (prev === 'N') { this.gear = 1; this.fill = 0.2; }
     var maxG = r === 'L' ? 2 : r === 'S' ? 3 : 4;
@@ -9379,6 +9644,7 @@ var Physics = (function () {
   };
 
   Vehicle.prototype.step = function (dt, inp) {
+    if (this.c.trans === 'ev') return this.stepEv(dt, inp);
     var c = this.c, r = c.tyreRadius, m = c.massKg, Je = c.engineInertia;
     // job 8: AWD cars (c.awd) drive the front wheels too: their inertia turns with the driven wheels (Jw), not with the body
     var mEff = c.awd ? m : m + c.wheelInertiaFront / (r * r);
@@ -9637,7 +9903,82 @@ var Physics = (function () {
     }
   };
 
+
+  // Generic EV longitudinal step. Present only when c.trans === 'ev'; ICE cars never enter this function.
+  // Dual-motor AWD, single-speed reductions, regen on lift, reverse limited, AVAS flag for the sound model.
+  Vehicle.prototype.stepEv = function (dt, inp) {
+    var c = this.c, ev = c.ev || {}, G0 = 9.81, RHO = 1.2;
+    var rF = c.tyreRadiusFront || c.tyreRadius, rR = c.tyreRadius;
+    var ratioF = ev.ratioFront || c.finalDrive, ratioR = ev.ratioRear || c.finalDrive;
+    var m = c.massKg, pedal = (inp.throttle < 0 ? 0 : inp.throttle > 1 ? 1 : inp.throttle);
+    var bpedal = (inp.brake < 0 ? 0 : inp.brake > 1 ? 1 : inp.brake);
+    var ready = this.engine === 'running';
+    var range = this.range || 'P';
+    this.time += dt;
+
+    var dir = range === 'R' ? -1 : 1;
+    var drive = ready && (range === 'D' || range === 'R');
+    var tqCmd = 0;
+    if (drive && pedal > 0.02) tqCmd = pedal;
+    else if (drive && pedal <= 0.02 && Math.abs(this.v) > 0.4) tqCmd = -(ev.regen !== undefined ? ev.regen : 0.35);
+
+    function limited(Tpeak, Pmax, wMot, cmd) {
+      var T = Tpeak * cmd, w = Math.abs(wMot) < 1 ? 1 : Math.abs(wMot), TmaxP = Pmax / w;
+      if (T > TmaxP) T = TmaxP; else if (T < -TmaxP) T = -TmaxP;
+      return T;
+    }
+    var wF = this.v / rF * ratioF, wR = this.v / rR * ratioR;
+    var TF = drive ? limited(c.torqueFront || 400, c.powerFrontW || 243000, wF, tqCmd) : 0;
+    var TR = drive ? limited(c.torqueRear || 400, c.powerRearW || 248000, wR, tqCmd) : 0;
+    var eff = c.drivelineEff || 0.95;
+    var Fdrv = (TF * ratioF / rF + TR * ratioR / rR) * eff * dir;
+    var spd = Math.abs(this.v);
+    var Fdrag = 0;
+    if (spd > 0.02) {
+      var sign = this.v >= 0 ? 1 : -1;
+      Fdrag = -sign * ((c.crr || 0.008) * m * G0 + 0.5 * RHO * (c.cd || 0.24) * (c.area || 2.6) * this.v * this.v);
+    }
+    var Fb = 0;
+    if (bpedal > 0 && spd > 0.05) Fb = -(this.v >= 0 ? 1 : -1) * bpedal * (c.brakes && c.brakes.capG ? c.brakes.capG : 1) * m * G0 * 0.85;
+
+    if (range === 'P' && spd < 0.6) {
+      this.v = 0; this.a = 0; Fdrv = 0; TF = 0; TR = 0; tqCmd = 0;
+    } else {
+      this.a = (Fdrv + Fdrag + Fb) / m;
+      this.v += this.a * dt;
+      var revLim = (ev.reverseKmh || 24) / 3.6;
+      if (range === 'R' && this.v < -revLim) { this.v = -revLim; if (this.a < 0) this.a = 0; }
+      if (range === 'D' && this.v < 0) { this.v = 0; if (this.a < 0) this.a = 0; }
+      if (range === 'R' && this.v > 0) { this.v = 0; if (this.a > 0) this.a = 0; }
+    }
+
+    this.ww = Math.abs(this.v) / rR;
+    this.we = Math.abs(this.v) / rR * ratioR;          // rear motor rad/s, for the tach
+    this.rpmF = (this.v / rF) * ratioF * (60 / (2 * Math.PI));
+    this.rpmR = (this.v / rR) * ratioR * (60 / (2 * Math.PI));
+    this.Te = TF + TR;
+    if (!this.TeRef) this.TeRef = (c.torqueFront || 400) + (c.torqueRear || 400);
+    this.soundThr = ready ? Math.abs(tqCmd) : 0;
+    this.tqSign = tqCmd;
+    this.regenOn = tqCmd < 0;
+    var kmh = Math.abs(this.v) * 3.6;
+    this.avas = !!(ready && range !== 'P' && (kmh < (ev.avasOffKmh || 32) || range === 'R'));
+    this.avasLevel = this.avas ? Math.min(1, 0.25 + kmh / 32) : 0;
+
+    this.odo += Math.abs(this.v) * dt;
+    this.trip += Math.abs(this.v) * dt;
+    this.angF += (this.v / rF) * dt;
+    this.angR += (this.v / rR) * dt;
+    this.wWF = this.v / rF;
+    this.wW = this.v / rR;
+    this.Tf = this.Tf || 25; this.Tr = this.Tr || 25;
+    this.fadeF = 1; this.fadeR = 1;
+    this.skid = 0;
+    this.tyre = 'roll';
+  };
+
   Vehicle.prototype.gearLabel = function () {
+    if (this.c.trans === 'ev') return this.range || 'P';
     if (this.c.trans === 'auto') return this.range === 'N' ? 'N' : this.range + this.gear;
     return this.gear === 0 ? 'N' : String(this.gear);
   };
@@ -10462,7 +10803,33 @@ var EngineParams = (function () {
   }
 
   /** engineKey 'BRM' | 'GT350' | 'CADDY' | 'P997' | 'BEETLE', soundId = the sound model now playing for that car */
-  function forCar(engineKey, soundId, variant) { return engineKey === 'BRM' ? brm(soundId) : engineKey === 'P997' ? p997(soundId) : engineKey === 'BEETLE' ? beetle(soundId) : v8(engineKey, soundId); }
+
+  function modelx(soundId) {
+    var P = {
+      car: 'modelx', ev: true, label: '2023 Tesla Model X Long Range Dual Motor', kernel: soundId || 'v1',
+      fit: 'Sound v1 · Model X',
+      nCyl: 0, vAngle: 0, bore: 0, stroke: 0, conrod: 0, cr: 1, idle: 0, redline: 16000,
+      fireDeg: [], firingOrder: [], bank: [], x: [0],
+      evMotors: {
+        front: { ratio: 7.56, x: 3.55, y: 0.32, z: 0, radius: 0.13, length: 0.28 }, // ESTIMATE placement / size
+        rear:  { ratio: 9.04, x: 0.85, y: 0.28, z: 0, radius: 0.13, length: 0.28 }
+      },
+      evPack: { x: 2.20, y: 0.12, z: 0, w: 1.50, h: 0.12, l: 2.40 }, // ESTIMATE floor slab
+      evFrunk: { x: 4.35, y: 0.55, z: 0, w: 0.90, h: 0.28, l: 0.70 }, // ESTIMATE tub
+      notes: [],
+      parts: {
+        block: false, pistons: false, rods: false, crank: false, valvesEx: false, valvesIn: false, cams: false,
+        stubs: false, headers: false, collector: false, crossover: false, blower: false, centreGear: false,
+        starter: false, fan: false, charging: false, carb: false, glow: false,
+        evMotors: true, evGears: true, evInverters: true, evFrunk: true, evPack: true, bay: true, ancillaries: false
+      }
+    };
+    note(P, 'layout', 'Dual Motor AWD: one PMSM front at 7.56:1 and one rear at 9.04:1 (sourced ratios). Not Plaid (no twin rear motors).', false);
+    note(P, 'teeth', 'Gear tooth counts are ESTIMATES whose products match the official ratios (front 21/9 × 81/25, rear 23/8 × 66/21).', true);
+    note(P, 'pack', '407 V structural underfloor pack is drawn as a generic slab; capacity kWh is missing as a factory figure.', true);
+    return P;
+  }
+  function forCar(engineKey, soundId, variant) { return engineKey === 'BRM' ? brm(soundId) : engineKey === 'P997' ? p997(soundId) : engineKey === 'BEETLE' ? beetle(soundId) : engineKey === 'MODELX' ? modelx(soundId) : v8(engineKey, soundId); }
   /** kinematics shared by the bay and the tests: piston pin distance from the crank axis at local angle phi (deg after firing TDC) */
   function pinDist(P, phi) { var r = 0.5 * P.stroke, a = phi * Math.PI / 180, s = Math.sin(a); return r * Math.cos(a) + Math.sqrt(P.conrod * P.conrod - r * r * s * s); }
   /** valve lift (m) of event V at the cylinder's local angle a (deg after its firing TDC, 0..720): the kernel's law sin(pi x)^camx */
@@ -10605,6 +10972,7 @@ var EngineBay = (function () {
 
   // ---------------------------------------------------------------- build the bay for one parameter set
   function build(P, lite) {
+    if (P.ev) return buildEv(P, lite);
     var M = st.M, g = new T.Group(), up = {}, parts = Object.assign({}, P.parts, opt.over[P.car] || {}), segs = lite ? 12 : 20, i, c;
     var N = P.nCyl, r = 0.5 * P.stroke, l = P.conrod, b = P.bore, H = P.crankHeight, C0 = v3(0, H, 0);
     var hc = 0.5 * b, hp = 0.8 * b, hClear = P.stroke / (P.cr - 1);   // compression height, piston length (assumed); chamber height from CR
@@ -11169,7 +11537,125 @@ var EngineBay = (function () {
 
   // ---------------------------------------------------------------- per-frame kinematics
   var tmpM = null, tmpQ = null, tmpV = null, tmpV2 = null, ONE = null;
+
+  // Generic EV bay: two PMSM + reduction units, inverters, frunk tub, floor pack. ICE parts off.
+  // Lite mode: fewer gear teeth (plain discs past a small count), no winding detail.
+  function motorMesh(radius, length, segs) {
+    return new T.CylinderGeometry(radius, radius, length, segs, 1, false);
+  }
+  function buildEv(P, lite) {
+    var M = st.M, g = new T.Group(), up = {}, parts = Object.assign({}, P.parts, opt.over[P.car] || {}), segs = lite ? 10 : 20;
+    up.P = P; up.parts = parts; up.lite = lite; up.pop = []; up.lastAb = [];
+    var fl = new T.Mesh(new T.PlaneGeometry(5.4, 2.4), M.floor); fl.rotation.x = -Math.PI / 2; fl.position.set(2.2, 0, 0); g.add(fl);
+    var gl = [], i;
+    for (i = -27; i <= 27; i++) gl.push(boxAt(0.003, 0.001, 2.4, 2.2 + i * 0.1, 0.001, 0));
+    for (i = -12; i <= 12; i++) gl.push(boxAt(5.4, 0.001, 0.003, 2.2, 0.001, i * 0.1));
+    g.add(new T.Mesh(merge(gl), new T.MeshBasicMaterial({ color: 0x3d342c })));
+    var L = function (c, o) { return new T.MeshLambertMaterial(Object.assign({ color: c }, o || {})); };
+    var matPack = L(0x3a3e44), matPackTop = L(0x4a5058), matAlu = L(0xc5c8ce), matSteel = M.steel;
+    var matDark = L(0x2a2c30), matHv = L(0xe25822), matFrunk = L(0x2c3036), matCool = L(0x7a1a1a);
+    var matHose = M.hose || matDark, matChrome = M.chrome || matAlu;
+    function cylZ(rr, len, x, y, z, s) { var c = cyl(rr, rr, len, s || segs); c.rotateX(Math.PI / 2); c.translate(x, y, z); return c; }
+    function cylX(rr, len, x, y, z, s) { var c = cyl(rr, rr, len, s || segs); c.rotateZ(Math.PI / 2); c.translate(x, y, z); return c; }
+    // side rails of a generic subframe, so the pack and motors sit in a chassis
+    if (parts.bay !== false) {
+      g.add(new T.Mesh(boxAt(5.0, 0.05, 0.06, 2.2, 0.06, 0.78), matSteel));
+      g.add(new T.Mesh(boxAt(5.0, 0.05, 0.06, 2.2, 0.06, -0.78), matSteel));
+    }
+    function addMotor(spec, name) {
+      var grp = new T.Group(); grp.position.set(spec.x, spec.y, spec.z); g.add(grp);
+      var caseG = motorMesh(spec.radius, spec.length, segs); caseG.rotateZ(Math.PI / 2);
+      grp.add(new T.Mesh(caseG, matAlu));
+      // cooling jacket rings
+      var j1 = cyl(spec.radius + 0.012, spec.radius + 0.012, 0.03, segs); j1.rotateZ(Math.PI / 2); j1.translate(-spec.length * 0.25, 0, 0);
+      var j2 = cyl(spec.radius + 0.012, spec.radius + 0.012, 0.03, segs); j2.rotateZ(Math.PI / 2); j2.translate(spec.length * 0.25, 0, 0);
+      grp.add(new T.Mesh(j1, matCool)); grp.add(new T.Mesh(j2, matCool));
+      var cap0 = cyl(spec.radius * 0.7, spec.radius * 0.7, 0.02, segs); cap0.rotateZ(Math.PI / 2); cap0.translate(-spec.length * 0.52, 0, 0);
+      var cap1 = cyl(spec.radius * 0.7, spec.radius * 0.7, 0.02, segs); cap1.rotateZ(Math.PI / 2); cap1.translate(spec.length * 0.52, 0, 0);
+      grp.add(new T.Mesh(cap0, matSteel)); grp.add(new T.Mesh(cap1, matSteel));
+      var rotorG = motorMesh(spec.radius * 0.55, spec.length * 0.8, lite ? 8 : 14); rotorG.rotateZ(Math.PI / 2);
+      var rotor = new T.Mesh(rotorG, matChrome); grp.add(rotor);
+      // reduction housing (snail / offset gearbox)
+      var house = boxAt(0.24, 0.22, 0.32, spec.length * 0.55, -0.02, 0);
+      grp.add(new T.Mesh(house, matDark));
+      var teeth = lite ? 0 : 16;
+      var gear = new T.Mesh(new T.CylinderGeometry(0.09, 0.09, 0.04, teeth > 0 ? teeth : 12, 1), matAlu);
+      gear.rotation.z = Math.PI / 2; gear.position.x = spec.length * 0.55; grp.add(gear);
+      // half-shafts out to both sides
+      grp.add(new T.Mesh(cylZ(0.018, 0.70, spec.length * 0.55, 0, 0, 10), matSteel));
+      return { group: grp, rotor: rotor, gear: gear, ratio: spec.ratio };
+    }
+    up.motors = [];
+    if (parts.evMotors) {
+      up.motors.push(addMotor(P.evMotors.front, 'front'));
+      up.motors.push(addMotor(P.evMotors.rear, 'rear'));
+    }
+    if (parts.evInverters) {
+      function inverter(spec, dx) {
+        var x = spec.x + dx, y = spec.y + spec.radius + 0.12, z = spec.z;
+        g.add(new T.Mesh(boxAt(0.28, 0.08, 0.20, x, y, z), matAlu));
+        // cooling fins
+        var fins = [], k, nF = lite ? 4 : 8;
+        for (k = 0; k < nF; k++) fins.push(boxAt(0.26, 0.06, 0.008, x, y + 0.06, z - 0.08 + k * (0.16 / Math.max(1, nF - 1))));
+        g.add(new T.Mesh(merge(fins), matSteel));
+        // orange HV cable down to the pack
+        var cable = new T.Mesh(cyl(0.012, 0.012, Math.max(0.08, y - 0.18), 8), matHv); cable.position.set(x, (y + 0.12) / 2, z); g.add(cable);
+      }
+      inverter(P.evMotors.front, 0.05);
+      inverter(P.evMotors.rear, 0.05);
+    }
+    if (parts.evPack && P.evPack) {
+      var pk = P.evPack;
+      g.add(new T.Mesh(boxAt(pk.l, pk.h, pk.w, pk.x, pk.y, pk.z), matPack));
+      g.add(new T.Mesh(boxAt(pk.l * 0.96, 0.015, pk.w * 0.96, pk.x, pk.y + pk.h / 2, pk.z), matPackTop));
+      // module grid on the top cover
+      var mods = [], mx, mz, nx = lite ? 4 : 8, nz = lite ? 3 : 5;
+      for (mx = 0; mx < nx; mx++) for (mz = 0; mz < nz; mz++) {
+        var gx = pk.x - pk.l * 0.4 + mx * (pk.l * 0.8 / Math.max(1, nx - 1));
+        var gz = pk.z - pk.w * 0.35 + mz * (pk.w * 0.7 / Math.max(1, nz - 1));
+        mods.push(boxAt(pk.l * 0.08, 0.01, pk.w * 0.10, gx, pk.y + pk.h / 2 + 0.01, gz));
+      }
+      if (mods.length) g.add(new T.Mesh(merge(mods), matDark));
+      // cooling tubes along the long edges + an orange HV junction at the front of the pack
+      g.add(new T.Mesh(cylX(0.015, pk.l * 0.9, pk.x, pk.y + pk.h * 0.3, pk.z + pk.w * 0.48, 8), matCool));
+      g.add(new T.Mesh(cylX(0.015, pk.l * 0.9, pk.x, pk.y + pk.h * 0.3, pk.z - pk.w * 0.48, 8), matCool));
+      g.add(new T.Mesh(boxAt(0.10, 0.06, 0.10, pk.x + pk.l * 0.48, pk.y + pk.h * 0.6, pk.z), matHv));
+    }
+    if (parts.evFrunk && P.evFrunk) {
+      var fr = P.evFrunk;
+      // recognisable front-trunk tub at the FRONT: floor, four walls, a lid rim
+      g.add(new T.Mesh(boxAt(fr.l, 0.02, fr.w, fr.x, fr.y, fr.z), matFrunk));
+      g.add(new T.Mesh(boxAt(fr.l, fr.h, 0.025, fr.x, fr.y + fr.h / 2, fr.z + fr.w / 2), matFrunk));
+      g.add(new T.Mesh(boxAt(fr.l, fr.h, 0.025, fr.x, fr.y + fr.h / 2, fr.z - fr.w / 2), matFrunk));
+      g.add(new T.Mesh(boxAt(0.025, fr.h, fr.w, fr.x + fr.l / 2, fr.y + fr.h / 2, fr.z), matFrunk));
+      g.add(new T.Mesh(boxAt(0.025, fr.h, fr.w, fr.x - fr.l / 2, fr.y + fr.h / 2, fr.z), matFrunk));
+      // lid rim
+      g.add(new T.Mesh(boxAt(fr.l + 0.04, 0.02, 0.04, fr.x, fr.y + fr.h, fr.z + fr.w / 2), matAlu));
+      g.add(new T.Mesh(boxAt(fr.l + 0.04, 0.02, 0.04, fr.x, fr.y + fr.h, fr.z - fr.w / 2), matAlu));
+      g.add(new T.Mesh(boxAt(0.04, 0.02, fr.w + 0.04, fr.x + fr.l / 2, fr.y + fr.h, fr.z), matAlu));
+      g.add(new T.Mesh(boxAt(0.04, 0.02, fr.w + 0.04, fr.x - fr.l / 2, fr.y + fr.h, fr.z), matAlu));
+      // washer bottle in a front corner
+      var bot = cyl(0.07, 0.05, 0.16, segs); bot.translate(fr.x + fr.l * 0.25, fr.y + 0.10, fr.z + fr.w * 0.28);
+      g.add(new T.Mesh(bot, matAlu));
+    }
+    up.center = v3(2.2, 0.45, 0);
+    up.size = 2.4;
+    return { group: g, up: up };
+  }
+  function animateEv(up, th, thUn, info) {
+    if (!up.motors) return;
+    var rpm = info && (info.rpm !== undefined) ? info.rpm : 0;
+    // thUn is integrated "crank" degrees; for EV treat it as rear-motor angle (deg)
+    var ang = (thUn || 0) * D2R;
+    for (var i = 0; i < up.motors.length; i++) {
+      var m = up.motors[i];
+      if (m.rotor) m.rotor.rotation.x = ang * (m.ratio || 1) / 9.04;
+      if (m.gear) m.gear.rotation.x = -ang * (m.ratio || 1) / 9.04 * 0.4;
+    }
+  }
+
   function animate(up, th, thUn, info) {
+    if (up.P && up.P.ev) { animateEv(up, th, thUn, info); return; }
     var P = up.P, N = P.nCyl, r = up.r, l = P.conrod, C0 = up.C0, c;
     up.crankG.rotation.x = -th * D2R;
     if (up.outGear) up.outGear.rotation.x = th * D2R;
@@ -11266,11 +11752,24 @@ var EngineBay = (function () {
     ['pointerdown', 'touchstart', 'touchmove'].forEach(function (ev) { bar.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
   }
   var PART_NAMES = { block: 'Block / heads (cutaway)', pistons: 'Pistons', rods: 'Con-rods', crank: 'Crankshaft', valvesEx: 'Exhaust valves', valvesIn: 'Intake valves', cams: 'Camshafts', stubs: 'Exhaust stubs',
-    headers: 'Headers / manifolds', collector: 'Collectors', crossover: 'H crossover', blower: 'Supercharger', centreGear: 'Centre gear (split crank)', starter: 'Starter + ring gear', fan: 'Fan', charging: 'Alternator / generator', carb: 'Carburettor + air cleaner', bay: 'Engine bay (body, radiator, battery, bracing)', ancillaries: 'Ancillaries (distributor / magnetos, pumps, valve covers, intake)', glow: 'Combustion / exhaust glow' };
+    headers: 'Headers / manifolds', collector: 'Collectors', crossover: 'H crossover', blower: 'Supercharger', centreGear: 'Centre gear (split crank)', starter: 'Starter + ring gear', fan: 'Fan', charging: 'Alternator / generator', carb: 'Carburettor + air cleaner', bay: 'Engine bay (body, radiator, battery, bracing)', ancillaries: 'Ancillaries (distributor / magnetos, pumps, valve covers, intake)', glow: 'Combustion / exhaust glow', evMotors: 'Drive motors', evGears: 'Reduction gears', evInverters: 'Inverters', evFrunk: 'Front trunk', evPack: 'Floor battery pack' };
   function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
   function panel() {
     var P = st.bay && st.bay.up.P, el = document.getElementById('bayPanel'); if (!P) return;
     var base = P.parts, cur = Object.assign({}, base, opt.over[P.car] || {}), mm = function (v) { return (v * 1000).toFixed(1) + ' mm'; };
+    if (P.ev) {
+      var hE = '<b>' + esc(P.label) + '</b> <span class="dim">(' + esc(P.kernel) + ')</span><div class="bayParams">' +
+        'Dual Motor AWD · front ratio ' + (P.evMotors.front.ratio) + ':1 · rear ratio ' + (P.evMotors.rear.ratio) + ':1<br>' +
+        'ICE parts off. Motors, reductions, inverters, frunk and pack are generic EV blocks.</div><div class="bayToggles">';
+      Object.keys(PART_NAMES).forEach(function (k) {
+        var has = !!base[k];
+        hE += '<label class="' + (has ? '' : 'na') + '"><input type="checkbox" data-part="' + k + '"' + (cur[k] && has ? ' checked' : '') + (has ? '' : ' disabled') + '> ' + PART_NAMES[k] + (has ? '' : ' (not on this car)') + '</label>';
+      });
+      hE += '</div><div class="bayNotes">' + P.notes.map(function (n) { return '<p>' + (n.assumed ? '<b>Assumed:</b> ' : '') + esc(n.text) + '</p>'; }).join('') + '</div>';
+      el.innerHTML = hE;
+      el.querySelectorAll('input[data-part]').forEach(function (cb) { cb.addEventListener('change', function () { var o = opt.over[P.car] || (opt.over[P.car] = {}); o[cb.dataset.part] = cb.checked; st.key = ''; }); });
+      return;
+    }
     var h = '<b>' + esc(P.label) + '</b> <span class="dim">(' + esc(P.kernel) + ')</span><div class="bayParams">' +
       'bore ' + mm(P.bore) + ' \u00b7 stroke ' + mm(P.stroke) + ' \u00b7 rod ' + mm(P.conrod) + ' \u00b7 CR ' + P.cr + ' (chamber ' + mm(P.stroke / (P.cr - 1)) + ')<br>' +
       P.nCyl + ' cyl, ' + (P.flat ? 'flat (boxer, 180\u00b0)' : P.vAngle + '\u00b0 V') + ', firing ' + P.firingOrder.join('-') + '<br>' +
@@ -11344,7 +11843,7 @@ var EngineBay = (function () {
     else if (k2 >= 1) { dTh = 6 * rpm * dt; st.th = th; }
     else { dTh = 6 * rpm * k2 * dt; st.th = pmod(st.th + dTh, 720); info.blowerDeg = null; }
     st.thUn = (st.thUn + dTh) % (720 * 1000);
-    for (var j = 0; j < up.pop.length; j++) up.pop[j] = Math.max(0, up.pop[j] - dt / 0.12);
+    if (up.pop) for (var j = 0; j < up.pop.length; j++) up.pop[j] = Math.max(0, up.pop[j] - dt / 0.12);
     // canvas over the picture area, size, pixel ratio
     var d = st.dash.cv, cv = st.cv;
     cv.style.top = d.offsetTop + 'px'; cv.style.left = d.offsetLeft + 'px'; cv.style.width = d.offsetWidth + 'px'; cv.style.height = d.offsetHeight + 'px'; cv.style.display = 'block';
@@ -11396,11 +11895,11 @@ var EngineBay = (function () {
 </script>
 <script>/* js/flat-assets.js */
 /* flat-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v4 flat; interior = v2 composition). The single-file build inlines these as data URIs. */
-var FLAT_ASSETS = {"meta": {"style": "flat", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -1.2]}}, "caddy": {"axisX": 518, "hub": [546, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [0.5, -2.0]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [767, 518], "bodyX": [6, 760], "contactY": 511, "splitY": 145, "realW": 1.55, "lamps": [], "tips": [[177, 160, 33], [185, 242, 36], [592, 154, 34], [584, 236, 37]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 666], "bodyX": [4, 934], "contactY": 661, "splitY": 517, "realW": 1.852, "lamps": [[47, 306, 186, 78], [704, 306, 189, 78], [235, 340, 468, 37]], "tips": [[196, 577, 22], [245, 577, 22], [693, 577, 22], [742, 577, 22]], "dist": 4.6, "len": 4.427}, "beetle": {"px": [815, 780], "bodyX": [4, 810], "contactY": 775, "splitY": 660, "realW": 1.54, "lamps": [[88, 482, 35, 59], [690, 482, 36, 59]], "tips": [[309, 693, 12], [498, 693, 12]], "dist": 4.4, "len": 4.07}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 75, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[186, 320, 58], [1058, 320, 58]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.743, 0.78], "wheel": {"px": 1020, "logical": 510.0, "boss": [2.2, 5.0]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [0.2, 11.5]}}, "beetle": {"axisX": 446, "hub": [446, 462], "wheelR": 250, "view": {"hz": 120, "f": 1000, "camH": 1.1, "roadHalf": 3.4, "off": 0.32}, "mirror": [652, 67, 155, 45], "side": [[0, 20], [130, 24], [155, 200], [90, 430], [0, 450]], "shifter": [620, 520, 80, 180], "shiftPattern": "h4", "shiftPivot": [0.5, 0.86], "gauges": {"speedo": [442, 371, 42]}, "wheel": {"px": 1100, "logical": 520, "boss": [0, 2]}}}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp", "brm-cockpit": "assets/flat/brm-cockpit.webp", "brm-rear": "assets/flat/brm-rear.webp", "brm-wheel": "assets/flat/brm-wheel.webp", "brm-wheel-shadow": "assets/flat/brm-wheel-shadow.webp", "brm-shifter": "assets/flat/brm-shifter.webp", "p997-cockpit": "assets/flat/p997-cockpit.webp", "p997-rear": "assets/flat/p997-rear.webp", "p997-wheel": "assets/flat/p997-wheel.webp", "p997-wheel-shadow": "assets/flat/p997-wheel-shadow.webp", "p997-shifter": "assets/flat/p997-shifter.webp", "beetle-cockpit": "assets/flat/beetle-cockpit.webp", "beetle-rear": "assets/flat/beetle-rear.webp", "beetle-wheel": "assets/flat/beetle-wheel.webp", "beetle-wheel-shadow": "assets/flat/beetle-wheel-shadow.webp", "beetle-shifter": "assets/flat/beetle-shifter.webp"}};
+var FLAT_ASSETS = {"meta": {"style": "flat", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -1.2]}}, "caddy": {"axisX": 518, "hub": [546, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [0.5, -2.0]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 672], "bodyX": [6, 923], "contactY": 665, "splitY": 527, "realW": 1.73, "lamps": [[78, 372, 55, 55], [145, 372, 53, 55], [210, 372, 54, 55], [667, 374, 55, 53], [734, 375, 52, 53], [799, 375, 52, 53]], "tips": [[201, 579, 20], [727, 580, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [993, 642], "bodyX": [6, 986], "contactY": 635, "splitY": 534, "realW": 2.03, "lamps": [[73, 172, 36, 91], [884, 172, 37, 93], [33, 328, 30, 26], [86, 329, 26, 26], [877, 328, 32, 27], [931, 328, 30, 28]], "tips": [[70, 484, 24], [924, 485, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [767, 518], "bodyX": [6, 760], "contactY": 511, "splitY": 145, "realW": 1.55, "lamps": [], "tips": [[177, 160, 33], [185, 242, 36], [592, 154, 34], [584, 236, 37]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 666], "bodyX": [4, 934], "contactY": 661, "splitY": 517, "realW": 1.852, "lamps": [[47, 306, 186, 78], [704, 306, 189, 78], [235, 340, 468, 37]], "tips": [[196, 577, 22], [245, 577, 22], [693, 577, 22], [742, 577, 22]], "dist": 4.6, "len": 4.427}, "beetle": {"px": [815, 780], "bodyX": [4, 810], "contactY": 775, "splitY": 660, "realW": 1.54, "lamps": [[88, 482, 35, 59], [690, 482, 36, 59]], "tips": [[309, 693, 12], [498, 693, 12]], "dist": 4.4, "len": 4.07}, "modelx": {"px": [1000, 820], "bodyX": [28, 972], "contactY": 800, "splitY": 428, "realW": 1.999, "lamps": [[95, 428, 810, 42]], "tips": [], "dist": 5.5, "len": 5.057}}, "props": [{"k": "sage", "r": [0, 88, 287, 237], "h": 0.9}, {"k": "creosote", "r": [291, 87, 356, 238], "h": 1.1}, {"k": "grass", "r": [651, 195, 158, 130], "h": 0.35}, {"k": "yucca", "r": [813, 0, 202, 325], "h": 1.6}, {"k": "fencepost", "r": [1019, 1, 73, 324], "h": 1.2}, {"k": "delineator", "r": [1096, 0, 62, 325], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 75, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[186, 320, 58], [1058, 320, 58]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.743, 0.78], "wheel": {"px": 1020, "logical": 510.0, "boss": [2.2, 5.0]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [0.2, 11.5]}}, "beetle": {"axisX": 446, "hub": [446, 462], "wheelR": 250, "view": {"hz": 120, "f": 1000, "camH": 1.1, "roadHalf": 3.4, "off": 0.32}, "mirror": [652, 67, 155, 45], "side": [[0, 20], [130, 24], [155, 200], [90, 430], [0, 450]], "shifter": [620, 520, 80, 180], "shiftPattern": "h4", "shiftPivot": [0.5, 0.86], "gauges": {"speedo": [442, 371, 42]}, "wheel": {"px": 1100, "logical": 520, "boss": [0, 2]}}, "modelx": {"axisX": 520, "hub": [520, 470], "wheelR": 250, "view": {"hz": 95, "f": 1000, "camH": 1.28, "roadHalf": 3.4, "off": 0.32}, "mirror": [590, 35, 120, 40], "side": [[0, 20], [170, 40], [200, 280], [80, 520], [0, 540]], "cluster": [430, 355, 320, 95], "screen": [760, 350, 370, 210], "wheel": {"px": 1100, "logical": 520, "boss": [0, 8]}}}, "files": {"caddy-cockpit": "assets/flat/caddy-cockpit.webp", "caddy-lever": "assets/flat/caddy-lever.webp", "caddy-rear": "assets/flat/caddy-rear.webp", "caddy-wheel-shadow": "assets/flat/caddy-wheel-shadow.webp", "caddy-wheel": "assets/flat/caddy-wheel.webp", "desert-backdrop": "assets/flat/desert-backdrop.jpg", "desert-props": "assets/flat/desert-props.webp", "gt350-cockpit": "assets/flat/gt350-cockpit.webp", "gt350-rear": "assets/flat/gt350-rear.webp", "gt350-shifter": "assets/flat/gt350-shifter.webp", "gt350-wheel-shadow": "assets/flat/gt350-wheel-shadow.webp", "gt350-wheel": "assets/flat/gt350-wheel.webp", "brm-cockpit": "assets/flat/brm-cockpit.webp", "brm-rear": "assets/flat/brm-rear.webp", "brm-wheel": "assets/flat/brm-wheel.webp", "brm-wheel-shadow": "assets/flat/brm-wheel-shadow.webp", "brm-shifter": "assets/flat/brm-shifter.webp", "p997-cockpit": "assets/flat/p997-cockpit.webp", "p997-rear": "assets/flat/p997-rear.webp", "p997-wheel": "assets/flat/p997-wheel.webp", "p997-wheel-shadow": "assets/flat/p997-wheel-shadow.webp", "p997-shifter": "assets/flat/p997-shifter.webp", "beetle-cockpit": "assets/flat/beetle-cockpit.webp", "beetle-rear": "assets/flat/beetle-rear.webp", "beetle-wheel": "assets/flat/beetle-wheel.webp", "beetle-wheel-shadow": "assets/flat/beetle-wheel-shadow.webp", "beetle-shifter": "assets/flat/beetle-shifter.webp", "modelx-cockpit": "assets/flat/modelx-cockpit.webp", "modelx-rear": "assets/flat/modelx-rear.webp", "modelx-rear-open": "assets/flat/modelx-rear-open.webp", "modelx-wheel": "assets/flat/modelx-wheel.webp", "modelx-wheel-shadow": "assets/flat/modelx-wheel-shadow.webp"}};
 </script>
 <script>/* js/ink-assets.js */
 /* ink-assets.js: generated by proposals/visuals-v5/build-v17.py (Visuals v5 ink; interior = v2 composition). The single-file build inlines these as data URIs. */
-var INK_ASSETS = {"meta": {"style": "ink", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -0.6]}}, "caddy": {"axisX": 518, "hub": [547, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [1.2, -3.6]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [776, 553], "bodyX": [6, 769], "contactY": 546, "splitY": 175, "realW": 1.55, "lamps": [], "tips": [[187, 193, 38], [195, 275, 42], [595, 189, 37], [587, 271, 41]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 653], "bodyX": [4, 935], "contactY": 648, "splitY": 507, "realW": 1.852, "lamps": [[48, 290, 184, 73], [707, 290, 187, 73], [234, 328, 468, 36]], "tips": [[190, 567, 21], [237, 567, 21], [697, 567, 21], [745, 567, 21]], "dist": 4.6, "len": 4.427}, "beetle": {"px": [827, 780], "bodyX": [4, 822], "contactY": 775, "splitY": 700, "realW": 1.54, "lamps": [[92, 488, 34, 50], [703, 488, 34, 50]], "tips": [[310, 686, 11], [514, 686, 11]], "dist": 4.4, "len": 4.07}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 74, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[204, 317, 56], [1068, 318, 54]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.737, 0.78], "wheel": {"px": 1018, "logical": 509.0, "boss": [0.3, 4.9]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [1.0, 11.5]}}, "beetle": {"axisX": 430, "hub": [430, 450], "wheelR": 250, "view": {"hz": 120, "f": 1000, "camH": 1.1, "roadHalf": 3.4, "off": 0.32}, "mirror": [595, 66, 148, 49], "side": [[0, 30], [140, 40], [155, 210], [70, 400], [0, 420]], "shifter": [630, 530, 80, 175], "shiftPattern": "h4", "shiftPivot": [0.5, 0.86], "gauges": {"speedo": [441, 376, 44]}, "wheel": {"px": 1100, "logical": 520, "boss": [0, 2]}}}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp", "brm-cockpit": "assets/ink/brm-cockpit.webp", "brm-rear": "assets/ink/brm-rear.webp", "brm-wheel": "assets/ink/brm-wheel.webp", "brm-wheel-shadow": "assets/ink/brm-wheel-shadow.webp", "brm-shifter": "assets/ink/brm-shifter.webp", "p997-cockpit": "assets/ink/p997-cockpit.webp", "p997-rear": "assets/ink/p997-rear.webp", "p997-wheel": "assets/ink/p997-wheel.webp", "p997-wheel-shadow": "assets/ink/p997-wheel-shadow.webp", "p997-shifter": "assets/ink/p997-shifter.webp", "beetle-cockpit": "assets/ink/beetle-cockpit.webp", "beetle-rear": "assets/ink/beetle-rear.webp", "beetle-wheel": "assets/ink/beetle-wheel.webp", "beetle-wheel-shadow": "assets/ink/beetle-wheel-shadow.webp", "beetle-shifter": "assets/ink/beetle-shifter.webp"}};
+var INK_ASSETS = {"meta": {"style": "ink", "gt350": {"axisX": 555, "hub": [554, 494], "wheelR": 258.6, "view": {"hz": 97, "f": 1004.6, "camH": 1.15, "roadHalf": 3.4}, "mirror": [678, 62, 218, 49], "side": [[0, 19], [146, 19], [146, 396], [0, 396]], "shifter": [792, 554, 128, 108], "gauges": {"speedo": [485, 385, 47], "tach": [625, 385, 47]}, "radioDial": [788, 404, 80, 22], "under": {"oil": [830, 507, 17], "amps": [883, 507, 17]}, "badge": [1026, 410, 128, 18], "wheel": {"px": 1055, "logical": 527.5, "boss": [0, -0.6]}}, "caddy": {"axisX": 518, "hub": [547, 545], "wheelR": 301.7, "view": {"hz": 148, "f": 1004.6, "camH": 1.2, "roadHalf": 3.4}, "mirror": [852, 78, 301, 64], "side": [[0, 30], [55, 32], [73, 55], [60, 200], [42, 300], [30, 375], [0, 380]], "ribbon": [333, 368, 441, 76], "prndsl": [506, 452, 96, 20], "radioDial": [907, 455, 121, 20], "plate": [1032, 437, 92, 46], "gauges": {"fuel": [263, 560, 22], "clock": [816, 564, 22]}, "lever": {"rect": [598, 490, 207, 78], "pivot": [620, 550]}, "wheel": {"px": 1231, "logical": 615.5, "boss": [1.2, -3.6]}}, "backdrop": {"w": 1280, "h": 720, "hz": 319, "vx": 640, "roadHalfPx": 625, "bottomPx": 401}, "exterior": {"view": {"hz": 238, "f": 1000, "vx": 640}, "gt350": {"px": [930, 673], "bodyX": [6, 923], "contactY": 666, "splitY": 526, "realW": 1.73, "lamps": [[78, 371, 55, 55], [145, 371, 53, 55], [210, 371, 54, 55], [667, 373, 55, 53], [734, 374, 52, 53], [799, 374, 52, 53]], "tips": [[201, 578, 20], [727, 579, 20]], "dist": 4.6, "len": 4.6}, "caddy": {"px": [997, 642], "bodyX": [6, 990], "contactY": 635, "splitY": 533, "realW": 2.03, "lamps": [[75, 171, 36, 91], [886, 171, 37, 93], [35, 327, 30, 26], [88, 328, 26, 26], [879, 327, 32, 27], [933, 327, 30, 28]], "tips": [[72, 483, 24], [926, 484, 24]], "dist": 5.2, "len": 5.71}, "brm": {"px": [776, 553], "bodyX": [6, 769], "contactY": 546, "splitY": 175, "realW": 1.55, "lamps": [], "tips": [[187, 193, 38], [195, 275, 42], [595, 189, 37], [587, 271, 41]], "dist": 4.8, "len": 4.01}, "p997": {"px": [940, 653], "bodyX": [4, 935], "contactY": 648, "splitY": 507, "realW": 1.852, "lamps": [[48, 290, 184, 73], [707, 290, 187, 73], [234, 328, 468, 36]], "tips": [[190, 567, 21], [237, 567, 21], [697, 567, 21], [745, 567, 21]], "dist": 4.6, "len": 4.427}, "beetle": {"px": [827, 780], "bodyX": [4, 822], "contactY": 775, "splitY": 700, "realW": 1.54, "lamps": [[92, 488, 34, 50], [703, 488, 34, 50]], "tips": [[310, 686, 11], [514, 686, 11]], "dist": 4.4, "len": 4.07}, "modelx": {"px": [1000, 820], "bodyX": [28, 972], "contactY": 800, "splitY": 428, "realW": 1.999, "lamps": [[95, 428, 810, 42]], "tips": [], "dist": 5.5, "len": 5.057}}, "props": [{"k": "sage", "r": [0, 100, 305, 230], "h": 0.9}, {"k": "creosote", "r": [309, 95, 359, 235], "h": 1.1}, {"k": "grass", "r": [672, 199, 149, 131], "h": 0.35}, {"k": "yucca", "r": [825, 3, 222, 327], "h": 1.6}, {"k": "fencepost", "r": [1051, 1, 75, 329], "h": 1.2}, {"k": "delineator", "r": [1130, 0, 65, 330], "h": 1.0}], "brm": {"axisX": 640, "hub": [696, 540], "wheelR": 250, "view": {"hz": 74, "f": 1100, "camH": 0.9, "roadHalf": 3.4, "off": 0}, "mirror": null, "side": null, "stalks": [[204, 317, 56], [1068, 318, 54]], "ribbon": [544, 286, 192, 54], "ribbonSpan": [568, 744], "gauges": {"water": [449, 325, 32], "oil": [835, 326, 32]}, "shifter": [875, 563, 61, 96], "shiftPattern": "h5", "shiftPivot": [0.737, 0.78], "wheel": {"px": 1018, "logical": 509.0, "boss": [0.3, 4.9]}}, "p997": {"axisX": 462, "hub": [452, 485], "wheelR": 260, "view": {"hz": 110, "f": 1000, "camH": 1.05, "roadHalf": 3.4, "off": 0.37}, "mirror": [680, 64, 214, 46], "side": [[0, 10], [160, 10], [160, 420], [0, 420]], "shifter": [705, 562, 92, 156], "shiftPattern": "h6", "shiftPivot": [0.5, 0.86], "gauges": {"tach": [470, 362, 46], "speedo": [387, 375, 35], "display": [554, 374, 35], "oil": [324, 379, 23], "fuel": [608, 381, 23]}, "wheel": {"px": 1100, "logical": 520, "boss": [1.0, 11.5]}}, "beetle": {"axisX": 430, "hub": [430, 450], "wheelR": 250, "view": {"hz": 120, "f": 1000, "camH": 1.1, "roadHalf": 3.4, "off": 0.32}, "mirror": [595, 66, 148, 49], "side": [[0, 30], [140, 40], [155, 210], [70, 400], [0, 420]], "shifter": [630, 530, 80, 175], "shiftPattern": "h4", "shiftPivot": [0.5, 0.86], "gauges": {"speedo": [441, 376, 44]}, "wheel": {"px": 1100, "logical": 520, "boss": [0, 2]}}, "modelx": {"axisX": 520, "hub": [520, 470], "wheelR": 250, "view": {"hz": 95, "f": 1000, "camH": 1.28, "roadHalf": 3.4, "off": 0.32}, "mirror": [590, 35, 120, 40], "side": [[0, 20], [170, 40], [200, 280], [80, 520], [0, 540]], "cluster": [430, 355, 320, 95], "screen": [760, 350, 370, 210], "wheel": {"px": 1100, "logical": 520, "boss": [0, 8]}}}, "files": {"caddy-cockpit": "assets/ink/caddy-cockpit.webp", "caddy-lever": "assets/ink/caddy-lever.webp", "caddy-rear": "assets/ink/caddy-rear.webp", "caddy-wheel-shadow": "assets/ink/caddy-wheel-shadow.webp", "caddy-wheel": "assets/ink/caddy-wheel.webp", "desert-backdrop": "assets/ink/desert-backdrop.jpg", "desert-props": "assets/ink/desert-props.webp", "gt350-cockpit": "assets/ink/gt350-cockpit.webp", "gt350-rear": "assets/ink/gt350-rear.webp", "gt350-shifter": "assets/ink/gt350-shifter.webp", "gt350-wheel-shadow": "assets/ink/gt350-wheel-shadow.webp", "gt350-wheel": "assets/ink/gt350-wheel.webp", "brm-cockpit": "assets/ink/brm-cockpit.webp", "brm-rear": "assets/ink/brm-rear.webp", "brm-wheel": "assets/ink/brm-wheel.webp", "brm-wheel-shadow": "assets/ink/brm-wheel-shadow.webp", "brm-shifter": "assets/ink/brm-shifter.webp", "p997-cockpit": "assets/ink/p997-cockpit.webp", "p997-rear": "assets/ink/p997-rear.webp", "p997-wheel": "assets/ink/p997-wheel.webp", "p997-wheel-shadow": "assets/ink/p997-wheel-shadow.webp", "p997-shifter": "assets/ink/p997-shifter.webp", "beetle-cockpit": "assets/ink/beetle-cockpit.webp", "beetle-rear": "assets/ink/beetle-rear.webp", "beetle-wheel": "assets/ink/beetle-wheel.webp", "beetle-wheel-shadow": "assets/ink/beetle-wheel-shadow.webp", "beetle-shifter": "assets/ink/beetle-shifter.webp", "modelx-cockpit": "assets/ink/modelx-cockpit.webp", "modelx-rear": "assets/ink/modelx-rear.webp", "modelx-rear-open": "assets/ink/modelx-rear-open.webp", "modelx-wheel": "assets/ink/modelx-wheel.webp", "modelx-wheel-shadow": "assets/ink/modelx-wheel-shadow.webp"}};
 </script>
 <script>/* js/visuals-painted.js */
 /*
@@ -11417,9 +11916,9 @@ var PaintedVisuals = (function () {
   'use strict';
   function make(getAssets, STY) {
   var PW = 1280, PH = 720, A = null, M = null, status = 'idle', caches = {}, V16 = false;
-  function carOf(id) { return id === 'gt350' ? 'gt350' : id === 'brm' ? 'brm' : id === 'p997' ? 'p997' : id === 'beetle' ? 'beetle' : 'caddy'; }
-  function trackOf(car) { return car === 'gt350' ? 1.47 : car === 'brm' ? 1.295 : car === 'p997' ? 1.548 : car === 'beetle' ? 1.25 : 1.55; }   // 997 C4S rear track 1548 mm; Beetle 1250 mm
-  function axleOf(c, car) { return c.dist + (car === 'gt350' ? 0.9 : car === 'brm' ? 0.45 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : 1.35); }   // 997: rear overhang ~0.99 m; Beetle ~1.02 m
+  function carOf(id) { return id === 'gt350' ? 'gt350' : id === 'brm' ? 'brm' : id === 'p997' ? 'p997' : id === 'beetle' ? 'beetle' : id === 'modelx' ? 'modelx' : 'caddy'; }
+  function trackOf(car) { return car === 'gt350' ? 1.47 : car === 'brm' ? 1.295 : car === 'p997' ? 1.548 : car === 'beetle' ? 1.25 : car === 'modelx' ? 1.710 : 1.55; }   // 997 C4S rear track 1548 mm; Beetle 1250 mm; Model X rear 1710 mm
+  function axleOf(c, car) { return c.dist + (car === 'gt350' ? 0.9 : car === 'brm' ? 0.45 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : car === 'modelx' ? 1.104 : 1.35); }   // 997 ~0.99 m; Beetle ~1.02 m; Model X 1.104 m
     var T = ({
     A: { flat: true, face: '#1c2026', ink: '#f2ede1', ivory: '#efe5cc', ivInk: '#2b2520', line: null, lw: 0, needle: '#ff7a1a', cap: '#3a3f46', glass: 'flat', dash: '#f2c14e', dashLine: null, drag: '#f6f3ea',
          smoke: 'flat', lampOff: '#2a2e33', hud: { panel: 'rgba(22,26,32,0.88)', line: null, lw: 0, text: '#f4efe2', dim: '#9aa3ad', accent: '#ffb02e', bar: '#3a414a', thr: '#5cc46a', brk: '#ef5a48', font: '"Avenir Next", "Futura", "Century Gothic", "Trebuchet MS", Arial, sans-serif', r: 12, sh: 0, scale: 1 } },
@@ -11600,6 +12099,7 @@ var PaintedVisuals = (function () {
     }
     g.drawImage(A[car + '-cockpit'], 0, 0, PW, PH);
     if (V16) { cacheV16(car, s, g, m, mph, out); caches[key] = glassOf(out); return out; }
+    if (car === 'modelx') { caches[key] = glassOf(out); return out; }
     if (car === 'brm') {
       // Photo-derived cockpit already has the ribbon tach and Smiths faces painted in.
       // Only compute overlay geometry here — do not redraw the faces.
@@ -12123,6 +12623,64 @@ var PaintedVisuals = (function () {
   // painting showed (a camera behind the seat) drops out of the frame. The road camera (hz, f, camH) is unchanged.
   var BRM_DY = 130;
   function artDY(car) { var o = window.__pvOff || {}; return car === 'brm' && !o.brmDY ? (o.brmDYv !== undefined ? o.brmDYv : BRM_DY) : 0; }
+
+  // Generic digital cluster + center-screen overlay, used when a car sets m.cluster / m.screen
+  // (rectangles in painting space). First used by the Model X; any later EV can reuse it.
+  function drawEvScreens(g, s, m, running) {
+    var isMph = units(s) === 'mph', spd = Math.round(isMph ? s.kmh / 1.609344 : s.kmh);
+    var unit = isMph ? 'MPH' : 'KM/H';
+    var range = s.range || s.gearLabel || 'P';
+    var batt = 0.82; // ESTIMATE placeholder until a pack SOC model exists
+    function panel(r, radius) {
+      if (!r || r.length < 4) return null;
+      var x = r[0], y = r[1], w = r.length === 4 ? r[2] : (r[2] - r[0]), h = r.length === 4 ? r[3] : (r[3] - r[1]);
+      // cluster/screen in assets are stored as [x0,y0,x1,y1] if x1>x0+50 and we used that form;
+      // also accept [x,y,w,h]. Detect: if r[2] > 200 and r[3] > 50 and r[2] > r[0] it's x0y0x1y1 when r[2] < 2000 and r[2] > r[0] + 80
+      if (r[2] > r[0] && r[3] > r[1] && r[2] > 200) { w = r[2] - r[0]; h = r[3] - r[1]; }
+      rr(g, x, y, w, h, radius || 8); g.fillStyle = '#07090c'; g.fill();
+      if (T.line) { g.strokeStyle = T.line; g.lineWidth = T.lw * 0.6; rr(g, x, y, w, h, radius || 8); g.stroke(); }
+      return { x: x, y: y, w: w, h: h };
+    }
+    var C = m.cluster, S = m.screen;
+    if (C) {
+      var b = panel(C, 8);
+      if (b) {
+        g.fillStyle = running ? '#e8eef4' : '#6a7380';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.font = 'bold ' + Math.round(b.h * 0.46) + 'px ' + (T.hud && T.hud.font ? T.hud.font : 'sans-serif');
+        g.fillText(String(spd), b.x + b.w * 0.38, b.y + b.h * 0.48);
+        g.font = Math.round(b.h * 0.16) + 'px ' + (T.hud && T.hud.font ? T.hud.font : 'sans-serif');
+        g.fillStyle = '#9aa3ad'; g.fillText(unit, b.x + b.w * 0.38, b.y + b.h * 0.78);
+        var letters = ['P', 'R', 'N', 'D'], i, lx;
+        g.font = 'bold ' + Math.round(b.h * 0.22) + 'px ' + (T.hud && T.hud.font ? T.hud.font : 'sans-serif');
+        for (i = 0; i < letters.length; i++) {
+          lx = b.x + b.w * 0.68 + i * b.w * 0.07;
+          g.fillStyle = letters[i] === range ? '#5cc4ff' : '#5a6570';
+          g.fillText(letters[i], lx, b.y + b.h * 0.5);
+        }
+      }
+    }
+    if (S) {
+      var b = panel(S, 10);
+      if (b) {
+        g.fillStyle = running ? '#d0d6de' : '#5a6570';
+        g.textAlign = 'left'; g.textBaseline = 'middle';
+        g.font = Math.round(b.h * 0.10) + 'px ' + (T.hud && T.hud.font ? T.hud.font : 'sans-serif');
+        g.fillText('MODEL X', b.x + 16, b.y + 22);
+        // simple SOC bar
+        var bx = b.x + 16, by = b.y + b.h * 0.22, bw = b.w * 0.28, bh = 10;
+        g.fillStyle = '#1b2228'; g.fillRect(bx, by, bw, bh);
+        g.fillStyle = running ? '#3dd68c' : '#3a4a40'; g.fillRect(bx, by, bw * batt, bh);
+        if (T.line) { g.strokeStyle = T.line; g.lineWidth = 1; g.strokeRect(bx, by, bw, bh); }
+        g.fillStyle = '#9aa3ad'; g.font = Math.round(b.h * 0.08) + 'px ' + (T.hud && T.hud.font ? T.hud.font : 'sans-serif');
+        g.fillText(Math.round(batt * 100) + '%', bx + bw + 8, by + bh / 2);
+        // map placeholder
+        g.fillStyle = '#12181c'; rr(g, b.x + 16, b.y + b.h * 0.36, b.w - 32, b.h * 0.55, 8); g.fill();
+        g.fillStyle = '#2a333a'; g.font = Math.round(b.h * 0.09) + 'px ' + (T.hud && T.hud.font ? T.hud.font : 'sans-serif');
+        g.textAlign = 'center'; g.fillText(running ? 'ready' : 'parked', b.x + b.w / 2, b.y + b.h * 0.64);
+      }
+    }
+  }
   function drawInside(g, s) {
     var car = carOf(s.carId), m = M[car], C = cache(car, s), mph = s.kmh / 1.609344, DY = artDY(car);
     if (!(window.__pvOff || {}).backdrop) backdrop(g, car, s, Math.min(PH, C.glassY + DY));
@@ -12176,6 +12734,8 @@ var PaintedVisuals = (function () {
         needle(g, U.oil[0], U.oil[1] + 2, U.oil[2], C.angOil(oilP), '#ff6a1e', 2.2); needle(g, U.amps[0], U.amps[1] + 2, U.amps[2], C.angAmp(amp), '#ff6a1e', 2.2); glass(g, U.oil[0], U.oil[1], U.oil[2]); glass(g, U.amps[0], U.amps[1], U.amps[2]); }
       // Hurst T-handle: painted sprite, nudged through the H pattern (1-2 left, 3-4 right; odd forward, even back)
       hurst(g, m, s);
+    } else if (car === 'modelx') {
+      drawEvScreens(g, s, m, running);
     } else {
       var rb = C.rib, x0 = rb[0], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : s.kmh) / rb[2] * (rb[1] - rb[0]), y0 = rb[3];
       g.fillStyle = T.flat ? T.needle : lin(g, 0, y0 + 46, 0, y0 + 56, [[0, '#ffc07a'], [0.5, '#ff5a14'], [1, '#a82a08']]); g.fillRect(x0, y0 + 46, x1 - x0, 9);
@@ -12233,7 +12793,7 @@ var PaintedVisuals = (function () {
   // angle between the view and the column axis (a slight look-down squash); bank rotates
   // the squash to follow a column that is not vertical in the picture. The 911 sprite is
   // already drawn in perspective, so its pitch stays 0. Applied around the hub, then steer.
-  var WHEEL_PLANE = { gt350: { pitch: 0.26, bank: 0 }, caddy: { pitch: 0.30, bank: 0 }, brm: { pitch: 0.16, bank: -0.14 }, p997: { pitch: 0, bank: 0 } };
+  var WHEEL_PLANE = { gt350: { pitch: 0.26, bank: 0 }, caddy: { pitch: 0.30, bank: 0 }, brm: { pitch: 0.16, bank: -0.14 }, p997: { pitch: 0, bank: 0 }, beetle: { pitch: 0.22, bank: 0 }, modelx: { pitch: 0.22, bank: 0 } };
   function wheelDraw(g, car, hub, wl, rot, boss) {
     boss = boss || [0, 0];
     var bx = boss[0], by = boss[1];
@@ -12288,9 +12848,11 @@ var PaintedVisuals = (function () {
   // so the car's rear face is in shade with a warm rim light on its upper-right edges, a warm bounce from the road at the bottom and a long
   // shadow falling towards the camera and to the left. Graded once per car into an offscreen copy of the sprite (same pixel size as the art).
   var CG = {};
-  function gradedRear(car) {
-    if (CG[car]) return CG[car];
-    var img = A[car + '-rear'], W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  function gradedRear(car, suffix) {
+    suffix = suffix || '-rear';
+    var ck = car + suffix;
+    if (CG[ck]) return CG[ck];
+    var img = A[car + suffix] || A[car + '-rear'], W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
     function cv() { var c = document.createElement('canvas'); c.width = W; c.height = H; return c; }
     var shade = { v2: 'rgb(198,188,190)', flat: 'rgb(208,198,196)', ink: 'rgb(216,206,202)' }[STY], rimC = { v2: 'rgba(255,196,128,1)', flat: 'rgb(255,206,140)', ink: 'rgb(255,214,150)' }[STY];
     var out = cv(), x = out.getContext('2d');
@@ -12310,8 +12872,8 @@ var PaintedVisuals = (function () {
     x.globalCompositeOperation = 'source-over';
     var sil = null;
     if (STY === 'ink') { sil = cv(); var sx = sil.getContext('2d'); sx.drawImage(img, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#0d0a08'; sx.fillRect(0, 0, W, H); }
-    CG[car] = { img: out, sil: sil };
-    return CG[car];
+    CG[ck] = { img: out, sil: sil };
+    return CG[ck];
   }
   // ink: silhouette outline (8 offsets of 1.6 painting px at the chase scale sc) + graded sprite in one padded canvas
   function outlined(GR, sc) {
@@ -12324,7 +12886,7 @@ var PaintedVisuals = (function () {
   }
   // ground shadows under the chase car (painting px), on the ground plane of the scenery camera SC; u = metres right of the car centre
   function carShadows(g, SC, c, car, cx, dxCar) {
-    var W2 = c.realW / 2, z0 = c.dist, z1 = c.dist + c.len, track = car === 'gt350' ? 1.47 : car === 'p997' ? 1.548 : 1.55, tw = car === 'gt350' ? 0.24 : car === 'p997' ? 0.305 : 0.22, axle = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : 1.35);
+    var W2 = c.realW / 2, z0 = c.dist, z1 = c.dist + c.len, track = car === 'gt350' ? 1.47 : car === 'p997' ? 1.548 : car === 'modelx' ? 1.710 : 1.55, tw = car === 'gt350' ? 0.24 : car === 'p997' ? 0.305 : car === 'modelx' ? 0.28 : 0.22, axle = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : car === 'modelx' ? 1.104 : 1.35);
     var base = SC.xOf(z0, dxCar);
     function P(u, z) { return [cx + SC.xOf(z, dxCar + u) - SC.xOf(z, dxCar), SC.yOf(z)]; }
     function quad(u0, u1, za, zb, skew) { var a = P(u0 + skew, za), b = P(u1 + skew, za), cc = P(u1, zb), d = P(u0, zb); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(cc[0], cc[1]); g.lineTo(d[0], d[1]); g.closePath(); }
@@ -12410,15 +12972,16 @@ var PaintedVisuals = (function () {
       ? garageScenery(g, { axisX: V.vx, hz: V.hz, f: f, cy: 360, camH: camH, dx: 0, doorZ: doorZ }, s)
       : scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len }, s);
     var tpc = (360 - V.hz) / f, cpc = 1 / Math.sqrt(1 + tpc * tpc), spc = tpc * cpc;   // pitched camera: depth of the rear face at mid height
-    var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : 1.35), yc = SC.yOf(zc);
-    var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + '-rear'];
+    var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : car === 'modelx' ? 1.104 : 1.35), yc = SC.yOf(zc);
+    var rearKey = (garage && A[car + '-rear-open'] && (A[car + '-rear-open'].naturalWidth || A[car + '-rear-open'].width)) ? '-rear-open' : '-rear';
+    var cx = V.vx + sway, x0 = cx - (c.bodyX[0] + c.bodyX[1]) / 2 * sc, y0 = yc - c.contactY * sc, img = A[car + rearKey] || A[car + '-rear'];
     var run = s.engine === 'running', shake = run ? Math.sin(s.time * 70) * Math.min(1.2, 0.4 + s.rpm / 5000) : 0;
     var pitch = garage ? 0 : Math.max(-7, Math.min(7, (s.accel || 0) * 14)), roll = garage ? 0 : -steer * Math.min(1, s.kmh / 60) * 0.035;  // squat (+) / dive (-), body roll in turns
     if (!(window.__pvOff || {}).shadow) {
       if (garage) garageShadows(g, SC, c, car, cx, 0);
       else carShadows(g, SC, c, car, cx, 1.8 + (s.lat || 0));
     }
-    var GR = gradedRear(car), gimg = GR.img;
+    var GR = gradedRear(car, rearKey), gimg = GR.img;
     var sy = c.splitY;   // tyres below splitY stay planted; the body above moves
     g.save(); g.translate(cx, yc); g.rotate(roll * 0.4); g.translate(-cx, -yc);
     // ink: the same outline weight as the scenery's ink lines (about 1.6 painting px), drawn from the silhouette around each part
@@ -12481,12 +13044,14 @@ var PaintedVisuals = (function () {
     caddy: { in: { land: [80, 150, 1140, 650], port: [205, 30, 830, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
     brm:   { in: { land: [40, 80, 1240, 720], port: [340, 120, 940, 720] }, out: { land: [200, 80, 1080, 760], port: [240, 40, 1040, 720] } },
     p997:  { in: { land: [120, 160, 1180, 660], port: [200, 30, 780, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
-    beetle:{ in: { land: [120, 160, 1180, 660], port: [240, 30, 850, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } } };
+    beetle:{ in: { land: [120, 160, 1180, 660], port: [240, 30, 850, 720] }, out: { land: [360, 150, 920, 790], port: [370, 60, 910, 720] } },
+    modelx:{ in: { land: [80, 80, 1200, 700], port: [160, 20, 900, 720] }, out: { land: [200, 80, 1080, 820], port: [250, 40, 1030, 720] } } };
   var FOCUS16 = {
     gt350: { in: { land: [0, 165, 1280, 720], port: [240, 150, 690, 720] }, out: FOCUS15.gt350.out },
     caddy: { in: { land: [0, 165, 1280, 720], port: [212, 140, 672, 720] }, out: FOCUS15.caddy.out },
     brm: FOCUS15.brm, p997: FOCUS15.p997,
-    beetle: { in: { land: [0, 165, 1280, 720], port: [200, 30, 780, 720] }, out: FOCUS15.beetle.out } };
+    beetle: { in: { land: [0, 165, 1280, 720], port: [200, 30, 780, 720] }, out: FOCUS15.beetle.out },
+    modelx: { in: { land: [0, 80, 1280, 720], port: [140, 20, 860, 720] }, out: FOCUS15.modelx.out } };
   function focus() { return V16 ? FOCUS16 : FOCUS15; }
   var LY = null, LYt = 0;
   function layout(dash) {
@@ -12636,13 +13201,13 @@ var VisualModels = (function () {
  */
 var ProjectHistory = {
   about: [
-    'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac, a 1953 BRM P30 Mk II V16, a 2006 Porsche 911 Carrera 4S (997.1) and a 1956 Volkswagen Beetle Type 1.',
+    'Street Rod is a from-scratch browser driving demo, inspired by the classic game Street Rod, with a 1967 Shelby GT350, a 1959 Cadillac, a 1953 BRM P30 Mk II V16, a 2006 Porsche 911 Carrera 4S (997.1), a 1956 Volkswagen Beetle Type 1 and a 2023 Tesla Model X Long Range Dual Motor.',
     'The engine sound is not a recording: it is computed live, sample by sample, from each engine\u2019s firing order, intake, exhaust and \u2014 on the BRM \u2014 open stubs and a two-stage supercharger. All five cars use a physics model. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21: the v20 kernel plus new generic blocks (an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust) that any car can use. (v12 since v1.12.0; it was called v11.) The 911\u2019s default is v12 \u00b7 911 p7 (p4\u2019s photo-measured side boxes with internal packing); p4, p1 (the two-bank intake tube, a quieter valvetrain and a series-chamber muffler; formerly v10.1), p2, p3, p5 and p6 are in the 911 sound picker. The Cadillac default is v12 \u00b7 Cadillac p1; p2, p3, p4, p5 and p7 are in the Cadillac sound picker as listening tests, and p6 is a diagnostic test (lossy muffler/resonator internals). p7 is a picker variation only (no new URL). The BRM\u2019s older v8 order-table model has been retired.',
     'Physics (gearbox, weight, tyres, brakes) uses the cars\u2019 real specs.'
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.18; this build is v1.13.19. v1.13.16 redraws the Beetle engine bay to match the stock 36 hp Type 1 layout, using new generic drawing for a 2-1-shared exhaust, a centrifugal fan with an upright dynamo and shroud, and a single-choke oil-bath carb (no per-car code path). The muffler shell is drawn at its sourced transverse width of 0.679 m (TheSamba; that figure is the can width, not the internal gas path). Sound v21 · Beetle stays the default picker entry and is bit-identical; the kernel still uses the 0.40 m path-length estimate. Sound v24 · Beetle is also in that drop-down (picker-only, no new URL): it is Sound v21 with the hot idle set to 750 rpm (ESTIMATE, mid of the confirmed 1956 cabin landings at about 650–800 rpm). The 1,550 rpm cold-start is not the hot target. The 0.679 m figure remains the muffler shell width, not the gas path. v1.13.15 was a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. Sound v22 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v21 plus a sourced Neutral engine inertia of 0.43 kg·m² (mid of a band about 0.32–0.58) and a generic packed-annulus parameter on the Walker 21159 resonator (flow resistivity 2,500 Pa·s/m², estimate, at the light end of typical 1950s glass-fibre / steel-wool packing). On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). Sound v23 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v22 plus a thin packing layer against the resonator shell (packThick = 3 mm, estimate). On the official scorecard the combined score is 3.81, better than v22 (4.03) and still worse than v21 (3.53, floor 2.27), at the edge of the 0.3 noise band; ring stays clearly better than v21 (3.54 against 4.30). p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20, Sound v21, Sound v22 and Sound v23 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
+    intro: 'All the cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.20. The sixth car is the 2023 Tesla Model X Long Range Dual Motor (matt-black wrap, Cream cabin, yoke); Sound v1 · Model X is tyre/road and wind only. v1.13.16 redraws the Beetle engine bay to match the stock 36 hp Type 1 layout, using new generic drawing for a 2-1-shared exhaust, a centrifugal fan with an upright dynamo and shroud, and a single-choke oil-bath carb (no per-car code path). The muffler shell is drawn at its sourced transverse width of 0.679 m (TheSamba; that figure is the can width, not the internal gas path). Sound v21 · Beetle stays the default picker entry and is bit-identical; the kernel still uses the 0.40 m path-length estimate. Sound v24 · Beetle is also in that drop-down (picker-only, no new URL): it is Sound v21 with the hot idle set to 750 rpm (ESTIMATE, mid of the confirmed 1956 cabin landings at about 650–800 rpm). The 1,550 rpm cold-start is not the hot target. The 0.679 m figure remains the muffler shell width, not the gas path. v1.13.15 was a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. Sound v22 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v21 plus a sourced Neutral engine inertia of 0.43 kg·m² (mid of a band about 0.32–0.58) and a generic packed-annulus parameter on the Walker 21159 resonator (flow resistivity 2,500 Pa·s/m², estimate, at the light end of typical 1950s glass-fibre / steel-wool packing). On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). Sound v23 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v22 plus a thin packing layer against the resonator shell (packThick = 3 mm, estimate). On the official scorecard the combined score is 3.81, better than v22 (4.03) and still worse than v21 (3.53, floor 2.27), at the edge of the 0.3 noise band; ring stays clearly better than v21 (3.54 against 4.30). p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20, Sound v21, Sound v22 and Sound v23 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
         sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
       { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
@@ -12665,6 +13230,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.20", date: "2026-11-22", status: "done", headline: "2023 Model X Long Range Dual Motor", text: "Adds the 2023 Tesla Model X Long Range Dual Motor (matt-black wrap, Cream interior, yoke) as a sixth car, drawn through the existing ink and flat paths plus a generic EV bay (motors, reductions, inverters, frunk at the front, floor pack; ICE parts off). Official proportions: length 5,057 mm, width 1,999 mm, height 1,680 mm, wheelbase 2,965 mm. The shared sound model gains generic EV building blocks used only when a set sets P.ev (PMSM and inverter orders, gear mesh from the official 7.56 / 9.04 ratios, AVAS, regen sign). Sound v1 · Model X, the one Model X picker entry, has those tonal levels at 0: you hear the existing tyre/road and wind block only. Combustion and waveguides are not built for an EV. Older sets stay bit-identical." },
       { v: "v1.13.19", date: "2026-11-22", status: "done", headline: "Sound v24 · Beetle: confirmed-ref hot idle", text: "Sound v24 · Beetle is Sound v21 plus one physical change, with no fitted values. The hot idle is 750 rpm (ESTIMATE, mid of the confirmed 1956 cabin landings at about 650–800 rpm) and a_idle is re-sized in proportion. The muffler gas path stays the 0.40 m estimate; the 0.679 m figure is only the can width. It is picker-only, after Sound v21 · Beetle; v21 stays the default. Every older sound stays bit-identical." },
       { v: "v1.13.18", date: "2026-11-21", status: "done", headline: "Sound v23 · Cadillac: v22 with a thin packing layer against the resonator shell", text: "Sound v23 · Cadillac is Sound v22 plus a thin packing layer on the Walker 21159 resonator, with no fitted values. A new generic TMM field (packThick, unset = full-annulus fill, bit-identical) puts a fibrous lining against the outer shell only; the rest of the annulus is empty gas. The thickness is 3 mm, an estimate: no 1950s stock-resonator cutaway thickness was found, and 3 mm was chosen after a 3 / 6 / 10 mm comparison. On the official scorecard (scorer v2.4, lower is closer) the combined score is 3.81, better than v22 (4.03) and still worse than v21 (3.53, floor 2.27), at the edge of the 0.3 noise band, because part-throttle load remains somewhat darker; ring and closed-throttle coast-down stay clearly better than v21 (ring 3.54 against 4.30). It is picker-only, after Sound v22 · Cadillac; p1 stays the default. Every older sound, including v22, stays bit-identical." },
       { v: "v1.13.17", date: "2026-11-21", status: "done", headline: "Sound v22 · Cadillac: sourced Neutral inertia and a packed Walker 21159 resonator", text: "Sound v22 · Cadillac is Sound v21 plus two sourced physical changes, with no fitted values. Neutral rotating mass for the 390 + Controlled Coupling Hydra-Matic is 0.43 kg·m² (mid of a sourced band about 0.32–0.58; older sets keep the vehicle default 0.45). The Walker 21159 resonator annulus is packed, using a new generic TMM field (packSigma, unset = empty, bit-identical). The lining is 2,500 Pa·s/m², an estimate at the light end of typical 1950s glass-fibre / steel-wool packing. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). It is picker-only, after Sound v21 · Cadillac; p1 stays the default. Every older sound stays bit-identical." },
@@ -13346,8 +13912,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 <script>/* js/main.js */
 /* main.js: input (keyboard + multitouch), game loop, physics -> audio + UI */
 (function () {
-  var OUT_GAIN = { GT350: 0.8, CADDY: 0.85, BRM: 0.8, P997: 0.8, BEETLE: 0.8 };
-  var ODO_START = { gt350: 38412.0, caddy: 61905.3, brm: 2847.0, p997: 87240.6, beetle: 68420.0 };
+  var OUT_GAIN = { GT350: 0.8, CADDY: 0.85, BRM: 0.8, P997: 0.8, BEETLE: 0.8, MODELX: 0.85 };
+  var ODO_START = { gt350: 38412.0, caddy: 61905.3, brm: 2847.0, p997: 87240.6, beetle: 68420.0, modelx: 14820.0 };
   var params = new URLSearchParams(location.search);
   // touch UI: phones and tablets. v1.8.1: iPadOS Safari (desktop mode is its default) reports itself as a Mac; it is recognised by
   // maxTouchPoints > 1 (Macs report 0), not by the user agent, and stays a touch device when a trackpad / keyboard is attached.
@@ -13384,7 +13950,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // v1.11.4: GT350 and Cadillac defaults are v9p (best scorecard fit). A ?sound= URL or a saved streetrod.sound
   // choice still applies to both V8 cars, as before. With no saved choice, each V8 car uses its own default.
   // v1.11.36: the 911 picker is v12 · 911 p1 (default; formerly v10.1 / v10itq: intake tube, quiet valvetrain, series-chamber muffler) and v12 · 911 p2 (formerly v10.2: perforated straight-through muffler). ?p997=p1|p2 (or v11.p1 / v11.p2 / v10.1 / v10.2 / v10_1 / v10_2). v1.11.37 shipped ?p997=p3 (intake runners) as a listening test; v1.11.38 removed it after the owner listened, and old p3 queries fell back to p1; since v1.11.39 ?p997=p3 is the 3-chamber side-box listening test. Older values (variocam, v10, v10it, v10nf, v10itq, fixed, fixedcam, or anything else) alias to p1.
-  function defaultV8Sound(id) { return (id === 'gt350' || id === 'caddy' || id === 'beetle') ? 'v9p' : 'v2'; }
+  function defaultV8Sound(id) { return (id === 'gt350' || id === 'caddy' || id === 'beetle' || id === 'modelx') ? 'v9p' : 'v2'; }
   function defaultBrmSound() { return (typeof SoundModels !== 'undefined' && SoundModels.defaultBrm) || 'p11'; }
   function brmName(v) {
     if (!v || v === 'v8') return null;   // v8 retired: callers fall back to defaultBrmSound()
@@ -13556,7 +14122,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   function soundId() {
     if (spec().engineKey === 'BRM') return brmEntry(state.brmSound).id;
     if (spec().engineKey === 'P997') return 'v9p';   // still the v9.11 kernel; VarioCam Plus is a flag on this model, not a new kernel
-    if (spec().engineKey === 'BEETLE') return 'v9p';
+    if (spec().engineKey === 'BEETLE' || spec().engineKey === 'MODELX') return 'v9p';
     var m = SoundModels.get(state.model);
     return m.hidden ? 'v2' : state.model;
   }
@@ -13702,6 +14268,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (key === 'P997') return selP997;
     if (key === 'CADDY') return selCaddy;
     if (key === 'BEETLE') return selBeetle;
+    if (key === 'MODELX') return document.getElementById('selModelx');
     return selS;
   }
   function currentSoundValue() {
@@ -13710,6 +14277,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (key === 'P997') return state.p997Sound;
     if (key === 'CADDY') return state.model === 'v9p' ? state.caddySound : state.model;
     if (key === 'BEETLE') return state.beetleSound;
+    if (key === 'MODELX') return 'v1';
     return state.model;
   }
   function syncSoundPicker() {
@@ -13728,6 +14296,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (spec().engineKey === 'P997') key += '/' + state.p997Sound;
     if (spec().engineKey === 'CADDY' && mid === 'v9p') key += '/' + state.caddySound;
     if (spec().engineKey === 'BEETLE') key += '/' + state.beetleSound;
+    if (spec().engineKey === 'MODELX') key += '/v1';
     if (carSent !== key) {
       var msg = SoundModels.specMsg(mid, spec().engineKey);
       if (/^v9/.test(mid) && params.get('bq')) msg.spec = Object.assign({}, msg.spec, { quality: params.get('bq') });   // v9 resolution: hq | lite | auto (default)
@@ -13770,7 +14339,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     ensureAudio(); var c = car(); state.started = true;
     if (c.engine === 'off') c.ignition();
     c.v = 0; c.ww = 0; c.a = 0;
-    if (c.c.trans === 'auto') { if (c.range !== 'D') c.setRange('D'); } else if (c.gear !== 1) { c.gear = 1; c.shift = null; }
+    if (c.c.trans === 'ev' || c.c.trans === 'auto') { if (c.range !== 'D') c.setRange('D'); } else if (c.gear !== 1) { c.gear = 1; c.shift = null; }
     drag = { run: new DragStrip.Run(), car: state.carId, startDist: state.dist };
     document.getElementById('dragCard').classList.add('hidden'); document.getElementById('tree').classList.remove('hidden');
     flash('Drag strip: wait for the green, then gas!', 2.5); updatePanel();
@@ -13800,7 +14369,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (!drag) return;
     if (drag.car !== state.carId) { dragExit(); return; }
     var run = drag.run, prevPhase = run.phase;
-    run.update(dt, c.v, c.engine === 'running' && (c.c.trans === 'auto' ? c.range !== 'N' : c.gear > 0));
+    run.update(dt, c.v, c.engine === 'running' && (c.c.trans === 'ev' ? (c.range === 'D' || c.range === 'R') : (c.c.trans === 'auto' ? c.range !== 'N' : c.gear > 0)));
     var t = run.tree, el = document.getElementById('tree');
     if (el.dataset.k !== [t.pre, t.stage, t.amber, t.green, t.red].join()) {
       el.dataset.k = [t.pre, t.stage, t.amber, t.green, t.red].join();
@@ -13826,7 +14395,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   function applyGaragePark() {
     var c = car(), v = c.c;
     c.v = 0; c.ww = 0; c.a = 0;
-    if (v.trans === 'auto') { if (c.range !== 'N') c.setRange('N'); }
+    if (v.trans === 'ev') { if (c.range !== 'P') c.setRange('P'); }
+    else if (v.trans === 'auto') { if (c.range !== 'N') c.setRange('N'); }
     else { c.gear = 0; c.shift = null; c.clutchLocked = false; c.engage = 0; }
   }
   function applyGarageCar() {
@@ -13852,7 +14422,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       state.view = v === 4 ? 4 : 3;
       state.garage = true;
       applyGarageCar();
-      flash(state.carId === 'brm' ? 'In the garage (already running)' : 'In the garage — start the engine for a cold start', 2.5);
+      flash(state.carId === 'brm' ? 'In the garage (already running)' : (spec().trans === 'ev' ? 'In the garage — start the car' : 'In the garage — start the engine for a cold start'), 2.5);
     } else {
       state.garage = false;
       state.view = v === 1 ? 1 : 0;
@@ -13953,6 +14523,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       case '3': selectCar('brm'); break;
       case '4': selectCar('p997'); break;
       case '5': selectCar('beetle'); break;
+      case '6': selectCar('modelx'); break;
       case 's': case 'S': case 'i': case 'I': ignition(); break;
       case 'm': case 'M': toggleMute(); break;
       case 'v': case 'V':
@@ -13966,7 +14537,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       case 'u': case 'U': toggleUnits(); break;
       case 'q': case 'Q': if (drag) dragExit(); else dragEnter(); break;
       case 'r': case 'R': toggleRadio(); break;
-      case 'g': case 'G': if (spec().trans !== 'auto') toggleGearbox(); break;
+      case 'g': case 'G': if (spec().trans === 'manual') toggleGearbox(); break;
       case 'h': case 'H': openSpecs(false); openAbout(document.getElementById('about').classList.contains('hidden')); break;
       case 'Escape': openSpecs(false); openAbout(false); break;
       case 't': case 'T': car().trip = 0; flash('Trip reset', 1); break;
@@ -14081,7 +14652,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   selView.addEventListener('change', function () { setView(+selView.value); selView.blur(); });
 
   function updatePanel() {
-    var v = spec(), auto = v.trans === 'auto';
+    var v = spec(), auto = v.trans === 'auto', ev = v.trans === 'ev', noManual = auto || ev;
     selCar.value = state.carId;
     selView.value = state.bay ? '2' : String(state.view);
     // v1.12.12: exactly one visible sound <select> per car; lists are static (filled once). Hide the other three.
@@ -14094,6 +14665,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (selCaddy) selCaddy.value = (soundKey === 'CADDY' && state.model !== 'v9p') ? state.model : state.caddySound;
     document.getElementById('segBeetleSound').classList.toggle('hidden', soundKey !== 'BEETLE');
     if (selBeetle) selBeetle.value = state.beetleSound;
+    var segMx = document.getElementById('segModelxSound');
+    if (segMx) segMx.classList.toggle('hidden', soundKey !== 'MODELX');
+    var selMx = document.getElementById('selModelx');
+    if (selMx) selMx.value = 'v1';
     document.getElementById('segSound').classList.toggle('hidden', soundKey !== 'GT350');
     if (selS && soundKey === 'GT350') selS.value = state.model;
     syncSoundPicker();
@@ -14103,16 +14678,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     document.getElementById('bDrag').classList.toggle('on', !!drag);
     document.getElementById('bMute').textContent = state.muted ? 'Unmute' : 'Mute';
     document.getElementById('bUnits').textContent = state.units === 'kmh' ? 'km/h' : 'mph';
-    var rmOn = gearbox === 'revmatch' && !auto;
-    document.getElementById('bGearbox').classList.toggle('hidden', auto); document.getElementById('bGearbox').classList.toggle('on', rmOn);
+    var rmOn = gearbox === 'revmatch' && !noManual;
+    document.getElementById('bGearbox').classList.toggle('hidden', noManual); document.getElementById('bGearbox').classList.toggle('on', rmOn);
     document.getElementById('bGearbox').textContent = rmOn ? 'Rev-match \u2713' : 'Rev-match';
-    document.getElementById('bUp').innerHTML = auto ? '&#9654;<small>N\u2192D\u2192S\u2192L</small>' : '&#9650;<small>' + (rmOn ? 'up \u00b7 match' : 'shift up') + '</small>';
-    document.getElementById('bDown').innerHTML = auto ? '&#9664;<small>back to N</small>' : '&#9660;<small>' + (rmOn ? 'down \u00b7 blip' : 'shift down') + '</small>';
+    document.getElementById('bUp').innerHTML = ev ? '&#9654;<small>P\u2192R\u2192N\u2192D</small>' : auto ? '&#9654;<small>N\u2192D\u2192S\u2192L</small>' : '&#9650;<small>' + (rmOn ? 'up \u00b7 match' : 'shift up') + '</small>';
+    document.getElementById('bDown').innerHTML = ev ? '&#9664;<small>back to P</small>' : auto ? '&#9664;<small>back to N</small>' : '&#9660;<small>' + (rmOn ? 'down \u00b7 blip' : 'shift down') + '</small>';
     document.getElementById('bUp').disabled = !!state.garage; document.getElementById('bDown').disabled = !!state.garage;
     document.getElementById('bUp').classList.toggle('disabled', !!state.garage); document.getElementById('bDown').classList.toggle('disabled', !!state.garage);
     document.querySelector('.shifts').classList.toggle('disabled', !!state.garage);
     var b = v.brakes;
-    document.getElementById('specs').innerHTML = '<b>' + v.label + '</b><br>' + v.engineText + '<br>' + v.transText + ': ' + v.gears.join(' / ') + ', final drive ' + v.finalDrive.toFixed(2) +
+    var transLine = v.trans === 'ev'
+      ? (v.transText + ': front ' + v.ev.ratioFront.toFixed(2) + ':1, rear ' + v.ev.ratioRear.toFixed(2) + ':1')
+      : (v.transText + ': ' + v.gears.join(' / ') + ', final drive ' + v.finalDrive.toFixed(2));
+    document.getElementById('specs').innerHTML = '<b>' + v.label + '</b><br>' + v.engineText + '<br>' + transLine +
       (v.awd ? '<br>All-wheel drive: ' + v.awd.text : '') + '<br>Mass ' + v.curbText + '<br>Tyres ' + v.tyreText + '<br>Brakes: ' + b.text;
     if (typeof EngineSpecs !== 'undefined' && EngineSpecs.isOpen()) EngineSpecs.refresh(specsCtx());
   }
@@ -14162,10 +14740,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (Math.abs(vt - state.viewBlend) < 0.002) state.viewBlend = vt;
     if (state.msgT > 0) state.msgT -= dt; else state.msg = '';
     if (audio.ctx) {
-      var running = c.engine === 'running', inGear = c.c.trans === 'auto' ? (c.range !== 'N' && c.range !== 'P') : (c.gear > 0 && !c.shift);
-      audio.control({ rpm: Math.max(60, c.rpm()), thr: running ? c.soundThr : 0, running: running, starter: c.engine === 'cranking',
+      var running = c.engine === 'running', inGear = c.c.trans === 'ev' ? (c.range === 'D' || c.range === 'R') : (c.c.trans === 'auto' ? (c.range !== 'N' && c.range !== 'P') : (c.gear > 0 && !c.shift));
+      var evCtl = c.c.trans === 'ev' ? { rpmF: c.rpmF || 0, rpmR: c.rpmR || c.rpm(), tqSign: c.tqSign || 0, range: c.range, avas: !!c.avas, avasLevel: c.avasLevel || 0 } : {};
+      audio.control(Object.assign({ rpm: c.c.trans === 'ev' ? Math.abs(c.rpm()) : Math.max(60, c.rpm()), thr: running ? (c.soundThr || 0) : 0, running: running, starter: c.engine === 'cranking',
         crank: Math.max(150, c.rpm()), speed: c.v, skid: 0.35 * c.skid, listen: state.view,
-        gear: inGear ? Math.max(1, c.gear) : 0, tq: running && c.TeRef ? (c.Te || 0) / c.TeRef : 0, warm: !!c.warmed });
+        gear: inGear ? Math.max(1, c.gear || 1) : 0, tq: running && c.TeRef ? (c.Te || 0) / c.TeRef : 0, warm: !!c.warmed }, evCtl));
     }
     startupLink(dt, c);
     updateIgn();

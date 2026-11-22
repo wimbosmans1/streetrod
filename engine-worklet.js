@@ -3431,6 +3431,67 @@ function engineModuleV8p(core) {
       DATA.beetle56.sets['v24'] = _b24;
     }
 
+    // 2023 Model X Long Range Dual Motor — Sound v1, spec-only first pass then fitted to the chosen LR refs.
+    // Generic EV blocks (P.ev); combustion / waveguides are never built for this car.
+    DATA.modelx23 = {
+      car: {
+        name: "2023 Tesla Model X Long Range Dual Motor",
+        nCyl: 0,
+        idle_rpm: 0.0,
+        redline: 16000.0,
+        // positions, car frame: x forward from the rear bumper, y left, z up
+        mouth: [[0.05, 0.0, 0.35], [0.05, 0.0, 0.35]], // ESTIMATE: no tailpipes; AVAS / body stand-in at the rear valance
+        intake: [4.40, 0.0, 0.70],                     // ESTIMATE: front motor / frunk
+        covers: [[1.20, 0.30, 0.35], [4.20, 0.0, 0.40]], // ESTIMATE: rear motor, front motor
+        starter_pos: [4.40, 0.0, 0.50],
+        head: [2.85, 0.38, 1.15],                      // ESTIMATE: driver ear, high seating, LHD, wheelbase 2.965 m
+        cabin_len: 2.40,                               // ESTIMATE
+        cabin_h: 1.06,                                 // sourced-secondary-ish: first-row head room 1,059 mm
+        pipe_d: 0.03,
+        eng_shadow: 0.9
+      },
+      phys: {
+        ev: {
+          pole_pairs: 3,               // ESTIMATE: informal 6-pole inference, not a factory Dual Motor figure
+          pwm_hz: 8000,                // ESTIMATE: VFD carrier
+          // two-stage reductions whose products match the official ratios; tooth counts are ESTIMATES
+          teethFront: { s1p: 9, s1g: 21, s2p: 25, s2g: 81 },   // 21/9 × 81/25 = 7.56
+          teethRear:  { s1p: 8, s1g: 23, s2p: 21, s2g: 66 },   // 23/8 × 66/21 ≈ 9.04
+          ratioFront: 7.56,            // sourced
+          ratioRear: 9.04,             // sourced
+          k_mot: 0,                    // off: Wim 22 Nov, tyre/road + wind only; generic PMSM block stays in the kernel
+          k_mesh: 0,                   // off: generic gear-mesh block stays in the kernel
+          k_pwm: 0,                    // off: generic PWM / inverter block stays in the kernel
+          k_avas: 0,                   // off: generic AVAS block stays in the kernel; not used, not fitted
+          avas_f: [480, 640, 800],     // ESTIMATE: generic AVAS chord, not a clone of Tesla's melody
+          harm: [1, 2, 6],             // ESTIMATE: electrical orders of pole-pair * motor rps
+          mot_cab: 0.45,               // ESTIMATE: cabin transmission of motor / gear / PWM
+          avas_cab: 0.35,              // ESTIMATE: AVAS is designed to be heard outside
+          pwm_mod: 0.35                // ESTIMATE: PWM AM depth at the electrical frequency
+        },
+        noise: {                       // existing generic CNOSSOS-EU / tyre / wind block
+          tyre_w: 270,                 // sourced sizes 265 front / 275 rear mm; mid-width ESTIMATE for the width law
+          d_mean: 0.756,               // derived: 2 × 0.378 m rear rolling radius
+          wheelbase: 2.965,            // sourced
+          axle_x: 1.104,               // sourced: rear overhang, rear axle from the rear bumper
+          floor_m: 12,                 // ESTIMATE: more cabin insulation than a 1950s body
+          r_near: 1.15,                // ESTIMATE
+          cav_q: 7, cav_db: 5,         // ESTIMATE: tyre-cavity contribution
+          wind_db100: 62,              // ESTIMATE: low Cd, mid-size crossover
+          wind_n: 5.8,                 // ESTIMATE
+          shape: 1
+        },
+        k_cab: 0.45,                   // ESTIMATE
+        cab_q: 5.0,
+        cab_model: 1,
+        f_floor: 180.0,
+        f_fw: 220.0,
+        gain: 1.0,
+        k_int: 0, k_tick: 0, k_st: 0, k_hiss: 0, k_win: 0.2
+      }
+    };
+
+
 
     // v13.2: same v13.1 geometry with rev=2 (wider-band fit + fs/2 TMM filters). Generic param only.
     if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.1'] && !DATA.cadillac59.sets['v13.2']) {
@@ -6150,7 +6211,7 @@ function engineModuleV8p(core) {
     /** the synth: v8phys.V8Phys + Ctl. spec = { car_key, idle_rpm, redline, name }, listener = { position } */
     function V8pSynth(spec, listener, fs, opts) {
       opts = opts || {};
-      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350', BEETLE: 'beetle56' };
+      var ENGINE_KEYS = { CADDY: 'cadillac59', P997: 'p997', GT350: 'gt350', BEETLE: 'beetle56', MODELX: 'modelx23' };
       var key = spec.car_key || ENGINE_KEYS[spec.engineKey] || 'gt350';
       var D = DATA[key];
       if (!D) throw new Error('v8p: no data for ' + key);
@@ -6163,6 +6224,7 @@ function engineModuleV8p(core) {
       this.variocamPlus = this.vcam;
       this._vc = {};
       this.selfGated = opts.mode !== 'run' && opts.mode !== 'raw';
+      if (this.P.ev) { this._evInit(listener, opts); return; }
       var netCar = Object.assign({}, this.c);
       if (this.P.cat_early) netCar.cat_early = 1;
       if (this.P.port_bc) netCar.port_bc = 1;
@@ -6605,6 +6667,16 @@ function engineModuleV8p(core) {
       }
     };
     V8pSynth.prototype.cloneWithListener = function (lis) {
+      if (this.P.ev) {
+        var ev = Object.create(V8pSynth.prototype); Object.assign(ev, this);
+        ev.S = this.S.slice(); ev.game = Object.assign({}, this.game);
+        ev.ctlr = this.ctlr.clone(ev); ev.out = new Float64Array(256);
+        ev.listener = lis; ev._evInit(lis, {}); ev.ctlr = this.ctlr.clone(ev);
+        ev.S = this.S.slice(); ev.game = Object.assign({}, this.game);
+        if (this._ev) ev._ev = JSON.parse(JSON.stringify(this._ev));
+        if (this.RN) ev.RN = this._noiseSetup(ev.persp);
+        return ev;
+      }
       var o = Object.create(V8pSynth.prototype); Object.assign(o, this);
       ['S', 'CY', 'PF', 'AB', 'BB', 'AT', 'NA', 'K', 'PST', 'Q'].forEach(function (a) { o[a] = this[a].slice(); }, this);
       o.out = new Float64Array(256 * NO); o.game = Object.assign({}, this.game);
@@ -6613,6 +6685,7 @@ function engineModuleV8p(core) {
       return o;
     };
     V8pSynth.prototype.setRunning = function (rpm) {
+      if (this.P.ev) { this.S[S_W] = (rpm || 0) * 2 * Math.PI / 60; this.ctlr.setRunning(); return; }
       this.S[S_W] = rpm * 2 * Math.PI / 60; this.S[S_PMAN] = 0.4 * P_ATM; this.pw = 1.0;
       this.S[S_TPRIM] = T_AMB + (this.P.t_prim0 - T_AMB); this.S[S_TTAIL] = T_AMB + 0.4 * (this.S[S_TPRIM] - T_AMB);
       this.ctlr.setRunning(); this._pipes();
@@ -6720,6 +6793,7 @@ function engineModuleV8p(core) {
       }
     };
     V8pSynth.prototype.block = function (n, rpm, thr, game, L, R, off) {
+      if (this.P.ev) { this._blockEv(n, rpm, thr, game, L, R, off); return; }
       if (this.tmmDual) this._tmmSelect();
       if (this._settleLeft > 0) { this._settleStep(n, L, R, off); return; }
       if (this.vcam) this._vc = applyVariableCam(this.Q, this.c, rpm, thr, this._vc, this.P);
@@ -6913,6 +6987,12 @@ function engineModuleV8p(core) {
       if (m.warm !== undefined) g.warm = !!m.warm;
       if (m.gear !== undefined) g.gear = m.gear;
       if (m.speed !== undefined) g.speed = m.speed;   // m/s (v19 road noise; ignored by sets without noise)
+      if (m.rpmF !== undefined) g.rpmF = m.rpmF;
+      if (m.rpmR !== undefined) g.rpmR = m.rpmR;
+      if (m.tqSign !== undefined) g.tqSign = m.tqSign;
+      if (m.range !== undefined) g.range = m.range;
+      if (m.avas !== undefined) g.avas = m.avas;
+      if (m.avasLevel !== undefined) g.avasLevel = m.avasLevel;
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
@@ -6925,6 +7005,129 @@ function engineModuleV8p(core) {
       return r;
     };
     V8pSynth.prototype.rpmNow = function () { return this.S[S_W] * 60 / (2 * Math.PI); };
+
+
+    // Generic EV building blocks. Constructed only when P.ev is set (same pattern as c.fan).
+    // ICE cars never enter these functions, so older sets stay bit-identical.
+    V8pSynth.prototype._evInit = function (listener, opts) {
+      opts = opts || {};
+      var NS0 = 32;
+      this.S = this.S || new Float64Array(NS0);
+      this.K = this.K || new Float64Array(16);
+      this.out = this.out || new Float64Array(256);
+      this.game = this.game || { running: false, starter: false, warm: false, gear: 0, has: false, speed: 0 };
+      this.ctlr = this.ctlr || new Ctl(this, false);
+      this.listener = listener;
+      this.persp = perspective(this.c, (listener && listener.position) || 'rear');
+      this.posName = (listener && listener.position) || 'rear';
+      this.PV = new Float64Array(16);
+      this.PV[4] = this.P.k_cab || 0.45;
+      this.PV[5] = 0.25 * (this.P.gain || 1);
+      this.RN = (this.P.noise && (typeof NOISE_OFF === 'undefined' || !NOISE_OFF)) ? this._noiseSetup(this.persp) : null;
+      this._fan = null;
+      this.PG = []; this.NODE = []; this.NN = 0; this.NW = 0; this.NP = 0;
+      this._ev = this._ev || this._evSetup();
+    };
+    V8pSynth.prototype._evSetup = function () {
+      var e = this.P.ev, i, o = { phF: [], phR: [], phMeshF: [0, 0], phMeshR: [0, 0], phPwmF: 0, phPwmR: 0, phAvas: [0, 0, 0], envAvas: 0 };
+      o.pp = e.pole_pairs || 3;
+      o.pwm = e.pwm_hz || 8000;
+      o.tF = e.teethFront || { s1p: 9, s1g: 21, s2p: 25, s2g: 81 };
+      o.tR = e.teethRear || { s1p: 8, s1g: 23, s2p: 21, s2g: 66 };
+      o.harm = e.harm || [1, 2, 6];
+      o.avasF = e.avas_f || [480, 640, 800];
+      o.kMot = e.k_mot !== undefined ? e.k_mot : 0;
+      o.kMesh = e.k_mesh !== undefined ? e.k_mesh : 0;
+      o.kPwm = e.k_pwm !== undefined ? e.k_pwm : 0;
+      o.kAvas = e.k_avas !== undefined ? e.k_avas : 0;
+      o.motCab = e.mot_cab !== undefined ? e.mot_cab : 0.45;
+      o.avasCab = e.avas_cab !== undefined ? e.avas_cab : 0.35;
+      o.pwmMod = e.pwm_mod !== undefined ? e.pwm_mod : 0.35;
+      for (i = 0; i < o.harm.length + 1; i++) { o.phF[i] = 0; o.phR[i] = 0; }
+      return o;
+    };
+    V8pSynth.prototype._blockEv = function (n, rpm, thr, game, L, R, off) {
+      var g = game || this.game || {}, ev = this._ev, fs = this.fs, i, k, sL, sR;
+      var running = g.has ? !!g.running : true;
+      var rpmR = (g.rpmR !== undefined && g.has) ? Math.abs(g.rpmR) : Math.abs(rpm || 0);
+      var rpmF = (g.rpmF !== undefined && g.has) ? Math.abs(g.rpmF) : rpmR * ((this.P.ev.ratioFront || 7.56) / (this.P.ev.ratioRear || 9.04));
+      var speed = (g.speed !== undefined) ? g.speed : 0;
+      var tq = (g.tqSign !== undefined) ? g.tqSign : (thr || 0);
+      var range = g.range || 'D';
+      var kmh = Math.abs(speed) * 3.6;
+      var avasLevel = g.avasLevel;
+      if (avasLevel === undefined) {
+        var avas = running && range !== 'P' && (kmh < 32 || range === 'R');
+        avasLevel = avas ? Math.min(1, 0.25 + kmh / 32) : 0;
+      }
+      if (!running) avasLevel = 0;
+      this.game.speed = speed;
+      this.S[S_W] = rpmR * 2 * Math.PI / 60;
+      var outside = !!(this.persp && this.persp.outside);
+      var evG = (this.PV && this.PV[5]) ? this.PV[5] : 0.25;   // same listener scale as the noise block (Pa * PV[5])
+      var gMot = evG * (outside ? 1.0 : ev.motCab) * ev.kMot;
+      var gMesh = evG * (outside ? 1.0 : ev.motCab) * ev.kMesh;
+      var gPwm = evG * (outside ? 1.0 : ev.motCab) * ev.kPwm;
+      var gAvas = evG * (outside ? 1.0 : ev.avasCab) * ev.kAvas;
+      var load = Math.abs(tq);
+      if (tq < 0) load = Math.min(1, load * 1.15);   // regen sign: slightly stronger electrical / PWM
+      var aMot = running ? gMot * (0.12 + 0.88 * load) : 0;
+      var aMesh = running ? gMesh * (0.20 + 0.80 * load) : 0;
+      var aPwm = running ? gPwm * load : 0;
+      ev.envAvas += ((avasLevel * gAvas) - ev.envAvas) * Math.min(1, n / (0.04 * fs));
+      var aAvas = ev.envAvas;
+      var TWOPI = 6.283185307179586, invFs = 1 / fs;
+      var feF = ev.pp * rpmF / 60, feR = ev.pp * rpmR / 60;
+      var fMeshF1 = (rpmF / 60) * ev.tF.s1p, fMeshF2 = (rpmF / 60) * ev.tF.s1p * ev.tF.s2p / ev.tF.s1g;
+      var fMeshR1 = (rpmR / 60) * ev.tR.s1p, fMeshR2 = (rpmR / 60) * ev.tR.s1p * ev.tR.s2p / ev.tR.s1g;
+      var avasMul = 1 + 0.4 * Math.min(1, kmh / 32);
+      off = off || 0;
+      for (i = 0; i < n; i++) {
+        sL = 0; sR = 0;
+        if (aMot && (feF > 2 || feR > 2)) {
+          for (k = 0; k < ev.harm.length; k++) {
+            var hk = ev.harm[k], ak = aMot / (hk === 1 ? 1 : hk);
+            ev.phF[k] += TWOPI * feF * hk * invFs; ev.phR[k] += TWOPI * feR * hk * invFs;
+            sL += ak * Math.sin(ev.phF[k]); sR += ak * Math.sin(ev.phR[k]);
+          }
+          ev.phF[ev.harm.length] += TWOPI * (rpmF / 60) * invFs;
+          ev.phR[ev.harm.length] += TWOPI * (rpmR / 60) * invFs;
+          sL += aMot * 0.25 * Math.sin(ev.phF[ev.harm.length]);
+          sR += aMot * 0.25 * Math.sin(ev.phR[ev.harm.length]);
+        }
+        if (aMesh) {
+          ev.phMeshF[0] += TWOPI * fMeshF1 * invFs; ev.phMeshF[1] += TWOPI * fMeshF2 * invFs;
+          ev.phMeshR[0] += TWOPI * fMeshR1 * invFs; ev.phMeshR[1] += TWOPI * fMeshR2 * invFs;
+          sL += aMesh * (0.7 * Math.sin(ev.phMeshF[0]) + 0.4 * Math.sin(ev.phMeshF[1]));
+          sR += aMesh * (0.7 * Math.sin(ev.phMeshR[0]) + 0.4 * Math.sin(ev.phMeshR[1]));
+        }
+        if (aPwm && ev.pwm > 0) {
+          ev.phPwmF += TWOPI * ev.pwm * invFs; ev.phPwmR += TWOPI * ev.pwm * invFs;
+          var mF = 1 + ev.pwmMod * Math.sin(ev.phF[0] || 0), mR = 1 + ev.pwmMod * Math.sin(ev.phR[0] || 0);
+          sL += aPwm * mF * Math.sin(ev.phPwmF);
+          sR += aPwm * mR * Math.sin(ev.phPwmR);
+        }
+        if (aAvas > 1e-9) {
+          for (k = 0; k < ev.avasF.length; k++) {
+            ev.phAvas[k] += TWOPI * ev.avasF[k] * avasMul * invFs;
+            var aa = aAvas * (k === 0 ? 1 : 0.7 / (k + 1));
+            var sa = aa * Math.sin(ev.phAvas[k]);
+            sL += sa; sR += sa * 0.92;
+          }
+        }
+        // wrap phases occasionally to keep them bounded (every 64 samples is enough and cheap)
+        L[off + i] = sL;
+        R[off + i] = sR;
+      }
+      if ((this._evWrap = (this._evWrap || 0) + n) > 4096) {
+        this._evWrap = 0;
+        function wrap(a) { var t = 2 * Math.PI; if (a > 4096) { for (var j = 0; j < a.length; j++) a[j] = a[j] - t * Math.floor(a[j] / t); } }
+        wrap(ev.phF); wrap(ev.phR); wrap(ev.phMeshF); wrap(ev.phMeshR); wrap(ev.phAvas);
+        ev.phPwmF -= 2 * Math.PI * Math.floor(ev.phPwmF / (2 * Math.PI));
+        ev.phPwmR -= 2 * Math.PI * Math.floor(ev.phPwmR / (2 * Math.PI));
+      }
+      if (this.RN) this._noiseRun(n, L, R, off);
+    };
 
     function Ctl(syn, cold) {
       this.syn = syn; this.phase = 'off'; this.t = 0.0; this.key = false;
@@ -6942,6 +7145,7 @@ function engineModuleV8p(core) {
     Ctl.prototype.noteFire = function (n) { this.fires[this.fi] = n; this.fi = (this.fi + 1) % 16; };
     Ctl.prototype.recentFire = function () { var s = 0; for (var i = 0; i < 16; i++) s += this.fires[i]; return s > 0; };
     Ctl.prototype.keyOn = function (cold) {
+      if (this.syn.P && this.syn.P.ev) { this.setRunning(); return; }
       if (cold !== null && cold !== undefined) this.coldness = cold ? 1.0 : 0.0;
       this.phase = 'crank'; this.t_key = this.t; this.t_catch = null; this.t_rel = null; this.t_stop = null;
       this.handed = false; this.blend = 0.0;
