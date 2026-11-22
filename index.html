@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.18)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.19)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -371,7 +371,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <label class="sel" id="segCar"><span>Car</span><select id="selCar" aria-label="Car"><option value="gt350">GT350</option><option value="caddy">Cadillac</option><option value="brm">BRM</option><option value="p997">911</option><option value="beetle">1956 VW Beetle</option></select></label>
       <label class="sel brmsel hidden" id="segBrmSound" title="BRM engine sound: v12 · BRM p11 (default) or an earlier v12 · BRM p1–p10 set (formerly v9.1–v9.11)"><select id="selBrm" aria-label="BRM engine sound model"></select></label>
       <label class="sel brmsel hidden" id="segP997Sound" title="911 engine sound: v12 · 911 p7 (default since v1.12.2; p4 with internal packing), p4 (photo-measured reverse-flow side boxes; default v1.11.42–v1.12.1), p1 (series-chamber muffler), p2 (perforated straight-through muffler), p3 (3-chamber side boxes; listening test), p5 (series 3-chamber side boxes from the Fabspeed video; listening test) or p6 (p4 with its high note earlier; listening test)"><select id="selP997" aria-label="911 engine sound option"></select></label>
-      <label class="sel brmsel hidden" id="segBeetleSound" title="Beetle engine sound: Sound v21 · Beetle (v20 kernel + new generic blocks). No additional URL alias."><select id="selBeetle" aria-label="Beetle engine sound option"></select></label>
+      <label class="sel brmsel hidden" id="segBeetleSound" title="Beetle engine sound: Sound v21 · Beetle (default) and Sound v24 · Beetle (hot idle 750 rpm). No additional URL alias."><select id="selBeetle" aria-label="Beetle engine sound option"></select></label>
       <label class="sel brmsel hidden" id="segCaddySound" title="Cadillac sound-model history: Sound v1–v4, then v12 · Cadillac p1 (default), p2–p10, Sound v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20, v21, v22 and v23 · Cadillac. p1 stays the default; p7 and everything after it is picker-only, with no new URL. v18 is not on the site."><select id="selCaddy" aria-label="Cadillac engine sound option"></select></label>
       <label class="sel" id="segView"><span>Position</span><select id="selView" aria-label="Listening position"><option value="1">Inside the car</option><option value="0">Outside (rear)</option><option value="2">Engine bay</option><option value="3">In the garage</option><option value="4">In the garage (cabin)</option></select></label>
       <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
@@ -3942,6 +3942,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       }
     };
 
+    // Sound v24 · Beetle (picker-only): same geometry as Sound v21, including the
+    // 0.40 m muffler gas-path ESTIMATE (not the 0.679 m can width). The only change
+    // is the hot-idle target: confirmed 1956 cabin refs idle at about 650–800 rpm,
+    // so idle_rpm is 750 (mid of that band, ESTIMATE) and a_idle is re-sized for it.
+    // The 1550 rpm rear cold-start is choke fast idle, not the hot target.
+    if (DATA.beetle56 && !DATA.beetle56.sets) DATA.beetle56.sets = {};
+    if (DATA.beetle56 && !DATA.beetle56.sets['v24']) {
+      var _b24 = JSON.parse(JSON.stringify(DATA.beetle56.phys));
+      _b24.idle_rpm = 750.0;             // ESTIMATE: mid of confirmed cabin hot idle 650–800 rpm
+      _b24.a_idle = 2.47e-5;             // ESTIMATE: 2.8e-5 × 750/850, leak re-sized for the lower hot idle
+      DATA.beetle56.sets['v24'] = _b24;
+    }
+
+
     // v13.2: same v13.1 geometry with rev=2 (wider-band fit + fs/2 TMM filters). Generic param only.
     if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.1'] && !DATA.cadillac59.sets['v13.2']) {
       DATA.cadillac59.sets['v13.2'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.1']));
@@ -6311,7 +6325,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (lsaEx + dEx), 360.0 - (lsaEx - dEx)];
     }
     // Generic: a parameter set may override car geometry. Keys absent from the set leave the car bit-identical.
-    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz','muf_t1'];
+    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz','muf_t1','idle_rpm'];
     function applySetCar(c, P) {
       if (!P) return c;
       for (var i = 0; i < SET_CAR_KEYS.length; i++) {
@@ -9146,7 +9160,8 @@ var Vehicles = (function () {
     torque: [[0, 40], [800, 52], [1200, 65], [1600, 72], [2000, 75.5], [2500, 73],
              [3000, 68], [3400, 62.0], [3700, 56], [4000, 48], [4200, 40]],
     netFactor: 1.0,                    // DIN treated as net
-    idleRpm: 850,                      // ESTIMATE
+    idleRpm: 850,                      // ESTIMATE (Sound v21 default); confirmed cabin hot idle is 650–800
+    idleRpmBySet: { v24: 750 },        // ESTIMATE: mid of confirmed 1956 cabin hot idle; generic per-set override
     limiterRpm: 3800,                  // ESTIMATE: a little above the 3700 SAE rating
     tachMax: 4000, tachRed: 3800,
     engineInertia: 0.18,               // ESTIMATE: kg m^2
@@ -12627,7 +12642,7 @@ var ProjectHistory = {
   ],
   howSound: {
     title: 'How the sound model works',
-    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.18. v1.13.16 redraws the Beetle engine bay to match the stock 36 hp Type 1 layout, using new generic drawing for a 2-1-shared exhaust, a centrifugal fan with an upright dynamo and shroud, and a single-choke oil-bath carb (no per-car code path). The muffler shell is drawn at its sourced transverse width of 0.679 m (TheSamba; that figure is the can width, not the internal gas path). Sound v21 · Beetle stays the only picker entry and is bit-identical; the kernel still uses the 0.40 m path-length estimate. v1.13.15 was a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. Sound v22 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v21 plus a sourced Neutral engine inertia of 0.43 kg·m² (mid of a band about 0.32–0.58) and a generic packed-annulus parameter on the Walker 21159 resonator (flow resistivity 2,500 Pa·s/m², estimate, at the light end of typical 1950s glass-fibre / steel-wool packing). On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). Sound v23 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v22 plus a thin packing layer against the resonator shell (packThick = 3 mm, estimate). On the official scorecard the combined score is 3.81, better than v22 (4.03) and still worse than v21 (3.53, floor 2.27), at the edge of the 0.3 noise band; ring stays clearly better than v21 (3.54 against 4.30). p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20, Sound v21, Sound v22 and Sound v23 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
+    intro: 'All five cars use a physics sound model: the computer calculates the pressure pulses a real engine would make, then what you would hear from the exhaust, the intake and (where the car has one) inside the cabin. Nothing you hear is a recording of that car; it is synthesised live, sample by sample. The GT350, Cadillac, BRM and 911 share sound model v12, the physics kernel, plus a per-car parameter-set iteration. The Beetle uses sound model v21 (the v20 kernel plus new generic blocks: an engine-driven cooling fan, a heat-exchanger muffler, and a boxer 2-1-shared exhaust). The live site is v1.13.18; this build is v1.13.19. v1.13.16 redraws the Beetle engine bay to match the stock 36 hp Type 1 layout, using new generic drawing for a 2-1-shared exhaust, a centrifugal fan with an upright dynamo and shroud, and a single-choke oil-bath carb (no per-car code path). The muffler shell is drawn at its sourced transverse width of 0.679 m (TheSamba; that figure is the can width, not the internal gas path). Sound v21 · Beetle stays the default picker entry and is bit-identical; the kernel still uses the 0.40 m path-length estimate. Sound v24 · Beetle is also in that drop-down (picker-only, no new URL): it is Sound v21 with the hot idle set to 750 rpm (ESTIMATE, mid of the confirmed 1956 cabin landings at about 650–800 rpm). The 1,550 rpm cold-start is not the hot target. The 0.679 m figure remains the muffler shell width, not the gas path. v1.13.15 was a UI hotfix: a generic CSS rule now hides any sound picker that has the hidden class, so only one drop-down is visible (v1.13.14 left the Beetle picker on every car, the same class of bug as v1.12.8). The Beetle cabin view was redrawn from period driver’s-seat photographs: the factory oval dash is kept, a period bud vase with red roses sits on the right-of-centre dash, and the front lid is omitted for now (the windscreen glass is open down to the cowl and wipers). In the rear view the face-on hubcap badges are removed, because they are not visible from directly behind. The Cadillac default is still v12 · Cadillac p1. Sound v20 · Cadillac is live in the Cadillac drop-down (picker-only, no new URL): it is Sound v19 with the Walker 21159 resonator modelled as a straight-through perforated can (the existing generic perf_through3d block), not as a plain expansion chamber. The 21158 muffler is unchanged. That closes the ~400 Hz pass that made closed-throttle cabin sound too bright; mid-rev overrun now matches the recordings much more closely. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse, because part-throttle, full load and idle go darker: v20 3.32, v19 2.95, v17 2.96, against a recordings floor of 2.27; p1 is 3.59. Sound v19 · Cadillac stays in the same drop-down. Sound v21 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v20 plus a generic 4 s acoustic-temperature lag (set key t_ac) so waveguide delay does not follow cycle-resolved gas temperature on a closed-throttle coast. Sound v22 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v21 plus a sourced Neutral engine inertia of 0.43 kg·m² (mid of a band about 0.32–0.58) and a generic packed-annulus parameter on the Walker 21159 resonator (flow resistivity 2,500 Pa·s/m², estimate, at the light end of typical 1950s glass-fibre / steel-wool packing). On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). Sound v23 · Cadillac is also in that drop-down (picker-only, no new URL): it is Sound v22 plus a thin packing layer against the resonator shell (packThick = 3 mm, estimate). On the official scorecard the combined score is 3.81, better than v22 (4.03) and still worse than v21 (3.53, floor 2.27), at the edge of the 0.3 noise band; ring stays clearly better than v21 (3.54 against 4.30). p1 stays the default. A later fitted equaliser (v18) was tried and then shelved on 21 November 2026, and was never pushed, because a correction fitted to the stock exhaust would still be applied after an aftermarket muffler or pipe swap, and would hide part of the difference those parts should make. The 911’s default is v12 · 911 p7, chosen by ear (p3 scores slightly closer but was rejected on listening). The BRM’s default is v12 · BRM p11 (formerly v9.11), the closest of the remaining physics sets on the official scorecard. The older v8 order-table model, which was built from the strength of each engine order in recordings plus a fixed supercharger whine, has been retired. Earlier BRM sets (v12 · BRM p1–p10, formerly v9.1–v9.10) stay in the BRM sound picker. The GT350 default is v12 · GT350 p1 (formerly v9.11 physics / v9p). Each car has one sound drop-down with every model actually developed for that car, in chronological order: the GT350 list is v1–v4 plus v12 · GT350 p1 (default); the Cadillac list is v1–v4, v12 · Cadillac p1–p10, Sound v13–v17, Sound v19, Sound v20, Sound v21, Sound v22 and Sound v23 (p1 remains the default; p7 and everything after it is picker-only, with no new URL; v18 is not on the site); the BRM list is v12 · BRM p1–p4, p6 and p8–p11 (p11 default — there is no shipped p5 or p7: v9.5 was the same numbers as v9.4, and v9.7 was an evaluation harness, not a fit; the older v8 order-table model was retired in v1.11.18 and is no longer in the sound engine); the 911 list is v12 · 911 p1–p7 (p7 default); the Beetle list is Sound v21 · Beetle (the v20 kernel plus those new generic blocks; one entry, no additional URL alias). Earlier 911 names (VarioCam Plus, v10, v10.1, v10.2, fixed cam) are aliases of those p-sets, not separate models.',
         sections: [
       { title: 'Combustion and exhaust pulses', text: 'Each cylinder fires in the engine\u2019s firing order, and the pressure rise in that cylinder is the start of the sound. How hard a cylinder fires varies a little from cycle to cycle. Leftover exhaust gas still in the cylinder, especially at idle or when you lift off, makes that variation bigger: the lope, and the occasional miss. The GT350 and the Cadillac are 90\u00b0 V8s (firing orders 1-5-4-2-6-3-7-8 and 1-8-4-3-6-5-7-2). The BRM is a 135\u00b0 V16, with a pulse every 45\u00b0 of crank. The 911 is a 180\u00b0 flat-six that fires 1-6-2-4-3-5, evenly every 120\u00b0. The left bank is cylinders 4, 5 and 6. Because the banks oppose each other, you also hear half-order tones (1\u00bd and 4\u00bd) as well as the main firing order (3) and its harmonic (6).' },
       { title: 'Exhaust valves and pulse shape', text: 'The exhaust valve opens and a blow-down pulse enters the pipe. Valve lift follows the cam; for a moment intake and exhaust are both a little open (overlap). If the throttle is shut, that overlap lets exhaust flow back into the intake, which changes the next pulse. The throttle itself meters how much air the engine can take. On the 911 the first 40 crank degrees of blow-down are given a smoother, slightly stronger acoustic shape, and the later pumping-out is eased; that does not change how much gas leaves, only the sound of the pulse. A variable-cam block can phase the intake cam from a map of rpm and load, and switch between two intake lifts at parameterized thresholds. The 911\u2019s parameter sets turn this on with the 997.1 VarioCam Plus figures: a 40\u00b0 crank vane range of intake phasing, and a switch between 3.6 mm and 11.0 mm lift (the high cam comes in above about 3,000 rpm once the throttle is open enough, and drops out below about 2,500 rpm or at light throttle). The exhaust cam is fixed. Any car can use the same block by setting those parameters.' },
@@ -12650,6 +12665,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.19", date: "2026-11-22", status: "done", headline: "Sound v24 · Beetle: confirmed-ref hot idle", text: "Sound v24 · Beetle is Sound v21 plus one physical change, with no fitted values. The hot idle is 750 rpm (ESTIMATE, mid of the confirmed 1956 cabin landings at about 650–800 rpm) and a_idle is re-sized in proportion. The muffler gas path stays the 0.40 m estimate; the 0.679 m figure is only the can width. It is picker-only, after Sound v21 · Beetle; v21 stays the default. Every older sound stays bit-identical." },
       { v: "v1.13.18", date: "2026-11-21", status: "done", headline: "Sound v23 · Cadillac: v22 with a thin packing layer against the resonator shell", text: "Sound v23 · Cadillac is Sound v22 plus a thin packing layer on the Walker 21159 resonator, with no fitted values. A new generic TMM field (packThick, unset = full-annulus fill, bit-identical) puts a fibrous lining against the outer shell only; the rest of the annulus is empty gas. The thickness is 3 mm, an estimate: no 1950s stock-resonator cutaway thickness was found, and 3 mm was chosen after a 3 / 6 / 10 mm comparison. On the official scorecard (scorer v2.4, lower is closer) the combined score is 3.81, better than v22 (4.03) and still worse than v21 (3.53, floor 2.27), at the edge of the 0.3 noise band, because part-throttle load remains somewhat darker; ring and closed-throttle coast-down stay clearly better than v21 (ring 3.54 against 4.30). It is picker-only, after Sound v22 · Cadillac; p1 stays the default. Every older sound, including v22, stays bit-identical." },
       { v: "v1.13.17", date: "2026-11-21", status: "done", headline: "Sound v22 · Cadillac: sourced Neutral inertia and a packed Walker 21159 resonator", text: "Sound v22 · Cadillac is Sound v21 plus two sourced physical changes, with no fitted values. Neutral rotating mass for the 390 + Controlled Coupling Hydra-Matic is 0.43 kg·m² (mid of a sourced band about 0.32–0.58; older sets keep the vehicle default 0.45). The Walker 21159 resonator annulus is packed, using a new generic TMM field (packSigma, unset = empty, bit-identical). The lining is 2,500 Pa·s/m², an estimate at the light end of typical 1950s glass-fibre / steel-wool packing. On the official scorecard (scorer v2.4, lower is closer) the combined score is worse than v21 (4.03 against 3.53, floor 2.27), because part-throttle load goes darker; ring and closed-throttle coast-down are much better (ring 2.52 against 4.30). It is picker-only, after Sound v21 · Cadillac; p1 stays the default. Every older sound stays bit-identical." },
       { v: "v1.13.16", date: "2026-11-21", status: "done", headline: "Beetle engine-bay view matches the stock 36 hp Type 1 layout", text: "The Beetle engine bay was drawn as a generic V8 (long tubular headers the wrong way, an axial fan, a side generator, and a four-barrel carb). It now follows the stock 1956 36 hp / 30 PS Type 1 layout: upright dynamo and a shrouded centrifugal fan at the pulley end, a single Solex 28 PCI on a central single-port manifold with an oil-bath cleaner, distributor and oil filler, heat exchangers, and a transverse 2-tip muffler. The drawing is generic (headers type 2-1-shared, fan type centrifugal, 1×1 oil-bath carb, flat + centrifugal layout extras); the GT350, Cadillac, BRM and 911 are unchanged. A sourced 0.679 m figure (VW logo NOS 26.75 in, TheSamba) is the can’s transverse width and is used only for the bay; it is not the internal gas path. Sound v21 is unchanged (path length remains the 0.40 m estimate) and stays the only Beetle picker entry. Every older sound stays bit-identical." },
@@ -13479,6 +13495,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     model: SoundModels.get(soundChoice || defaultV8Sound(startId)).id, brmSound: brmParam || defaultBrmSound(),
     p997Sound: p997Name(p997Param),   // v1.12.2: default p7; ?p997=p1|p2|p3|p4|p5|p6 select the other sets
     caddySound: caddyName(caddyQuery, false),   // default p1; p7, p8, p9, p10, v13, v13.1, v13.2, v13.4, v14, v14.1, v15, v16, v17, v19, v20, v21, v22 and v23 are picker-only (no ?caddy= / ?sound= URL)
+    beetleSound: "v1",   // Sound v21 · Beetle (default); v24 is picker-only (no URL)
     steer: 0, lat: 0, touchSteer: null, visual: VisualModels.get(params.get('visuals') || lsGet('streetrod.visuals', 'v5')).id, viewBlend: 0, muted: false, keys: {},
     throttle: 0, brake: 0, touchGas: 0, touchBrake: 0, msg: '', msgT: 0, started: false, dist: 0, time: 0 };
   // A Cadillac set query (?caddy=p5, ?sound=v12.cadillac.p5, or ?car=caddy&sound=p5) always uses the v12 kernel.
@@ -13583,18 +13600,32 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   function applySoundInertia() {
     var c = car();
     if (c._Je0 == null) c._Je0 = c.c.engineInertia;
+    if (c._idle0 == null) c._idle0 = c.c.idleRpm;
     var je = c._Je0, map = c.c.engineInertiaBySet, key = null;
     if (spec().engineKey === 'CADDY' && state.model === 'v9p') key = state.caddySound;
     else if (spec().engineKey === 'P997') key = state.p997Sound;
     else if (spec().engineKey === 'BRM') key = state.brmSound;
+    else if (spec().engineKey === 'BEETLE') key = state.beetleSound;
     if (key && map && map[key] != null) je = map[key];
     c.c.engineInertia = je;
+    // Generic: a sound set may name idleRpm (or idleRpmBySet). Unset = the vehicle default.
+    var idle = c._idle0, imap = c.c.idleRpmBySet;
+    if (key && imap && imap[key] != null) idle = imap[key];
+    c.c.idleRpm = idle;
   }
   function setCaddySound(v) {
     state.caddySound = caddyName(v, true);
     applySoundInertia();
     if (audio.ctx) ensureAudio();
     if (spec().engineKey === 'CADDY') flash(CADDY_LABEL[state.caddySound], 1.5);
+    updatePanel();
+  }
+  function beetleName(v) { return v === 'v24' ? 'v24' : 'v1'; }   // v24 is picker-only; default stays v1 (Sound v21 · Beetle)
+  function setBeetleSound(v) {
+    state.beetleSound = beetleName(v);
+    applySoundInertia();
+    if (audio.ctx) ensureAudio();
+    if (spec().engineKey === 'BEETLE') flash(state.beetleSound === 'v24' ? 'Sound v24 · Beetle' : 'Sound v21 · Beetle (default)', 1.5);
     updatePanel();
   }
   function setP997Sound(v) {
@@ -13670,6 +13701,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (key === 'BRM') return selB;
     if (key === 'P997') return selP997;
     if (key === 'CADDY') return selCaddy;
+    if (key === 'BEETLE') return selBeetle;
     return selS;
   }
   function currentSoundValue() {
@@ -13677,6 +13709,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (key === 'BRM') return state.brmSound;
     if (key === 'P997') return state.p997Sound;
     if (key === 'CADDY') return state.model === 'v9p' ? state.caddySound : state.model;
+    if (key === 'BEETLE') return state.beetleSound;
     return state.model;
   }
   function syncSoundPicker() {
@@ -13694,11 +13727,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var key = mid + '/' + spec().engineKey;
     if (spec().engineKey === 'P997') key += '/' + state.p997Sound;
     if (spec().engineKey === 'CADDY' && mid === 'v9p') key += '/' + state.caddySound;
+    if (spec().engineKey === 'BEETLE') key += '/' + state.beetleSound;
     if (carSent !== key) {
       var msg = SoundModels.specMsg(mid, spec().engineKey);
       if (/^v9/.test(mid) && params.get('bq')) msg.spec = Object.assign({}, msg.spec, { quality: params.get('bq') });   // v9 resolution: hq | lite | auto (default)
       if (spec().engineKey === 'P997') msg.spec = Object.assign({}, msg.spec, { variant: state.p997Sound });
       if (spec().engineKey === 'CADDY' && mid === 'v9p') msg.spec = Object.assign({}, msg.spec, { variant: state.caddySound });
+      if (spec().engineKey === 'BEETLE' && state.beetleSound === 'v24') msg.spec = Object.assign({}, msg.spec, { variant: 'v24' });
       audio.setCar(msg); carSent = key;
     }
   }
@@ -14034,10 +14069,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   if (selCaddy) selCaddy.addEventListener('change', function () { applyCaddyPicker(selCaddy.value); selCaddy.blur(); });
   var selBeetle = document.getElementById('selBeetle');
-  [['v1', 'Sound v21 · Beetle']].forEach(function (row) {
+  // Beetle's one list is the full history (Sound v21 · Beetle default, then Sound v24 · Beetle), filled once.
+  [['v1', 'Sound v21 · Beetle (default)'], ['v24', 'Sound v24 · Beetle']].forEach(function (row) {
     var o = document.createElement('option'); o.value = row[0]; o.textContent = row[1]; if (selBeetle) selBeetle.appendChild(o);
   });
-  if (selBeetle) selBeetle.addEventListener('change', function () { selBeetle.value = 'v1'; selBeetle.blur(); });
+  if (selBeetle) selBeetle.addEventListener('change', function () { setBeetleSound(selBeetle.value); selBeetle.blur(); });
   selV.addEventListener('change', function () { setVisual(selV.value); selV.blur(); });
   // v1.11.12: Car and Position are native <select> lists (same pattern as Sound / Visuals), so they work in the Tesla in-car browser.
   var selCar = document.getElementById('selCar'), selView = document.getElementById('selView');
@@ -14057,7 +14093,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     document.getElementById('segCaddySound').classList.toggle('hidden', soundKey !== 'CADDY');
     if (selCaddy) selCaddy.value = (soundKey === 'CADDY' && state.model !== 'v9p') ? state.model : state.caddySound;
     document.getElementById('segBeetleSound').classList.toggle('hidden', soundKey !== 'BEETLE');
-    if (selBeetle) selBeetle.value = 'v1';
+    if (selBeetle) selBeetle.value = state.beetleSound;
     document.getElementById('segSound').classList.toggle('hidden', soundKey !== 'GT350');
     if (selS && soundKey === 'GT350') selS.value = state.model;
     syncSoundPicker();
@@ -14181,7 +14217,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (params.get('view') === 'bay') setView(2);   // v1.10: open straight into the engine bay
   if (params.get('view') === 'garage') setView(3);
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openAboutHow: openAboutHow, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, setP997Sound: setP997Sound, setCaddySound: setCaddySound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
+  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openAboutHow: openAboutHow, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, setP997Sound: setP997Sound, setCaddySound: setCaddySound, setBeetleSound: setBeetleSound, soundId: soundId, setVisual: setVisual, tick: tick, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
 })();
 </script>
 </body>

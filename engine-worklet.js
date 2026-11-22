@@ -3418,6 +3418,20 @@ function engineModuleV8p(core) {
       }
     };
 
+    // Sound v24 · Beetle (picker-only): same geometry as Sound v21, including the
+    // 0.40 m muffler gas-path ESTIMATE (not the 0.679 m can width). The only change
+    // is the hot-idle target: confirmed 1956 cabin refs idle at about 650–800 rpm,
+    // so idle_rpm is 750 (mid of that band, ESTIMATE) and a_idle is re-sized for it.
+    // The 1550 rpm rear cold-start is choke fast idle, not the hot target.
+    if (DATA.beetle56 && !DATA.beetle56.sets) DATA.beetle56.sets = {};
+    if (DATA.beetle56 && !DATA.beetle56.sets['v24']) {
+      var _b24 = JSON.parse(JSON.stringify(DATA.beetle56.phys));
+      _b24.idle_rpm = 750.0;             // ESTIMATE: mid of confirmed cabin hot idle 650–800 rpm
+      _b24.a_idle = 2.47e-5;             // ESTIMATE: 2.8e-5 × 750/850, leak re-sized for the lower hot idle
+      DATA.beetle56.sets['v24'] = _b24;
+    }
+
+
     // v13.2: same v13.1 geometry with rev=2 (wider-band fit + fs/2 TMM filters). Generic param only.
     if (DATA.cadillac59 && DATA.cadillac59.sets && DATA.cadillac59.sets['v13.1'] && !DATA.cadillac59.sets['v13.2']) {
       DATA.cadillac59.sets['v13.2'] = JSON.parse(JSON.stringify(DATA.cadillac59.sets['v13.1']));
@@ -5787,7 +5801,7 @@ function engineModuleV8p(core) {
       return [360.0 + (lsaIn - dIn), 360.0 + (lsaIn + dIn), 360.0 - (lsaEx + dEx), 360.0 - (lsaEx - dEx)];
     }
     // Generic: a parameter set may override car geometry. Keys absent from the set leave the car bit-identical.
-    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz','muf_t1'];
+    var SET_CAR_KEYS = ['rod','ev_d','ev_lift','camx','adv_dur','lsa','ex_dur','ex_lsa','in_dur','in_lsa','v_ac','sn_len','sn_d','th_len','v_man','x_len','x_d','pipe_d','tail_d','tail_len','inter_len','head_len','cabin_len','cabin_h','muf','helmholtz','muf_t1','idle_rpm'];
     function applySetCar(c, P) {
       if (!P) return c;
       for (var i = 0; i < SET_CAR_KEYS.length; i++) {
