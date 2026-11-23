@@ -5204,7 +5204,8 @@ function engineModuleV8p(core) {
       Q_FCOLD = 33, Q_STG = 34, Q_STKE = 35, Q_STRM = 36, Q_STRB = 37, Q_STIF = 38, Q_STJM = 39, Q_TEETH = 40, Q_VBAT = 41, Q_SOLID = 42,
       Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, Q_KMESH = 56, Q_KCOMM = 57, Q_KMOT = 58, Q_KBB = 59, Q_KAM = 60, Q_KBB2 = 61, Q_KBBHI = 62, Q_LEAD = 63, Q_TICKA = 64, Q_KVF = 65, Q_VFN = 66, Q_VFW = 67, Q_VFF = 68, Q_VFR = 69, Q_VFX = 70, Q_VWX = 71, Q_PSH = 72, Q_CYV = 73,
       Q_INTRES = 74, Q_VBANK = 75, Q_LTUBE = 76, Q_ATUBE = 77, Q_ROPEN = 78, Q_RCLOSE = 79, Q_KRES = 80, Q_F0RPM = 81, Q_F1RPM = 82, Q_FTHR = 83, Q_INTRUN = 84, Q_IRATTACH = 85,
-      Q_CHG = 86, Q_CHGDP = 87, Q_CHGRPM = 88, Q_CHGTHR0 = 89, Q_CHGN0 = 90, Q_CHGN1 = 91, Q_CHGWG = 92, Q_CHGTU = 93, Q_CHGTD = 94, NQ = 95;   // v1.13.25 generic charge (boost) block, 0 = off
+      Q_CHG = 86, Q_CHGDP = 87, Q_CHGRPM = 88, Q_CHGTHR0 = 89, Q_CHGN0 = 90, Q_CHGN1 = 91, Q_CHGWG = 92, Q_CHGTU = 93, Q_CHGTD = 94,   // v1.13.25 generic charge (boost) block, 0 = off
+      Q_IGN = 95, Q_IGNVAC = 96, Q_IGNN = 97, Q_IGNP = 98, NQ = 110;   // v1.13.28 generic advance curve (car key ign), 0 = off; Q_IGNP..+11 = up to 6 [rpm, deg] points
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
       S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, S_PL = 36, S_PR = 37, S_QC = 38, S_BST = 39, NS = 40;
@@ -5318,6 +5319,12 @@ function engineModuleV8p(core) {
         CY[c + C_E] = e;
         var rc = 400.0 / (rpm > 50.0 ? rpm : 50.0); if (rc > 1.0) rc = 1.0;
         CY[c + C_RP] = 1.0 - Q[Q_HL] * (0.5 + 0.5 * rc) + e * Q[Q_QC] * (1.0 - xres);
+        if (Q[Q_IGN] > 0.5) {   // v1.13.28 generic advance curve (car key ign: { cent: [[rpm, deg], ...], vac: deg }): static + centrifugal + vacuum
+          var ni = Q[Q_IGNN] | 0, adv = Q[Q_IGNP + 1];
+          if (rpm >= Q[Q_IGNP + 2 * (ni - 1)]) adv = Q[Q_IGNP + 2 * (ni - 1) + 1];
+          else for (var ii = 1; ii < ni; ii++) { var r0 = Q[Q_IGNP + 2 * ii - 2], r1i = Q[Q_IGNP + 2 * ii]; if (rpm < r1i) { adv = rpm <= r0 ? Q[Q_IGNP + 2 * ii - 1] : Q[Q_IGNP + 2 * ii - 1] + (Q[Q_IGNP + 2 * ii + 1] - Q[Q_IGNP + 2 * ii - 1]) * (rpm - r0) / (r1i - r0); break; } }
+          CY[c + C_ADV] = Q[Q_SPARK0] + adv + Q[Q_IGNVAC] * (1.0 - piv / P_ATM);
+        } else
         CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * (1.0 - piv / P_ATM);
         CY[c + C_DUR] = Q[Q_BURN] * (1.0 + 0.8 * xres);
         CY[c + C_VALID] = 1.0;
@@ -6430,6 +6437,10 @@ function engineModuleV8p(core) {
       // Only applied when set, so cars that omit it stay bit-identical.
       Q[Q_SNR] = 0.1 * RHO_AIR * C_AIR / asn;
       if (P.r_ac) Q[Q_SNR] += P.r_ac;
+      if (c.ign && c.ign.cent && c.ign.cent.length) {   // v1.13.28 advance curve: absent = the shared law below (bit-identical)
+        var ig = c.ign.cent, nig = Math.min(6, ig.length); Q[Q_IGN] = 1.0; Q[Q_IGNVAC] = c.ign.vac || 0.0; Q[Q_IGNN] = nig;
+        for (var ip = 0; ip < nig; ip++) { Q[Q_IGNP + 2 * ip] = ig[ip][0]; Q[Q_IGNP + 2 * ip + 1] = ig[ip][1]; }
+      }
       Q[Q_SPARK0] = c.spark0; Q[Q_TAILA] = Math.PI * c.pipe_d * c.pipe_d / 4; Q[Q_DWT] = P.dw_tau; Q[Q_KNL] = P.k_nl;
       Q[Q_INSCALE] = 1.0;
       Q[Q_KMESH] = P.k_st_mesh !== undefined ? P.k_st_mesh : 0.6;
