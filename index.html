@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.26)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.27)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -10222,8 +10222,9 @@ var Parts = (function () {
 
   // ---- lean torque model (WOT, steady): one flow chain + cam ram term + Taylor Mach index + PD blower + FMEP ----
   // Constants fitted once (tools/parts/fit-tm.mjs) with the merged friction on the sourced stock 30 PS anchors (75.5 N·m @ 2000,
-  // 62.0 @ 3400, peak near 2000) and Okrasa TSV (50 PS @ 4200). Validation (not fitted): Okrasa TS 1200 46.7 PS vs about 45.
-  var TM = { ve_max: 0.85, a: 4.0e-4, k_ivc: 4.8, ksp: 4, kc: 0.72149 };
+  // 62.0 @ 3400, peak near 2000) and Okrasa TSV (50 PS @ 4200). Validation (not fitted): Okrasa TS 1200 46.0 PS vs about 45.
+  // v1.13.27 refit with the exhaust side on (exm): was { a: 4.0e-4, k_ivc: 4.8, ksp: 4, kc: 0.72149 }, fit error 0.55 -> 0.33.
+  var TM = { ve_max: 0.85, a: 3.4e-4, k_ivc: 4.5, ksp: 3, kc: 0.73187 };
   function dpChain(Q, chain, rho, steady) {
     var s = 0;
     for (var i = 0; i < chain.length; i++) {
@@ -10266,17 +10267,156 @@ var Parts = (function () {
       var rhoMf = RHO0 * pr * T0 / chargeT(b, T0 + dTc), dpd = dpChain(Qe, tm.down, rhoMf);
       rhoM = rhoMf * (1 - dpd / (P0 * pr)); Pdrive = Qb * rin * 1005 * dTc / b.eta_mech; dpIn = dpu + dpd;
     } else { dpIn = dpChain(Qe, tm.up, RHO0) + dpChain(Qe, tm.down, RHO0); rhoM = RHO0 * (1 - dpIn / P0); }
-    var rhoE = P0 / (RG * 900), vt = rhoM * Qe * 1.08 / rhoE / tm.a_tail, dpEx = tm.k_exh * 0.5 * rhoE * vt * vt;
-    var etaI = TM.kc * (1 - Math.pow(tm.cr, 1 - GAM)), imep = etaI * ve * rhoM * LHV / AFR;
+    var fi = tu || b, X = null, dpEx, veT = ve, mepX = 0;
+    if (tm.ex) {   // v1.13.27 exhaust side (see exhaustAt); replaces the single tail-velocity term
+      X = exhaustAt(tm, n, rhoM * Qe * 1.08, fi ? P0 * pr : P0 - dpIn, fi ? pr : 1 - dpIn / P0, AFR_ST / ((fi && fi.chg && fi.afr) || AFR), dpTurb);
+      dpEx = X.dp + X.pump; veT = ve * (1 + X.dve) * (1 - X.xr) / (1 - EXM.xr_ref); mepX = X.loss;
+    } else { var rhoE = P0 / (RG * 900), vt = rhoM * Qe * 1.08 / rhoE / tm.a_tail; dpEx = tm.k_exh * 0.5 * rhoE * vt * vt; }
+    var etaI = TM.kc * (1 - Math.pow(tm.cr, 1 - GAM)), imep = etaI * veT * rhoM * LHV / AFR - mepX;
     var k = n / 1000, f = tm.fmep, fmep = (f[0] + f[1] * k + f[2] * k * k) * 1e5, pmep = dpEx + dpTurb + ((b || tu) ? 0 : 0.5 * dpIn);
-    var fi = tu || b;
     if (fi && fi.chg) {   // v1.13.25 charge model (key chg: 1; builds without it keep the v1.13.22 boosted branch): fuel follows the trapped air at the
       // boost AFR (fi.afr, richer under boost) with the fuel-air-cycle efficiency curve; pumping uses the real manifold pressure, so boost
       // pressure above the exhaust back pressure gives pumping work back (pmep = p_exh − p_int, with the same 0.5 intake-loss share as NA)
       if (fi.afr) imep *= fphi(AFR_ST / fi.afr) / fphi(AFR_ST / AFR);
       pmep = dpEx + dpTurb + 0.5 * dpIn - (pr - 1) * P0;
     }
-    return { T: (imep - fmep - pmep) * vd / (4 * Math.PI) - Pdrive / (2 * Math.PI * n / 60), pr: pr };
+    return { T: (imep - fmep - pmep) * vd / (4 * Math.PI) - Pdrive / (2 * Math.PI * n / 60), pr: pr, ex: X };
+  }
+  // ---- v1.13.27 exhaust side (generic, data-driven; on with tm key exm: 1, absent = the v1.13.26 single back-pressure term) ----
+  // The geometry is the sound model's own (composed car keys, with the stock keys a swapped part does not set, as the kernel gets them):
+  // primaries -> bank junction -> head pipe -> heat exchanger -> inter pipe -> shared muffler (or merge pipe) -> tailpipes.
+  //  1. back pressure: sum of K·½ρv² over that chain at the local gas temperature, times a pulsating-flow factor M per path
+  //  2. header tuning: VE gain / loss near n_t = 850·ED/(L+3) for each reflection point (area step) along a bank
+  //  3. residual gas: Fox, Cheng & Heywood (SAE 931025) from intake / exhaust pressure, valve overlap and compression ratio
+  //  4. exhaust cam timing: 0-D blowdown from EVO with the kernel's valve curtain (expansion work lost vs exhaust-stroke pumping)
+  //  5. gas temperature along the pipes: the kernel's EGT law (t_prim0 + t_prima·load, tail share 0.45 when warm)
+  var EXM = {
+    f: 0.025,      // ESTIMATE pipe friction factor (Moody, welded steel, Re ~1e5)
+    k_bend: 0.4,   // ESTIMATE one 90° bend per primary / inter pipe (Idelchik: 0.3–0.5 for R/d ~1–2)
+    k_merge: 0.5,  // ESTIMATE converging junction loss (Idelchik / Miller combining tee: 0.3–0.9)
+    k_hx: 1.0,     // ESTIMATE heat exchanger finned tube with two bends
+    k_pack: 20,    // ESTIMATE muffler internals (perforated tubes / baffles): K = k_pack × pack (stock pack 0.15 -> K 3)
+    a0: 0.08,      // ESTIMATE tuned-exhaust VE amplitude (Heywood 1988 §7.6: tuned exhaust up to ~5–10 % VE)
+    ov0: 30,       // ESTIMATE overlap (deg) at which half the scavenging effect is reached
+    k_q: 5.4,      // DERIVED ideal-Otto end-of-expansion pressure rise q·eta/(cv·T1), eta 0.55 (heat loss, ESTIMATE), T1 340 K
+    t1: 340,       // ESTIMATE charge temperature at IVC (with residual)
+    n_pol: 1.3,    // Heywood: expansion polytropic index 1.25–1.35
+    g_ex: 1.30,    // kernel G_EX
+    t_amb: 293,    // kernel T_AMB
+    xr_ref: 0.10 };// normalisation (absorbed by the refit)
+  function pulseM(cpp, durEx) {   // DERIVED: mean-square / mean² of a half-sine pulse train, duty D = cylinders per path × exhaust duration / 720
+    var D = cpp * durEx / 720; return D <= 1 ? Math.PI * Math.PI / (8 * D) : 1 + (Math.PI * Math.PI / 8 - 1) / D;
+  }
+  function exGeom(G, ph, t) {
+    var A = function (d) { return Math.PI / 4 * d * d; }, f = EXM.f;
+    var nc = t.ncyl, nb = nc >= 4 ? 2 : 1, cpb = nc / nb, pd = G.pipe_d, el = [], pts = [];
+    var dEx = (G.ex_dur == null ? G.adv_dur : G.ex_dur) / 2, lsaEx = G.ex_lsa == null ? G.lsa : G.ex_lsa;
+    var dIn = (G.in_dur == null ? G.adv_dur : G.in_dur) / 2, lsaIn = G.in_lsa == null ? G.lsa : G.in_lsa;
+    var px = G.prim_x || [1], pxm = 0; for (var i = 0; i < px.length; i++) pxm += px[i] / px.length;
+    var pl = G.prim_len * pxm, L = 0;
+    function E(n, p, d, len, K, c) { el.push({ n: n, p: p, d: d, L: len, K: K, c: c, x: L + len / 2 }); L += len; }
+    function R(a1, a2) { return (a1 - a2) / (a1 + a2); }   // Benson (1982) constant-pressure junction: incident area vs all other branches
+    var stop = false, Lb = 0;
+    function pt(len, r) { if (stop) return; Lb += len; if (Math.abs(r) > 0.05) pts.push({ L: Lb, R: r }); if (Math.abs(r) >= 0.6) stop = true; }
+    E('primaries', nc, G.prim_d, pl, f * pl / G.prim_d + EXM.k_bend, 1);
+    pt(pl, R(A(G.prim_d), (cpb - 1) * A(G.prim_d) + A(pd)));
+    E('bank junction', nb, pd, 0, EXM.k_merge, cpb);
+    E('head pipe', nb, pd, G.head_len, f * G.head_len / pd, cpb);
+    var dPrev = pd, lenHead = G.head_len;
+    if (G.hx) {
+      var h = G.hx, hL = h[0] === 'hx' ? h[1] : h[0], hD = h[0] === 'hx' ? h[2] : h[1];
+      pt(lenHead, R(A(pd), A(hD))); lenHead = 0;
+      E('heat exchanger', nb, hD, hL, f * hL / hD + EXM.k_hx, cpb); pt(hL, R(A(hD), A(pd)));
+    }
+    var il = G.inter_len + (G.bank_dl || 0) / 2;
+    E('inter pipe', nb, pd, il, f * il / pd + EXM.k_bend, cpb);
+    var muf = (G.muf || []).slice(), tb = G.turbo, td = G.tail_d != null ? G.tail_d : pd, tn = G.tail_n === 1 ? 1 : 2;
+    if (tb) muf = [['chamber', tb.vol_len, tb.vol_ratio, 0], ['turbine', tb.th_len, tb.th_d, 0]].concat(muf);   // as the kernel (net)
+    var aIn = A(pd), pIn = nb, dIn0 = pd, cIn = cpb, bank = true;   // velocity reference of the flow entering the next item
+    if (muf.length) {
+      for (var k = 0; k < muf.length; k++) {
+        var m = muf[k];
+        if (m[0] === 'turbine') {   // turbine: reflection only (its pressure drop is the turbo's own k_bp × boost term); outlet area = both bank pipes (ESTIMATE)
+          pt(lenHead + il, R(A(pd), A(pd) + A(m[2]))); stop = true; L += m[1]; aIn = 2 * A(pd); pIn = 1; dIn0 = pd * Math.SQRT2; cIn = nc; bank = false; continue;
+        }
+        if (tb && k === 0) { L += m[1]; continue; }   // turbine volute: part of the turbine
+        if (m[0] === 'chamber') {
+          var ac = A(pd) * m[2], mr = ac / aIn;
+          pt(bank ? lenHead + il : 0, bank ? R(A(pd), A(pd) + ac) : R(aIn, ac));
+          E('muffler chamber (expansion + internals)', pIn, dIn0, 0, (1 - 1 / mr) * (1 - 1 / mr) + EXM.k_pack * (m[3] || 0), cIn);
+          L += m[1]; Lb += m[1];
+          var nx = muf[k + 1], aOut = nx ? A(nx[2]) : tn * A(td);
+          E('chamber outlet (contraction)', nx ? 1 : tn, nx ? nx[2] : td, 0, 0.5 * (1 - Math.min(1, aOut / ac)), nc);
+          aIn = aOut; pIn = nx ? 1 : tn; dIn0 = nx ? nx[2] : td; cIn = nc;
+        } else {   // 'pipe' / 'hx' [len, d, pack]
+          pt(bank ? lenHead + il : 0, bank ? R(A(pd), A(pd) + A(m[2])) : R(aIn, A(m[2])));
+          if (bank) E('bank merge', 1, m[2], 0, EXM.k_merge, nc);
+          E('muffler ' + m[0], 1, m[2], m[1], f * m[1] / m[2] + EXM.k_pack * (m[3] || 0), nc); Lb += m[1];
+          aIn = A(m[2]); pIn = 1; dIn0 = m[2]; cIn = nc;
+        }
+        bank = false;
+      }
+      if (!bank && aIn !== tn * A(td) && muf[muf.length - 1][0] !== 'chamber') {   // last pipe into the tails
+        var at2 = tn * A(td); pt(0, R(aIn, at2));
+        E('into tailpipe', at2 > aIn ? 1 : tn, at2 > aIn ? Math.sqrt(aIn / Math.PI * 4) : td, 0, at2 > aIn ? (1 - aIn / at2) * (1 - aIn / at2) : 0.5 * (1 - at2 / aIn), nc);
+      }
+    } else {
+      pt(lenHead + il, R(A(pd), 2 * A(pd)));
+      E('collector merge', 1, pd, 0.04, EXM.k_merge + f * 0.04 / pd, nc); Lb += 0.04;
+      var at = tn * A(td);
+      pt(0, R(A(pd), at));
+      E(at > A(pd) ? 'into tailpipe (expansion)' : 'into tailpipe (contraction)', at > A(pd) ? 1 : tn, at > A(pd) ? pd : td, 0,
+        at > A(pd) ? (1 - A(pd) / at) * (1 - A(pd) / at) : 0.5 * (1 - at / A(pd)), nc);
+    }
+    E('tailpipe + exit', tn, td, G.tail_len, f * G.tail_len / td + 1.0, nc);
+    pt(G.tail_len, -1);
+    el.forEach(function (e) { e.x = L > 0 ? e.x / L : 0; });
+    return { el: el, pts: pts, dEx: dEx, lsaEx: lsaEx, evo: lsaEx + dEx - 180, ov: Math.max(0, (dIn - lsaIn) + (dEx - lsaEx)),
+      ev_d: G.ev_d, ev_lift: G.ev_lift, camx: G.camx || 1, cd: ph.cd || 0.65, rod: G.rod, t0p: ph.t_prim0, tap: ph.t_prima };
+  }
+  function psiF(pr, g) {
+    var pc = Math.pow(2 / (g + 1), g / (g - 1)); if (pr < pc) pr = pc; if (pr > 1) pr = 1;
+    return Math.sqrt(2 * g / (g - 1) * (Math.pow(pr, 2 / g) - Math.pow(pr, (g + 1) / g)));
+  }
+  // 0-D blowdown of one cylinder from EVO to TDC (kernel valve curtain: Cd·min(π d L, 0.85 π d²/4), L = Lmax sin(π lf)^camx):
+  // returns the expansion work lost before BDC and the exhaust-stroke pumping above the port pressure, both as mep (Pa)
+  function blowdown(t, ex, n, pI, pE, xr) {
+    var r = t.stroke / 2, l = ex.rod || 3.5 * r, ab = Math.PI / 4 * t.bore * t.bore, vs = ab * t.stroke, vc = t.vc, np = EXM.n_pol, g = EXM.g_ex;
+    var V = function (th) { var a = th * Math.PI / 180, s = Math.sin(a); return vc + ab * (r + l - r * Math.cos(a) - Math.sqrt(l * l - r * r * s * s)); };
+    var evo = 360 - (ex.lsaEx + ex.dEx), evc = 360 + (ex.dEx - ex.lsaEx), vb = vc + vs;
+    var p4 = pI * (1 + EXM.k_q * (1 - xr) / Math.pow(t.cr, np - 1)), V0 = V(evo), p0 = p4 * Math.pow(vb / V0, np), T0e = EXM.t1 * (p4 / pI) * Math.pow(vb / V0, np - 1);
+    var mRT = p0 * V0, p = p0, lossE = 0, pump = 0, dth = 2, dt = dth / (6 * n), amax = 0.85 * Math.PI * ex.ev_d * ex.ev_d / 4;
+    for (var th = evo; th < 360; th += dth) {
+      var lf = (th + dth / 2 - evo) / (evc - evo), lift = ex.ev_lift * Math.pow(Math.max(0, Math.sin(Math.PI * lf)), ex.camx);
+      var a = ex.cd * Math.min(Math.PI * ex.ev_d * lift, amax), T = T0e * Math.pow(p / p0, (np - 1) / np);
+      var m = mRT / (RG * T0e), dm = p > pE ? a * p / Math.sqrt(RG * T) * psiF(pE / p, g) * dt : 0;
+      m = Math.max(m * 1e-3, m - dm); mRT = m * RG * T0e;
+      var V1 = V(th), V2 = V(th + dth), pn = Math.max(pE, Math.pow(mRT / V2, np) * Math.pow(p0, 1 - np));
+      if (th + dth <= 180.0001) lossE += (p0 * Math.pow(V0 / ((V1 + V2) / 2), np) - (p + pn) / 2) * (V2 - V1);
+      else pump += ((p + pn) / 2 - pE) * (V1 - V2);
+      p = pn;
+    }
+    return { loss: lossE / vs, pump: Math.max(0, pump) / vs, pEvo: p0 };
+  }
+  /** exhaust side at one operating point: back pressure, tuning, residual, blowdown (all Pa / fractions) */
+  function exhaustAt(t, n, mdot, pI, pr, phi, dpTurb) {
+    var ex = t.ex, load = pr * (0.5 + 0.5 * Math.min(1, n / 4000)), Tp = ex.t0p + ex.tap * load, Tt = EXM.t_amb + 0.45 * (Tp - EXM.t_amb);
+    var dp = 0, parts = [];
+    for (var i = 0; i < ex.el.length; i++) {
+      var e = ex.el[i], T = Tp + (Tt - Tp) * e.x, rho = P0 / (RG * T), v = mdot / rho / e.p / (Math.PI / 4 * e.d * e.d);
+      var d = pulseM(e.c, 2 * ex.dEx) * e.K * 0.5 * rho * v * v; dp += d; parts.push([e.n, d]);
+    }
+    var pE = P0 + dp + (dpTurb || 0);
+    var ED = 180 + ex.evo, fo = ex.ov / (ex.ov + EXM.ov0), dve = 0, tr = 1;
+    for (var j = 0; j < ex.pts.length; j++) {
+      var q = ex.pts[j], nt = 850 * ED / (q.L / 0.0254 + 3), x = nt / n;
+      var gsh = x >= 1 ? Math.cos(2 * Math.PI * (x - 1)) * Math.exp(-(x - 1)) : Math.cos(2 * Math.PI * (1 - x)) * Math.exp(-((1 - x) / 0.5) * ((1 - x) / 0.5));
+      dve += -q.R * tr * EXM.a0 * fo * gsh; tr *= 1 - q.R * q.R;
+    }
+    var B = t.bore * 1000, OF = 1.45 / B * (107 + 7.8 * ex.ov + ex.ov * ex.ov) * (ex.ev_lift * 1000 * t.iv_d * 1000) / (B * B);
+    var pik = pI / 1000, pek = pE / 1000, xr = 0.632 * (phi / t.cr) * Math.pow(pik / pek, -0.74) + (pek > pik ? 1.266 * (OF / n) * Math.pow(pik / pek, -0.87) * Math.sqrt(pek - pik) : 0);
+    var bd = blowdown(t, ex, n, pI, pE, xr);
+    return { dp: dp, pE: pE, dve: dve, xr: xr, loss: bd.loss, pump: bd.pump, Tp: Tp, Tt: Tt, parts: parts, pEvo: bd.pEvo };
   }
   // v1.13.25 charge temperature after the compressor (keys only on the forced-induction part; absent = v1.13.22 behaviour):
   //  evap_x: extra share of the fuel that evaporates under boost compared with the NA carb the model was fitted on (wet compression in a
@@ -10293,12 +10433,18 @@ var Parts = (function () {
   function crFrom(tm) { // compression ratio from the swept volume and the combustion chamber (head chamber + deck)
     var vs = Math.PI / 4 * tm.bore * tm.bore * tm.stroke; return (vs + tm.vc) / tm.vc;
   }
-  function tmOf(c) { var t = Object.assign({}, c.tm); t.cr = crFrom(t); return t; }
+  /** torque-model inputs of a composed build. s = the composed stock build: with tm.exm the exhaust geometry is the stock car keys
+   *  overlaid with the build's (what the sound kernel receives, since only differing keys are sent) */
+  function tmOf(c, s) {
+    var t = Object.assign({}, c.tm); t.cr = crFrom(t);
+    if (t.exm) t.ex = exGeom(Object.assign({}, s ? s.car : {}, c.car), Object.assign({}, s ? s.phys : {}, c.phys), t);
+    return t;
+  }
 
   /** non-stock build -> vehicle object (anchored torque table, limiter, friction); stock build -> the shipped vehicle itself */
   function vehicle(def, build, base) {
     if (isStock(def, build)) return base;
-    var s = compose(def, def.stock), c = compose(def, build), ts = tmOf(s), tb = tmOf(c);
+    var s = compose(def, def.stock), c = compose(def, build), ts = tmOf(s, s), tb = tmOf(c, s);
     var v = Object.assign({}, base, c.vehicle), tab = base.torque, grid = tab.map(function (p) { return p[0]; });
     var lim = v.limiterRpm || base.limiterRpm, last = grid[grid.length - 1];
     for (var n = last + 400; n <= lim + 400; n += 400) grid.push(n);
@@ -10327,7 +10473,7 @@ var Parts = (function () {
   function soundOverrides(def, build) {
     if (isStock(def, build)) return null;
     var s = compose(def, def.stock), c = compose(def, build), out = { car: {}, phys: {} }, any = false;
-    var ts = tmOf(s), tb = tmOf(c);
+    var ts = tmOf(s, s), tb = tmOf(c, s);
     if (c.tm.vc !== s.tm.vc || c.tm.bore !== s.tm.bore || c.tm.stroke !== s.tm.stroke) c.car.cr = s.car.cr * tb.cr / ts.cr;   // anchored CR
     ['car', 'phys'].forEach(function (g) {
       Object.keys(c[g]).forEach(function (k) { if (JSON.stringify(c[g][k]) !== JSON.stringify(s[g][k])) { out[g][k] = c[g][k]; any = true; } });
@@ -10377,7 +10523,7 @@ var Parts = (function () {
   function lerpTab(t, x) { if (x <= t[0][0]) return t[0][1]; for (var i = 1; i < t.length; i++) if (x <= t[i][0]) return t[i - 1][1] + (t[i][1] - t[i - 1][1]) * (x - t[i - 1][0]) / (t[i][0] - t[i - 1][0]); var a = t[t.length - 2], b = t[t.length - 1]; return b[1] + (b[1] - a[1]) * (x - b[0]) / (b[0] - a[0]); }
   /** headline numbers for the menu: displacement, CR, anchored peak torque / power */
   function summary(def, c, s) {
-    var ts = tmOf(s), tb = tmOf(c), base = def.vehicleBase ? def.vehicleBase() : null;
+    var ts = tmOf(s, s), tb = tmOf(c, s), base = def.vehicleBase ? def.vehicleBase() : null;
     var tab = base ? base.torque : null, best = { t: 0, tn: 0, p: 0, pn: 0, pr: 1 }, ps0 = 0;
     var lim0 = (s.vehicle.limiterRpm || 5000), lim = (c.vehicle.limiterRpm || lim0);
     for (var n = 1000; n <= Math.max(lim, lim0); n += 100) {
@@ -10392,7 +10538,7 @@ var Parts = (function () {
   }
   /** merged friction: FMEP (bar, a + b·krpm + c·krpm²) -> N·m triple for the vehicle model */
   function frictionNm(fm) { var k = BAR_NM(fm.vd); return [fm.bar[0] * k, fm.bar[1] * k, fm.bar[2] * k]; }
-  return { compose: compose, check: check, vehicle: vehicle, soundOverrides: soundOverrides, torqueAt: torqueAt, crFrom: crFrom, tmOf: tmOf,
+  return { compose: compose, check: check, vehicle: vehicle, soundOverrides: soundOverrides, torqueAt: torqueAt, crFrom: crFrom, tmOf: tmOf, exhaustAt: exhaustAt, EXM: EXM,
     isStock: isStock, full: full, frictionNm: frictionNm, TM: TM, defs: {} };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
@@ -10417,7 +10563,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     ivc: 37.5, iv_d: 0.030, cdv: 0.35,                                                               // IVC derived (manual timing at 1 mm); 30.0 mm inlet sourced; Cd ESTIMATE
     up: [['venturi Solex 28 PCI', 1, 0.0215, 1.0, 4, 0]],                                            // 21.5 mm venturi sourced
     down: [['manifold branch', 2, 0.026, 1.5, 2, 1], ['single port', 2, 0.026, 1.2, 2, 1]],          // ESTIMATE geometry
-    a_tail: 2 * PI4 * 0.032 * 0.032, k_exh: 1.3, fmep: FMEP };                                       // ESTIMATE
+    a_tail: 2 * PI4 * 0.032 * 0.032, k_exh: 1.3, fmep: FMEP,                                         // ESTIMATE (a_tail / k_exh: only without exm)
+    exm: 1 };   // v1.13.27: exhaust side from the sound geometry (parts.js exhaustAt); every VW long block inherits it
   function sw(stroke, bore, cr) { return PI4 * bore * bore * stroke / (cr - 1); }   // chamber volume for a sourced CR
 
   var STOCK = {
@@ -14164,6 +14311,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.27", date: "2026-11-23", status: "done", headline: "Beetle parts: the exhaust side makes torque", text: "The exhaust parts now change torque and power, not only the sound. The torque model uses the same exhaust pipes the sound engine plays: back pressure through the heat exchangers, junctions, muffler and tailpipes with the pulsing flow, header tuning from the pipe lengths and the cam, residual exhaust gas and the exhaust valve timing. A header adds about 0.4 to 1.4 PS on a stock 1600 and more on a hot one; the 1956 heat exchangers and muffler now hold a hot 1600 back. The stock car and every sound are unchanged." },
       { v: "v1.13.26", date: "2026-11-23", status: "done", headline: "The garage, seen from the drive", text: "The garage view is new: you stand on the drive at dusk and look into an open one-car garage with a workbench, pegboard, tyre shelf and tool cart, lit by one hanging lamp. The car is parked inside with its engine end towards you and the lid or hood up: the Beetle and the 911 show their tails, the GT350, Cadillac, BRM and Model X their noses. The car sits in the garage\u2019s shade. The brake lights stay off until you brake; then their red light fills the garage (on the floor, door posts and drive in front of the Beetle and the 911, on the walls behind the others). The garage cabin view is gone. The sound in the garage now comes from where you stand: a new garage listener puts the microphone on the drive, 4.5 m in front of the door, with the direct sound (the far-end tailpipes of a front-engined car behind its body), the early reflections from the back wall, side walls and ceiling that leave through the door, and a short room tail from the room\u2019s size and surfaces (about 0.44 s). Every sound set outside the garage is unchanged." },
       { v: "v1.13.25", date: "2026-11-22", status: "done", headline: "Beetle: parts from the 1950s to today, boost and turbos you can hear", text: "The Swap parts menu now covers the Beetle\u2019s parts world from the 1950s to today: 75 parts in 18 slots, each with its year (uncertain years are marked, e.g. \u2018c. 1975?\u2019) and an era filter (parts up to 1969, 1979, 1999 or today; 1969 by default). New: Denzel 1300 engines, the VW 1600 dual-port, 78 to 84 mm cranks, 83 to 94 mm barrels, VW and CB Performance heads, Engle cams, Zenith, Speedwell, Kadron, Weber IDF and Dellorto carbs, the Shorrock supercharger, Rajay, Schwitzer, Garrett and CB Performance turbo kits, the Bosch 009, the Vintage Speed merged header with its single stinger, EMPI and Vintage Speed mufflers, and new clutch, gearbox and tyre slots. The checker knows engine cases and 6 V / 12 V. Superchargers now get louder with boost, and turbos have spool lag, a wastegate, compressor whine and turbine muffling. Boost now makes torque from the extra air and fuel (charge temperature, richer mixture, pumping and drive losses): the Rajay 1600 makes about 80 PS instead of 69. The stock car, every sound set and the other cars are unchanged." },
       { v: "v1.13.24", date: "2026-11-22", status: "done", headline: "Swap parts menu fits the iPhone screen; Apply always visible", text: "On touch screens the parts list could not be scrolled with a finger, so Apply was out of reach below the screen edge. The panel now fits the visible screen, including Safari\u2019s toolbars and the notch. Apply, Stock and Close stay pinned at the bottom, and only the parts list scrolls, by finger. Apply turns green and the footer says how many changes are waiting. Phone layouts are tighter (labels above the menus in portrait, compact rows in landscape). Sound unchanged." },
