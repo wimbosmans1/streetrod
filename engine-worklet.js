@@ -627,12 +627,14 @@
       if (o.script) { this.script = o.script; this.engGain = this.engGainTarget = 1; }
     }
     rnd() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return this.seed / 4294967296 * 2 - 1; }
+    // listener index for a source: the garage view uses the source's 'garage' listener when it has one (v1.13.26), else 'rear'
+    srcView(s) { if (this.view === 3 || this.view === 4) { const i = s.views ? s.views.indexOf('garage') : -1; return i >= 0 ? i : 0; } return this.listen; }
     makeSource(m) {
       const model = ENGINES[m.model || 'v1'];
       if (!model) throw new Error('unknown sound model ' + m.model);
       if (model.id === 'v1') return new V1Source(m.spec, this.fs);
       const s = new ListenerSource(model, m.spec, m.listeners || {}, m.views, this.fs, Object.assign({ fir: this.opts.fir || 'fft', ntap: this.opts.ntap }, this.opts.synthOpts || {}));
-      s.setView(this.view); if (s.next) { s.cur = s.next; s.pos = s.npos; s.g = s.ng; s.next = null; }
+      s.setView(this.srcView(s)); if (s.next) { s.cur = s.next; s.pos = s.npos; s.g = s.ng; s.next = null; }
       if (s.selfGated) { s.initRunning(this.engGainTarget > 0); if (this.lastCtl) s.ctl(this.lastCtl); }
       return s;
     }
@@ -653,9 +655,9 @@
         if (m.crank !== undefined) this.crank = m.crank;
         if (m.speed !== undefined) this.speed = m.speed;
         if (m.skid !== undefined) this.skid = m.skid;
-        if (m.listen !== undefined) {   // view: 0 / 3 rear, 1 / 4 cabin (3–4 are the garage)
-          this.view = m.listen | 0; this.listen = (this.view === 1 || this.view === 4) ? 1 : 0;
-          if (this.src) this.src.setView(this.listen); if (this.nsrc) this.nsrc.setView(this.listen);
+        if (m.listen !== undefined) {   // view: 0 rear, 1 cabin, 3 garage (v1.13.26: seen from the drive; the old garage cabin view 4 plays as 3)
+          this.view = m.listen | 0; this.listen = this.view === 1 ? 1 : 0;
+          if (this.src) this.src.setView(this.srcView(this.src)); if (this.nsrc) this.nsrc.setView(this.srcView(this.nsrc));
         }
       } else if (m.type === 'script') { this.script = m.script; this.scriptPos = 0; }
       if (m.type === 'ctl' && m.bay !== undefined) this.bayOn = !!m.bay;   // v1.10 engine bay view open: report the crank state
@@ -5955,12 +5957,47 @@ function engineModuleV8p(core) {
       }
       return out;
     }
-    function perspective(c, name) {
+    function perspective(c, name, lis) {
       var m = c.mouth[0], x, z;
+      if (name === 'garage') return garagePersp(c, lis || {});   // v1.13.26 generic garage listener (default off: only a 'garage' listener uses it)
       if (name === 'rear') { var mm = [m[0] - 1.0, m[1], 0.5]; return { ears: [[mm[0], mm[1] + 0.09, mm[2]], [mm[0], mm[1] - 0.09, mm[2]]], ground: 0.8, outside: true, shadow: 0.3 }; }
       if (name === 'rear_far') return { ears: [[-4.0, 0.09, 1.5], [-4.0, -0.09, 1.5]], ground: 0.8, outside: true, shadow: 0.3 };
       if (name === 'engine_bay') { x = c.intake[0]; z = c.intake[2]; return { ears: [[x - 0.25, 0.09, z + 0.55], [x - 0.25, -0.09, z + 0.55]], ground: 0.8, outside: true, shadow: 0.5, bay: true }; }
       var h = c.head; return { ears: [[h[0], h[1] + 0.09, h[2]], [h[0], h[1] - 0.09, h[2]]], ground: 0.0, outside: false, shadow: 1.0, window: name === 'in_cabin_open' };
+    }
+    /* v1.13.26 garage listener: the car is parked in a one-car garage with its engine end towards the open door (lid / hood up), the
+       microphone stands on the drive in front of the door. Geometry from the listener object (all ESTIMATES unless the car data says
+       otherwise): len = car length (m, sourced per car), face = 'front' (engine at the front) or 'rear', inside = engine end to door
+       plane (0.6 m), mic = [distance out from the door, height] ([4.5, 1.5]), room = [depth, width, height] ([6.0, 3.6, 2.4]),
+       door = [width, height] ([3.4, 1.97]), refl = pressure reflection factors [back, sides, ceiling, floor, front wall]. Car frame:
+       x forward from the rear bumper, y left, z up. u = depth into the garage from the door plane. */
+    function garagePersp(c, L) {
+      var len = L.len || 4.5, front = (L.face || 'front') !== 'rear', ins = L.inside !== undefined ? L.inside : 0.6, mic = L.mic || [4.5, 1.5];
+      var xd = front ? len + ins : -ins, sg = front ? 1 : -1, xm = xd + sg * mic[0];
+      return { ears: [[xm, 0.09, mic[1]], [xm, -0.09, mic[1]]], ground: 0.8, outside: true, shadow: 0.3, garage: true, face: front ? 'front' : 'rear',
+        xd: xd, sg: sg, room: L.room || [6.0, 3.6, 2.4], door: L.door || [3.4, 1.97], refl: L.refl || [0.89, 0.94, 0.92, 0.99, 0.94], nimg: L.nimg || 6 };
+    }
+    // early reflections inside the garage that leave through the door to the ear: image sources (order <= 3), unfolded inside the room
+    // only (the mic is outside, so the last leg must cross the door plane inside the opening); a front-wall bounce counts with the solid
+    // share of that wall. Returns the strongest pr.nimg rows [src, ear, gain, delay, 0, 0, r, 1] (1/r and R products, no shadow).
+    function garageRows(pr, ear, pos, s, e, fs, shR) {
+      var R = pr.room, Lx = R[0], W = R[1], H = R[2], D = pr.door, rf = pr.refl, out = [];
+      var u0 = pr.sg * (pr.xd - pos[0]), um = pr.sg * (pr.xd - ear[0]), solid = Math.max(0, 1 - D[0] * D[1] / (W * H));
+      function ax(p, n, Lw, lo) { var q = p - lo, v = n % 2 === 0 ? n * Lw + q : n * Lw + (Lw - q); return v + lo; }
+      for (var nu = 0; nu <= 2; nu++) for (var ny = -2; ny <= 2; ny++) for (var nz = -1; nz <= 2; nz++) {
+        var ord = nu + Math.abs(ny) + Math.abs(nz);
+        if (ord === 0 || ord > 3 || (nu === 0 && ny === 0 && nz === -1)) continue;   // direct + ground image are the main rows
+        var iu = nu === 0 ? u0 : nu === 1 ? 2 * Lx - u0 : 2 * Lx + u0, iy = ax(pos[1], ny, W, -W / 2), iz = ax(pos[2], nz, H, 0);
+        var t = -um / (iu - um), cy = ear[1] + (iy - ear[1]) * t, cz = ear[2] + (iz - ear[2]) * t;
+        if (Math.abs(cy) > D[0] / 2 || cz < 0 || cz > D[1]) continue;                   // last leg must leave through the door opening
+        var g = Math.pow(nu >= 1 ? rf[0] : 1, 1) * (nu === 2 ? rf[4] * solid : 1) * Math.pow(rf[1], Math.abs(ny));
+        g *= nz > 0 ? Math.pow(rf[2], Math.ceil(nz / 2)) * Math.pow(rf[3], Math.floor(nz / 2)) : nz < 0 ? rf[3] : 1;
+        var r = Math.sqrt((iu - um) * (iu - um) + (iy - ear[1]) * (iy - ear[1]) + (iz - ear[2]) * (iz - ear[2])), d = r / C_AIR * fs;
+        if (d >= HB - 2) continue;
+        out.push([s, e, g * shR / Math.max(r, 0.25), d, 0, 0, r, 1]);
+      }
+      out.sort(function (a, b) { return b[2] - a[2]; });
+      return out.slice(0, pr.nimg);
     }
     /** exhaust network (v8phys.build_net / net_arrays).
      *  fs is the worklet sample rate: every waveguide is at least one travel sample long at a
@@ -6502,6 +6539,7 @@ function engineModuleV8p(core) {
       this.outFit = [];
       for (j = 0; j < N; j++) {
         var rw = rows[j], s = rw[0], img = rw[5] | 0, ear = pr.ears[rw[1]], pos = srcs[s], z = img ? -pos[2] : pos[2];
+        if (rw[7]) { RQ[j * 5] = 1; continue; }   // v1.13.26 garage room rows: flat (gain + delay only)
         var dx = ear[0] - pos[0], dy = ear[1] - pos[1], dz = ear[2] - z, r = Math.sqrt(dx * dx + dy * dy + dz * dz);
         var th = Math.acos(Math.max(-1, Math.min(1, (dx * ax[0] + dy * ax[1] + dz * (img ? -ax[2] : ax[2])) / r)));
         var useDir = op.dir && s <= 1, sigD = 0.0, sinPsi = (pos[2] + ear[2]) / r;
@@ -6655,7 +6693,7 @@ function engineModuleV8p(core) {
       S[0] = s0; S[1] = s1; S[2] = s2; S[3] = s3; S[4] = s4; S[5] = s5; S[6] = s6; S[7] = s7; R.seed = seed; R.di = di;
     };
     V8pSynth.prototype._listener = function (name, keepState) {
-      var c = this.c, P = this.P, fs = this.fs, pr = perspective(c, name), rows = [], e, s;
+      var c = this.c, P = this.P, fs = this.fs, pr = perspective(c, name, this.listener), rows = [], e, s;
       this.persp = pr; this.posName = name;
       var srcs = [c.mouth[0], c.mouth[1], c.intake, c.covers[0], c.covers[1], c.starter_pos];
       for (e = 0; e < 2; e++) for (s = 0; s < srcs.length; s++) {
@@ -6664,8 +6702,10 @@ function engineModuleV8p(core) {
           var sh = 1.0;
           if (front && !pr.bay) sh = c.eng_shadow !== undefined ? c.eng_shadow : pr.shadow;   // job 8: rear engine behind the lid grille
           if (!front && pr.bay) sh = P.bay_exh;
+          if (pr.garage) sh = front ? 1.0 : (pr.face === 'front' ? pr.shadow : 1.0);   // garage: engine end open towards the mic; far-end tailpipes behind the body
           if (s === 5) sh = Math.max(sh, 0.7) * (P.k_st_out !== undefined ? P.k_st_out : 1.0);   // starter: bellhousing / body diffraction, still heard from behind
           rows.push([s, e, sh / Math.max(r, 0.25), r / C_AIR * fs, 0, 0, r]);
+          if (pr.garage && s <= 2) Array.prototype.push.apply(rows, garageRows(pr, ear, pos, s, e, fs, sh < 1 ? Math.sqrt(sh) : 1.0));   // ESTIMATE: room paths of a shadowed source pass over the body (sqrt of the direct shadow)
           if (s !== 5) {   // starter is under the bellhousing: a specular ground image puts static comb notches (~0.9/2.7/4.5 kHz) in the grind
             var ri = dist(ear, [pos[0], pos[1], -pos[2]]);
             rows.push([s, e, sh * pr.ground / Math.max(ri, 0.25), ri / C_AIR * fs, 0, 1, ri]);
@@ -6974,6 +7014,7 @@ function engineModuleV8p(core) {
       var fs = this.fs, maxD = 512, dL = Math.min(maxD - 1, Math.round(rL / C_AIR * fs)), dR = Math.min(maxD - 1, Math.round(rR / C_AIR * fs));
       var sh = 1.0;
       if (pr.outside && !pr.bay) sh = this.c.eng_shadow !== undefined ? this.c.eng_shadow : (pr.shadow || 1);
+      if (pr.garage) sh = 1.0;   // v1.13.26: lid / hood open towards the garage mic
       var gL = sh / rL, gR = sh / rR;
       if (!pr.outside) {
         // rear-engine cars: the fan is behind the rear bulkhead / parcel shelf
@@ -7093,7 +7134,7 @@ function engineModuleV8p(core) {
       this.game = this.game || { running: false, starter: false, warm: false, gear: 0, has: false, speed: 0 };
       this.ctlr = this.ctlr || new Ctl(this, false);
       this.listener = listener;
-      this.persp = perspective(this.c, (listener && listener.position) || 'rear');
+      this.persp = perspective(this.c, (listener && listener.position) || 'rear', listener);
       this.posName = (listener && listener.position) || 'rear';
       this.PV = new Float64Array(16);
       this.PV[4] = this.P.k_cab || 0.45;
