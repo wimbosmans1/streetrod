@@ -6037,7 +6037,8 @@ function engineModuleV8p(core) {
             node(1, cy - 1, [[pp, 0]]);
             prims.push(pp);
           }
-          head = pipe(c.head_len, c.pipe_d, 1);
+          // v1.13.27 generic coll_d (default off): a header's own collector / head-pipe bore; the muffler chamber stays on pipe_d
+          head = pipe(c.head_len, (c.coll_d || c.pipe_d), 1);
           node(0, 0, prims.map(function (p) { return [p, 1]; }).concat([[head, 0]]));
           prevHx = head;
           if (c.hx) {
@@ -6046,7 +6047,7 @@ function engineModuleV8p(core) {
             node(0, 0, [[prevHx, 1], [hxP, 0]]);
             prevHx = hxP;
           }
-          var interS = pipe(c.inter_len + dl, c.pipe_d, 1);
+          var interS = pipe(c.inter_len + dl, (c.coll_d || c.pipe_d), 1);
           node(0, 0, [[prevHx, 1], [interS, 0]]);
           bankOut.push(interS);
         }
@@ -6065,7 +6066,7 @@ function engineModuleV8p(core) {
             prevS = pS;
           }
         } else {
-          prevS = pipe(0.04, c.pipe_d, 2, 0);
+          prevS = pipe(0.04, (c.coll_d || c.pipe_d), 2, 0);
           node(0, 0, [[bankOut[0], 1], [bankOut[1], 1], [prevS, 0]]);
         }
         var tdS = (c.tail_d != null ? c.tail_d : c.pipe_d);
