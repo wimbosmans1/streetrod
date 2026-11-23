@@ -10139,7 +10139,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Physics;
  */
 var Parts = (function () {
   'use strict';
-  var P0 = 101325, T0 = 293.15, RG = 287, RHO0 = P0 / (RG * T0), LHV = 43.0e6, AFR = 12.5, GAM = 1.32;
+  var P0 = 101325, T0 = 293.15, RG = 287, RHO0 = P0 / (RG * T0), LHV = 43.0e6, AFR = 12.5, GAM = 1.32, AFR_ST = 14.7, H_FG = 350e3;
   var KP = { 1: 2.6, 2: 1.8, 4: 1.3 };   // ESTIMATE: peak / mean flow factor vs cylinders sharing a path
   var BAR_NM = function (vd) { return vd * 1e5 / (4 * Math.PI); };   // 1 bar FMEP -> N·m of crank torque (4-stroke)
 
@@ -10193,22 +10193,52 @@ var Parts = (function () {
       // compressor heating with eta_c; no shaft drive from the crank, but the turbine raises exhaust back pressure (k_bp × boost)
       var xt = Math.max(0, Math.min(1, (n - tu.n0) / (tu.n1 - tu.n0))), dpb = Math.min(tu.dp_wg, (tu.dp_max || tu.dp_wg) * xt * xt);
       pr = 1 + dpb / P0;
-      var dTt = T0 * (Math.pow(pr, 0.2857) - 1) / tu.eta_c, rhoT = RHO0 * pr * T0 / (T0 + dTt);
+      if (tu.chg) {   // v1.13.25 charge model: the wastegate holds the plenum at P0 + boost, so the carb / filter loss ahead of the compressor
+        // raises the compressor pressure ratio (more heating) instead of lowering the charge pressure; port losses stay after the plenum
+        var rhoG = RHO0 * pr, dpuG = 0, dpdG = 0, prc = pr;
+        for (var it = 0; it < 3; it++) {
+          dpuG = dpChain(Qe * rhoG / RHO0, tm.up, RHO0); dpdG = dpChain(Qe, tm.down, rhoG);
+          prc = P0 * pr / Math.max(0.5 * P0, P0 - dpuG);
+          rhoG = (P0 * pr - dpdG) / (RG * chargeT(tu, T0 * (1 + (Math.pow(prc, 0.2857) - 1) / tu.eta_c)));
+        }
+        rhoM = rhoG; dpIn = dpdG; dpTurb = (tu.k_bp || 1.2) * dpb;
+      } else {
+      var dTt = T0 * (Math.pow(pr, 0.2857) - 1) / tu.eta_c, rhoT = RHO0 * pr * T0 / chargeT(tu, T0 + dTt);
       var dpuT = dpChain(Qe * rhoT / RHO0, tm.up, RHO0), dpdT = dpChain(Qe, tm.down, rhoT);
       rhoM = rhoT * (1 - (dpuT + dpdT) / (P0 * pr)); dpIn = dpuT + dpdT; dpTurb = (tu.k_bp || 1.2) * dpb;
+      }
     } else if (b) {
       var nb = n * b.ratio, Qb = b.vb * nb / 60 * Math.max(0, 1 - b.n_leak / nb);
       var dpu = dpChain(Qb, tm.up, RHO0, true), rin = RHO0 * (1 - dpu / P0);
       pr = Qb * rin / (Qe * RHO0);
       var dTc = pr > 1 ? T0 * (Math.pow(pr, 0.2857) - 1) / b.eta_c : 0;
-      var rhoMf = RHO0 * pr * T0 / (T0 + dTc), dpd = dpChain(Qe, tm.down, rhoMf);
+      var rhoMf = RHO0 * pr * T0 / chargeT(b, T0 + dTc), dpd = dpChain(Qe, tm.down, rhoMf);
       rhoM = rhoMf * (1 - dpd / (P0 * pr)); Pdrive = Qb * rin * 1005 * dTc / b.eta_mech; dpIn = dpu + dpd;
     } else { dpIn = dpChain(Qe, tm.up, RHO0) + dpChain(Qe, tm.down, RHO0); rhoM = RHO0 * (1 - dpIn / P0); }
     var rhoE = P0 / (RG * 900), vt = rhoM * Qe * 1.08 / rhoE / tm.a_tail, dpEx = tm.k_exh * 0.5 * rhoE * vt * vt;
     var etaI = TM.kc * (1 - Math.pow(tm.cr, 1 - GAM)), imep = etaI * ve * rhoM * LHV / AFR;
     var k = n / 1000, f = tm.fmep, fmep = (f[0] + f[1] * k + f[2] * k * k) * 1e5, pmep = dpEx + dpTurb + ((b || tu) ? 0 : 0.5 * dpIn);
+    var fi = tu || b;
+    if (fi && fi.chg) {   // v1.13.25 charge model (key chg: 1; builds without it keep the v1.13.22 boosted branch): fuel follows the trapped air at the
+      // boost AFR (fi.afr, richer under boost) with the fuel-air-cycle efficiency curve; pumping uses the real manifold pressure, so boost
+      // pressure above the exhaust back pressure gives pumping work back (pmep = p_exh − p_int, with the same 0.5 intake-loss share as NA)
+      if (fi.afr) imep *= fphi(AFR_ST / fi.afr) / fphi(AFR_ST / AFR);
+      pmep = dpEx + dpTurb + 0.5 * dpIn - (pr - 1) * P0;
+    }
     return { T: (imep - fmep - pmep) * vd / (4 * Math.PI) - Pdrive / (2 * Math.PI * n / 60), pr: pr };
   }
+  // v1.13.25 charge temperature after the compressor (keys only on the forced-induction part; absent = v1.13.22 behaviour):
+  //  evap_x: extra share of the fuel that evaporates under boost compared with the NA carb the model was fitted on (wet compression in a
+  //          draw-through compressor, or fuel sprayed into the hot charge in a blow-through carb); latent heat 350 kJ/kg at the boost AFR
+  //  ic_eff: intercooler effectiveness (0 = none)
+  function chargeT(fi, T2) {
+    if (!fi.chg) return T2;
+    var t = T2 - (fi.ic_eff || 0) * (T2 - T0);
+    if (fi.evap_x) t -= fi.evap_x * H_FG / ((fi.afr || AFR) * 1005);
+    return Math.max(T0 - 30, t);
+  }
+  // relative indicated work vs equivalence ratio (fuel-air cycle, Heywood fig. 5-9 shape: flat peak near phi 1.15; ESTIMATE fit)
+  function fphi(phi) { return 1 - 0.5 * (phi - 1.15) * (phi - 1.15); }
   function crFrom(tm) { // compression ratio from the swept volume and the combustion chamber (head chamber + deck)
     var vs = Math.PI / 4 * tm.bore * tm.bore * tm.stroke; return (vs + tm.vc) / tm.vc;
   }
@@ -10481,7 +10511,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     // sound: generic PD blower block. 4 sliding vanes (Club VeeDub 1988, Hemmings 2018), 1.3 × crank; Q from vb; ~5 psi (34.5 kPa) at peak revs;
     // acoustic efficiency 1e-4 of gas power (ESTIMATE; period ads called it quiet); boost builds with throttle (thr0 0.15, ESTIMATE).
     sound: { car: { blower: { pd: 1, n_blades: 4, ratio: 1.3, Q_ref: 0.0006 * 1.3 * 3700 / 60, rpm_ref: 3700, dp_ref: 34500, eta: 1e-4, thr0: 0.15, pos: [0.50, 0.12, 0.80], boost: 1 } } },   // v1.13.25 boost: 1 = the charge block raises the manifold pressure
-    tm: { blower: { vb: 0.0006, ratio: 1.3, eta_c: 0.6, n_leak: 250, eta_mech: 0.85 } }, prov: { 'tm.blower.ratio': 's', 'tm.blower.vb': 'e', 'tm.blower.eta_c': 'e', 'blower.n_blades': 's', 'blower.eta': 'e', 'blower.pos': 'e' } });
+    tm: { blower: { vb: 0.0006, ratio: 1.3, eta_c: 0.6, n_leak: 250, eta_mech: 0.85, chg: 1, afr: 11.5, evap_x: 0.3 } }, prov: { 'tm.blower.ratio': 's', 'tm.blower.vb': 'e', 'tm.blower.eta_c': 'e', 'tm.blower.afr': 'e: richer main jet under boost', 'tm.blower.evap_x': 'e: draw-through', 'blower.n_blades': 's', 'blower.eta': 'e', 'blower.pos': 'e' } });
   add({ id: 'ign.010', slot: 'ignition', label: 'Bosch 010 centrifugal distributor', desc: 'Centrifugal advance only · 1960–', years: [1960, 1969],
     src: 'sparkingplugs.com; TheSamba: Transporter distributor, popular swap', note: 'No WOT torque change in the model (full advance is similar)' });
   add({ id: 'exh.empi', slot: 'exhaust', label: 'EMPI extractor header', desc: 'Replaces the heat exchangers (no cabin heat) · 1963–', years: [1963, 1969],
@@ -10610,16 +10640,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     attrs: { fi: 'shorrock' }, requires: [{ attr: 'carbkind', in: ['single'], msg: 'The Shorrock kit replaces the single stock carb with its own Stromberg CD' }],
     warn: 'Shorrock: belt-driven; drive ratio and rotor volume are estimates (sized for about 7 psi at peak revs)',
     sound: { car: { blower: { pd: 1, boost: 1, n_blades: 4, ratio: 1.0, Q_ref: 0.00075 * 1.0 * 4500 / 60, rpm_ref: 4500, dp_ref: 48000, eta: 1e-4, thr0: 0.15, pos: [0.50, -0.12, 0.80] } } },
-    tm: { blower: { vb: 0.00075, ratio: 1.0, eta_c: 0.6, n_leak: 250, eta_mech: 0.85 } },
-    prov: { 'blower.n_blades': 's', 'blower.dp_ref': 's: about 7 psi max', 'tm.blower.vb': 'e', 'tm.blower.ratio': 'e', 'blower.eta': 'e', 'blower.pos': 'e' } });
+    tm: { blower: { vb: 0.00075, ratio: 1.0, eta_c: 0.6, n_leak: 250, eta_mech: 0.85, chg: 1, afr: 11.5, evap_x: 0.3 } },
+    prov: { 'tm.blower.afr': 'e', 'tm.blower.evap_x': 'e: draw-through', 'blower.n_blades': 's', 'blower.dp_ref': 's: about 7 psi max', 'tm.blower.vb': 'e', 'tm.blower.ratio': 'e', 'blower.eta': 'e', 'blower.pos': 'e' } });
   // turbos: generic turbo block (sound: c.turbo = charge + turbine damping + whine; torque: tm.turbo). Housing, wheel and spool numbers are ESTIMATES:
   // volute 0.12 m × 5 × pipe area; wheel passage 21 mm (≈ 3.5 cm² turbine nozzle) × 40 mm with packing 0.6 (damps 150–1500 Hz by about 3–6 dB in the model);
   // compressor 6 full blades, 55 mm wheel; spool tau 0.7–1.0 s up, 0.3 s down; boost ~ ((rpm − n0) / (n1 − n0))² × throttle².
   function turbo(o) {
     var tb = { dp_wg: o.dp, n0: o.n0, n1: o.n1, tau_up: o.tau || 0.8, tau_dn: 0.3, vol_len: 0.12, vol_ratio: 5, th_len: 0.04, th_d: o.thd || 0.021, th_pack: 0.6,
       turbo_whine: 1, n_blades: 6, d: o.d || 0.055, Q_ref: 0.045, rpm_ref: 4000, dp_ref: o.dp, eta: 3e-5, u_min: 70, pos: [0.30, 0.20, 0.45] };
-    return { sound: { car: { turbo: tb } }, tm: { turbo: { dp_wg: o.dp, n0: o.n0, n1: o.n1, eta_c: o.eta_c || 0.6, k_bp: 1.2 } },
-      prov: { 'turbo.dp_wg': o.dpSrc, 'turbo.n0/n1': 'e', 'turbo.tau_up': 'e', 'turbo.housing': 'e', 'turbo.whine': 'e', 'tm.turbo.eta_c': 'e', 'tm.turbo.k_bp': 'e' } };
+    return { sound: { car: { turbo: tb } }, tm: { turbo: { dp_wg: o.dp, n0: o.n0, n1: o.n1, eta_c: o.eta_c || 0.6, k_bp: 1.2, chg: 1, afr: 11.5, evap_x: 0.3 } },
+      prov: { 'turbo.dp_wg': o.dpSrc, 'turbo.n0/n1': 'e', 'turbo.tau_up': 'e', 'turbo.housing': 'e', 'turbo.whine': 'e', 'tm.turbo.eta_c': 'e', 'tm.turbo.k_bp': 'e', 'tm.turbo.afr': 'e: period turbo carb advice 11.5–12', 'tm.turbo.evap_x': 'e' } };
   }
   var TREQ = [{ attr: 'exh', in: ['turbo'], msg: 'A turbo needs the turbo header (choose it in Exhaust manifold, or pick the kit)' }];
   add(Object.assign({ id: 'fi.rajay', slot: 'fi', label: 'Rajay 377B25 turbocharger kit', desc: 'Draw-through, about 10 psi; 115–120 hp on a 1600 · 1970–71', years: [1970, 1979], yl: '1970',
@@ -13945,7 +13975,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
-      { v: "v1.13.25", date: "2026-11-22", status: "done", headline: "Beetle: parts from the 1950s to today, boost and turbos you can hear", text: "The Swap parts menu now covers the Beetle\u2019s parts world from the 1950s to today: 75 parts in 18 slots, each with its year (uncertain years are marked, e.g. \u2018c. 1975?\u2019) and an era filter (parts up to 1969, 1979, 1999 or today; 1969 by default). New: Denzel 1300 engines, the VW 1600 dual-port, 78 to 84 mm cranks, 83 to 94 mm barrels, VW and CB Performance heads, Engle cams, Zenith, Speedwell, Kadron, Weber IDF and Dellorto carbs, the Shorrock supercharger, Rajay, Schwitzer, Garrett and CB Performance turbo kits, the Bosch 009, the Vintage Speed merged header with its single stinger, EMPI and Vintage Speed mufflers, and new clutch, gearbox and tyre slots. The checker knows engine cases and 6 V / 12 V. Superchargers now get louder with boost, and turbos have spool lag, a wastegate, compressor whine and turbine muffling. The stock car, every sound set and the other cars are unchanged." },
+      { v: "v1.13.25", date: "2026-11-22", status: "done", headline: "Beetle: parts from the 1950s to today, boost and turbos you can hear", text: "The Swap parts menu now covers the Beetle\u2019s parts world from the 1950s to today: 75 parts in 18 slots, each with its year (uncertain years are marked, e.g. \u2018c. 1975?\u2019) and an era filter (parts up to 1969, 1979, 1999 or today; 1969 by default). New: Denzel 1300 engines, the VW 1600 dual-port, 78 to 84 mm cranks, 83 to 94 mm barrels, VW and CB Performance heads, Engle cams, Zenith, Speedwell, Kadron, Weber IDF and Dellorto carbs, the Shorrock supercharger, Rajay, Schwitzer, Garrett and CB Performance turbo kits, the Bosch 009, the Vintage Speed merged header with its single stinger, EMPI and Vintage Speed mufflers, and new clutch, gearbox and tyre slots. The checker knows engine cases and 6 V / 12 V. Superchargers now get louder with boost, and turbos have spool lag, a wastegate, compressor whine and turbine muffling. Boost now makes torque from the extra air and fuel (charge temperature, richer mixture, pumping and drive losses): the Rajay 1600 makes about 80 PS instead of 69. The stock car, every sound set and the other cars are unchanged." },
       { v: "v1.13.24", date: "2026-11-22", status: "done", headline: "Swap parts menu fits the iPhone screen; Apply always visible", text: "On touch screens the parts list could not be scrolled with a finger, so Apply was out of reach below the screen edge. The panel now fits the visible screen, including Safari\u2019s toolbars and the notch. Apply, Stock and Close stay pinned at the bottom, and only the parts list scrolls, by finger. Apply turns green and the footer says how many changes are waiting. Phone layouts are tighter (labels above the menus in portrait, compact rows in landscape). Sound unchanged." },
       { v: "v1.13.23", date: "2026-11-22", status: "done", headline: "Beetle: part swaps you can hear", text: "Part swaps now change the sound clearly and for physical reasons. Bigger engines no longer idle quieter (the idle air scales with displacement) and use their real VW valve sizes. The Okrasa twin carbs breathe through small mesh filters instead of the oil-bath cleaner, so the intake is louder. The Abarth\u2019s four tips are in the sound. The Judson supercharger whines at 4 vanes \u00d7 1.3 \u00d7 crank speed from a new generic blower block. Stock builds and every sound set are bit-identical." },
       { v: "v1.13.22", date: "2026-11-22", status: "done", headline: "Beetle: swap 1960s parts in the engine bay", text: "The 1956 Beetle is now described as interchangeable parts (engine, crank, barrels, heads, cam, carburettor, forced induction, distributor, exhaust, muffler, cooling, electrics, fuel). A Swap parts button appears only in the Beetle\u2019s engine bay view. It lists period parts by brand and type: VW 1200 / 1300 / 1500 engines, the Okrasa TS and TSV kits (dual-port heads, twin Solex 32 PBIC carbs, 69.5 mm stroker crank), the Judson vane supercharger, the Porsche 356 crank, the EMPI extractor header, the Abarth 4-tip exhaust, the Bosch 010 distributor and more. Impossible combinations are blocked (for example Okrasa heads without the twin carbs, or a 12 V 1500 in a 6 V car). Risky ones show a warning (octane, cooling, stock crank, clutch). Torque follows a lean physics model anchored on the stock curve, and the engine sound follows the swapped geometry. The stock Beetle reproduces the previous data exactly. The game now uses one friction model for the Beetle (Barnes-Moss FMEP plus the cooling fan; estimate): full-throttle acceleration and top speed are unchanged, with less engine braking. Every sound set stays bit-identical, and the other cars are untouched." },
