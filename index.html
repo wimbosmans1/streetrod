@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.31)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.32)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -373,6 +373,29 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
   .partsBox .prow { flex-wrap: wrap; } .partsBox .prow span { flex: 1 1 100%; } .partsBox select { flex: 1 1 100%; font-size: 16px; }
   .partsBox .pdesc, .partsBox .pprice { margin-left: 0; }
 }
+/* road course (draft): HUD (time, sector, next bend, mini map), steering pad and result card; all hidden unless the mode is on */
+#roadHud { position: absolute; z-index: 11; display: flex; gap: 8px; align-items: flex-start; pointer-events: none; max-width: 70%; }
+#roadHud.hidden, #steerPad.hidden, #roadCard.hidden { display: none; }
+#roadHudT { background: rgba(22,18,14,.78); color: #f6ead0; border-radius: 8px; padding: 5px 9px; font: 13px/1.35 'Trebuchet MS', Arial, sans-serif; }
+#roadHudT .rt { font: bold 20px 'Courier New', monospace; } #roadHudT .rs { opacity: .8; } #roadHudT .rn { color: #ffd36a; } #roadHudT .rb { opacity: .85; }
+#roadHudT b.g { color: #6be37b; } #roadHudT b.r { color: #ff7a5a; }
+#roadMap svg { display: block; background: rgba(22,18,14,.55); border-radius: 8px; }
+#roadMap .rmRoad { stroke: #f6ead0; stroke-width: 2.2; stroke-linejoin: round; } #roadMap .rmCar { fill: #ff4a2a; stroke: #fff; stroke-width: 1.2; }
+#roadMap .rmStart { fill: #6be37b; } #roadMap .rmFin { fill: #fff; stroke: #000; stroke-width: 1; }
+#steerPad { position: absolute; z-index: 13; height: 58px; pointer-events: auto; touch-action: none; -webkit-user-select: none; user-select: none; cursor: pointer; }
+#steerPad .spTrack { position: relative; height: 100%; border-radius: 29px; background: rgba(22,18,14,.55); border: 2px solid rgba(246,234,208,.7); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-sizing: border-box; color: #f6ead0; font: bold 13px 'Trebuchet MS', Arial, sans-serif; letter-spacing: .12em; }
+#steerPad .spT { opacity: .65; } #steerPad .spL, #steerPad .spR { font-size: 18px; }
+#steerPad #spKnob { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: #f2c230; border: 3px solid #1c1a17; box-sizing: border-box; pointer-events: none; }
+#roadCard { position: absolute; z-index: 25; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f3e9d2; color: #2a2016; border-radius: 12px; padding: 12px 16px; font: 15px/1.35 Georgia, serif; box-shadow: 0 8px 30px rgba(0,0,0,.6); min-width: 280px; max-height: 92%; overflow-y: auto; }
+#roadCard h3 { margin: 0 0 6px; color: #8a3b12 !important; font-size: 17px; }
+#roadCard table { border-collapse: collapse; width: 100%; } #roadCard td { padding: 2px 6px; } #roadCard td:last-child { text-align: right; font-family: 'Courier New', monospace; font-weight: bold; }
+#roadCard tr.et td { font-size: 17px; border-top: 1px solid #c9b98f; } #roadCard .best { margin: 6px 0 2px; font-weight: bold; } #roadCard .note { margin: 2px 0 8px; font-size: 12px; color: #6a5a42; }
+#roadCard .row { display: flex; gap: 8px; justify-content: center; }
+html.vis-ink #roadCard { background: #f6eedb; border: 3px solid #1c1a17; border-radius: 6px; box-shadow: 6px 6px 0 #1c1a17; font-family: 'Trebuchet MS', sans-serif; }
+html.vis-ink #roadHudT, html.vis-ink #roadMap svg { border: 2px solid #1c1a17; }
+html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: system-ui, sans-serif; border-radius: 10px; } html.vis-flat #roadCard h3 { color: #ffb23e !important; } html.vis-flat #roadCard .note { color: #8a93a0; }
+@media (max-height: 430px) { #roadHudT { font-size: 11px; padding: 3px 6px; } #roadHudT .rt { font-size: 16px; } #roadMap svg { width: 80px; height: 80px; } }
+#roadHud.narrow #roadMap { display: none; } #roadHud.narrow #roadHudT { font-size: 11px; padding: 3px 7px; } #roadHud.narrow #roadHudT .rt { font-size: 16px; }
 </style>
 <script>
 /* v1.8.2: self-reporting on real devices. Any uncaught error or rejected promise is shown in a red box at the bottom of the page
@@ -430,6 +453,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
+      <button class="tb more" id="bRoad" data-act="road" title="Road course (draft): one winding road, 2.5 miles, solo (key C)">Road course</button>
       <button class="tb more hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
       <button class="tb more" id="bGearbox" data-act="gearbox" title="Manual gearbox: rev-match (clutch dip, blip on downshifts, rev-match on upshifts) or classic lift-shift (key G)">Rev-match</button>
       <button class="tb more" id="bUnits" data-act="units">km/h</button>
@@ -446,6 +470,9 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
     </div>
     <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
     <div id="dragCard" class="hidden"></div>
+    <div id="roadHud" class="hidden" aria-live="off"><div id="roadMap"></div><div id="roadHudT"></div></div>
+    <div id="steerPad" class="hidden" aria-label="Steering pad: touch left or right of the centre"><div class="spTrack"><span class="spL">&#9664;</span><span class="spT">STEER</span><span class="spR">&#9654;</span><i id="spKnob"></i></div></div>
+    <div id="roadCard" class="hidden"></div>
     <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
     <div id="partsDlg" class="hidden" role="dialog" aria-labelledby="partsTitle"><div class="partsBox"><div class="partsHead"><button class="tb aboutX" data-act="partsClose" aria-label="Close">&times;</button><h2 id="partsTitle">Swap parts</h2></div><div id="partsBody" class="partsScroll"></div><div class="partsBtns"><span id="partsState" class="pstate"></span><button class="tb pApply" id="bPartsApply" data-act="partsApply">Apply</button><button class="tb" data-act="partsStock">Stock</button><button class="tb" data-act="partsClose">Close</button></div></div></div>
     <div id="specsDlg" class="hidden" role="dialog" aria-modal="true" aria-labelledby="specsTitle"><div class="aboutBox"><button class="tb aboutX" data-act="specsClose" aria-label="Close">&times;</button><h2 id="specsTitle">Engine specifications</h2><div id="specsBody"></div></div></div>
@@ -466,6 +493,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
       <tr><td>A / D</td><td>Steer left / right (touch: drag sideways on the road)</td></tr>
       <tr><td>Q</td><td>Drag strip (1/4 mile) on / off</td></tr>
+      <tr><td>C</td><td>Road course (draft): Mesa Road, 2.5 miles, solo, on / off. A / D steer (touch: the steering pad); the clock starts at the line</td></tr>
       <tr><td>R</td><td>Radio (Cadillac)</td></tr>
       <tr><td>T</td><td>Reset trip meter</td></tr>
       <tr><td>M</td><td>Mute</td></tr>
@@ -9947,6 +9975,9 @@ var Physics = (function () {
     var Nr = clamp(Wt * c.rearFrac + dN, 0.15 * Wt, 0.85 * Wt), Nf = Wt - Nr;
     // drive load: the rear axle; AWD (viscous coupling, up to frontMax of the drive to the front) can use the front axle's grip too
     var Nd = c.awd ? Math.min(Wt, Nr / (1 - c.awd.frontMax)) : Nr;
+    // road-course draft (generic, default off): inp.grip (0..1) = share of the tyres' grip left for driving and braking while the car
+    // corners (friction circle, from js/road.js); absent = unchanged
+    if (inp.grip !== undefined && inp.grip < 1) { var gk = Math.max(0.05, inp.grip); Nr *= gk; Nf *= gk; Nd *= gk; }
 
     // ---- brakes: demand, fade, lock-up (front axle on the body, rear on the tyre) ----
     var B = c.brakes;
@@ -10018,6 +10049,7 @@ var Physics = (function () {
     // rolling resistance; crr2 (p997 only, v1.11.2): the tyre's speed-dependent part, crr = crr + crr2 v^2 (SAE J2452 /
     // Ehlers form: 0.0095 / p[bar] per (100 km/h)^2), so cars without crr2 are unchanged
     var Froll = (c.crr + (c.crr2 || 0) * this.v * this.v) * Wt;   // static-capable (treated like friction)
+    if (inp.resist) Froll += inp.resist;   // road-course draft (generic, default off): cornering drag + off-road rolling (N), from js/road.js
     var v = this.v, a, ae, aw;
     var Jw = c.awd ? c.wheelInertiaRear + c.wheelInertiaFront : c.wheelInertiaRear;
     var self = this;
@@ -10179,6 +10211,7 @@ var Physics = (function () {
     if (spd > 0.02) {
       var sign = this.v >= 0 ? 1 : -1;
       Fdrag = -sign * ((c.crr || 0.008) * m * G0 + 0.5 * RHO * (c.cd || 0.24) * (c.area || 2.6) * this.v * this.v);
+      if (inp.resist) Fdrag -= sign * inp.resist;   // road-course draft (generic, default off)
     }
     var Fb = 0;
     if (bpedal > 0 && spd > 0.05) Fb = -(this.v >= 0 ? 1 : -1) * bpedal * (c.brakes && c.brakes.capG ? c.brakes.capG : 1) * m * G0 * 0.85;
@@ -11873,6 +11906,214 @@ var DragStrip = (function () {
   return { Run: Run, QUARTER: 1320 * FT, ROLLOUT: ROLLOUT, FT: FT };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = DragStrip;
+</script>
+<script>/* js/road.js */
+/*
+ * road.js (road-course draft): one authored winding road + a light lateral "grip budget" layer on top of the existing
+ * longitudinal solver (physics.js keeps we / ww / v). Pure (no DOM); also used by test/road_test.js.
+ *
+ * Track: data only. A course is a list of straights {L} and bends {R, deg, dir (+1 right / -1 left), ramp}; bends get linear
+ * curvature ramps (clothoid entry / exit). Sampled every 1 m into curvature k(s), heading th(s) and plan position x(s), y(s).
+ *
+ * Lateral layer (per car, no per-car code; generic default-off keys on the vehicle object):
+ *   mu_lat = muPeak (tyre part / vehicle) x latK x speed factor x surface factor
+ *   latK   steady-state skidpad g / tyre muPeak = 0.617 / 0.78 = 0.79 (0.617 g on a 100 ft radius: Road & Track, March 1971, VW Super
+ *          Beetle on 5.60-15; the 1956 car is assumed the same, ESTIMATE; other cars use it too, ESTIMATE). Optional vehicle key latK overrides.
+ *   speed  dry asphalt, new tyre: mu 0.85 @ 50, 0.80 @ 90, 0.75 @ 130 km/h (Bosch Automotive Handbook 10th ed., in Wong,
+ *          Theory of Ground Vehicles 5th ed., Table 1.6) -> x (1 - 0.00147 (km/h - 50)) above 50 km/h.
+ *   circle ay_max = mu_lat g sqrt(1 - (ax_tyre / (muPeak g))^2): braking or driving hard leaves less for the corner (friction circle),
+ *          and physics gets inp.grip = sqrt(1 - (ay / ay_cap)^2) so a hard corner leaves less for braking / traction.
+ *   over   asking for more than ay_max: the car follows ay_max (runs wide), grip falls towards muSlide / muPeak when the demand
+ *          is 30 % over, and the tyre slip angle grows -> cornering drag F = m ay sin(alpha) (inp.resist to physics).
+ *   off    surface under each side's wheels: gravel shoulder (rolled gravel crr 0.02, mu 0.60), dirt (unpaved crr 0.05, dry earth
+ *          mu 0.68), sand (crr 0.30) (Bosch / Wong Tables 1.1, 1.2, 1.4); mu taken relative to dry asphalt 0.85, crr extra over 0.013.
+ *          A fence 14 m out stops the car (speed x 0.25).
+ *   steer  input -1..1 -> path curvature. Full input = ASSIST (1.1) x the grip limit at this speed (a steering aid for keys / touch),
+ *          never more than the geometric lock (turning circle, vehicle key turnCircle, default 11 m = 1956 Beetle 36 ft, sourced).
+ */
+var RoadCourse = (function () {
+  var G = 9.81, MI = 1609.344;
+  var ASSIST = 1.10;          // full steering input asks for 110 % of the current grip limit (game aid, not physics)
+  var TAU_K = 0.15;           // s, path-curvature response to steering (ESTIMATE: yaw build-up of a light car)
+  var ALPHA_PK = 0.12;        // rad (~7 deg), tyre slip angle at the cornering limit (ESTIMATE: bias-ply 6-10 deg)
+  var MU_ASPH = 0.85;         // Bosch / Wong: dry asphalt peak (new tyre, 50 km/h): reference for the off-road ratios
+  var CRR_ASPH = 0.013;       // Bosch: car tyres on concrete / asphalt
+  var SURF = [                // by distance of a wheel from the centre line (m)
+    { to: 3.6, name: 'asphalt', mu: 1, crr: 0 },
+    { to: 4.6, name: 'gravel', mu: 0.60 / MU_ASPH, crr: 0.020 - CRR_ASPH },
+    { to: 10, name: 'dirt', mu: 0.68 / MU_ASPH, crr: 0.050 - CRR_ASPH },
+    { to: 1e9, name: 'sand', mu: 0.60 / MU_ASPH, crr: 0.30 - CRR_ASPH },
+  ];
+  var FENCE = 14;
+  var LANE = 3.6, START_Y = 1.8;   // start in the right lane
+
+  // ---- the course (original; a nod to the 1989 game's "winding course about two and a half miles long") ----
+  var MESA = {
+    id: 'mesa', name: 'Mesa Road', note: '2.5 miles of two-lane desert road, one hairpin',
+    runup: 60,
+    segs: [
+      { L: 600, name: 'Start straight' },
+      { R: 260, deg: 35, dir: 1, ramp: 50, name: 'Long sweeper' },
+      { L: 320 },
+      { R: 130, deg: 55, dir: -1, ramp: 40, name: 'Windmill left' },
+      { L: 180, split: 1 },
+      { R: 90, deg: 45, dir: 1, ramp: 30, name: 'Esses' },
+      { L: 30 },
+      { R: 90, deg: 50, dir: -1, ramp: 30 },
+      { L: 700, name: 'Back straight' },
+      { R: 30, deg: 160, dir: 1, ramp: 20, name: 'Mesa hairpin' },
+      { L: 320, split: 1 },
+      { R: 65, deg: 80, dir: -1, ramp: 30, name: 'Wash left' },
+      { L: 360 },
+      { R: 180, deg: 40, dir: 1, ramp: 40, name: 'Ridge right', split: 1 },
+      { L: 240 },
+      { R: 110, deg: 45, dir: -1, ramp: 35, name: 'Last left' },
+      { L: 'finish', name: 'Finish straight' },
+    ],
+    length: 2.5 * MI,   // start line to finish line
+    runoff: 350,
+  };
+
+  function build(C) {
+    // curvature per metre, from the run-up start (station -runup) to the end of the run-off
+    var ks = [], splits = [], bends = [], i;
+    function push(k) { ks.push(k); }
+    for (i = 0; i < C.runup; i++) push(0);
+    var used = 0;
+    C.segs.forEach(function (sg) { if (sg.L !== 'finish') used += sg.L !== undefined ? sg.L : Math.round(sg.deg * Math.PI / 180 * sg.R - sg.ramp) + 2 * sg.ramp; });
+    C.segs.forEach(function (sg) {
+      var s0 = ks.length - C.runup;
+      if (sg.L !== undefined) {
+        var L = sg.L === 'finish' ? Math.round(C.length - used) : sg.L;
+        for (i = 0; i < L; i++) push(0);
+      } else {
+        var k = sg.dir / sg.R, A = sg.deg * Math.PI / 180, Lr = sg.ramp, Lc = Math.round(A * sg.R - Lr);
+        for (i = 0; i < Lr; i++) push(k * (i + 0.5) / Lr);
+        for (i = 0; i < Lc; i++) push(k);
+        for (i = 0; i < Lr; i++) push(k * (Lr - i - 0.5) / Lr);
+        bends.push({ s0: s0, s1: ks.length - C.runup, k: k, R: sg.R, deg: sg.deg, dir: sg.dir, name: sg.name || '', vLim: 0 });
+      }
+      if (sg.split) splits.push(ks.length - C.runup);
+    });
+    var finish = ks.length - C.runup;
+    for (i = 0; i < C.runoff; i++) push(0);
+    var n = ks.length, k = new Float64Array(n), th = new Float64Array(n + 1), x = new Float64Array(n + 1), y = new Float64Array(n + 1);
+    for (i = 0; i < n; i++) k[i] = ks[i];
+    for (i = 0; i < n; i++) {   // midpoint integration, 1 m steps
+      var tm = th[i] + 0.5 * k[i];
+      th[i + 1] = th[i] + k[i]; x[i + 1] = x[i] + Math.cos(tm); y[i + 1] = y[i] + Math.sin(tm);
+    }
+    var minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+    for (i = 0; i <= n; i++) { minx = Math.min(minx, x[i]); maxx = Math.max(maxx, x[i]); miny = Math.min(miny, y[i]); maxy = Math.max(maxy, y[i]); }
+    return { id: C.id, name: C.name, note: C.note, s0: -C.runup, sEnd: n - C.runup, finish: finish, splits: splits, bends: bends, k: k, th: th, x: x, y: y,
+      box: [minx, miny, maxx, maxy], lane: LANE, startY: START_Y };
+  }
+  // station lookups (s = metres from the start line; linear between 1 m samples)
+  function idx(T, s) { var u = s - T.s0; if (u < 0) u = 0; if (u > T.k.length - 1e-6) u = T.k.length - 1e-6; return u; }
+  function kAt(T, s) { var u = idx(T, s), i = Math.floor(u); return T.k[i]; }
+  function pose(T, s) {   // centre-line point + heading at station s
+    var u = idx(T, s), i = Math.floor(u), f = u - i, j = Math.min(i + 1, T.th.length - 1);
+    return { x: T.x[i] + (T.x[j] - T.x[i]) * f, y: T.y[i] + (T.y[j] - T.y[i]) * f, th: T.th[i] + (T.th[j] - T.th[i]) * f };
+  }
+  function surf(d) { for (var i = 0; i < SURF.length; i++) if (d <= SURF[i].to) return SURF[i]; return SURF[SURF.length - 1]; }
+  function speedFactor(v) { var kmh = v * 3.6; return kmh <= 50 ? 1 : Math.max(0.8, 1 - 0.00147 * (kmh - 50)); }
+  // steady-state cornering g per unit of tyre muPeak (load transfer, camber, slip on a real car). One sourced anchor: a 1971 VW Super Beetle
+  // on 5.60-15 tyres pulled 0.617 g on a 100 ft radius (Road & Track, March 1971); over the game's Beetle muPeak 0.78 (estimate) = 0.79.
+  // Used for every car (ESTIMATE beyond the Beetle); a vehicle can carry its own sourced latK (generic key, unset = this default).
+  var LAT_K = 0.617 / 0.78;
+  function latK(c) { return c.latK || LAT_K; }
+  function trackW(c) { return c.trackW || 1.3; }
+
+  // ---- one car on the course ----
+  function Sim(T) { this.T = T; this.reset(); }
+  Sim.prototype.reset = function () {
+    var T = this.T;
+    this.s = -6; this.y = T.startY; this.psi = 0; this.kap = 0; this.ay = 0; this.alpha = 0; this.over = 0; this.grip = 1; this.resist = 0;
+    this.t = 0; this.phase = 'grid'; this.res = null; this.splitT = []; this.offT = 0; this.offs = 0; this.wasOff = false; this.vmax = 0; this.crash = 0;
+    this.surfL = 'asphalt'; this.surfR = 'asphalt'; this.steerK = 0; this.lastSplit = 0;
+  };
+  // inputs for the longitudinal solver this step (from the state at the end of the last step)
+  Sim.prototype.inputs = function () { return { grip: this.grip, resist: this.resist }; };
+  // the friction-circle and surface state, and the steering -> curvature map, for car spec c at speed v
+  Sim.prototype.limits = function (c, v) {
+    var hw = trackW(c) / 2, sl = surf(Math.abs(this.y - hw)), sr = surf(Math.abs(this.y + hw));
+    // a wheel pair is on the surface its distance from the centre line falls in; the car gets the mean of both sides
+    var dl = Math.abs(this.y - hw), dr = Math.abs(this.y + hw), sA = surf(Math.max(dl, dr) === dl ? dl : dr), sB = surf(Math.min(dl, dr));
+    var muF = (sA.mu + sB.mu) / 2, crr = (sA.crr + sB.crr) / 2;
+    var muLat = (c.muPeak || 0.8) * latK(c) * speedFactor(v) * muF;
+    return { muLat: muLat, muLong: (c.muPeak || 0.8) * muF, crr: crr, outer: sA.name, inner: sB.name, muF: muF };
+  };
+  Sim.prototype.kFull = function (c, v) {
+    var lim = this.limits(c, v), kGeo = 2 / (c.turnCircle || 11.0);
+    return Math.min(kGeo, ASSIST * lim.muLat * G / Math.max(1, v * v));
+  };
+  // dt: s; c: the Physics.Vehicle (after its update this frame); steer: -1..1 (+ right)
+  Sim.prototype.step = function (dt, car, steer) {
+    var T = this.T, c = car.c, v = Math.max(0, car.v), m = c.massKg, n = Math.max(1, Math.ceil(dt / 0.005)), h = dt / n;
+    var lim = this.limits(c, v);
+    // tyre longitudinal acceleration (aero drag is not a tyre force)
+    var aero = 0.5 * 1.2 * (c.cd || 0.4) * (c.area || 2) * v * v / m, axT = (car.a || 0) + aero + this.resist / m;   // tyre-driven part only
+    var ayCap = lim.muLat * G, circ = Math.max(0, 1 - Math.pow(axT / Math.max(0.1, lim.muLong * G), 2));
+    var ayMax = ayCap * Math.sqrt(circ);
+    var kCmd = steer * this.kFull(c, v), ayReq = Math.abs(kCmd) * v * v;
+    var over = ayReq > ayMax && v > 0.5 ? (ayReq - ayMax) / Math.max(0.1, ayMax) : 0;
+    var slideF = 1 - (1 - (c.muSlide || 0.6) / (c.muPeak || 0.8)) * Math.min(1, over / 0.3);
+    var ayOk = ayMax * slideF, kSS = v > 0.5 ? Math.sign(kCmd) * Math.min(Math.abs(kCmd), ayOk / (v * v)) : kCmd;
+    this.over = over; this.steerK = kCmd;
+    for (var i = 0; i < n; i++) {
+      this.kap += (kSS - this.kap) * Math.min(1, h / TAU_K);
+      var kr = kAt(T, this.s), den = Math.max(0.2, 1 - this.y * kr);
+      var sd = v * Math.cos(this.psi) / den;
+      this.s += sd * h; this.y += v * Math.sin(this.psi) * h;
+      this.psi += (v * this.kap - kr * sd) * h;
+      if (this.psi > Math.PI) this.psi -= 2 * Math.PI; else if (this.psi < -Math.PI) this.psi += 2 * Math.PI;
+    }
+    var ay = Math.abs(this.kap) * v * v; this.ay = ay;
+    var alpha = ALPHA_PK * Math.min(1, ay / Math.max(0.1, ayMax)) + Math.min(0.35, over * ALPHA_PK * 2);
+    this.alpha = alpha;
+    // fence: the car stops against it
+    this.crash = 0;
+    if (Math.abs(this.y) > FENCE) {   // into the fence: the outward part of the speed is lost, the car slides along it
+      var vOut = v * Math.abs(Math.sin(this.psi));
+      this.y = Math.sign(this.y) * FENCE;
+      if (Math.sign(this.psi) === Math.sign(this.y)) { this.psi = 0; this.kap = 0; }
+      if (vOut > 1) { car.v *= 0.25; if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius; this.crash = 1; }
+    }
+    // inputs for the next physics step
+    this.grip = lim.muF * Math.sqrt(Math.max(0.04, 1 - Math.pow(Math.min(1, ay / Math.max(0.1, ayCap)), 2)));   // surface x what the corner leaves
+    this.resist = m * ay * Math.sin(alpha) + lim.crr * m * G;
+    this.surf = lim;
+    // timing
+    var off = lim.outer !== 'asphalt' && lim.outer !== 'gravel';
+    if (off && !this.wasOff) this.offs++;
+    this.wasOff = off;
+    this.vmax = Math.max(this.vmax, v);
+    if (this.phase === 'grid' && this.s >= 0) { this.phase = 'run'; this.t = (this.s / Math.max(0.1, v)) > dt ? 0 : this.s / Math.max(0.1, v); this.vmax = v; this.offs = off ? 1 : 0; }
+    else if (this.phase === 'run') {
+      this.t += dt; if (off) this.offT += dt;
+      var sp = T.splits[this.splitT.length];
+      if (sp !== undefined && this.s >= sp) this.splitT.push(this.t - (this.s - sp) / Math.max(0.1, v));
+      if (this.s >= T.finish) {
+        var tf = this.t - (this.s - T.finish) / Math.max(0.1, v);
+        this.phase = 'done';
+        this.res = { time: tf, splits: this.splitT.slice(), sectors: this.splitT.concat([tf]).map(function (t, i, a) { return t - (i ? a[i - 1] : 0); }),
+          avg: T.finish / tf, vmax: this.vmax, offs: this.offs, offT: this.offT };
+      }
+    }
+    return this;
+  };
+  Sim.prototype.view = function () { return { T: this.T, s: this.s, y: this.y, psi: this.psi, over: this.over, surf: this.surf ? this.surf.outer : 'asphalt' }; };
+
+  // cornering speed limit for each bend (steady state, no braking): v = sqrt(mu_lat(v) g R) solved by iteration
+  function cornerSpeed(c, R) {
+    var v = 20; for (var i = 0; i < 30; i++) v = Math.sqrt((c.muPeak || 0.8) * latK(c) * speedFactor(v) * G * R);
+    return v;
+  }
+  var cache = {};
+  function course(id) { id = id || 'mesa'; if (!cache[id]) cache[id] = build(MESA); return cache[id]; }
+  return { course: course, Sim: Sim, pose: pose, kAt: kAt, cornerSpeed: cornerSpeed, speedFactor: speedFactor, surf: surf, ASSIST: ASSIST, FENCE: FENCE, MI: MI, SURF: SURF };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = RoadCourse;
 </script>
 <script>/* js/radio.js */
 /*
@@ -14169,7 +14410,149 @@ var PaintedVisuals = (function () {
       g.fillStyle = C.dark[Math.max(0, Math.min(10, Math.round(10 * (1 - z / STRIPE.zMax))))]; g.fillRect(-900, yb, PW + 1800, ya - yb);
     }
   }
+  // ---------------------------------------------------------------- road course (draft): the same camera, ground and backdrop, with the
+  // road drawn along the course (js/road.js) in true plan geometry. P.road = { back: eye behind the car front (m), lat: eye right of the
+  // car centre (m) }; s.road = { T: course, s: station of the car front, y: car centre right of the centre line, psi: heading to the road }.
+  // Only used while the road-course mode is on; every other view keeps scenery() unchanged.
+  // a 360-degree sky for the road course: the painting + its mirror image (as the straight road tiles it), with the sun found in the
+  // painting (orange disc above the horizon) painted out of the mirrored half, so a full turn shows one sun. Built once per style.
+  var PANO = null;
+  function panoOf(img, hzFrac) {
+    if (PANO && PANO.img === img) return PANO.cv;
+    var W = img.naturalWidth || img.width, H = img.naturalHeight || img.height, cv = document.createElement('canvas'); cv.width = 2 * W; cv.height = H;
+    var x = cv.getContext('2d'); x.drawImage(img, 0, 0, W, H); x.save(); x.translate(2 * W, 0); x.scale(-1, 1); x.drawImage(img, 0, 0, W, H); x.restore();
+    try {
+      var sw = 256, sh = Math.round(256 * H / W), c0 = document.createElement('canvas'); c0.width = sw; c0.height = sh; var x0 = c0.getContext('2d', { willReadFrequently: true });
+      x0.drawImage(img, 0, 0, sw, sh); var d = x0.getImageData(0, 0, sw, Math.round(sh * hzFrac)).data, n = 0, sx = 0, sy = 0;
+      for (var i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 120 && d[i + 1] < 210 && d[i + 2] < 90) { var p = i / 4; sx += p % sw; sy += Math.floor(p / sw); n++; }
+      if (n > 6) {
+        var cx = sx / n * W / sw, cy = sy / n * W / sw, r = Math.sqrt(n / Math.PI) * W / sw * 1.25, mx = 2 * W - cx, R2 = r * 1.6;
+        var pc = document.createElement('canvas'); pc.width = pc.height = Math.ceil(2 * R2); var px = pc.getContext('2d');
+        px.drawImage(cv, mx + 3 * r - R2, cy - R2, 2 * R2, 2 * R2, 0, 0, 2 * R2, 2 * R2);   // sky from just beside the sun (no sun there)
+        px.globalCompositeOperation = 'destination-in'; var gr = px.createRadialGradient(R2, R2, r * 0.9, R2, R2, R2); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        px.fillStyle = gr; px.fillRect(0, 0, 2 * R2, 2 * R2); x.drawImage(pc, mx - R2, cy - R2);
+      }
+    } catch (e) {}   // tainted canvas (file://): the mirrored sun stays
+    PANO = { img: img, cv: cv };
+    return cv;
+  }
+  function sceneryRoad(g, P, s) {
+    var R = s.road, TK = R.T, B = M.backdrop, img = A['desert-backdrop'], hz = P.hz, f = P.f, h = P.camH, cy = P.cy || 360, tp = (cy - hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp;
+    var OFF = window.__pvOff || {}, yBot = P.yMax || PH + 400, zN = 0.6;
+    if (P.yMax) { g.save(); g.beginPath(); g.rect(-900, -400, PW + 1800, P.yMax + 400); g.clip(); }
+    var C0 = RoadCourse.pose(TK, R.s), hd = C0.th + R.psi;
+    var carX = C0.x - Math.sin(C0.th) * R.y, carY = C0.y + Math.cos(C0.th) * R.y;
+    var ex = carX - Math.cos(hd) * P.road.back - Math.sin(hd) * P.road.lat, ey = carY - Math.sin(hd) * P.road.back + Math.cos(hd) * P.road.lat;
+    var ca = Math.cos(hd), sa = Math.sin(hd);
+    function yOf(z, up) { var yv = -h + (up || 0); return cy - f * (yv * cp + z * sp) / (z * cp - yv * sp); }
+    function xOf(z, lx, up) { var yv = -h + (up || 0); return P.axisX + f * (lx - P.dx) / (z * cp - yv * sp); }   // car-relative (shadows, dust)
+    function sxz(z, x, up) { var yv = -h + (up || 0); return P.axisX + f * x / (z * cp - yv * sp); }
+    // world point -> camera [z forward, x right]
+    function cam(px, py) { var dx = px - ex, dy = py - ey; return [dx * ca + dy * sa, -dx * sa + dy * ca]; }
+    // ground + far layer (painting slides with the heading, wrapped on its mirrored 2-tile period)
+    if (!OFF.ground) groundStripes(g, s.dist || 0, hz, yBot, yOf);
+    var hb = camHB(), k = Math.max((f * hb / 4.0) / B.bottomPx, P.minK || 0), w = B.w * k, hh = B.h * k, oy = hz - B.hz * k;
+    var zFade = 400, yFade = Math.max(hz + 3, yOf(zFade)), NB = 4;   // only a thin fade below the horizon: the painting's own straight road stays out of sight
+    var pano = panoOf(img, B.hz / B.h);
+    function tileAt(g2, ox2) { for (var t = -1; t <= 1; t++) g2.drawImage(pano, ox2 + t * 2 * w, oy, 2 * w, hh); }
+    function far(g2, ox) {
+      g2.save(); g2.beginPath(); g2.rect(-900, -400, PW + 1800, hz + 401); g2.clip(); tileAt(g2, ox); g2.restore();
+      for (var bi = 0; bi < NB; bi++) {
+        var ya = hz + (yFade - hz) * bi / NB, yb2 = hz + (yFade - hz) * (bi + 1) / NB;
+        g2.save(); g2.globalAlpha = 1 - bi / NB; g2.beginPath(); g2.rect(-900, ya - (bi ? 0 : 1), PW + 1800, yb2 - ya + (bi ? 0 : 1)); g2.clip(); tileAt(g2, ox); g2.restore();
+      }
+    }
+    var ox0 = P.axisX - B.vx * k, per = 2 * w, dxP = -hd / (2 * Math.PI) * per; dxP -= per * Math.round(dxP / per);   // one full turn = one sky period
+    var qd = Math.round(dxP / 120) * 120;   // re-cache the far layer every 120 px of heading (its margin is 160)
+    if (!OFF.sky) farLayer(g, function (x, o) { far(x, o); }, ox0 + qd, dxP - qd, hz, yFade, ['road', k, oy, hz, f, w, P.axisX, qd].join('/'));
+    // samples along the road from just behind the eye
+    var sE = R.s - P.road.back, st = [], u = -4;
+    while (u < 650) {
+      var ps = RoadCourse.pose(TK, sE + u), kk = Math.abs(RoadCourse.kAt(TK, sE + u));
+      st.push({ s: sE + u, x: ps.x, y: ps.y, nx: -Math.sin(ps.th), ny: Math.cos(ps.th) });
+      u += Math.max(0.5, Math.min(8, 1 + u * 0.03, kk > 1e-5 ? 0.06 / kk : 99));
+    }
+    function at(q, off) { return cam(q.x + q.nx * off, q.y + q.ny * off); }
+    var P1 = [];
+    function clipQuad(pts) {   // pts: camera [z, x]; keep z >= zN
+      var out = [];
+      for (var i = 0; i < pts.length; i++) {
+        var a = pts[i], b = pts[(i + 1) % pts.length], ina = a[0] >= zN, inb = b[0] >= zN;
+        if (ina) out.push(a);
+        if (ina !== inb) { var t = (zN - a[0]) / (b[0] - a[0]); out.push([zN, a[1] + (b[1] - a[1]) * t]); }
+      }
+      return out;
+    }
+    function addQuad(pts) {
+      var q = clipQuad(pts); if (q.length < 3) return;
+      g.moveTo(sxz(q[0][0], q[0][1]), yOf(q[0][0]));
+      for (var i = 1; i < q.length; i++) g.lineTo(sxz(q[i][0], q[i][1]), yOf(q[i][0]));
+      g.closePath();
+    }
+    var cache = {};
+    function row(off) { if (!cache[off]) cache[off] = st.map(function (q) { return at(q, off); }); return cache[off]; }
+    function strip(o0, o1, fill, stroke) {
+      var A0 = row(o0), A1 = row(o1); g.beginPath();
+      for (var i = 0; i + 1 < st.length; i++) { if (A0[i][0] < zN && A0[i + 1][0] < zN && A1[i][0] < zN && A1[i + 1][0] < zN) continue; addQuad([A0[i], A1[i], A1[i + 1], A0[i + 1]]); }
+      g.fillStyle = fill; g.fill();
+    }
+    function band(s0, s1, o0, o1) {   // one quad across the road between two stations
+      var a = RoadCourse.pose(TK, s0), b = RoadCourse.pose(TK, s1), na = [-Math.sin(a.th), Math.cos(a.th)], nb = [-Math.sin(b.th), Math.cos(b.th)];
+      addQuad([cam(a.x + na[0] * o0, a.y + na[1] * o0), cam(a.x + na[0] * o1, a.y + na[1] * o1), cam(b.x + nb[0] * o1, b.y + nb[1] * o1), cam(b.x + nb[0] * o0, b.y + nb[1] * o0)]);
+    }
+    strip(-ROAD.shoulder, ROAD.shoulder, RC.shoulder);
+    strip(-ROAD.lane, ROAD.lane, lin(g, 0, hz, 0, PH, [[0, RC.asph[0]], [0.35, RC.asph[1]], [1, RC.asph[1]]]));
+    strip(-ROAD.edge - ROAD.edgeW, -ROAD.edge, RC.edge); strip(ROAD.edge, ROAD.edge + ROAD.edgeW, RC.edge);
+    if (STY !== 'ink') { g.fillStyle = lin(g, 0, hz - 1, 0, hz + Math.max(6, (yOf(60) - hz)), [[0, 'rgba(214,178,140,0.55)'], [1, 'rgba(214,178,140,0)']]); g.fillRect(-900, hz - 1, PW + 1800, Math.max(6, yOf(60) - hz) + 1); }
+    // centre dashes (3 m every 12 m) and the start / split / finish lines
+    g.beginPath();
+    for (var ds = Math.floor(sE / ROAD.period) * ROAD.period; ds < sE + 300; ds += ROAD.period) { if (ds + ROAD.dash < sE) continue; band(ds, ds + ROAD.dash, -ROAD.dashW / 2, ROAD.dashW / 2); }
+    g.fillStyle = T.dash || 'rgba(226,190,90,0.9)'; g.fill();
+    var lines = [[0, false]].concat(TK.splits.map(function (x) { return [x, false]; })).concat([[TK.finish, true]]);
+    lines.forEach(function (L) {
+      if (L[0] + 1 < sE || L[0] > sE + 400) return;
+      g.beginPath();
+      if (!L[1]) band(L[0], L[0] + 0.4, -ROAD.lane, ROAD.lane);
+      else for (var q = 0; q < 16; q += 2) { var u0 = -ROAD.lane + 2 * ROAD.lane * q / 16, u1 = -ROAD.lane + 2 * ROAD.lane * (q + 1) / 16; band(L[0], L[0] + 0.9, u0, u1); band(L[0] + 0.9, L[0] + 1.8, u1, u1 + 2 * ROAD.lane / 16); }
+      g.fillStyle = T.drag || 'rgba(244,242,234,0.92)'; g.fill();
+    });
+    // roadside: bushes (every 10 m, alternating sides), delineator posts (every 50 m), chevron boards on the outside of each bend
+    var S = A['desert-props'], PR = M.props, list = [], seg = 10;
+    for (var j = Math.floor(sE / seg); j < Math.floor(sE / seg) + 26; j++) {
+      var r2 = hash(j + 1000), r3 = hash(j + 2000), side = j % 2 ? -1 : 1, sj = j * seg + 1.5;
+      if (j % 5 === 0) { list.push({ s: sj, o: -ROAD.post, p: PR[5] }); list.push({ s: sj, o: ROAD.post, p: PR[5] }); }
+      list.push({ s: sj + 4, o: side * (5.8 + r3 * 14), p: PR[r2 < 0.4 ? 0 : r2 < 0.7 ? 1 : r2 < 0.9 ? 2 : 3] });
+    }
+    TK.bends.forEach(function (Bd) {
+      if (Bd.s1 < sE || Bd.s0 - 40 > sE + 260 || Bd.R > 200) return;
+      for (var sc = Bd.s0 - 10; sc <= Bd.s1 - 10; sc += 15) list.push({ s: sc, o: -Bd.dir * (ROAD.shoulder + 0.8), chev: Bd.dir });
+    });
+    list.forEach(function (it) { var p0 = RoadCourse.pose(TK, it.s), c2 = cam(p0.x - Math.sin(p0.th) * it.o, p0.y + Math.cos(p0.th) * it.o); it.z = c2[0]; it.x = c2[1]; });
+    list.sort(function (a, b) { return b.z - a.z; });
+    for (var q2 = 0; q2 < (OFF.props ? 0 : list.length); q2++) {
+      var it = list[q2]; if (it.z < 1.2 || it.z > 230) continue;
+      var yb2 = yOf(it.z), xb = sxz(it.z, it.x);
+      g.globalAlpha = Math.min(1, (230 - it.z) / 50);
+      if (it.chev) {   // 0.75 x 0.6 m board, top at 1.5 m, on a post
+        var top = yOf(it.z, 1.5), bot = yOf(it.z, 0.9), bw = (sxz(it.z, it.x + 0.75) - xb), pw2 = Math.max(1, bw * 0.08);
+        if (bot - top < 1) { g.globalAlpha = 1; continue; }
+        g.fillStyle = STY === 'ink' ? '#15110e' : '#3a3530'; g.fillRect(xb - pw2 / 2, bot, pw2, yb2 - bot);
+        g.fillStyle = '#f2c230'; g.fillRect(xb - bw / 2, top, bw, bot - top);
+        g.fillStyle = '#15110e'; var hb2 = bot - top, d = it.chev;
+        g.beginPath(); g.moveTo(xb - d * bw * 0.28, top + hb2 * 0.12); g.lineTo(xb + d * bw * 0.22, top + hb2 * 0.5); g.lineTo(xb - d * bw * 0.28, top + hb2 * 0.88);
+        g.lineTo(xb - d * bw * 0.06, top + hb2 * 0.88); g.lineTo(xb + d * bw * 0.44, top + hb2 * 0.5); g.lineTo(xb - d * bw * 0.06, top + hb2 * 0.12); g.closePath(); g.fill();
+        if (STY === 'ink' && bw > 6) { g.strokeStyle = '#0d0a08'; g.lineWidth = Math.min(2.5, bw * 0.05); g.strokeRect(xb - bw / 2, top, bw, bot - top); }
+      } else {
+        var r = it.p.r, hp = yb2 - yOf(it.z, it.p.h), wp = hp * r[2] / r[3];
+        if (hp >= 1.5 && xb + wp > -60 && xb - wp < PW + 60 && yb2 - hp <= yBot && !(yb2 < (P.clipTop || -1e9))) g.drawImage(S, r[0], r[1], r[2], r[3], xb - wp / 2, yb2 - hp, wp, hp);
+      }
+      g.globalAlpha = 1;
+    }
+    if (P.yMax) g.restore();
+    return { yOf: yOf, xOf: xOf };
+  }
   function scenery(g, P, s) {
+    if (s.road && P.road && typeof RoadCourse !== 'undefined') return sceneryRoad(g, P, s);   // road-course draft (opt-in mode only)
     var B = M.backdrop, img = A['desert-backdrop'], hz = P.hz, f = P.f, h = P.camH, cy = P.cy || 360, tp = (cy - hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp;
     var dx = P.dx, yaw = P.yaw || 0, vpX = P.axisX - f * Math.tan(yaw) / cp;
     function zc(z) { return z * cp + h * sp; }
@@ -14272,7 +14655,7 @@ var PaintedVisuals = (function () {
     var m = M[car], v = m.view, B = M.backdrop, img = A['desert-backdrop'], d = s.dist || 0;
     var off = v.off !== undefined ? v.off : (car === 'gt350' ? 0.37 : 0.42);
     // v1.6: one painted tile spans the whole windshield (no repeated sun): scale at least so the tile reaches 160 px past both edges
-    scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, cy: v.cy || 360, camH: v.camH || 1.1, dx: 1.8 + (s.lat || 0) - off, yaw: yawOf(s), camOff: 2.2, yMax: yMax, minK: Math.max((m.axisX + 160) / B.vx, (PW + 160 - m.axisX) / (B.w - B.vx)) }, s);
+    scenery(g, { axisX: m.axisX, hz: v.hz, f: v.f, cy: v.cy || 360, camH: v.camH || 1.1, dx: 1.8 + (s.lat || 0) - off, yaw: yawOf(s), camOff: 2.2, road: s.road ? { back: 2.2, lat: -off } : null, yMax: yMax, minK: Math.max((m.axisX + 160) / B.vx, (PW + 160 - m.axisX) / (B.w - B.vx)) }, s);
     // side window (v1.7): parallax. Distant mesas (painting above the horizon) drift slowly; the ground below the horizon is the moving ground
     // tile seen sideways: a band at height y - hz shows ground at L = f h / (y - hz) metres and streams backwards at (y - hz) / h px per metre.
     if (m.side && !(window.__pvOff || {}).side) { g.save(); poly(g, m.side); g.clip();
@@ -14926,7 +15309,7 @@ var PaintedVisuals = (function () {
     var doorZ = c.dist + c.len + 0.7;
     var SC = garage
       ? garageScenery(g, { axisX: V.vx, hz: V.hz, f: f, cy: 360, camH: camH, dx: 0, doorZ: doorZ }, s)
-      : scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len }, s);
+      : scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len, road: s.road ? { back: c.dist + c.len, lat: 0 } : null }, s);
     var tpc = (360 - V.hz) / f, cpc = 1 / Math.sqrt(1 + tpc * tpc), spc = tpc * cpc;   // pitched camera: depth of the rear face at mid height
     var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : car === 'modelx' ? 1.104 : 1.35), yc = SC.yOf(zc);
     var rearKey = (garage && A[car + '-rear-open'] && (A[car + '-rear-open'].naturalWidth || A[car + '-rear-open'].width)) ? '-rear-open' : '-rear';
@@ -15284,6 +15667,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.13.32", date: "2026-11-26", status: "done", headline: "Road course (draft): one winding road, solo", text: "A new opt-in mode next to the drag strip: Road course (key C, or the Road course button). Mesa Road is an original 2.5-mile (4.02 km) two-lane desert road, a nod to the 1989 game\u2019s winding road race: a long start straight, sweepers, esses, a back straight into a tight 30 m hairpin, and a run to the finish. The clock starts at the line, with three split points and a best time stored per car. Steering is new: A / D on the keyboard, or the steering pad on touch screens (iPhone, Tesla). The car now really corners: grip comes from the tyres (a 1971 Super Beetle pulled 0.617 g on Road & Track\u2019s skidpad, used for the 1956 car as an estimate), falls off a little with speed, and is shared with braking and power (friction circle). Ask too much and the car runs wide and scrubs speed; dirt and sand off the road slow it down hard. The stock 1956 Beetle needs about 2:52 for a clean run (simulated). Drag strip, cruising and every sound are unchanged." },
       { v: "v1.11.23", date: "2026-11-14", status: "done", headline: "911 top speed checked: the official C4S manual figure is 288 km/h", text: "The 911 Carrera 4S (3.8 L, 355 PS, six-speed manual) was checked against Porsche's own 29 August 2006 product description for the 997.1 Carrera 4 and 4S. The official top speed is 288 km/h (179 mph), and 0–100 km/h is 4.8 s. 280 km/h is the Carrera 4 (3.6 L) manual figure, and also the Tiptronic S 4S figure; 295 km/h is not a factory C4S number. The game already reaches 288 km/h in sixth, below the limiter, so the gearing and the physics are unchanged." },
       { v: "v1.11.20", date: "2026-11-14", status: "done", headline: "In the garage you can rev the engine; shifts stay locked", text: "In both garage positions the car stays parked in neutral (N on the Cadillac’s Hydra-Matic). The gas pedal, the up arrow and the on-screen GAS button free-rev the engine against its own inertia, up to the rev limiter; the car does not move. Shift up and down (the keys, the on-screen buttons and the selector) are disabled and greyed out while you are in the garage." },
       { v: "v1.11.19", date: "2026-11-14", status: "done", headline: "A garage start-up view, with a short garage reverb", text: "From the Position menu you can now put the car in a one-car garage, heard from behind or from the cabin (V switches between those two while you stay in the garage). The garage is an acoustic chamber: early reflections from the walls, floor and ceiling, and a short reverb (about 0.6 s). The GT350, the Cadillac and the 911 show their brake lights while they sit there; the BRM, which had no onboard electric starter, is already running and has no brake lights. A link with ?view=garage opens it. The desert road views are unchanged. The reverb uses a short native impulse, so it stays light in the Tesla in-car browser." },
@@ -16138,7 +16522,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var dash = new UI.Dash(canvas);
   // resizing clears the canvas: repaint at once so an orientation change, Split View / Slide Over resize or a quality step never shows
   // an empty frame
-  function relayout() { stageFallback(); if (dash.resize()) { try { render(); } catch (e) {} } }
+  function relayout() { stageFallback(); if (dash.resize()) { try { render(); } catch (e) {} } if (typeof layoutRoad === 'function') try { layoutRoad(); } catch (e) {} }
   window.addEventListener('resize', relayout); window.addEventListener('orientationchange', function () { setTimeout(relayout, 250); });
   if (window.ResizeObserver) { var ro = new ResizeObserver(relayout); ro.observe(document.getElementById('stage')); ro.observe(canvas); }
 
@@ -16497,6 +16881,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   var drag = null;
   function bestKey() { return 'streetrod.drag.best.' + state.carId; }
   function dragEnter() {
+    if (road) roadExit();
     ensureAudio(); var c = car(); state.started = true;
     if (c.engine === 'off') c.ignition();
     c.v = 0; c.ww = 0; c.a = 0;
@@ -16697,6 +17082,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       case 'z': case 'Z': setVisual(cycle(VisualModels.list, state.visual)); break;
       case 'u': case 'U': toggleUnits(); break;
       case 'q': case 'Q': if (drag) dragExit(); else dragEnter(); break;
+      case 'c': case 'C': if (road) roadExit(); else roadEnter(); break;   // road course (draft)
       case 'r': case 'R': toggleRadio(); break;
       case 'g': case 'G': if (spec().trans === 'manual') toggleGearbox(); break;
       case 'h': case 'H': openSpecs(false); openAbout(document.getElementById('about').classList.contains('hidden')); break;
@@ -16732,7 +17118,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // ---- tap buttons: act on pointerup (reliable on iOS), ignore the follow-up click ----
   var ACTIONS = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); }, brmsound: function (b) { setBrmSound(b.dataset.v); },
-    units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox,
+    units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, road: function () { if (road) roadExit(); else roadEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox,
     about: function () { openSpecs(false); openAbout(true); }, aboutClose: function () { openAbout(false); }, aboutHow: function () { openAboutHow(); },
     specs: function () { openSpecs(true); }, specsClose: function () { openSpecs(false); },
     menu: function () { document.getElementById('topbar').classList.toggle('open'); },
@@ -16768,6 +17154,107 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var end = function (e) { if (e.pointerId === id) { id = null; state.touchSteer = null; } };
     onPtr(canvas, { down: function (e) { if (id !== null) return; id = e.pointerId; x0 = e.clientX; capture(canvas, id); },
       move: function (e) { if (e.pointerId === id) state.touchSteer = Math.max(-1, Math.min(1, (e.clientX - x0) / (canvas.clientWidth * 0.18))); }, up: end });
+  })();
+  // ---- road course (draft): one winding road, solo (js/road.js). Opt-in like the drag strip; drag / cruise unchanged when it is off ----
+  var road = null, roadHudT = 0, roadMap = null;
+  var hasRoad = typeof RoadCourse !== 'undefined';
+  function roadBestKey() { return 'streetrod.road.best.' + state.carId + '.' + RoadCourse.course().id; }
+  function roadBest() { try { return JSON.parse(localStorage.getItem(roadBestKey()) || 'null'); } catch (e) { return null; } }
+  function fmtT(x) { if (x === undefined || x === null || !isFinite(x)) return '\u2013'; var m = Math.floor(x / 60), s2 = x - 60 * m; return m + ':' + (s2 < 10 ? '0' : '') + s2.toFixed(2); }
+  function roadEnter() {
+    if (!hasRoad) return;
+    if (drag) dragExit();
+    ensureAudio(); var c = car(); state.started = true;
+    if (state.bay || inGarageView(state.view)) setView(1);
+    if (c.engine === 'off') c.ignition();
+    c.v = 0; c.ww = 0; c.a = 0;
+    if (c.c.trans === 'ev' || c.c.trans === 'auto') { if (c.range !== 'D') c.setRange('D'); } else if (c.gear !== 1) { c.gear = 1; c.shift = null; }
+    road = { sim: new RoadCourse.Sim(RoadCourse.course()), car: state.carId, done: false };
+    state.lat = 0; state.steer = 0;
+    document.getElementById('roadCard').classList.add('hidden');
+    document.getElementById('roadHud').classList.remove('hidden'); document.getElementById('steerPad').classList.remove('hidden');
+    roadMapBuild(); layoutRoad(); roadHud(true);
+    flash(RoadCourse.course().name + ': 2.5 miles. The clock starts at the line. Steer: A / D or the steering pad', 3.5); updatePanel();
+  }
+  function roadExit() {
+    road = null; state.lat = 0;
+    ['roadHud', 'steerPad', 'roadCard'].forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
+    updatePanel();
+  }
+  function roadDone(r) {
+    var best = roadBest(), isBest = !best || r.time < best.time;
+    if (isBest) { best = { time: r.time, sectors: r.sectors, date: new Date().toISOString().slice(0, 10) }; lsSet(roadBestKey(), JSON.stringify(best)); }
+    var mph = state.units === 'mph', sp = function (m) { return mph ? (m * 2.236936).toFixed(1) + ' mph' : (m * 3.6).toFixed(1) + ' km/h'; };
+    var h = '<h3>' + spec().label + ' \u00b7 ' + RoadCourse.course().name + '</h3><table>' +
+      r.sectors.map(function (x, i) { return '<tr><td>Sector ' + (i + 1) + '</td><td>' + x.toFixed(2) + ' s</td></tr>'; }).join('') +
+      '<tr class="et"><td>Time</td><td>' + fmtT(r.time) + '</td></tr><tr><td>Average</td><td>' + sp(r.avg) + '</td></tr><tr><td>Top speed</td><td>' + sp(r.vmax) + '</td></tr>' +
+      '<tr><td>Off the road</td><td>' + r.offs + '\u00d7 (' + r.offT.toFixed(1) + ' s)</td></tr></table>' +
+      '<p class="best">' + (isBest ? 'New best for this car!' : 'Best: ' + fmtT(best.time) + ' (' + best.date + ')') + '</p>' +
+      '<p class="note">Draft road course: one car, no traffic. Cornering grip from the tyres (skidpad-based), friction circle with braking and power, dirt and sand cost speed.</p>' +
+      '<div class="row"><button class="tb" data-act3="again">Run again</button><button class="tb" data-act3="exit">Exit road course</button></div>';
+    var el = document.getElementById('roadCard'); el.innerHTML = h; el.classList.remove('hidden');
+    window.__lastRoad = r;
+  }
+  document.getElementById('roadCard').addEventListener('pointerup', function (e) {
+    var b = e.target.closest && e.target.closest('[data-act3]'); if (!b) return;
+    if (b.dataset.act3 === 'again') roadEnter(); else roadExit();
+  });
+  function roadMapBuild() {
+    if (roadMap) return;
+    var T = RoadCourse.course(), bx = T.box, W = 120, H = 120, sc = Math.min((W - 10) / (bx[2] - bx[0]), (H - 10) / (bx[3] - bx[1]));
+    var ox = (W - (bx[2] - bx[0]) * sc) / 2 - bx[0] * sc, oy = (H - (bx[3] - bx[1]) * sc) / 2 - bx[1] * sc, pts = [];
+    for (var i = 0; i < T.x.length; i += 15) pts.push((T.x[i] * sc + ox).toFixed(1) + ',' + (T.y[i] * sc + oy).toFixed(1));
+    var pf = RoadCourse.pose(T, T.finish), p0 = RoadCourse.pose(T, 0);
+    document.getElementById('roadMap').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '"><polyline points="' + pts.join(' ') + '" fill="none" class="rmRoad"/>' +
+      '<circle cx="' + (p0.x * sc + ox).toFixed(1) + '" cy="' + (p0.y * sc + oy).toFixed(1) + '" r="3" class="rmStart"/><circle cx="' + (pf.x * sc + ox).toFixed(1) + '" cy="' + (pf.y * sc + oy).toFixed(1) + '" r="3" class="rmFin"/>' +
+      '<circle id="rmCar" r="4" class="rmCar"/></svg>';
+    roadMap = { sc: sc, ox: ox, oy: oy, dot: document.getElementById('rmCar') };
+  }
+  function roadHud(force) {
+    var el = document.getElementById('roadHudT'); if (!road || !el) return;
+    var sim = road.sim, T = sim.T, best = roadBest(), next = null;
+    for (var i = 0; i < T.bends.length; i++) if (T.bends[i].s1 > sim.s) { next = T.bends[i]; break; }
+    var t = sim.phase === 'grid' ? 0 : sim.phase === 'done' && sim.res ? sim.res.time : sim.t, sec = Math.min(sim.splitT.length + 1, T.splits.length + 1);
+    var dl = '';
+    if (best && best.sectors && sim.splitT.length && sim.phase === 'run') { var k = sim.splitT.length - 1, bs = 0; for (var j = 0; j <= k; j++) bs += best.sectors[j]; var d = sim.splitT[k] - bs; dl = ' <b class="' + (d <= 0 ? 'g' : 'r') + '">' + (d <= 0 ? '\u2212' : '+') + Math.abs(d).toFixed(2) + '</b>'; }
+    var mph = state.units === 'mph', bendTxt = '';
+    if (next) { var dist = next.s0 - sim.s, vs = RoadCourse.cornerSpeed(spec(), next.R); bendTxt = (dist > 0 ? Math.round(dist) + ' m: ' : 'Now: ') + (next.name || (next.dir > 0 ? 'Right' : 'Left')) + ' ' + (next.dir > 0 ? '\u21b1' : '\u21b0') + ' R' + next.R + ' \u00b7 grip limit ' + Math.round(mph ? vs * 2.236936 : vs * 3.6) + (mph ? ' mph' : ' km/h'); }
+    var surf = sim.surf && sim.surf.outer !== 'asphalt' ? ' <b class="r">' + sim.surf.outer.toUpperCase() + '</b>' : '', slide = sim.over > 0.12 ? ' <b class="r">SLIDING</b>' : '';
+    el.innerHTML = '<span class="rt">' + fmtT(t) + '</span> <span class="rs">S' + sec + '/' + (T.splits.length + 1) + '</span>' + dl + surf + slide +
+      '<br><span class="rb">' + (best ? 'Best ' + fmtT(best.time) : sim.phase === 'grid' ? 'Go when ready' : 'No best yet') + ' \u00b7 ' + Math.max(0, Math.min(100, sim.s / T.finish * 100)).toFixed(0) + ' %</span>' +
+      (bendTxt ? '<br><span class="rn">' + bendTxt + '</span>' : '');
+    if (roadMap) { var p = RoadCourse.pose(T, sim.s); roadMap.dot.setAttribute('cx', (p.x * roadMap.sc + roadMap.ox).toFixed(1)); roadMap.dot.setAttribute('cy', (p.y * roadMap.sc + roadMap.oy).toFixed(1)); }
+    var kn = document.getElementById('spKnob'); if (kn) kn.style.transform = 'translateX(' + (state.steer * 42).toFixed(1) + '%)';
+  }
+  // the steering pad and the HUD sit on the canvas (bottom centre / top left), placed from the canvas box so every layout works
+  function layoutRoad() {
+    if (!road) return;
+    var st = stageEl.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), tb = document.getElementById('topbar').getBoundingClientRect();
+    // portrait: the canvas readouts are along the top, so the HUD goes below them and the pad sits at the bottom edge;
+    // landscape / desktop: the speed panel is at the bottom centre, so the pad sits just above it and the HUD top left
+    var port = cr.height > cr.width, pad = document.getElementById('steerPad'), w = Math.round(Math.min(cr.width * (port ? 0.62 : 0.42), 380)), hgt = 58;
+    pad.style.width = w + 'px'; pad.style.left = Math.round(cr.left - st.left + (cr.width - w) / 2) + 'px';
+    pad.style.top = Math.round(cr.bottom - st.top - hgt - (port ? 10 : Math.max(12, cr.height * 0.115 + 6))) + 'px';
+    var hud = document.getElementById('roadHud'), top = Math.max(cr.top, tb.bottom > cr.top && tb.bottom < cr.top + cr.height * 0.5 ? tb.bottom : cr.top) + (port ? 44 : 0);
+    hud.style.left = Math.round(cr.left - st.left + 8) + 'px'; hud.style.top = Math.round(top - st.top + 6) + 'px';
+    hud.classList.toggle('narrow', cr.width < 520);
+  }
+  function roadTickPre() { return road ? road.sim.inputs() : null; }
+  function roadTickPost(dt, c) {
+    if (!road) return;
+    if (road.car !== state.carId) { roadExit(); return; }
+    road.sim.step(dt, c, state.steer);
+    if (road.sim.crash) flash('Into the fence!', 1.5);
+    if (!road.done && road.sim.phase === 'done') { road.done = true; roadDone(road.sim.res); }
+    roadHudT += dt; if (roadHudT > 0.1) { roadHudT = 0; roadHud(); }
+  }
+  (function () {   // steering pad: the finger's position on the pad is the steering input (-1 left .. +1 right); release = straight ahead
+    var pad = document.getElementById('steerPad'); if (!pad) return;
+    var id = null;
+    function val(e) { var r = pad.getBoundingClientRect(); return Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width * 0.42))); }
+    var end = function (e) { if (e.pointerId === id) { id = null; state.touchSteer = null; } };
+    onPtr(pad, { down: function (e) { e.preventDefault(); if (id !== null) return; id = e.pointerId; capture(pad, id); state.touchSteer = val(e); },
+      move: function (e) { if (e.pointerId === id) state.touchSteer = val(e); }, up: end, lost: end });
   })();
   // no scrolling / pinch / double-tap zoom on the stage
   ['gesturestart', 'gesturechange', 'dblclick'].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
@@ -16842,6 +17329,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 
     document.getElementById('bRadio').classList.toggle('hidden', !v.radio); document.getElementById('bRadio').classList.toggle('on', !!(radio && radio.on));
     document.getElementById('bDrag').classList.toggle('on', !!drag);
+    var bRoad = document.getElementById('bRoad'); if (bRoad) bRoad.classList.toggle('on', !!road);
     document.getElementById('bMute').textContent = state.muted ? 'Unmute' : 'Mute';
     document.getElementById('bUnits').textContent = state.units === 'kmh' ? 'km/h' : 'mph';
     var rmOn = gearbox === 'revmatch' && !noManual;
@@ -16883,8 +17371,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var kThr = k.ArrowUp ? 1 : 0, kBrk = k.ArrowDown ? 1 : 0;
     // steering (visual: lane position + wheel), keys A/D ramp, touch drag sets it directly
     var kSt = (k.d || k.D ? 1 : 0) - (k.a || k.A ? 1 : 0), stT = state.touchSteer !== null ? state.touchSteer : kSt;
-    state.steer += Math.max(-dt * 2.5, Math.min(dt * 2.5, stT - state.steer));
-    state.lat = Math.max(-4.4, Math.min(0.8, state.lat + state.steer * Math.min(c.v, 25) * 0.09 * dt));
+    var stR = road ? 4 : 2.5;   // road course (draft): quicker steering ramp; the lane-wander mode keeps 2.5 / s
+    state.steer += Math.max(-dt * stR, Math.min(dt * stR, stT - state.steer));
+    if (!road) state.lat = Math.max(-4.4, Math.min(0.8, state.lat + state.steer * Math.min(c.v, 25) * 0.09 * dt));
     // keyboard pedals ramp (throttle ~0.7 s, brake ~0.6 s); touch pedals follow the finger quickly
     var tgtT = Math.max(kThr ? Math.min(1, state.throttle + dt / 0.7) : 0, state.touchGas);
     var tgtB = Math.max(kBrk ? Math.min(1, state.brake + dt / 0.6) : 0, state.touchBrake);
@@ -16896,9 +17385,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       applyGaragePark();
       if (state.carId !== 'brm') brk = 1;
     }
-    c.update(dt, { throttle: thr, brake: brk });
+    var rIn = road ? roadTickPre() : null;
+    c.update(dt, rIn ? { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist } : { throttle: thr, brake: brk });
     if (state.garage) { c.v = 0; c.ww = 0; c.a = 0; }
     dragTick(dt, c);
+    roadTickPost(dt, c);
     for (var id in cars) if (id !== state.carId) cars[id].update(dt, { throttle: 0, brake: 0 });
     state.dist += c.v * dt;
     var vt = (state.view === 1 || state.view === 4) ? 1 : 0;
@@ -16955,6 +17446,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       drag: drag ? { start: -drag.run.fromLine(), finish: DragStrip.QUARTER - drag.run.fromLine() } : null,
       wAngF: c.angF || 0, wAngR: c.angR || 0, wW: c.ww || 0, wWF: c.frontLocked ? 0 : c.v / (v.tyreRadiusFront || v.tyreRadius),   // v1.10.6 draft: wheel angles + speeds (rad, rad/s)
       engine: c.engine, viewBlend: state.viewBlend, steer: state.steer, lat: state.lat, dist: state.dist, time: state.time, accel: c.a / 9.81,
+      road: road ? road.sim.view() : null,
       clock: d.getHours() + d.getMinutes() / 60,
       radioOn: !!(radio && radio.on),
       msg: state.msg || (!state.started ? (isTouch ? 'Tap \u201cStart engine\u201d' : 'Click \u201cStart engine\u201d or press S') : ''),
@@ -16963,7 +17455,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   if (params.get('view') === 'bay') setView(2);   // v1.10: open straight into the engine bay
   if (params.get('view') === 'garage') setView(3);
   requestAnimationFrame(frame);
-  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openAboutHow: openAboutHow, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, setP997Sound: setP997Sound, setCaddySound: setCaddySound, setBeetleSound: setBeetleSound, soundId: soundId, setVisual: setVisual, tick: tick, parts: { def: partsDef, build: partsBuild, apply: applyParts, open: openParts }, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
+  window.__game = { cars: cars, gearbox: function () { return gearbox; }, toggleGearbox: toggleGearbox, state: state, audio: audio, car: car, openAbout: openAbout, openAboutHow: openAboutHow, openSpecs: openSpecs, dragEnter: dragEnter, dragExit: dragExit, drag: function () { return drag; }, roadEnter: roadEnter, roadExit: roadExit, road: function () { return road; }, radio: function () { return radio; }, toggleRadio: toggleRadio, glStats: function () { return null; }, bayStats: function () { return typeof EngineBay !== 'undefined' ? EngineBay.stats() : null; }, setView: setView, ignition: ignition, selectCar: selectCar, setView: setView, setModel: setModel, setBrmSound: setBrmSound, setP997Sound: setP997Sound, setCaddySound: setCaddySound, setBeetleSound: setBeetleSound, soundId: soundId, setVisual: setVisual, tick: tick, parts: { def: partsDef, build: partsBuild, apply: applyParts, open: openParts }, isTouch: isTouch, deskPedals: deskPedals, dash: dash, quality: quality };
 })();
 </script>
 </body>
