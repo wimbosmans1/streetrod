@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.29)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.30)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -5777,7 +5777,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, Q_KMESH = 56, Q_KCOMM = 57, Q_KMOT = 58, Q_KBB = 59, Q_KAM = 60, Q_KBB2 = 61, Q_KBBHI = 62, Q_LEAD = 63, Q_TICKA = 64, Q_KVF = 65, Q_VFN = 66, Q_VFW = 67, Q_VFF = 68, Q_VFR = 69, Q_VFX = 70, Q_VWX = 71, Q_PSH = 72, Q_CYV = 73,
       Q_INTRES = 74, Q_VBANK = 75, Q_LTUBE = 76, Q_ATUBE = 77, Q_ROPEN = 78, Q_RCLOSE = 79, Q_KRES = 80, Q_F0RPM = 81, Q_F1RPM = 82, Q_FTHR = 83, Q_INTRUN = 84, Q_IRATTACH = 85,
       Q_CHG = 86, Q_CHGDP = 87, Q_CHGRPM = 88, Q_CHGTHR0 = 89, Q_CHGN0 = 90, Q_CHGN1 = 91, Q_CHGWG = 92, Q_CHGTU = 93, Q_CHGTD = 94,   // v1.13.25 generic charge (boost) block, 0 = off
-      Q_IGN = 95, Q_IGNVAC = 96, Q_IGNN = 97, Q_IGNP = 98, NQ = 110;   // v1.13.28 generic advance curve (car key ign), 0 = off; Q_IGNP..+11 = up to 6 [rpm, deg] points
+      Q_IGN = 95, Q_IGNVAC = 96, Q_IGNN = 97, Q_IGNP = 98, Q_CHGX = 110, Q_CHGXB = 111, NQ = 112;   // v1.13.30 Q_CHGX/Q_CHGXB: boost from the game physics (0 = off)   // v1.13.28 generic advance curve (car key ign), 0 = off; Q_IGNP..+11 = up to 6 [rpm, deg] points
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
       S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, S_PL = 36, S_PR = 37, S_QC = 38, S_BST = 39, NS = 40;
@@ -5895,9 +5895,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           var ni = Q[Q_IGNN] | 0, adv = Q[Q_IGNP + 1];
           if (rpm >= Q[Q_IGNP + 2 * (ni - 1)]) adv = Q[Q_IGNP + 2 * (ni - 1) + 1];
           else for (var ii = 1; ii < ni; ii++) { var r0 = Q[Q_IGNP + 2 * ii - 2], r1i = Q[Q_IGNP + 2 * ii]; if (rpm < r1i) { adv = rpm <= r0 ? Q[Q_IGNP + 2 * ii - 1] : Q[Q_IGNP + 2 * ii - 1] + (Q[Q_IGNP + 2 * ii + 1] - Q[Q_IGNP + 2 * ii - 1]) * (rpm - r0) / (r1i - r0); break; } }
-          CY[c + C_ADV] = Q[Q_SPARK0] + adv + Q[Q_IGNVAC] * (1.0 - piv / P_ATM);
-        } else
-        CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * (1.0 - piv / P_ATM);
+          var vfi = 1.0 - piv / P_ATM; if (Q[Q_CHG] > 0.0 && vfi < 0.0) vfi = 0.0;
+          CY[c + C_ADV] = Q[Q_SPARK0] + adv + Q[Q_IGNVAC] * vfi;
+        } else {
+        // v1.13.30: with a charge block (Q_CHG > 0) the vacuum term stops at 0 under boost: a vacuum diaphragm at rest cannot retard
+        // (same rule as the torque model, js/parts.js advAt); before, the law went negative (about −8° at 10 psi), in the sound only
+        var vfd = 1.0 - piv / P_ATM; if (Q[Q_CHG] > 0.0 && vfd < 0.0) vfd = 0.0;
+        CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * vfd;
+        }
         CY[c + C_DUR] = Q[Q_BURN] * (1.0 + 0.8 * xres);
         CY[c + C_VALID] = 1.0;
         tk += 0.6;
@@ -6202,8 +6207,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
           if (Q[Q_CHG] < 1.5) dpt = Q[Q_CHGDP] * (rpmC / Q[Q_CHGRPM]) * (Q[Q_CHGTHR0] + (1.0 - Q[Q_CHGTHR0]) * thC);
           else { var xs = (rpmC - Q[Q_CHGN0]) / (Q[Q_CHGN1] - Q[Q_CHGN0]); if (xs < 0.0) xs = 0.0; if (xs > 1.0) xs = 1.0; dpt = Q[Q_CHGDP] * xs * xs * thC * thC; }
           if (dpt > Q[Q_CHGWG]) dpt = Q[Q_CHGWG]; if (!(dpt > 0.0)) dpt = 0.0;
+          if (Q[Q_CHGX] > 0.5) {   // v1.13.30: the game physics owns the spool (js/physics.js boost state, sent as ctl bst); 30 ms smoothing
+            var tauX = 0.03 > dt ? 0.03 : dt; S[S_BST] += (Q[Q_CHGXB] - S[S_BST]) * (dt / tauX);
+          } else {
           var tauC = dpt > S[S_BST] ? Q[Q_CHGTU] : Q[Q_CHGTD]; if (tauC < dt) tauC = dt;
           S[S_BST] += (dpt - S[S_BST]) * (dt / tauC);
+          }
           var pup = P_ATM + S[S_BST];
           m_th = Q[Q_CD] * a_th * pup / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / pup, G_AIR);
           m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
@@ -7693,6 +7702,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = (typeof gl
       if (m.range !== undefined) g.range = m.range;
       if (m.avas !== undefined) g.avas = m.avas;
       if (m.avasLevel !== undefined) g.avasLevel = m.avasLevel;
+      if (m.bst !== undefined && this.Q && this.Q[Q_CHG] > 1.5) { this.Q[Q_CHGX] = 1.0; this.Q[Q_CHGXB] = +m.bst || 0.0; }   // v1.13.30 turbo boost from the game physics
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
@@ -9680,6 +9690,7 @@ var Physics = (function () {
     this.engine = 'off';            // off | cranking | running
     this.crankT = 0; this.fastIdle = 0;
     this.thrAct = 0;                // throttle actually applied (manifold lag)
+    this.boost = 0;                 // v1.13.30 turbo boost state (Pa gauge); only cars with c.boost use it
     this.idleI = 0; this.idleThr = 0;
     this.gear = 0;                  // manual: 0 = N, 1..4 ; auto: current gear 1..4
     this.range = c.trans === 'ev' ? 'P' : 'N';  // EV: P R N D ; auto: N D S L
@@ -9775,7 +9786,7 @@ var Physics = (function () {
   Vehicle.prototype.matchThrottle = function (rpmTarget, rpm) {
     var c = this.c, k = rpm / 1000, tau = 0.09;
     var fric = this.fricNm(k);
-    var wot = interp(c.torque, rpm) * c.netFactor;
+    var wot = this.wotAt(rpm);
     var TeReq = c.engineInertia * (rpmTarget - rpm) / RPM / tau;
     return clamp((TeReq + fric) / (wot + fric), 0, 1);
   };
@@ -9822,11 +9833,34 @@ var Physics = (function () {
     this.gear = to; this.autoTimer = 0; this.shiftT = 0; this.shiftEvt = true;
   };
 
+  // v1.13.30 generic turbo lag (c.boost from js/parts.js, absent = the steady table as before). The boost is a state: its target is the
+  // spool law the sound kernel uses (dp_max·x²·throttle², x = (rpm − n0) / (n1 − n0), capped at dp_wg), reached with a first-order lag
+  // (tau_up building, tau_dn falling; with tau_flow the build-up is slower at low exhaust flow: tau_up·n1/rpm, at most 3×, ESTIMATE:
+  // the shaft gains energy at the rate of the turbine's surplus power, about proportional to the exhaust mass flow).
+  Vehicle.prototype.boostTarget = function (rpm, thr) {
+    var b = this.c.boost, x = clamp((rpm - b.n0) / (b.n1 - b.n0), 0, 1);
+    return Math.min(b.dp_wg, b.dp_max * x * x * thr * thr);
+  };
+  Vehicle.prototype.stepBoost = function (dt, rpm, thr) {
+    var b = this.c.boost, tgt = this.boostTarget(rpm, thr), q = this.boost || 0;
+    var tau = tgt > q ? b.tau_up * (b.tau_flow ? clamp(b.n1 / Math.max(rpm, 1), 1, 3) : 1) : b.tau_dn;
+    this.boost = q + (tgt - q) * (1 - Math.exp(-dt / Math.max(1e-3, tau)));
+  };
+  // full-throttle torque at the present boost: through (0, na), (steady WOT boost, table) and (dp_wg, full), linear in boost between
+  Vehicle.prototype.wotAt = function (rpm) {
+    var c = this.c, b = c.boost, ss = interp(c.torque, rpm);
+    if (!b) return ss * c.netFactor;
+    var bss = this.boostTarget(rpm, 1), q = this.boost || 0, na = interp(b.na, rpm), T;
+    if (bss > 1 && q <= bss) T = na + (ss - na) * q / bss;
+    else if (bss <= 1) T = na + (interp(b.full, rpm) - na) * Math.min(1, q / b.dp_wg);
+    else T = ss + (interp(b.full, rpm) - ss) * Math.min(1, (q - bss) / Math.max(1, b.dp_wg - bss));
+    return T * c.netFactor;
+  };
   Vehicle.prototype.engineTorque = function (rpm, thr) {
     var c = this.c, k = rpm / 1000;
     var fric = this.fricNm(k);
     if (rpm < 50) fric *= rpm / 50;
-    var wot = interp(c.torque, rpm) * c.netFactor;
+    var wot = this.wotAt(rpm);
     if (rpm < 300) wot *= rpm / 300;
     return thr * (wot + fric) - fric;
   };
@@ -9896,6 +9930,7 @@ var Physics = (function () {
     var cmd = Math.max(driverThr, this.idleThr);
     var cut = this.limiterCut || !ignitionOn;
     this.thrAct += (cmd - this.thrAct) * (1 - Math.exp(-dt / 0.06));
+    if (c.boost) this.stepBoost(dt, rpm, cut ? 0 : this.thrAct);
     var Te = cut ? this.engineTorque(rpm, 0) : this.engineTorque(rpm, this.thrAct);
     if (!ignitionOn) Te = Math.min(Te, 0) + Tstarter;
     this.Te = Te; if (!this.TeRef) this.TeRef = Math.max(1, this.engineTorque(3500, 1));   // torque fraction for the gear whine (v4)
@@ -10252,7 +10287,7 @@ var Parts = (function () {
   }
   /** tm: { bore, stroke, ncyl, cr, ivc, iv_d, cdv, up:[...], down:[...], a_tail, k_exh, blower, fmep:[a,b,c] bar }
    *  chain element: [name, paths, d (m), K, cylinders per path, K scales with ksp (0/1)] */
-  function torqueAt(tm, n) {
+  function torqueAt(tm, n, dpo) {   // dpo (optional, v1.13.30): turbo boost (Pa) imposed instead of the steady WOT spool law (transient tables)
     var vd = tm.ncyl * Math.PI / 4 * tm.bore * tm.bore * tm.stroke, Sp = 2 * tm.stroke * n / 60;
     var Z = (tm.bore / tm.iv_d) * (tm.bore / tm.iv_d) * Sp / (tm.cdv * 343);
     // late-IVC charging: the best inlet closing moves later as the inflow at BDC gets faster. Legacy: piston speed. v1.13.29 (tm key ivz):
@@ -10265,12 +10300,23 @@ var Parts = (function () {
     var ve = TM.ve_max * Math.max(0.05, tm.ivz && x > 0 ? Math.exp(-TM.a * x * x) : 1 - TM.a * x * x);
     if (Z > 0.55) ve *= Math.exp(-((Z - 0.55) / 0.35) * ((Z - 0.55) / 0.35));
     if (tm.n_ram) { var xr = (n / tm.n_ram - 1) / TM.ram_w; ve *= 1 + TM.ram_a * Math.exp(-xr * xr); }   // v1.13.29 intake ram tuning (see tmOf)
-    var Qe = vd * n / 120 * ve, b = tm.blower, tu = tm.turbo, Pdrive = 0, pr = 1, dpIn, rhoM, dpTurb = 0;
+    var Qe = vd * n / 120 * ve, b = tm.blower, tu = tm.turbo, Pdrive = 0, pr = 1, dpIn, rhoM, dpTurb = 0, dpuR = 0;
     if (tu) {   // v1.13.25 exhaust turbocharger (steady WOT): boost rises as ((n - n0) / (n1 - n0))^2 to the wastegate setting;
       // compressor heating with eta_c; no shaft drive from the crank, but the turbine raises exhaust back pressure (k_bp × boost)
-      var xt = Math.max(0, Math.min(1, (n - tu.n0) / (tu.n1 - tu.n0))), dpb = Math.min(tu.dp_wg, (tu.dp_max || tu.dp_wg) * xt * xt);
+      var xt = Math.max(0, Math.min(1, (n - tu.n0) / (tu.n1 - tu.n0))), dpb = dpo != null ? Math.max(0, dpo) : Math.min(tu.dp_wg, (tu.dp_max || tu.dp_wg) * xt * xt);
       pr = 1 + dpb / P0;
-      if (tu.chg) {   // v1.13.25 charge model: the wastegate holds the plenum at P0 + boost, so the carb / filter loss ahead of the compressor
+      if (tu.chg && tu.pgc) {   // v1.13.30 (turbo key pgc): the spool law is the compressor's pressure RISE, not the plenum gauge. The rise is
+        // scaled so that the gauge at n1 reads the sourced boost (dp_max + the carb / filter loss there, dpu1 from tmOf); below the crossover
+        // the plenum shows the carb's vacuum as an NA engine does (v1.13.25 held the plenum at P0 + law, i.e. at P0 with no boost: the
+        // turbo cancelled the carb loss for free below n0). The wastegate (dp_wg) caps the plenum gauge. dpo = the spool-law value (state).
+        var dpc = dpb * ((tu.dp_max || tu.dp_wg) + (tu.dpu1 || 0)) / (tu.dp_max || tu.dp_wg), rhoP = RHO0, dpuP = 0, dpdP = 0, prcP = 1, pP = P0;
+        for (var ip = 0; ip < 4; ip++) {
+          dpuP = dpChain(Qe * rhoP / RHO0, tm.up, RHO0); dpdP = dpChain(Qe, tm.down, rhoP);
+          var pin = Math.max(0.5 * P0, P0 - dpuP); pP = Math.min(P0 + tu.dp_wg, pin + dpc); prcP = Math.max(1, pP / pin);
+          rhoP = (pP - dpdP) / (RG * chargeT(tu, T0 * (1 + (Math.pow(prcP, 0.2857) - 1) / tu.eta_c)));
+        }
+        pr = pP / P0; rhoM = rhoP; dpIn = dpdP; dpuR = dpuP; dpTurb = (tu.k_bp || 1.2) * Math.max(0, pP - P0);
+      } else if (tu.chg) {   // v1.13.25 charge model: the wastegate holds the plenum at P0 + boost, so the carb / filter loss ahead of the compressor
         // raises the compressor pressure ratio (more heating) instead of lowering the charge pressure; port losses stay after the plenum
         var rhoG = RHO0 * pr, dpuG = 0, dpdG = 0, prc = pr;
         for (var it = 0; it < 3; it++) {
@@ -10278,7 +10324,7 @@ var Parts = (function () {
           prc = P0 * pr / Math.max(0.5 * P0, P0 - dpuG);
           rhoG = (P0 * pr - dpdG) / (RG * chargeT(tu, T0 * (1 + (Math.pow(prc, 0.2857) - 1) / tu.eta_c)));
         }
-        rhoM = rhoG; dpIn = dpdG; dpTurb = (tu.k_bp || 1.2) * dpb;
+        rhoM = rhoG; dpIn = dpdG; dpTurb = (tu.k_bp || 1.2) * dpb; dpuR = dpuG;
       } else {
       var dTt = T0 * (Math.pow(pr, 0.2857) - 1) / tu.eta_c, rhoT = RHO0 * pr * T0 / chargeT(tu, T0 + dTt);
       var dpuT = dpChain(Qe * rhoT / RHO0, tm.up, RHO0), dpdT = dpChain(Qe, tm.down, rhoT);
@@ -10309,8 +10355,9 @@ var Parts = (function () {
       // pressure above the exhaust back pressure gives pumping work back (pmep = p_exh − p_int, with the same 0.5 intake-loss share as NA)
       if (fi.afr) imep *= fphi(AFR_ST / fi.afr) / fphi(AFR_ST / AFR);
       pmep = dpEx + dpTurb + 0.5 * dpIn - (pr - 1) * P0;
+      if (fi.pgc && pr < 1) pmep = dpEx + dpTurb + 0.5 * dpIn + 0.5 * (1 - pr) * P0;   // v1.13.30: a plenum below P0 is an intake loss (NA 0.5 share)
     }
-    return { T: (imep - fmep - pmep) * vd / (4 * Math.PI) - Pdrive / (2 * Math.PI * n / 60), pr: pr, ex: X, adv: adv, fSpk: fSpk };
+    return { T: (imep - fmep - pmep) * vd / (4 * Math.PI) - Pdrive / (2 * Math.PI * n / 60), pr: pr, dpu: dpuR, ex: X, adv: adv, fSpk: fSpk };
   }
   // ---- v1.13.29 friction (generic, data-driven; on with tm key fric, absent = the tm.fmep quadratic in bar) ----
   // Rubbing friction: Patton, Nitschke & Heywood (SAE 890836) as revised by Sandoval & Heywood (SAE 2003-01-0725), kPa with mm and rpm:
@@ -10433,11 +10480,12 @@ var Parts = (function () {
     E('inter pipe', nb, pd, il, f * il / pd + EXM.k_bend, cpb);
     var muf = (G.muf || []).slice(), tb = G.turbo, td = G.tail_d != null ? G.tail_d : pc, tn = G.tail_n === 1 ? 1 : 2;
     if (tb) muf = [['chamber', tb.vol_len, tb.vol_ratio, 0], ['turbine', tb.th_len, tb.th_d, 0]].concat(muf);   // as the kernel (net)
-    var aIn = A(pd), pIn = nb, dIn0 = pd, cIn = cpb, bank = true;   // velocity reference of the flow entering the next item
+    var aIn = A(pd), pIn = nb, dIn0 = pd, cIn = cpb, bank = true, iT = -1;   // velocity reference of the flow entering the next item
     if (muf.length) {
       for (var k = 0; k < muf.length; k++) {
         var m = muf[k];
         if (m[0] === 'turbine') {   // turbine: reflection only (its pressure drop is the turbo's own k_bp × boost term); outlet area = both bank pipes (ESTIMATE)
+          iT = el.length;   // v1.13.30: elements before this index sit upstream of the turbine (see exhaustAt, key xpd)
           pt(lenHead + il, R(A(pd), A(pd) + A(m[2]))); stop = true; L += m[1]; aIn = 2 * A(pd); pIn = 1; dIn0 = pd * Math.SQRT2; cIn = nc; bank = false; continue;
         }
         if (tb && k === 0) { L += m[1]; continue; }   // turbine volute: part of the turbine
@@ -10472,7 +10520,7 @@ var Parts = (function () {
     E('tailpipe + exit', tn, td, G.tail_len, f * G.tail_len / td + 1.0, nc);
     pt(G.tail_len, -1);
     el.forEach(function (e) { e.x = L > 0 ? e.x / L : 0; });
-    return { el: el, pts: pts, dEx: dEx, lsaEx: lsaEx, evo: lsaEx + dEx - 180, ov: Math.max(0, (dIn - lsaIn) + (dEx - lsaEx)),
+    return { el: el, iT: iT, pts: pts, dEx: dEx, lsaEx: lsaEx, evo: lsaEx + dEx - 180, ov: Math.max(0, (dIn - lsaIn) + (dEx - lsaEx)),
       ev_d: G.ev_d, ev_lift: G.ev_lift, camx: G.camx || 1, cd: ph.cd || 0.65, rod: G.rod, t0p: ph.t_prim0, tap: ph.t_prima };
   }
   function psiF(pr, g) {
@@ -10503,6 +10551,17 @@ var Parts = (function () {
   function exhaustAt(t, n, mdot, pI, pr, phi, dpTurb) {
     var ex = t.ex, load = pr * (0.5 + 0.5 * Math.min(1, n / 4000)), Tp = ex.t0p + ex.tap * load, Tt = EXM.t_amb + 0.45 * (Tp - EXM.t_amb);
     var dp = 0, parts = [];
+    if (t.turbo && t.turbo.xpd && ex.iT >= 0) {   // v1.13.30 (turbo key xpd): each element at its local static pressure, walked from the tail
+      // upstream (the turbine adds dpTurb at index iT). Before, every element used P0 density, so the header ahead of a turbine
+      // (at about twice atmospheric) had twice its real ½ρv² loss for the same mass flow (Δp ∝ ṁ²/ρ).
+      var pl = P0, dps = [];
+      for (var k = ex.el.length - 1; k >= 0; k--) {
+        if (k === ex.iT - 1) pl += dpTurb || 0;
+        var ek = ex.el[k], Tk = Tp + (Tt - Tp) * ek.x, rk = pl / (RG * Tk), vk = mdot / rk / ek.p / (Math.PI / 4 * ek.d * ek.d);
+        dps[k] = pulseM(ek.c, 2 * ex.dEx) * ek.K * 0.5 * rk * vk * vk; pl += dps[k];
+      }
+      for (var i2 = 0; i2 < ex.el.length; i2++) { dp += dps[i2]; parts.push([ex.el[i2].n, dps[i2]]); }
+    } else
     for (var i = 0; i < ex.el.length; i++) {
       var e = ex.el[i], T = Tp + (Tt - Tp) * e.x, rho = P0 / (RG * T), v = mdot / rho / e.p / (Math.PI / 4 * e.d * e.d);
       var d = pulseM(e.c, 2 * ex.dEx) * e.K * 0.5 * rho * v * v; dp += d; parts.push([e.n, d]);
@@ -10527,7 +10586,13 @@ var Parts = (function () {
     if (!fi.chg) return T2;
     var t = T2 - (fi.ic_eff || 0) * (T2 - T0);
     if (fi.evap_x) t -= fi.evap_x * H_FG / ((fi.afr || AFR) * 1005);
-    return Math.max(T0 - 30, t);
+    t = Math.max(fi.pgc ? Math.min(T2, T0) : T0 - 30, t);   // v1.13.30 pgc: the extra (boost) evaporation can at most take back the compression heat
+    // v1.13.30 (key tsq on the forced-induction part, absent = 1, the old full 1/T): the trapped charge does not fall as 1/T of the
+    // inlet temperature but about as T^-0.5, because a hotter charge picks up less heat from the ports and cylinder walls (VE ∝ √T:
+    // Heywood 1988 §6.2.2; Taylor vol. 1 §6). The same exponent is the DIN 70020 / SAE J1349 inlet-temperature power correction
+    // (P ∝ p·T^-0.5), the basis of the DIN PS figures the model is anchored on. Returned as the effective temperature for p / (R·T).
+    if (fi.tsq) t = T0 * Math.pow(t / T0, fi.tsq);
+    return t;
   }
   // relative indicated work vs equivalence ratio (fuel-air cycle, Heywood fig. 5-9 shape: flat peak near phi 1.15; ESTIMATE fit)
   function fphi(phi) { return 1 - 0.5 * (phi - 1.15) * (phi - 1.15); }
@@ -10558,6 +10623,10 @@ var Parts = (function () {
       var G = Object.assign({}, s ? s.car : {}, c.car), ig = G.ign && G.ign.cent ? G.ign : null;
       t.ign = { s0: G.spark0 || 0, cent: ig ? ig.cent : null, vac: ig ? (ig.vac || 0) : 12 };
     }
+    if (t.turbo && t.turbo.pgc && t.turbo.chg) {   // v1.13.30: dpu1 = carb / filter loss at n1 on full boost (the gauge reads dp_max there); 3 passes
+      t.turbo = Object.assign({}, t.turbo, { dpu1: 0 });
+      for (var ku = 0; ku < 3; ku++) t.turbo.dpu1 = torqueAt(t, t.turbo.n1).dpu;
+    }
     return t;
   }
 
@@ -10573,6 +10642,16 @@ var Parts = (function () {
       if (n <= 0) return [n, tab[0][1] * ratio(ts, tb, 800)];
       return [n, Math.max(0, stockAt(n) * ratio(ts, tb, n))];
     });
+    if (tb.turbo && tb.turbo.lag && c.car.turbo) {   // v1.13.30 turbo lag in the drivetrain (turbo key lag: 1, absent = steady table only)
+      // The game's torque table is the steady WOT curve (boost on its spool law). For the transient the vehicle gets the same anchored
+      // curve at zero boost (na) and at the wastegate boost (full); physics.js keeps the boost as a state (first-order spool with the
+      // sound model's own tau_up / tau_dn, slower at low exhaust flow) and interpolates the torque in boost through (0, na), (steady
+      // boost, torque) and (dp_wg, full), so a settled WOT pull returns the steady table exactly. The worklet gets that boost (ctl bst).
+      var tu = tb.turbo, ks = c.car.turbo, dpw = tu.dp_wg;
+      var at = function (dpo) { return grid.map(function (n) { return [n, n <= 0 ? tab[0][1] * ratio(ts, tb, 800, dpo) : Math.max(0, stockAt(n) * ratio(ts, tb, n, dpo))]; }); };
+      v.boost = { n0: tu.n0, n1: tu.n1, dp_wg: dpw, dp_max: tu.dp_max || dpw, tau_up: ks.tau_up != null ? ks.tau_up : 0.8, tau_dn: ks.tau_dn != null ? ks.tau_dn : 0.3,
+        tau_flow: tu.lag_flow ? 1 : 0, na: at(0), full: at(dpw) };
+    }
     if (tb.fric && ts.fric && v.fmep) {   // v1.13.29: shipped closed-throttle friction + (model build − model stock), least-squares quadratic in krpm
       var vdB = tb.ncyl * Math.PI / 4 * tb.bore * tb.bore * tb.stroke, vdS = base.fmep.vd;   // as torque: T_build = T_shipped + (T_model,build − T_model,stock)
       var X = [], Y = []; for (var kn = 800; kn <= lim; kn += 200) { X.push(kn / 1000); Y.push((fmepAt(tb, kn, 0.3) - fmepAt(ts, kn, 0.3) * vdS / vdB) / 1e5); }
@@ -10599,7 +10678,7 @@ var Parts = (function () {
     if (n <= last) return interp(tab, n);
     return tab[tab.length - 1][1] * Math.max(0, torqueAt(ts, n).T) / torqueAt(ts, last).T;
   }
-  function ratio(ts, tb, n) { var a = torqueAt(ts, Math.max(n, 800)).T, b = torqueAt(tb, Math.max(n, 800)).T; return a > 1 ? Math.max(0.3, Math.min(5.0, b / a)) : 1; }   // v1.13.25: cap 2.5 -> 5 (turbo and big-bore builds)
+  function ratio(ts, tb, n, dpo) { var a = torqueAt(ts, Math.max(n, 800)).T, b = torqueAt(tb, Math.max(n, 800), dpo).T; return a > 1 ? Math.max(0.3, Math.min(5.0, b / a)) : 1; }   // v1.13.25: cap 2.5 -> 5 (turbo and big-bore builds)
   function interp(tab, x) {
     if (x <= tab[0][0]) return tab[0][1];
     for (var i = 1; i < tab.length; i++) if (x <= tab[i][0]) { var a = tab[i - 1], b = tab[i]; return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); }
@@ -10860,7 +10939,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     // sound: generic PD blower block. 4 sliding vanes (Club VeeDub 1988, Hemmings 2018), 1.3 × crank; Q from vb; ~5 psi (34.5 kPa) at peak revs;
     // acoustic efficiency 1e-4 of gas power (ESTIMATE; period ads called it quiet); boost builds with throttle (thr0 0.15, ESTIMATE).
     sound: { car: { blower: { pd: 1, n_blades: 4, ratio: 1.3, Q_ref: 0.0006 * 1.3 * 3700 / 60, rpm_ref: 3700, dp_ref: 34500, eta: 1e-4, thr0: 0.15, pos: [0.50, 0.12, 0.80], boost: 1 } } },   // v1.13.25 boost: 1 = the charge block raises the manifold pressure
-    tm: { blower: { vb: 0.0006, ratio: 1.3, eta_c: 0.6, n_leak: 250, eta_mech: 0.85, chg: 1, afr: 11.5, evap_x: 0.3 } }, prov: { 'tm.blower.ratio': 's', 'tm.blower.vb': 'e', 'tm.blower.eta_c': 'e', 'tm.blower.afr': 'e: richer main jet under boost', 'tm.blower.evap_x': 'e: draw-through', 'blower.n_blades': 's', 'blower.eta': 'e', 'blower.pos': 'e' } });
+    tm: { blower: { vb: 0.0006, ratio: 1.3, eta_c: 0.6, n_leak: 250, eta_mech: 0.85, chg: 1, afr: 11.5, evap_x: 0.3, tsq: 0.5 } }, prov: { 'tm.blower.ratio': 's', 'tm.blower.vb': 'e', 'tm.blower.eta_c': 'e', 'tm.blower.afr': 'e: richer main jet under boost', 'tm.blower.evap_x': 'e: draw-through', 'blower.n_blades': 's', 'blower.eta': 'e', 'blower.pos': 'e' } });
   add({ id: 'exh.empi', slot: 'exhaust', label: 'EMPI extractor header', desc: 'Replaces the heat exchangers (no cabin heat) · 1963–', years: [1963, 1969],
     src: 'EMPI history ch. 7: tuned extractor, late 1963/64', attrs: { exh: 'extractor', exhfit: 'Type 1' }, warn: 'EMPI extractor: no cabin heat',
     sound: { car: { hx: null, prim_len: 0.50, prim_d: 0.0316, head_len: 0.10, coll_d: 0.0445 } },
@@ -11020,13 +11099,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     sound: { car: { carb: '2 × Dellorto DRLA 36', th_area_wot: 4 * PI4 * 0.036 * 0.036, v_man: 0.0010 } }, tm: { up: [['venturi 4 × 28 (DRLA)', 4, 0.028, 1.0, 1, 0]], down: [['runner', 4, 0.034, 1.5, 1, 0, 0.12], ['dual port', 4, 0.030, 1.2, 1, 0, 0.08]] },
     prov: { th_area_wot: 'd: four 36 mm chokes', v_man: 'e', 'tm.venturi': 'e', 'tm.down': 'e', ac_il: 'e' } });
 
+  // v1.13.30 Rajay carb and advance kit (Hot Rod Oct 1971: "a special kit to open up the carburetor and revise the distributor advance curve",
+  // nearly +100 %, close to 120 hp; Hot Rod Feb 1972: kit carb mods = main jet change, plugged power-enrichment air bleeds, Loctite on the pump
+  // nozzle, throttle lever change; 55 -> 119 hp, basis not stated). Sizes and the curve are not published: venturi 26 -> 28 mm and the recurve
+  // to 32° total by 3000 (the top of the VW 28–32° window) are ESTIMATES. The jet change keeps the draw-through carb rich under boost; the turbo
+  // block already assumes boost AFR 11.5 for every draw-through kit, and knock (what enrichment and a careful curve buy) is not in the torque model.
+  add({ id: 'carb.pict3_rajay', slot: 'carb', label: 'Rajay carb & advance kit on the Solex 34 PICT-3', desc: 'Kit jets, plugged enrichment bleeds, throttle lever, recurved distributor; "close to 120 hp" (Hot Rod) · 1971', years: [1971, 1979], yl: '1971',
+    src: 'Hot Rod Oct 1971 (The New Equalizers): special kit opens up the carburetor and revises the distributor advance curve, nearly +100 %, close to 120 hp (Rajay claim); Hot Rod Feb 1972 (Project Street Bug): main jet change, plugging of power-enrichment air bleeds, Loctite on the accelerator pump nozzle, throttle lever change; stock \'71 1600 55 -> 119 hp (dyno basis not stated)',
+    attrs: { carbkind: 'single', carbport: 'dual-port', dist: 'rajay' },
+    requires: [{ attr: 'tkit', in: ['rajay'], msg: 'The Rajay carb kit goes with the Rajay turbo kit: choose the Rajay turbocharger (or pick the kit)' }],
+    conflicts: [{ attr: 'dist', in: ['009', '010', '123', 'ecu'], msg: 'The Rajay kit recurves the factory VW distributor: keep the factory distributor slot' }],
+    warn: 'Rajay carb kit: venturi size and advance curve are ESTIMATES (not published); knock is not modelled',
+    sound: { car: { carb: 'Solex 34 PICT-3 (Rajay kit)', th_area_wot: PI4 * 0.034 * 0.034, spark0: 7.5, ign: { cent: [[450, 0], [3000, 24.5]], vac: 12 } } },
+    tm: { up: [['venturi Solex 34 PICT-3, opened (Rajay kit)', 1, 0.028, 1.0, 4, 0]], down: [['dual-port manifold', 2, 0.032, 1.5, 2, 1, 0.25], ['dual port', 4, 0.030, 1.2, 1, 0, 0.08]] },
+    prov: { th_area_wot: 'd: 34 mm throttle kept', 'tm.venturi': 'e: 26 -> 28 mm ("open up the carburetor")', 'tm.down': 'e: the stock manifold (as carb.pict3)', spark0: 'e: the stock 1600 static', 'ign.cent': 'e: recurve, 32° total by 3000 (VW WOT window 28–32°, vw-resource.com)', 'ign.vac': 'e: stock vacuum unit kept' } });
+
   // -- forced induction --
   add({ id: 'fi.shorrock', slot: 'fi', label: 'Shorrock C75BV vane supercharger (EMPI kit)', desc: 'Eccentric-drum vane blower with its own Stromberg CD, about 7 psi · 1964–', years: [1964, 1969], yl: '1964',
     src: 'mg-tabc (Shorrock ABC): eccentric drum, 4 vanes, about 7 psi max, Stromberg CD; oldspeed (EMPI PSSV-500): 40 → 72 hp; Autocar test 10 Apr 1964',
     attrs: { fi: 'shorrock' }, requires: [{ attr: 'carbkind', in: ['single'], msg: 'The Shorrock kit replaces the single stock carb with its own Stromberg CD' }],
     warn: 'Shorrock: belt-driven; drive ratio and rotor volume are estimates (sized for about 7 psi at peak revs)',
     sound: { car: { blower: { pd: 1, boost: 1, n_blades: 4, ratio: 1.0, Q_ref: 0.00075 * 1.0 * 4500 / 60, rpm_ref: 4500, dp_ref: 48000, eta: 1e-4, thr0: 0.15, pos: [0.50, -0.12, 0.80] } } },
-    tm: { blower: { vb: 0.00075, ratio: 1.0, eta_c: 0.6, n_leak: 250, eta_mech: 0.85, chg: 1, afr: 11.5, evap_x: 0.3 } },
+    tm: { blower: { vb: 0.00075, ratio: 1.0, eta_c: 0.6, n_leak: 250, eta_mech: 0.85, chg: 1, afr: 11.5, evap_x: 0.3, tsq: 0.5 } },
     prov: { 'tm.blower.afr': 'e', 'tm.blower.evap_x': 'e: draw-through', 'blower.n_blades': 's', 'blower.dp_ref': 's: about 7 psi max', 'tm.blower.vb': 'e', 'tm.blower.ratio': 'e', 'blower.eta': 'e', 'blower.pos': 'e' } });
   // turbos: generic turbo block (sound: c.turbo = charge + turbine damping + whine; torque: tm.turbo). Housing, wheel and spool numbers are ESTIMATES:
   // volute 0.12 m × 5 × pipe area; wheel passage 21 mm (≈ 3.5 cm² turbine nozzle) × 40 mm with packing 0.6 (damps 150–1500 Hz by about 3–6 dB in the model);
@@ -11034,13 +11128,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   function turbo(o) {
     var tb = { dp_wg: o.dp, n0: o.n0, n1: o.n1, tau_up: o.tau || 0.8, tau_dn: 0.3, vol_len: 0.12, vol_ratio: 5, th_len: 0.04, th_d: o.thd || 0.021, th_pack: 0.6,
       turbo_whine: 1, n_blades: 6, d: o.d || 0.055, Q_ref: 0.045, rpm_ref: 4000, dp_ref: o.dp, eta: 3e-5, u_min: 70, pos: [0.30, 0.20, 0.45] };
-    return { sound: { car: { turbo: tb } }, tm: { turbo: { dp_wg: o.dp, n0: o.n0, n1: o.n1, eta_c: o.eta_c || 0.6, k_bp: 1.2, chg: 1, afr: 11.5, evap_x: 0.3 } },
-      prov: { 'turbo.dp_wg': o.dpSrc, 'turbo.n0/n1': 'e', 'turbo.tau_up': 'e', 'turbo.housing': 'e', 'turbo.whine': 'e', 'tm.turbo.eta_c': 'e', 'tm.turbo.k_bp': 'e', 'tm.turbo.afr': 'e: period turbo carb advice 11.5–12', 'tm.turbo.evap_x': 'e' } };
+    // v1.13.30: tsq 0.5 (charge temperature law, DIN 70020 / Heywood §6.2.2), xpd 1 (header ahead of the turbine at its own pressure),
+    // pgc 1 (spool law = compressor rise; the gauge reads dp at n1 and the carb's vacuum below the crossover), lag 1 + lag_flow 1 (boost is a drivetrain state with the sound's tau_up / tau_dn, slower at low exhaust flow)
+    return { sound: { car: { turbo: tb } }, tm: { turbo: { dp_wg: o.dp, n0: o.n0, n1: o.n1, eta_c: o.eta_c || 0.6, k_bp: 1.2, chg: 1, afr: 11.5, evap_x: 0.3, tsq: 0.5, xpd: 1, pgc: 1, lag: 1, lag_flow: 1 } },
+      prov: { 'turbo.dp_wg': o.dpSrc, 'turbo.n0/n1': o.nSrc || 'e', 'tm.turbo.tsq': 's: DIN 70020 / SAE J1349 T^0.5 inlet-temperature law; Heywood 1988 §6.2.2', 'tm.turbo.lag_flow': 'e: spool time ∝ 1 / exhaust flow, at most 3×', 'turbo.tau_up': 'e', 'turbo.housing': 'e', 'turbo.whine': 'e', 'tm.turbo.eta_c': 'e', 'tm.turbo.k_bp': 'e', 'tm.turbo.afr': 'e: period turbo carb advice 11.5–12', 'tm.turbo.evap_x': 'e' } };
   }
   var TREQ = [{ attr: 'exh', in: ['turbo'], msg: 'A turbo needs the turbo header (choose it in Exhaust manifold, or pick the kit)' }];
-  add(Object.assign({ id: 'fi.rajay', slot: 'fi', label: 'Rajay 377B25 turbocharger kit', desc: 'Draw-through, about 10 psi; 115–120 hp on a 1600 · 1970–71', years: [1970, 1979], yl: '1970',
-    src: 'Hot Rod Oct 1971 (The New Equalizers): Rajay 377B25, about 10 psi, 115–120 hp on a 1600', attrs: { fi: 'turbo' }, requires: TREQ, warn: 'Turbo: spool lag; boost and spool rpm are estimates around the period figures' },
-    turbo({ dp: 69000, n0: 2000, n1: 4000, dpSrc: 's: about 10 psi' })));
+  add(Object.assign({ id: 'fi.rajay', slot: 'fi', label: 'Rajay 377B25 turbocharger kit', desc: 'Draw-through on the stock carb, no wastegate, 10 psi by 5400 rpm; about +50 % (Hot Rod) · 1970–71', years: [1970, 1979], yl: '1970',
+    src: 'Hot Rod Oct 1971 (The New Equalizers): Rajay 377B25 on the stock carb and ignition about +50 %; with the extra carb / advance kit nearly +100 % (close to 120 hp); boost a high of 10 psi, shifts at 5400. Hot Rod Feb 1972: 55 -> 119 hp with the carb mods', attrs: { fi: 'turbo', tkit: 'rajay' }, requires: TREQ, warn: 'Turbo: spool lag; the spool start rpm is an estimate' },
+    turbo({ dp: 69000, n0: 2000, n1: 5400, dpSrc: 's: about 10 psi', nSrc: 'n1 s: no wastegate (Rajay manual, ShopTalk 2001), boost "reached a high of 10 pounds" with shifts at 5400 rpm (Hot Rod Oct 1971); n0 e (a 1641 with the kit "makes boost around 4000", TheSamba 2016)' })));   // v1.13.30: n1 4000 (e) -> 5400 (s)
   add(Object.assign({ id: 'fi.schwitzer', slot: 'fi', label: 'Schwitzer 3LD-168 turbocharger kit (Crane)', desc: 'Up to 12 psi at 5000; 45 → 90 hp · 1971', years: [1971, 1979], yl: '1971',
     src: 'Pelican Parts forum (turbocharging memory lane): Schwitzer 3LD-168, up to 12 psi at 5000, 45 → 90 hp; Crane marketed the kit', attrs: { fi: 'turbo' }, requires: TREQ, warn: 'Turbo: spool lag; spool rpm is an estimate' },
     turbo({ dp: 82700, n0: 2400, n1: 5000, tau: 1.0, d: 0.060, dpSrc: 's: 12 psi at 5000' })));
@@ -11165,6 +11261,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     { id: 'kit.okrasa_tsv', label: 'Okrasa TSV 1300 kit: dual-port heads, twin Solex carbs, stroker crank', desc: 'Oettinger history; pre67vw', set: { heads: 'heads.okrasa', carb: 'carb.okrasa', crank: 'crank.okrasa', cooling: 'cool.okrasa' } },
     { id: 'kit.speedwell', label: 'Speedwell Sprint 1350 kit: twin Stromberg carbs, 82 mm big bore', desc: 'Speedwell 1965: on the 1200 34 PS (40 hp case), 82 × 64 mm = 1352 cc', set: { longblock: 'lb.34ps', carb: 'carb.speedwell', cylinders: 'cyl.82' } },
     { id: 'kit.rajay', label: 'Rajay turbo kit: turbocharger and header', desc: 'Hot Rod 1971', set: { fi: 'fi.rajay', exhaust: 'exh.turbo' } },
+    { id: 'kit.rajay_carb', label: 'Rajay turbo kit with the carb & advance kit', desc: 'Hot Rod 1971–72', set: { fi: 'fi.rajay', exhaust: 'exh.turbo', carb: 'carb.pict3_rajay' } },
     { id: 'kit.schwitzer', label: 'Schwitzer / Crane turbo kit: turbocharger and header', desc: '1971', set: { fi: 'fi.schwitzer', exhaust: 'exh.turbo' } },
     { id: 'kit.garrett', label: 'Garrett turbo, 0.5 bar: turbocharger and header', desc: 'flat4.de 1998', set: { fi: 'fi.garrett', exhaust: 'exh.turbo' } },
     { id: 'kit.cbrad', label: 'CB Performance RAD turbo kit: turbocharger and header', desc: 'CB Performance', set: { fi: 'fi.cbrad', exhaust: 'exh.turbo' } },
@@ -14559,6 +14656,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.30", date: "2026-11-26", status: "done", headline: "Beetle parts: turbo lag in the drivetrain, turbo charge physics", text: "Turbo lag is now real: the boost is a state in the game physics that builds with the turbo's spool time (slower at low revs) and limits the torque at the wheels, and the sound follows that same boost. Hot charge air costs less than before (the DIN / SAE temperature law instead of the full 1/T), the header ahead of the turbine counts at its real pressure, and below the boost threshold the engine sees its carburettor vacuum instead of free atmospheric pressure. The Rajay kit now builds its 10 psi by 5400 rpm with no wastegate, as Hot Rod reported in 1971. Under boost the sound no longer pulls the spark back (a vacuum unit cannot retard). New part: the Rajay carb and advance kit for the 34 PICT-3 (richer jets, plugged enrichment bleeds, new throttle lever, recurved distributor), fitted only with the Rajay turbo. Stock sounds are unchanged." },
       { v: "v1.13.29", date: "2026-11-23", status: "done", headline: "Beetle parts: high-rpm breathing and friction", text: "Engines that rev now make their power where the factory said. Friction follows the Patton-Nitschke-Heywood terms from each engine's bearings, pistons and valvetrain instead of one curve that grew too fast with revs, and the cooling fan costs the same power whatever engine it cools. The best inlet closing now follows the gas speed through the valve, the intake runners have a tuned speed, and builds that rev past the stock limiter are no longer pulled down by the stock engine's over-rev run-off. The Type 4 2.0 kit now makes about 99 PS at 4900 rpm (factory 100 PS at 5000) and the Denzel 1300 about 56 PS (54). The Vintage Speed stinger is now a 40 mm tube like its collector, a little quieter. The stock car and every shipped sound are unchanged." },
       { v: "v1.13.28", date: "2026-11-23", status: "done", headline: "Beetle parts: ignition curves, fuel injection and the Type 4 swap", text: "The distributor now changes torque: each one has its own advance curve (Bosch 009, Bosch 010 and the programmable 123\\TUNE+), and the model compares it with the best timing for that speed, so a curve that is late at low revs costs a few per cent there. The sound engine fires the plugs on the same curve. New fuel injection for the dual-port 1600: the 1975 US Beetle L-Jetronic, the Foerster FIS2-001 conversion and The Dub Shop four-throttle EFI. New Type 4 swap: the VW-Porsche 914 2.0 and 1.8 engines, which need 12 V, the upright fan conversion, a 200 mm Type 4 flywheel, a 12 V gearbox and a Type 4 exhaust; the menu blocks the swap until those are chosen, or pick the Type 4 kit. The stock car and every shipped sound are unchanged." },
       { v: "v1.13.27", date: "2026-11-23", status: "done", headline: "Beetle parts: the exhaust side makes torque", text: "The exhaust parts now change torque and power, not only the sound. The torque model uses the same exhaust pipes the sound engine plays: back pressure through the heat exchangers, junctions, muffler and tailpipes with the pulsing flow, header tuning from the pipe lengths and the cam, residual exhaust gas and the exhaust valve timing. Headers now have their real collector size (merged header 40 mm, EMPI 44.5 mm instead of the stock 32 mm), so they breathe better and sound a little louder (merged header about 2.5 dB from behind at full throttle). A header adds about 1.2 to 1.6 PS on a stock 1600 and more on a hot one; the 1956 heat exchangers and muffler now hold a hot 1600 back. The stock car and its sound are unchanged." },
@@ -16228,7 +16326,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       var evCtl = c.c.trans === 'ev' ? { rpmF: c.rpmF || 0, rpmR: c.rpmR || c.rpm(), tqSign: c.tqSign || 0, range: c.range, avas: !!c.avas, avasLevel: c.avasLevel || 0 } : {};
       audio.control(Object.assign({ rpm: c.c.trans === 'ev' ? Math.abs(c.rpm()) : Math.max(60, c.rpm()), thr: running ? (c.soundThr || 0) : 0, running: running, starter: c.engine === 'cranking',
         crank: Math.max(150, c.rpm()), speed: c.v, skid: 0.35 * c.skid, listen: state.view,
-        gear: inGear ? Math.max(1, c.gear || 1) : 0, tq: running && c.TeRef ? (c.Te || 0) / c.TeRef : 0, warm: !!c.warmed }, evCtl));
+        gear: inGear ? Math.max(1, c.gear || 1) : 0, tq: running && c.TeRef ? (c.Te || 0) / c.TeRef : 0, warm: !!c.warmed }, evCtl,
+        c.c.boost ? { bst: running ? (c.boost || 0) : 0 } : {}));   // v1.13.30: turbo boost state (physics) -> the sound's charge block
     }
     startupLink(dt, c);
     updateIgn();

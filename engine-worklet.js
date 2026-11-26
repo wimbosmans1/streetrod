@@ -5205,7 +5205,7 @@ function engineModuleV8p(core) {
       Q_KJET = 43, Q_VAC = 44, Q_LTH = 45, Q_RTH = 46, Q_SNM = 47, Q_SNR = 48, Q_SPARK0 = 49, Q_TAILA = 50, Q_NSEG = 51, Q_DWT = 52, Q_KNL = 53, Q_STIS = 54, Q_INSCALE = 55, Q_KMESH = 56, Q_KCOMM = 57, Q_KMOT = 58, Q_KBB = 59, Q_KAM = 60, Q_KBB2 = 61, Q_KBBHI = 62, Q_LEAD = 63, Q_TICKA = 64, Q_KVF = 65, Q_VFN = 66, Q_VFW = 67, Q_VFF = 68, Q_VFR = 69, Q_VFX = 70, Q_VWX = 71, Q_PSH = 72, Q_CYV = 73,
       Q_INTRES = 74, Q_VBANK = 75, Q_LTUBE = 76, Q_ATUBE = 77, Q_ROPEN = 78, Q_RCLOSE = 79, Q_KRES = 80, Q_F0RPM = 81, Q_F1RPM = 82, Q_FTHR = 83, Q_INTRUN = 84, Q_IRATTACH = 85,
       Q_CHG = 86, Q_CHGDP = 87, Q_CHGRPM = 88, Q_CHGTHR0 = 89, Q_CHGN0 = 90, Q_CHGN1 = 91, Q_CHGWG = 92, Q_CHGTU = 93, Q_CHGTD = 94,   // v1.13.25 generic charge (boost) block, 0 = off
-      Q_IGN = 95, Q_IGNVAC = 96, Q_IGNN = 97, Q_IGNP = 98, NQ = 110;   // v1.13.28 generic advance curve (car key ign), 0 = off; Q_IGNP..+11 = up to 6 [rpm, deg] points
+      Q_IGN = 95, Q_IGNVAC = 96, Q_IGNN = 97, Q_IGNP = 98, Q_CHGX = 110, Q_CHGXB = 111, NQ = 112;   // v1.13.30 Q_CHGX/Q_CHGXB: boost from the game physics (0 = off)   // v1.13.28 generic advance curve (car key ign), 0 = off; Q_IGNP..+11 = up to 6 [rpm, deg] points
     var S_TH = 0, S_W = 1, S_DW = 2, S_TM = 3, S_PMAN = 4, S_WI = 5, S_PPL = 6, S_QTH = 7, S_PAC = 8, S_QSN = 9, S_WM = 10, S_LOCK = 11,
       S_TGAS = 12, S_MESH = 13, S_COMM = 14, S_RNG = 15, S_TPRIM = 16, S_TTAIL = 17, S_NFIRE = 18, S_NEVT = 19, S_REVS = 20, S_JET0 = 21,
       S_JET1 = 22, S_TST = 23, S_CUR = 24, S_LOAD = 25, S_TMD = 26, S_NT = 27, S_DWM = 28, S_STENV = 29, S_MOTPH = 30, S_STN = 31, S_CLUNKPH = 32, S_PREVLOCK = 33, S_STN2 = 34, S_LEADHUM = 35, S_PL = 36, S_PR = 37, S_QC = 38, S_BST = 39, NS = 40;
@@ -5323,9 +5323,14 @@ function engineModuleV8p(core) {
           var ni = Q[Q_IGNN] | 0, adv = Q[Q_IGNP + 1];
           if (rpm >= Q[Q_IGNP + 2 * (ni - 1)]) adv = Q[Q_IGNP + 2 * (ni - 1) + 1];
           else for (var ii = 1; ii < ni; ii++) { var r0 = Q[Q_IGNP + 2 * ii - 2], r1i = Q[Q_IGNP + 2 * ii]; if (rpm < r1i) { adv = rpm <= r0 ? Q[Q_IGNP + 2 * ii - 1] : Q[Q_IGNP + 2 * ii - 1] + (Q[Q_IGNP + 2 * ii + 1] - Q[Q_IGNP + 2 * ii - 1]) * (rpm - r0) / (r1i - r0); break; } }
-          CY[c + C_ADV] = Q[Q_SPARK0] + adv + Q[Q_IGNVAC] * (1.0 - piv / P_ATM);
-        } else
-        CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * (1.0 - piv / P_ATM);
+          var vfi = 1.0 - piv / P_ATM; if (Q[Q_CHG] > 0.0 && vfi < 0.0) vfi = 0.0;
+          CY[c + C_ADV] = Q[Q_SPARK0] + adv + Q[Q_IGNVAC] * vfi;
+        } else {
+        // v1.13.30: with a charge block (Q_CHG > 0) the vacuum term stops at 0 under boost: a vacuum diaphragm at rest cannot retard
+        // (same rule as the torque model, js/parts.js advAt); before, the law went negative (about −8° at 10 psi), in the sound only
+        var vfd = 1.0 - piv / P_ATM; if (Q[Q_CHG] > 0.0 && vfd < 0.0) vfd = 0.0;
+        CY[c + C_ADV] = Q[Q_SPARK0] + (rpm < 450.0 ? 0.0 : (rpm < 3050.0 ? rpm - 450.0 : 2600.0) / 2600.0 * 20.0) + 12.0 * vfd;
+        }
         CY[c + C_DUR] = Q[Q_BURN] * (1.0 + 0.8 * xres);
         CY[c + C_VALID] = 1.0;
         tk += 0.6;
@@ -5630,8 +5635,12 @@ function engineModuleV8p(core) {
           if (Q[Q_CHG] < 1.5) dpt = Q[Q_CHGDP] * (rpmC / Q[Q_CHGRPM]) * (Q[Q_CHGTHR0] + (1.0 - Q[Q_CHGTHR0]) * thC);
           else { var xs = (rpmC - Q[Q_CHGN0]) / (Q[Q_CHGN1] - Q[Q_CHGN0]); if (xs < 0.0) xs = 0.0; if (xs > 1.0) xs = 1.0; dpt = Q[Q_CHGDP] * xs * xs * thC * thC; }
           if (dpt > Q[Q_CHGWG]) dpt = Q[Q_CHGWG]; if (!(dpt > 0.0)) dpt = 0.0;
+          if (Q[Q_CHGX] > 0.5) {   // v1.13.30: the game physics owns the spool (js/physics.js boost state, sent as ctl bst); 30 ms smoothing
+            var tauX = 0.03 > dt ? 0.03 : dt; S[S_BST] += (Q[Q_CHGXB] - S[S_BST]) * (dt / tauX);
+          } else {
           var tauC = dpt > S[S_BST] ? Q[Q_CHGTU] : Q[Q_CHGTD]; if (tauC < dt) tauC = dt;
           S[S_BST] += (dpt - S[S_BST]) * (dt / tauC);
+          }
           var pup = P_ATM + S[S_BST];
           m_th = Q[Q_CD] * a_th * pup / Math.sqrt(R_GAS * T_AMB) * psi(S[S_PMAN] / pup, G_AIR);
           m_en = Q[Q_ETAV] * S[S_PMAN] / (R_GAS * T_AMB) * Q[Q_VD] * (w > 0.0 ? w : 0.0) / (4.0 * Math.PI);
@@ -7121,6 +7130,7 @@ function engineModuleV8p(core) {
       if (m.range !== undefined) g.range = m.range;
       if (m.avas !== undefined) g.avas = m.avas;
       if (m.avasLevel !== undefined) g.avasLevel = m.avasLevel;
+      if (m.bst !== undefined && this.Q && this.Q[Q_CHG] > 1.5) { this.Q[Q_CHGX] = 1.0; this.Q[Q_CHGXB] = +m.bst || 0.0; }   // v1.13.30 turbo boost from the game physics
     };
     /** the engine was already running when this source was created (model / car switch) */
     V8pSynth.prototype.initRunning = function (on) { if (on) { this.setRunning(this.c.idle_rpm); this.game.running = true; this.game.has = true; } };
