@@ -1,3 +1,10 @@
+## v1.13.33 (tag `v1.13.33`), 2026-11-27 (Swap parts: purpose notes, config below the list)
+
+* **Why.** Wim (t26u): some parts have no impact on performance — mention their purpose so they can be picked up later; the build/config panel at the top of Swap parts eats the screen and hides the part list.
+* **No-effect parts.** 28 catalogue parts were dyno-diffed against stock and against 1600 DP / stroker / big-bore bases (peak power and torque, the full torque curve, CR, displacement, limiter, mass, tyre grip and rolling drag, gears, inertia). They do not change those figures. Each now has a generic `purpose` key (data only, no per-car code) shown in the picker as a short grey line: “No performance effect — purpose: …”. The list, with what a later model could pick up, is in `tools/parts/NO_EFFECT_PARTS.md`. Cooling, oil, bearings, case savers, spacers, lifters, pushrods, springs, pumps, filters, pulleys, fuel pumps, the 12 V conversion (starter sound only), Super petrol (knock warning only) and the GT/Monza styling muffler (Seume p.114 restriction not in the model: `tm.k_exh` is unused while the exhaust side is driven by sound geometry, and this part sets no geometry). Clutches are not in the list: `clutchMax` is used by the physics when the clutch slips.
+* **Layout.** The build/config summary (displacement, CR, peaks, price total, hard/soft notes) is no longer sticky over the slot list. It sits at the bottom of the scrolled list, below the parts, so the selects are visible first on iPhone Safari portrait, the Tesla browser and a Mac. The Apply / Stock / Close footer stays pinned. Other screens are unchanged.
+* **Unchanged.** Every sound (111 audio hashes bit-identical), torque model, parts compatibility and prices, road course.
+
 ## v1.13.32 (tag `v1.13.32`), 2026-11-26 (Road course draft: one winding road, solo)
 
 * **Why.** Wim (t19u, t24s1): a road-course race like the 1989 Street Rod, first step "one curved road, driving solo". Feasibility report D: a light lateral grip budget on the existing longitudinal solver, not a second physics engine.
