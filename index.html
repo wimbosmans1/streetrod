@@ -12294,8 +12294,9 @@ var RoadCourse = (function () {
     CIRC: 0.35, CIRCMIN: 0.7,    // aMax x sqrt(1 - 0.35 (ax / mu g)^2), at least sqrt(0.7) = 84 %: driving / braking costs a little line, not the car
     TAUA: 0.25,                  // s, the longitudinal load used for that follows the car's acceleration smoothly (no flicker from gear changes)
     GRIPUSE: 0.35,               // grip left for driving / braking at the cornering limit: 1 - 0.35 (ay / ayCap)^2 (at least 65 %)
-    TCSR: 0.08, TCDN: 0.1, TCUP: 0.35, TCMIN: 0.1,   // traction aid: wheelspin over 8 % slip trims the throttle (down in 0.1 s, back in 0.35 s)
-    TCOVER: 10                   // ... and so does driving past the cornering limit: throttle x (1 - 10 (over - 0.03)), at least 0.1
+    TCSR: 0.1, TCK: 10, TCSPIN: 0.3,  // traction aid: wheelspin past 10 % slip (about the tyre's peak; the squeal starts at 12 %) trims the throttle,
+    TCDN: 0.05, TCUP: 0.35, TCMIN: 0.1, // x (1 - 10 (slip - 0.1)), at least 0.3; down in 0.05 s, back in 0.35 s
+    TCOVER: 10, TCOVER0: 0.03    // ... and so does driving past the cornering limit: throttle x (1 - 10 (over - 0.03)), at least 0.1
   };
   function arcLat(v) { return Math.min(ARC.LATMAX, ARC.LAT0 + ARC.LATK * v, ARC.LATV * v); }
   Sim.prototype.stepArcade = function (dt, car, steer) {
@@ -12333,7 +12334,7 @@ var RoadCourse = (function () {
     }
     this.grip = lim.muF * (1 - ARC.GRIPUSE * Math.pow(Math.min(1, ay / Math.max(0.1, ayCap)), 2));
     // traction / stability aid: wheelspin, or driving the car past its cornering limit, trims the throttle (never the brakes)
-    var tcT = Math.max(ARC.TCMIN, 1 - ARC.TCOVER * Math.max(0, over - 0.03)); if (car.tyre === 'spin' && (car.sr || 0) > ARC.TCSR) tcT = ARC.TCMIN;
+    var tcT = Math.max(ARC.TCMIN, 1 - ARC.TCOVER * Math.max(0, over - ARC.TCOVER0)); if (car.tyre === 'spin' && (car.sr || 0) > ARC.TCSR) tcT = Math.min(tcT, Math.max(ARC.TCSPIN, 1 - ARC.TCK * (car.sr - ARC.TCSR)));
     this.tcK = tcT < this.tcK ? Math.max(tcT, this.tcK - dt / ARC.TCDN) : Math.min(tcT, this.tcK + dt / ARC.TCUP);
     this.resist = m * ay * Math.sin(alpha) + lim.crr * m * G + m * Math.min(ARC.SCRUB * Math.max(0, aReq - aMax), ARC.SCRUBMAX * (c.muSlide || 0.6) * lim.muF * G);
     this.surf = lim;

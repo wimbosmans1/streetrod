@@ -1,6 +1,57 @@
 ## v1.13.36 (local, not tagged or pushed), 2026-11-27 (Stage course: drive controls and traction)
 
-* (filled in below)
+* **Why.** Wim drove v1.13.35 and found the road course "not really a pleasure" for two reasons. The drive buttons felt off, and there was no traction when accelerating out of a corner or braking into one. This pass is meant to make it fun. Full audit: lotus-notes/CONTROLS.md. Numbers: lotus-notes/TRACTION.md.
+* **Traction: root causes (js/road.js stepArcade, arcade course only).**
+  * The share of tyre grip that the road model hands to the engine model (inp.grip = 1 - (ay / ayCap)^2, floor 0.05) fell to almost nothing at the cornering limit. The rear axle's normal load was scaled with it, so in a bend any real throttle lit the tyres up and any firm brake locked them.
+    * Out of the R30 hairpin on full throttle, the tyres squealed for 2.6 s (911), 5.4 s (GT350) and 5.7 s (BRM).
+    * Full braking into it locked the wheels for 1.0-1.5 s (Beetle, GT350, BRM) and cut the deceleration (Beetle 0.64 g, GT350 0.77 g).
+  * The friction circle took the whole lateral budget for driving or braking (circ floor 0.15, so 39 % of the grip was left). The scrub resistance fed back into it, so heavy throttle or brakes in a bend swung the outward push up to 2.5x.
+  * The cars without ABS (Beetle, GT350, BRM) had nothing to stop lock-ups, and nothing limited wheelspin.
+* **Traction: what changed (generic keys, used only when the course sets `arcade`; no per-car code).**
+  * Grip share for driving and braking while cornering: 1 - 0.35 (ay / ayCap)^2, so at least 65 % (was down to 5 %).
+  * Friction circle: aMax x sqrt(1 - 0.35 (ax / mu g)^2), at least 84 % of aMax (was 39 %). It uses the drive / brake acceleration smoothed over 0.25 s, without the scrub feedback. Lifting off still pulls you in a little.
+  * Traction and stability aid: js/road.js hands `inp.tc` (a throttle share) to the engine model.
+    * It trims the throttle when the driven tyres pass 10 % slip: x (1 - 10 (slip - 0.1)), at least 0.3.
+    * It also trims it when the car is driven past its cornering limit: x (1 - 10 (over - 0.03)), at least 0.1.
+    * It acts within 0.05 s and recovers in 0.35 s. It never touches the brakes.
+  * ABS aid: `inp.abs` uses the engine model's existing ABS clamp (0.97 x muPeak x axle load) for every car on the stage.
+  * js/physics.js reads the two new keys only when they are present (`inp.tc`, `inp.abs`). The drag strip, cruise and the old lap do not pass them, so they are bit-identical.
+* **Scripted hairpin drives (lotus-notes/tools/traction.js; v1.13.35 -> v1.13.36).**
+
+  | Car / drive | Squeal (wheelspin or lock-up) | Line loss | Exit or brake |
+  |---|---|---|---|
+  | Beetle, full throttle from the apex | 0 -> 0 s | 0.16 -> 0.13 m | 52 -> 52 km/h |
+  | Beetle, full brake from 75 km/h | 1.05 -> 0 s | 0.11 -> 0.11 m | 0.64 -> 0.76 g |
+  | Beetle, at the limit, brake 0.5 in the bend | 0 -> 0 s | 0.10 -> 0.06 m | 0.45 -> 0.44 g |
+  | 911, full throttle from the apex | 2.58 -> 0 s | 1.13 -> 0.95 m | 76 -> 73 km/h |
+  | 911, full throttle from turn-in + 15 m | 4.53 -> 0 s | 1.52 -> 1.52 m | 76 -> 74 km/h |
+  | 911, full brake from 90 km/h | 0 -> 0 s (ABS) | 0.13 -> 0.13 m | 1.07 -> 1.07 g |
+  | 911, at the limit, brake 0.5 in the bend | 0 -> 0 s | 0.17 -> 0.08 m | 0.64 -> 0.63 g |
+  | GT350, full throttle from the apex | 5.35 -> 0 s | 0.45 -> 0.80 m | 62 -> 67 km/h |
+  | GT350, full brake from 90 km/h | 1.45 -> 0 s | 0.12 -> 0.13 m | 0.77 -> 0.94 g |
+  | BRM, full throttle from the apex | 5.67 -> 0 s | 0.15 -> 0.59 m | 66 -> 68 km/h |
+
+  The cars now accelerate out of the bend instead of spinning their tyres, so they reach the exit faster and give up a little line (at most 1.5 m, always on the asphalt). The hold / pass speeds from v1.13.35 are unchanged (cornerSpeed is the same).
+* **Stage runs (test/stage_test.js, no traffic).** Every car finishes with 0 hits, 0 cars inside obstacles and no NaN.
+
+  | Car | v1.13.35 | v1.13.36 |
+  |---|---|---|
+  | GT350 | 3:06.47 | 3:05.43 |
+  | Caddy | 3:34.15 | 3:33.36 |
+  | BRM | 2:55.49 | 2:51.17 |
+  | 911 | 2:56.06 | 2:56.03 |
+  | Beetle | 4:27.98 | 4:27.91 |
+  | Model X | 2:49.00 | 2:48.27 |
+
+* **Drive controls (road course only; drag strip and cruise keep their pedals).** See lotus-notes/CONTROLS.md for the audit.
+  * Left thumb steers, right thumb drives. The steering pad is bottom left. GAS (lowest) and BRAKE are bottom right, with a gear chip. Phone portrait uses the deck under the scene, and the Tesla uses the band under the scene. Phone landscape and desktop place them on the bottom corners, clear of the speed panel and the HUD.
+  * Steering pad: the outer third of each half is full lock. Toward the middle it follows a u^1.2 curve with a 5 % dead zone. Dragging on the scene no longer steers on the course.
+  * GAS and BRAKE are full anywhere on the button. They were pressure-by-height, so a resting thumb gave 20-50 %.
+  * Gears shift themselves by default (AUTO, saved). Up at 93 % of the limiter; down when the lower gear has room and the revs are low, or earlier on the brakes. Tap AUTO or press O for manual (- / + on the chip; . / , or PageUp / PageDown).
+  * Keyboard on the course: arrows or WASD. Left and right steer: they used to shift gears. S brakes: it used to switch the engine off. Gas and brake reach full in 0.25 s (were 0.7 / 0.6 s).
+  * Short entry message.
+* **Tests.** New test/traction_test.js (13 checks). The arcade, collide, road (old lap 2:51.93), drag, physics, gearbox, old-model, syntax, release-check, fit and audio results are in the v1.13.36 report.
+
 
 ## v1.13.35 (local, not tagged or pushed), 2026-11-27 (Stage course: Lotus 2-style handling on the real engine)
 
