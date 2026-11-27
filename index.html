@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.34)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.35)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -12026,7 +12026,7 @@ var RoadCourse = (function () {
   };
   // v1.13.34: a Lotus-2-style stage (original layout; the first half follows Mesa Road): 5 sections, 4 checkpoints + finish, hills
   var MESA_RUN = {
-    id: 'mesa-run', name: 'Mesa Run', note: 'Desert stage, 5 checkpoints, hills, traffic', stage: true,
+    id: 'mesa-run', name: 'Mesa Run', note: 'Desert stage, 5 checkpoints, hills, traffic', stage: true, arcade: 1,   // v1.13.35: Lotus-2-style arcade lateral handling (default off: the old lap keeps the v1.13.32 model)
     runup: 60, runoff: 400, seed: 1956,
     segs: [
       { L: 420, name: 'Start straight', hill: [{ u: 120, len: 280, dh: 12 }] },
@@ -12103,7 +12103,7 @@ var RoadCourse = (function () {
       e[i] = z;
     }
     var T = { id: C.id, name: C.name, note: C.note, s0: -C.runup, sEnd: n - C.runup, finish: finish, splits: splits, bends: bends, k: k, th: th, x: x, y: y,
-      box: [minx, miny, maxx, maxy], lane: LANE, startY: START_Y, e: e, hilly: hilly, stage: !!C.stage, props: [], segs: segInfo };
+      box: [minx, miny, maxx, maxy], lane: LANE, startY: START_Y, e: e, hilly: hilly, stage: !!C.stage, arcade: !!C.arcade, props: [], segs: segInfo };
     if (C.stage) T.props = makeProps(T, C);
     return T;
   }
@@ -12185,6 +12185,7 @@ var RoadCourse = (function () {
     this.t = 0; this.phase = 'grid'; this.res = null; this.splitT = []; this.offT = 0; this.offs = 0; this.wasOff = false; this.vmax = 0; this.crash = 0;
     this.surfL = 'asphalt'; this.surfR = 'asphalt'; this.steerK = 0; this.lastSplit = 0;
     this.vyc = 0; this.spin = 0; this.hitT = 0; this.grade = 0; this.vb = 0;   // v1.13.34: slide / spin after a collision, road grade
+    this.vLat = 0; this.vk = 0; this.wob = 0; this.wobT = 9; this.skidA = 0;     // v1.13.35 arcade handling: lateral rate, hit kick, wobble
   };
   // inputs for the longitudinal solver this step (from the state at the end of the last step)
   Sim.prototype.inputs = function () { return this.T.hilly ? { grip: this.grip, resist: this.resist, grade: this.grade } : { grip: this.grip, resist: this.resist }; };
@@ -12196,6 +12197,14 @@ var RoadCourse = (function () {
     var c = car.c, ps = this.psi, u = vs * Math.cos(ps) + vy * Math.sin(ps), l = -vs * Math.sin(ps) + vy * Math.cos(ps);
     car.v = Math.max(0, u); if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius;
     this.vb = Math.max(-10, Math.min(0, u));   // a rebound backwards (the solver has no reverse): carried here, rolled out by the tyres
+    if (this.T.arcade) {   // v1.13.35 arcade handling: the same impulse, softer for the player: the sideways part is a kick that the
+      // tyres take out in ~0.35 s, the yaw kick is only a brief wobble of the heading (no spin), the steering is wobbly for 0.45 s
+      var vr = vy;   // road-frame sideways velocity after the hit
+      this.vk = Math.max(-ARC.KICK, Math.min(ARC.KICK, vr - this.vLat)); this.vyc = 0; this.spin = 0;
+      if (Math.abs(dw) > 0.3 || !soft) { this.wob = Math.max(-ARC.WOB, Math.min(ARC.WOB, dw * 0.08 + (soft ? 0 : 0.06 * Math.sign(dw || 1)))); this.wobT = 0; }
+      if (!soft) this.hitT = ARC.HIT_T;
+      return;
+    }
     this.vyc = Math.max(-25, Math.min(25, l + (u < 0 ? 0 : 0)));
     this.spin = Math.max(-6, Math.min(6, this.spin + dw));
     if (!soft) this.hitT = HIT_T;   // a light post or board: no wobble
@@ -12207,6 +12216,7 @@ var RoadCourse = (function () {
     b.hl = L / 2; b.hw = W / 2; b.m = c.massKg || 1200;
     b.s = this.s - L / 2 * Math.cos(ps); b.y = this.y - L / 2 * Math.sin(ps); b.h = ps;   // this.s is the car front
     v += this.vb || 0; b.vs = v * Math.cos(ps) - this.vyc * Math.sin(ps); b.vy = v * Math.sin(ps) + this.vyc * Math.cos(ps); b.w = this.wNow || 0;
+    if (this.T.arcade) { var vy = this.vLat + this.vk; b.vy = vy; b.vs = Math.sqrt(Math.max(0, v * v - Math.min(vy * vy, 0.64 * v * v))) * (v < 0 ? -1 : 1); }   // v1.13.35: the real travel
     return b;
   };
   // the collision engine moved the body (contact push-out): move the car with it
@@ -12224,8 +12234,64 @@ var RoadCourse = (function () {
     var lim = this.limits(c, v), kGeo = 2 / (c.turnCircle || 11.0);
     return Math.min(kGeo, ASSIST * lim.muLat * G / Math.max(1, v * v));
   };
+  // ---- v1.13.35 arcade lateral model (course key arcade: 1; default off), after Lotus Turbo Challenge 2 (lotus-notes/HANDLING.md) ----
+  // The car stays pointed (almost) down the road. Steering sets a sideways rate that grows with speed; a bend carries the car to the
+  // outside at a rate ~ v^2 k / aMax, where aMax is the car's own lateral grip (tyre muPeak x latK x speed factor x surface, and what
+  // the friction circle leaves after driving / braking: lifting off pulls you in). Full steering into the bend holds the line up to
+  // aMax (HOLD); faster, the car drifts wide and the excess lateral acceleration scrubs speed (SCRUB, through inp.resist). It never
+  // spins. Longitudinal motion stays the real engine / gearbox / drag / grade model (js/physics.js).
+  var ARC = {
+    LAT0: 1.6, LATK: 0.17, LATMAX: 6.2, LATV: 0.8,   // m/s sideways at full steer: 1.6 + 0.17 v, at most 6.2 and 0.8 v (game feel)
+    TAU: 0.11,                                       // s, the sideways rate follows the stick (smooth, responsive)
+    HOLD: 1.0,                                       // full steer exactly holds the line at v^2 k = HOLD x aMax
+    SCRUB: 0.55,                                     // speed lost per m/s^2 of lateral demand over aMax
+    SCRUBMAX: 0.8,                                   // ... at most 0.8 x the sliding tyre's grip (muSlide x surface) g
+    PUSHMAX: 2.5,                                    // the outward rate is capped at 2.5 x the steering rate (way over the limit)
+    KICK: 5, TAUK: 0.35, WOB: 0.22, TAUW: 0.28, HIT_T: 0.45,  // collisions (softer than v1.13.34)
+    YAWV: 0.6,                                       // heading shown / used for the body = 0.6 x the direction of travel
+    PSIMAX: 0.35                                     // never more than 20 degrees off the road direction (no spins)
+  };
+  function arcLat(v) { return Math.min(ARC.LATMAX, ARC.LAT0 + ARC.LATK * v, ARC.LATV * v); }
+  Sim.prototype.stepArcade = function (dt, car, steer) {
+    var T = this.T, c = car.c, v = Math.max(0, car.v), m = c.massKg, n = Math.max(1, Math.ceil(dt / 0.005)), h = dt / n;
+    var lim = this.limits(c, v);
+    var aero = 0.5 * 1.2 * (c.cd || 0.4) * (c.area || 2) * v * v / m, axT = (car.a || 0) + aero + this.resist / m;
+    var ayCap = lim.muLat * G, circ = Math.max(0.15, 1 - Math.pow(axT / Math.max(0.1, lim.muLong * G), 2)), aMax = Math.max(0.5, ayCap * Math.sqrt(circ));
+    var auth = this.hitT > 0 ? 0.55 + 0.45 * (1 - this.hitT / ARC.HIT_T) : 1, L = arcLat(v), aReq = 0, kr = 0;
+    for (var i = 0; i < n; i++) {
+      kr = kAt(T, this.s); var den = Math.max(0.2, 1 - this.y * kr);
+      aReq = v * v * Math.abs(kr) / den;
+      var push = kr ? -Math.sign(kr) * L * Math.min(ARC.PUSHMAX, aReq / (ARC.HOLD * aMax)) : 0;
+      var tgt = steer * auth * L + push;
+      this.vLat += (tgt - this.vLat) * Math.min(1, h / ARC.TAU);
+      if (this.vk) { this.vk *= Math.exp(-h / ARC.TAUK); if (Math.abs(this.vk) < 0.05) this.vk = 0; }
+      var vy = this.vLat + this.vk, vf = v + this.vb, sd = Math.sqrt(Math.max(0, vf * vf - Math.min(vy * vy, 0.64 * vf * vf))) * (vf < 0 ? -1 : 1);
+      this.s += sd / den * h; this.y += vy * h;
+      if (this.vb) { var rb = 0.6 * G * h; this.vb = this.vb >= -rb ? 0 : this.vb + rb; }
+      this.wobT += h;
+    }
+    var vyAll = this.vLat + this.vk, wob = this.wobT < 4 * ARC.TAUW ? this.wob * Math.exp(-this.wobT / ARC.TAUW) * Math.cos(2 * Math.PI * 2.6 * this.wobT) : 0;
+    var psiN = Math.max(-ARC.PSIMAX, Math.min(ARC.PSIMAX, Math.atan2(vyAll, Math.max(v, 3)) * ARC.YAWV + wob));   // the nose points only part of the way along the sideways motion
+    this.wNow = (psiN - this.psi) / Math.max(1e-3, dt); this.psi = psiN; this.kap = kr; this.vyc = 0; this.spin = 0;
+    if (this.hitT > 0) this.hitT = Math.max(0, this.hitT - dt);
+    this.grade = gradeAt(T, this.s);
+    var over = Math.max(0, aReq / aMax - 1), ay = Math.min(aReq, aMax); this.over = over; this.ay = ay; this.steerK = steer;
+    this.skidA = Math.min(1, over * 2.5 + Math.abs(this.vk) / 4);
+    var alpha = ALPHA_PK * Math.min(1, ay / Math.max(0.1, aMax)); this.alpha = alpha;
+    this.crash = 0;
+    if (Math.abs(this.y) > FENCE) {   // into the fence: the outward speed is lost, the car scrapes along
+      var vOut = Math.abs(vyAll);
+      this.y = Math.sign(this.y) * FENCE; if (Math.sign(this.vLat) === Math.sign(this.y)) this.vLat = 0; if (Math.sign(this.vk) === Math.sign(this.y)) this.vk = 0;
+      if (vOut > 1) { car.v *= 0.7; if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius; this.crash = 1; }
+    }
+    this.grip = lim.muF * Math.sqrt(Math.max(0.04, 1 - Math.pow(Math.min(1, ay / Math.max(0.1, ayCap)), 2)));
+    this.resist = m * ay * Math.sin(alpha) + lim.crr * m * G + m * Math.min(ARC.SCRUB * Math.max(0, aReq - aMax), ARC.SCRUBMAX * (c.muSlide || 0.6) * lim.muF * G);
+    this.surf = lim;
+    return this.timing(dt, lim, v);
+  };
   // dt: s; c: the Physics.Vehicle (after its update this frame); steer: -1..1 (+ right)
   Sim.prototype.step = function (dt, car, steer) {
+    if (this.T.arcade) return this.stepArcade(dt, car, steer);
     var T = this.T, c = car.c, v = Math.max(0, car.v), m = c.massKg, n = Math.max(1, Math.ceil(dt / 0.005)), h = dt / n;
     var lim = this.limits(c, v);
     // tyre longitudinal acceleration (aero drag is not a tyre force)
@@ -12278,6 +12344,10 @@ var RoadCourse = (function () {
     if (this.vyc) this.grip *= Math.sqrt(Math.max(0.04, 1 - Math.pow(Math.min(1, Math.abs(this.vyc) / Math.max(1, v)), 2)));   // a sliding car has less left for driving
     this.resist = m * ay * Math.sin(alpha) + lim.crr * m * G;
     this.surf = lim;
+    return this.timing(dt, lim, v);
+  };
+  Sim.prototype.timing = function (dt, lim, v) {
+    var T = this.T;
     // timing
     var off = lim.outer !== 'asphalt' && lim.outer !== 'gravel';
     if (off && !this.wasOff) this.offs++;
@@ -12297,7 +12367,7 @@ var RoadCourse = (function () {
     }
     return this;
   };
-  Sim.prototype.view = function () { return { T: this.T, s: this.s, y: this.y, psi: this.psi, over: this.over, surf: this.surf ? this.surf.outer : 'asphalt', spin: this.spin, vyc: this.vyc, hitT: this.hitT }; };
+  Sim.prototype.view = function () { return { T: this.T, s: this.s, y: this.y, psi: this.psi, over: this.over, surf: this.surf ? this.surf.outer : 'asphalt', spin: this.spin, vyc: this.vyc, hitT: this.hitT, skid: this.skidA }; };
 
   // cornering speed limit for each bend (steady state, no braking): v = sqrt(mu_lat(v) g R) solved by iteration
   function cornerSpeed(c, R) {
@@ -12360,7 +12430,7 @@ var RoadCourse = (function () {
     return this;
   };
 
-  return { course: course, Sim: Sim, Stage: Stage, profile: profile, profTime: profTime, pose: pose, kAt: kAt, elev: elev, gradeAt: gradeAt, cornerSpeed: cornerSpeed, speedFactor: speedFactor, surf: surf,
+  return { ARC: ARC, arcLat: arcLat, course: course, Sim: Sim, Stage: Stage, profile: profile, profTime: profTime, pose: pose, kAt: kAt, elev: elev, gradeAt: gradeAt, cornerSpeed: cornerSpeed, speedFactor: speedFactor, surf: surf,
     ASSIST: ASSIST, FENCE: FENCE, MI: MI, SURF: SURF, PROP: PROP, COURSES: COURSES, latK: latK };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = RoadCourse;
@@ -12610,6 +12680,7 @@ var RoadTraffic = (function () {
       for (var q = 0; q < opts.length; q++) {
         var yq = opts[q], cq = this.clear(a, yq, range, all), other = yq * home < 0;
         if (Math.abs(yq - a.y) > 0.3 && !this.sideFree(a, yq, all)) continue;   // never move across onto a car alongside (the player too)
+        if (Math.abs(yq - a.y) > 0.3 && !this.crossFree(a, yq, fwd)) continue;     // v1.13.35: nor across a boulder it would reach while moving over
         if (other && !this.oncomingClear(a, yq, fwd, all)) continue;
         var want = cq.d - Math.abs(yq - home) * 2 - (other ? 15 : 0);   // prefer home, then small shifts, the other lane last
         if (a.kind !== 'rival' && other && cur.o && !(cur.o.m === Infinity || Math.abs(cur.o.vs) < 1)) continue;   // civilians only pass stopped things
@@ -12620,6 +12691,13 @@ var RoadTraffic = (function () {
     if (a.yT * home < 0 && !this.oncomingClear(a, a.yT, fwd, all) && this.clear(a, home, 12, all).d > 10) a.yT = home;   // abort a pass
     if (Math.abs(a.yT - a.y) > 0.3 && !this.sideFree(a, a.yT, all)) a.yT = a.y;   // a car came alongside mid-shift: hold the line
     return range;
+  };
+  // v1.13.35: no fixed object on the road within the distance covered while moving across (at ~3 m/s sideways) to y
+  Traffic.prototype.crossFree = function (a, y, fwd) {
+    var lo = Math.min(a.y, y) - a.hw - 0.3, hi = Math.max(a.y, y) + a.hw + 0.3, d = Math.max(0, fwd) * Math.abs(y - a.y) / 3 + a.hl * 2 + 6;
+    for (var i = 0; i < this.onRoad.length; i++) { var p = this.onRoad[i], ds = (p.s - a.s) * a.dir;
+      if (ds > -p.hl - a.hl && ds < d && p.y + p.hw > lo && p.y - p.hw < hi && !(p.y - p.hw > Math.max(a.y, y) + a.hw || p.y + p.hw < Math.min(a.y, y) - a.hw)) return false; }
+    return true;
   };
   // nothing alongside (overlapping in station, with a 2 m margin) between the current offset and y
   Traffic.prototype.sideFree = function (a, y, all) {
@@ -12666,14 +12744,14 @@ var RoadTraffic = (function () {
       a.stuckT = fwd < 1 && a.s < T.finish + 40 ? (a.stuckT || 0) + dt : 0;
       if (a.stuckT > 4) {
         if (a.kind === 'rival') { var yl = this.freeLine(a.s, a, all); if (yl !== null) { a.y = a.yT = yl; a.h = 0; a.w = 0; a.vy = 0; a.hitT = 0; } a.stuckT = 0; }   // like the player's recovery
-        else if (player && Math.abs(a.s - player.s) > 120) a.recycle = 1;
+        else if (player && (Math.abs(a.s - player.s) > 120 || a.stuckT > 7)) a.recycle = 1;   // v1.13.35: a jam (e.g. at the rock fall) is cleared after 7 s even in sight
       }
       // recycle civilians far behind the player (or stuck out of sight): a new car ahead, out of sight, where the lane is free
       if (player && a.kind !== 'rival') {
         var far = a.recycle || (a.dir > 0 ? a.s < player.s - 250 : a.s < player.s - 150);
         if (far) {
           var nOn = 0; for (var k2 = 0; k2 < L.length; k2++) if (L[k2].dir === a.dir && L[k2] !== a && L[k2].kind !== 'rival' && Math.abs(L[k2].s - player.s) < 900) nOn++;
-          if (nOn >= (a.dir > 0 ? 3 : 2)) { a.recycle = 0; if (a.s < player.s - 400) a.m = 0; continue; }   // enough cars about: park it out of play
+          if (nOn >= (a.dir > 0 ? 3 : 2)) { if (a.stuckT > 7) { a.m = 0; a.s = -1e4; a.stuckT = 0; } a.recycle = 0; if (a.s < player.s - 400) a.m = 0; continue; }   // enough cars about: park it out of play (v1.13.35: a jammed one too)
           a.m = a.m || TYPES[a.type].m;
           for (var tries = 0; tries < 6; tries++) {
             var ns = player.s + 650 + this.R() * 350; if (ns >= T.finish - (a.dir > 0 ? 150 : -150)) break;
@@ -12712,6 +12790,7 @@ var RoadTraffic = (function () {
     sim.step(dt, car, steer);
     var pb = sim.body(car);
     this.traffic.step(dt, pb);
+    if (this.traffic.debris.length) sortByS(this.T.props);   // v1.13.35: knocked objects slide: keep the list sorted for the binary search
     var w0 = pb.w, cs = Collide.step([pb].concat(this.traffic.list), this.T.props, { wake: function (F) { self.traffic.wake(F); } }), mine = null;
     for (var i = 0; i < cs.length; i++) {
       var c = cs[i], dv = Math.abs(c.dv || 0);
@@ -12736,16 +12815,23 @@ var RoadTraffic = (function () {
     if (this.stage) this.stage.update(dt, sim, car.v);
     return this;
   };
+  function sortByS(A) {   // insertion sort: the list is almost sorted (a few sliding objects), O(n)
+    for (var i = 1; i < A.length; i++) { var x = A[i]; if (A[i - 1].s <= x.s) continue; var j = i - 1; while (j >= 0 && A[j].s > x.s) { A[j + 1] = A[j]; j--; } A[j + 1] = x; }
+  }
   // put the car back on the road at the clearest line near its station (nothing solid within 8 m ahead and 3 m behind)
   Run.prototype.recover = function (car) {
     var sim = this.sim, tr = this.traffic, best = null;
-    [1.8, 0.6, -0.6, -1.8, 2.8, -2.8].forEach(function (y) {
+    // v1.13.35: put back at the same spot again within 6 s (a jam, or a car that keeps leaning on ours): move up past it, up to 40 m
+    var again = this.recS !== undefined && Math.abs(sim.s - this.recS) < 4 && sim.t - this.lastRecover < 6, ds = 0;
+    function lineAt(s0) { var b = null; [1.8, 0.6, -0.6, -1.8, 2.8, -2.8].forEach(function (y) {
       var free = true;
-      tr.onRoad.concat(tr.list).forEach(function (o) { if (o.gone || !o.m) return; if (o.s - o.hl < sim.s + 8 && o.s + o.hl > sim.s - 7 && Math.abs(o.y - y) < o.hw + 1.1) free = false; });
-      if (free && best === null) best = y;
-    });
+      tr.onRoad.concat(tr.list).forEach(function (o) { if (o.gone || !o.m) return; if (o.s - o.hl < s0 + 8 && o.s + o.hl > s0 - 7 && Math.abs(o.y - y) < o.hw + 1.1) free = false; });
+      if (free && b === null) b = y; }); return b; }
+    if (again) for (var d = 12; d <= 40 && best === null; d += 4) { best = lineAt(sim.s + d); if (best !== null) ds = d; }
+    if (best === null) best = lineAt(sim.s);
     if (best === null) best = 1.8;
-    sim.y = best; sim.psi = 0; sim.kap = 0; sim.vyc = 0; sim.spin = 0; sim.hitT = 0; sim.vb = 0; car.v = 0; if (car.ww !== undefined) car.ww = 0;
+    sim.s += ds; this.recS = sim.s;
+    sim.y = best; sim.psi = 0; sim.kap = 0; sim.vyc = 0; sim.spin = 0; sim.hitT = 0; sim.vb = 0; sim.vLat = 0; sim.vk = 0; sim.wob = 0; car.v = 0; if (car.ww !== undefined) car.ww = 0;
     this.recovered = (this.recovered || 0) + 1; this.lastRecover = sim.t;
   };
   return { Traffic: Traffic, Run: Run, TYPES: TYPES, LANE_R: LANE_R, LANE_L: LANE_L };
@@ -16674,6 +16760,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.13.35", date: "2026-11-27", status: "done", headline: "Stage course: Lotus 2-style handling on the real engine", text: "On the Mesa Run stage the car now handles like Lotus Turbo Challenge 2: it stays pointed down the road, steering moves it across the road at a rate that grows with speed, and bends carry it to the outside harder the faster you go. Hold the steering into the bend to keep your line; too fast and you are carried wide and lose speed, but you never spin. Lifting off pulls you in. The verge slows you down. Better tyres corner faster. Hits still bounce you and cost speed, with a short wobble and no spins. Engine, gearbox, drag and hills are the real model as before. The old flat lap (?course=mesa), drag strip and every sound are unchanged." },
       { v: "v1.13.34", date: "2026-11-27", status: "done", headline: "Road course: Lotus-style stage with hills, traffic, rivals and collisions (prototype)", text: "The Road course is now a stage in the spirit of Lotus Turbo Challenge 2 (Amiga, 1991), drawn in this game\u2019s own painted style: Mesa Run, 6.2 km with crests and dips, five checkpoints and a countdown (each checkpoint adds time, time left carries on; out of time the engine is cut and you can still coast over the next checkpoint), three rivals that drive your car\u2019s own numbers, slower traffic and oncoming cars with lights, and road-side posts, chevron boards and fallen boulders. A new generic collision engine (oriented boxes, swept so nothing passes through at speed, impulses with bounce and friction) handles car against car and car against objects: you bounce, lose speed and may spin; light posts and boards get knocked flying. Hills feed a new generic grade input to the physics. The old flat lap is still there with ?course=mesa. Stock sounds unchanged." },
       { v: "v1.13.32", date: "2026-11-26", status: "done", headline: "Road course (draft): one winding road, solo", text: "A new opt-in mode next to the drag strip: Road course (key C, or the Road course button). Mesa Road is an original 2.5-mile (4.02 km) two-lane desert road, a nod to the 1989 game\u2019s winding road race: a long start straight, sweepers, esses, a back straight into a tight 30 m hairpin, and a run to the finish. The clock starts at the line, with three split points and a best time stored per car. Steering is new: A / D on the keyboard, or the steering pad on touch screens (iPhone, Tesla). The car now really corners: grip comes from the tyres (a 1971 Super Beetle pulled 0.617 g on Road & Track\u2019s skidpad, used for the 1956 car as an estimate), falls off a little with speed, and is shared with braking and power (friction circle). Ask too much and the car runs wide and scrubs speed; dirt and sand off the road slow it down hard. The stock 1956 Beetle needs about 2:52 for a clean run (simulated). Drag strip, cruising and every sound are unchanged." },
       { v: "v1.11.23", date: "2026-11-14", status: "done", headline: "911 top speed checked: the official C4S manual figure is 288 km/h", text: "The 911 Carrera 4S (3.8 L, 355 PS, six-speed manual) was checked against Porsche's own 29 August 2006 product description for the 997.1 Carrera 4 and 4S. The official top speed is 288 km/h (179 mph), and 0–100 km/h is 4.8 s. 280 km/h is the Carrera 4 (3.6 L) manual figure, and also the Tiptronic S 4S figure; 295 km/h is not a factory C4S number. The game already reaches 288 km/h in sixth, below the limiter, so the gearing and the physics are unchanged." },
@@ -18245,7 +18332,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (best && best.sectors && sim.splitT.length && sim.phase === 'run') { var k = sim.splitT.length - 1, bs = 0; for (var j = 0; j <= k; j++) bs += best.sectors[j]; var d = sim.splitT[k] - bs; dl = ' <b class="' + (d <= 0 ? 'g' : 'r') + '">' + (d <= 0 ? '\u2212' : '+') + Math.abs(d).toFixed(2) + '</b>'; }
     var mph = state.units === 'mph', bendTxt = '';
     if (next) { var dist = next.s0 - sim.s, vs = RoadCourse.cornerSpeed(spec(), next.R); bendTxt = (dist > 0 ? Math.round(dist) + ' m: ' : 'Now: ') + (next.name || (next.dir > 0 ? 'Right' : 'Left')) + ' ' + (next.dir > 0 ? '\u21b1' : '\u21b0') + ' R' + next.R + ' \u00b7 grip limit ' + Math.round(mph ? vs * 2.236936 : vs * 3.6) + (mph ? ' mph' : ' km/h'); }
-    var surf = sim.surf && sim.surf.outer !== 'asphalt' ? ' <b class="r">' + sim.surf.outer.toUpperCase() + '</b>' : '', slide = sim.spin && Math.abs(sim.spin) > 0.6 ? ' <b class="r">SPIN</b>' : sim.over > 0.12 ? ' <b class="r">SLIDING</b>' : '';
+    var surf = sim.surf && sim.surf.outer !== 'asphalt' ? ' <b class="r">' + sim.surf.outer.toUpperCase() + '</b>' : '', slide = sim.spin && Math.abs(sim.spin) > 0.6 ? ' <b class="r">SPIN</b>' : sim.over > 0.12 ? ' <b class="r">' + (T.arcade ? 'TOO FAST' : 'SLIDING') + '</b>' : '';
     if (st) {   // v1.13.34 stage: Lotus-style countdown, checkpoint, position
       var left = Math.max(0, st.left), low = left < 10 && sim.phase === 'run';
       var pos = run.traffic ? run.traffic.position(sim.s) : 1, nR = run.traffic ? run.traffic.rivals().length + 1 : 1, toCp = st.cp < st.cps.length ? Math.max(0, st.cps[st.cp] - sim.s) : 0;
@@ -18420,6 +18507,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     // steering (visual: lane position + wheel), keys A/D ramp, touch drag sets it directly
     var kSt = (k.d || k.D ? 1 : 0) - (k.a || k.A ? 1 : 0), stT = state.touchSteer !== null ? state.touchSteer : kSt;
     var stR = road ? 4 : 2.5;   // road course (draft): quicker steering ramp; the lane-wander mode keeps 2.5 / s
+    // v1.13.35 arcade stage handling: keys / pad reach full lock in 0.17 s and centre (or reverse) in 0.1 s: crisp, Lotus-2-like
+    if (road && road.sim.T.arcade) stR = (stT === 0 || stT * state.steer < 0) ? 10 : 6;
     state.steer += Math.max(-dt * stR, Math.min(dt * stR, stT - state.steer));
     if (!road) state.lat = Math.max(-4.4, Math.min(0.8, state.lat + state.steer * Math.min(c.v, 25) * 0.09 * dt));
     // keyboard pedals ramp (throttle ~0.7 s, brake ~0.6 s); touch pedals follow the finger quickly
@@ -18449,7 +18538,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       var running = c.engine === 'running', inGear = c.c.trans === 'ev' ? (c.range === 'D' || c.range === 'R') : (c.c.trans === 'auto' ? (c.range !== 'N' && c.range !== 'P') : (c.gear > 0 && !c.shift));
       var evCtl = c.c.trans === 'ev' ? { rpmF: c.rpmF || 0, rpmR: c.rpmR || c.rpm(), tqSign: c.tqSign || 0, range: c.range, avas: !!c.avas, avasLevel: c.avasLevel || 0 } : {};
       audio.control(Object.assign({ rpm: c.c.trans === 'ev' ? Math.abs(c.rpm()) : Math.max(60, c.rpm()), thr: running ? (c.soundThr || 0) : 0, running: running, starter: c.engine === 'cranking',
-        crank: Math.max(150, c.rpm()), speed: c.v, skid: 0.35 * Math.max(c.skid, road && road.sim.vyc ? Math.min(1, Math.abs(road.sim.vyc) / 4) : 0), listen: state.view,
+        crank: Math.max(150, c.rpm()), speed: c.v, skid: 0.35 * Math.max(c.skid, road && road.sim.vyc ? Math.min(1, Math.abs(road.sim.vyc) / 4) : 0, road && road.sim.skidA || 0), listen: state.view,
         gear: inGear ? Math.max(1, c.gear || 1) : 0, tq: running && c.TeRef ? (c.Te || 0) / c.TeRef : 0, warm: !!c.warmed }, evCtl,
         c.c.boost ? { bst: running ? (c.boost || 0) : 0 } : {}));   // v1.13.30: turbo boost state (physics) -> the sound's charge block
     }

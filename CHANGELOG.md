@@ -1,3 +1,34 @@
+## v1.13.35 (local, not tagged or pushed), 2026-11-27 (Stage course: Lotus 2-style handling on the real engine)
+
+* **Why.** Wim drove v1.13.34. The course and the other cars are fine, but the handling felt off. His choice: Lotus Turbo Challenge 2 handling, with our real engine underneath. Public descriptions (lotus-notes/HANDLING.md: Amiga Format #29, the Lemon Amiga reviews, Retro Gamer, MobyGames) say the handling is responsive, that lifting off briefly "pulls you in" on a corner, that you brake for the sharper ones, and that collisions are "friendlier, bouncier".
+* **Arcade lateral model (js/road.js stepArcade, course key `arcade`, default off; on for Mesa Run only).**
+  * The car stays pointed down the road: its heading is 0.6 x its direction of travel, and never more than 20 degrees.
+  * Steering sets a sideways rate of 1.6 + 0.17 v m/s at full lock (at most 6.2 m/s and 0.8 v), and the car follows it with a 0.11 s lag.
+  * A bend carries the car to the outside at the full-lock rate x v^2 k / aMax, capped at 2.5x. aMax is the car's own lateral grip: tyre muPeak x latK x speed factor x surface, reduced by the friction circle for what driving or braking uses, so lifting off pulls you in.
+  * Full lock into the bend therefore holds the line up to the tyre grip limit. Beyond it the car drifts wide, and the excess lateral demand scrubs speed (0.55 per m/s^2, at most 0.8 x muSlide x surface x g). It never spins.
+  * The verge, dirt and sand have lower grip, so you go wider, and their rolling drag slows you as before.
+* **Longitudinal motion is unchanged.** The real engine, gearbox, drag, rolling and grade model (js/physics.js) still drives the car, through the same generic inp.grip / inp.resist / inp.grade. No per-car code and no new physics keys.
+* **Collisions (same engine, softer for the player).**
+  * The impulse still sets the speed along the road and the bounce backwards.
+  * The sideways part becomes a kick of at most 5 m/s that dies away in 0.35 s.
+  * The yaw kick becomes a short heading wobble (at most 0.22 rad, damped in 0.28 s), with half steering for 0.45 s. No spins.
+* **Controls.** In the stage, keys and the steering pad reach full lock in 0.17 s and centre or reverse in 0.1 s (was 0.25 s both ways). Keyboard, the touch pad and the Tesla screen use the same input path. The HUD says TOO FAST instead of SLIDING, and the tyre screech follows how far over the limit you are and the hit kicks.
+* **Numbers.** The grip-limit (hold) speed is the steady speed with full lock that keeps the line. The constant-speed pass speed is the fastest a car can go through the whole bend at constant speed from the right-lane line, using the road width, without leaving the asphalt (lotus-notes/tools/arc_speeds.js).
+
+  | Car | R30 hairpin: hold | R30 hairpin: pass | R90 esses: hold | R90 esses: pass | R150: hold | R150: pass |
+  |---|---|---|---|---|---|---|
+  | Beetle (stock) | 48.5 km/h | 53.9 km/h | 82.0 km/h | 94.3 km/h | 104.1 km/h | 110.0 km/h |
+  | 911 (997) | 57.3 km/h | 63.9 km/h | 96.3 km/h | 113.2 km/h | 121.8 km/h | 130.6 km/h |
+  | BRM | 56.0 km/h | 62.5 km/h | 94.3 km/h | 110.4 km/h | 119.3 km/h | 127.7 km/h |
+
+  Tyre mu x 1.15 holds the hairpin 5 % faster (test/arcade_test.js). Test driver, no traffic: Beetle 4:27.98, GT350 3:06.47, Cadillac 3:34.15, BRM 2:55.49, 911 2:56.06, Model X 2:49.00 (v1.13.34: 4:30.00 / 3:06.52 / 3:34.90 / 2:58.30 / 3:08.68 / 3:18.25). Every car finishes with 13.9-25.5 s in hand, with no hits and never inside an object. The stage allowances are unchanged (par x 1.3 + 3 s).
+* **AI / run fixes found while testing.**
+  * The line chooser no longer moves across a boulder it would reach while changing lines.
+  * Civilians jammed for more than 7 s are cleared even in sight, so the rock-fall gridlock is gone.
+  * Being put back at the same spot twice within 6 s moves you up to 40 m past the obstacle.
+  * The object list is re-sorted while knocked objects slide, so collision lookups cannot skip a boulder. This fixes a slow creep into a boulder after a post was knocked.
+* **Unchanged.** Every sound (111 audio hashes bit-identical), the old lap (?course=mesa, test/road_test.js Beetle 2:51.93), drag strip, cruising, parts, the course, the rivals and traffic.
+
 ## v1.13.34 (local prototype, not tagged or pushed), 2026-11-27 (Road course: Lotus-style stage with hills, traffic, rivals and collisions)
 
 * **Why.** Wim (t27u): the road course should be more in the style of Lotus Turbo Challenge 2 (Amiga, 1991), with a collision engine, but with up-to-date graphics. Research notes (public sources only, no ROMs / ADFs run, no assets used): Lotus 2 is a commercial game (Gremlin / Magnetic Fields, 1991), not freeware; its makers tolerated non-commercial copying, and the Lotus name was licensed separately. Taken from it: the behind-the-car view, stages of checkpoints with a countdown whose spare time carries on, coasting when time runs out, traffic, roadside objects, and crashes that bounce and slow you down rather than end the race.
