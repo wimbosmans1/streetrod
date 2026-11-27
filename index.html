@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.33)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.34)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -380,6 +380,12 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 #roadHudT { background: rgba(22,18,14,.78); color: #f6ead0; border-radius: 8px; padding: 5px 9px; font: 13px/1.35 'Trebuchet MS', Arial, sans-serif; }
 #roadHudT .rt { font: bold 20px 'Courier New', monospace; } #roadHudT .rs { opacity: .8; } #roadHudT .rn { color: #ffd36a; } #roadHudT .rb { opacity: .85; }
 #roadHudT b.g { color: #6be37b; } #roadHudT b.r { color: #ff7a5a; }
+/* v1.13.34 stage course: Lotus-style countdown (big), position */
+#roadHudT .rc { display: inline-block; min-width: 1.6em; font: bold 30px/1 'Trebuchet MS', Arial, sans-serif; color: #ffd36a; text-shadow: 0 1px 0 #000; vertical-align: -3px; }
+#roadHudT .rc.low { color: #ff5a3c; animation: rcPulse .5s infinite alternate; } #roadHudT .rc.out { font-size: 18px; color: #ff5a3c; }
+#roadHudT .rp { font-weight: bold; color: #9fe0ff; } @keyframes rcPulse { to { opacity: .45; } }
+@media (max-height: 430px) { #roadHudT .rc { font-size: 22px; } }
+#roadHud.narrow #roadHudT .rc { font-size: 22px; }
 #roadMap svg { display: block; background: rgba(22,18,14,.55); border-radius: 8px; }
 #roadMap .rmRoad { stroke: #f6ead0; stroke-width: 2.2; stroke-linejoin: round; } #roadMap .rmCar { fill: #ff4a2a; stroke: #fff; stroke-width: 1.2; }
 #roadMap .rmStart { fill: #6be37b; } #roadMap .rmFin { fill: #fff; stroke: #000; stroke-width: 1; }
@@ -454,7 +460,7 @@ html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: syst
       <label class="sel" id="segSound" title="GT350 sound-model history: Sound v1–v4 and v12 · GT350 p1 (default), in chronological order"><select id="selSound" aria-label="Engine sound model"></select></label>
       <label class="sel more"><span>Visuals</span><select id="selVisual" aria-label="Visuals"></select></label>
       <button class="tb more" id="bDrag" data-act="drag">Drag &frac14; mile</button>
-      <button class="tb more" id="bRoad" data-act="road" title="Road course (draft): one winding road, 2.5 miles, solo (key C)">Road course</button>
+      <button class="tb more" id="bRoad" data-act="road" title="Road course (prototype): Mesa Run stage, checkpoints against the clock, rivals and traffic (key C)">Road course</button>
       <button class="tb more hidden" id="bRadio" data-act="radio">&#128251; Radio</button>
       <button class="tb more" id="bGearbox" data-act="gearbox" title="Manual gearbox: rev-match (clutch dip, blip on downshifts, rev-match on upshifts) or classic lift-shift (key G)">Rev-match</button>
       <button class="tb more" id="bUnits" data-act="units">km/h</button>
@@ -494,7 +500,7 @@ html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: syst
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
       <tr><td>A / D</td><td>Steer left / right (touch: drag sideways on the road)</td></tr>
       <tr><td>Q</td><td>Drag strip (1/4 mile) on / off</td></tr>
-      <tr><td>C</td><td>Road course (draft): Mesa Road, 2.5 miles, solo, on / off. A / D steer (touch: the steering pad); the clock starts at the line</td></tr>
+      <tr><td>C</td><td>Road course (prototype), on / off: Mesa Run, 6.2 km over the hills, 4 checkpoints and the finish against a countdown (each checkpoint adds time), three rivals, traffic and things to hit. A / D steer (touch: the steering pad). ?course=mesa: the old flat lap</td></tr>
       <tr><td>R</td><td>Radio (Cadillac)</td></tr>
       <tr><td>T</td><td>Reset trip meter</td></tr>
       <tr><td>M</td><td>Mute</td></tr>
@@ -10051,6 +10057,9 @@ var Physics = (function () {
     // Ehlers form: 0.0095 / p[bar] per (100 km/h)^2), so cars without crr2 are unchanged
     var Froll = (c.crr + (c.crr2 || 0) * this.v * this.v) * Wt;   // static-capable (treated like friction)
     if (inp.resist) Froll += inp.resist;   // road-course draft (generic, default off): cornering drag + off-road rolling (N), from js/road.js
+    // v1.13.34 stage course (generic, default off): road grade (rise / run, + uphill), the weight's component along the road; it
+    // acts with the speed-dependent body forces (moving only: at rest the brakes / rolling friction hold the car, as before)
+    if (inp.grade) Faero += m * G0 * inp.grade;
     var v = this.v, a, ae, aw;
     var Jw = c.awd ? c.wheelInertiaRear + c.wheelInertiaFront : c.wheelInertiaRear;
     var self = this;
@@ -10214,6 +10223,7 @@ var Physics = (function () {
       Fdrag = -sign * ((c.crr || 0.008) * m * G0 + 0.5 * RHO * (c.cd || 0.24) * (c.area || 2.6) * this.v * this.v);
       if (inp.resist) Fdrag -= sign * inp.resist;   // road-course draft (generic, default off)
     }
+    if (inp.grade && spd > 0.02) Fdrag -= m * G0 * inp.grade;   // v1.13.34 stage course: grade (generic, default off)
     var Fb = 0;
     if (bpedal > 0 && spd > 0.05) Fb = -(this.v >= 0 ? 1 : -1) * bpedal * (c.brakes && c.brakes.capG ? c.brakes.capG : 1) * m * G0 * 0.85;
 
@@ -11959,6 +11969,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = DragStrip;
  *          A fence 14 m out stops the car (speed x 0.25).
  *   steer  input -1..1 -> path curvature. Full input = ASSIST (1.1) x the grip limit at this speed (a steering aid for keys / touch),
  *          never more than the geometric lock (turning circle, vehicle key turnCircle, default 11 m = 1956 Beetle 36 ft, sourced).
+ *
+ * v1.13.34 stage course (Lotus-Turbo-Challenge-2-style, original data): course('mesa-run') adds
+ *   hills   elevation e(s) from cosine ramps per straight / bend ({u, len, dh} relative to the segment start); the grade de/ds goes
+ *           to physics as the generic default-off key inp.grade (sin of the slope, + = uphill): F = m g grade on the body.
+ *   cps     checkpoints (segment flag cp); they are also the sector splits; the last one is the finish.
+ *   props   roadside objects (seeded, deterministic): cacti, Joshua trees, boulders, delineator posts, chevron boards before bends
+ *           (more boards = tighter bend), a rock-fall hazard, checkpoint gantries. Each has a collision box (see js/collide.js).
+ *   slide   after a collision the car has a sideways slide vyc (m/s, scrubbed by the tyres at mu_lat g) and a yaw rate spin (rad/s,
+ *           decays with TAU_SPIN); while it spins steering authority and drive grip are reduced. Spin turns the heading, not the
+ *           velocity (the slide takes the difference). Old flat course('mesa') is unchanged (no hills, no props).
+ *   profile point-mass speed profile per car (peak power x 0.8, traction, aero, rolling, grade, corner limit, braking): used for
+ *           the checkpoint time allowance and by the AI cars (js/road-traffic.js). ESTIMATE, not the physics model.
  */
 var RoadCourse = (function () {
   var G = 9.81, MI = 1609.344;
@@ -12002,16 +12024,53 @@ var RoadCourse = (function () {
     length: 2.5 * MI,   // start line to finish line
     runoff: 350,
   };
+  // v1.13.34: a Lotus-2-style stage (original layout; the first half follows Mesa Road): 5 sections, 4 checkpoints + finish, hills
+  var MESA_RUN = {
+    id: 'mesa-run', name: 'Mesa Run', note: 'Desert stage, 5 checkpoints, hills, traffic', stage: true,
+    runup: 60, runoff: 400, seed: 1956,
+    segs: [
+      { L: 420, name: 'Start straight', hill: [{ u: 120, len: 280, dh: 12 }] },
+      { R: 260, deg: 35, dir: 1, ramp: 50, name: 'Long sweeper' },
+      { L: 320, hill: [{ u: 30, len: 260, dh: -9 }] },
+      { R: 130, deg: 55, dir: -1, ramp: 40, name: 'Windmill left' },
+      { L: 200, cp: 1, name: 'Checkpoint 1' },
+      { R: 90, deg: 45, dir: 1, ramp: 30, name: 'Esses' },
+      { L: 30 },
+      { R: 90, deg: 50, dir: -1, ramp: 30 },
+      { L: 640, name: 'Back straight', hill: [{ u: 60, len: 230, dh: 13 }, { u: 320, len: 260, dh: -15 }] },
+      { R: 30, deg: 160, dir: 1, ramp: 20, name: 'Mesa hairpin' },
+      { L: 320, cp: 1, name: 'Checkpoint 2', hill: [{ u: 60, len: 240, dh: 7 }] },
+      { R: 65, deg: 80, dir: -1, ramp: 30, name: 'Wash left' },
+      { L: 360, hill: [{ u: 40, len: 200, dh: -10 }, { u: 240, len: 110, dh: 4 }] },
+      { R: 180, deg: 40, dir: 1, ramp: 40, name: 'Ridge right' },
+      { L: 260, cp: 1, name: 'Checkpoint 3' },
+      { R: 110, deg: 45, dir: -1, ramp: 35, name: 'Rock-fall left' },
+      { L: 520, name: 'Rock-fall straight', rocks: 1, hill: [{ u: 300, len: 200, dh: 9 }] },
+      { R: 150, deg: 70, dir: 1, ramp: 40, name: 'Canyon right' },
+      { L: 200, hill: [{ u: 0, len: 200, dh: -12 }] },
+      { R: 70, deg: 60, dir: -1, ramp: 30, name: 'Narrows' },
+      { L: 140 },
+      { R: 70, deg: 60, dir: 1, ramp: 30 },
+      { L: 420, cp: 1, name: 'Checkpoint 4', hill: [{ u: 80, len: 160, dh: -6 }, { u: 240, len: 160, dh: 8 }] },
+      { R: 220, deg: 50, dir: -1, ramp: 50, name: 'Long left' },
+      { L: 640, name: 'Finish straight', hill: [{ u: 100, len: 300, dh: -8 }] },
+    ],
+  };
+  var COURSES = { mesa: MESA, 'mesa-run': MESA_RUN };
+  // seeded random (Park-Miller): the same props every run
+  function rng(seed) { var x = seed % 2147483647; if (x <= 0) x += 2147483646; return function () { x = (x * 16807) % 2147483647; return (x - 1) / 2147483646; }; }
 
   function build(C) {
     // curvature per metre, from the run-up start (station -runup) to the end of the run-off
     var ks = [], splits = [], bends = [], i;
     function push(k) { ks.push(k); }
     for (i = 0; i < C.runup; i++) push(0);
-    var used = 0;
+    var used = 0, hills = [], segInfo = [];
     C.segs.forEach(function (sg) { if (sg.L !== 'finish') used += sg.L !== undefined ? sg.L : Math.round(sg.deg * Math.PI / 180 * sg.R - sg.ramp) + 2 * sg.ramp; });
     C.segs.forEach(function (sg) {
       var s0 = ks.length - C.runup;
+      if (sg.hill) sg.hill.forEach(function (H) { hills.push({ s0: s0 + H.u, len: H.len, dh: H.dh }); });
+      segInfo.push({ s0: s0, sg: sg });
       if (sg.L !== undefined) {
         var L = sg.L === 'finish' ? Math.round(C.length - used) : sg.L;
         for (i = 0; i < L; i++) push(0);
@@ -12023,6 +12082,8 @@ var RoadCourse = (function () {
         bends.push({ s0: s0, s1: ks.length - C.runup, k: k, R: sg.R, deg: sg.deg, dir: sg.dir, name: sg.name || '', vLim: 0 });
       }
       if (sg.split) splits.push(ks.length - C.runup);
+      if (sg.cp) splits.push(s0 + Math.min(40, (sg.L || 0) * 0.5));   // stage checkpoint: 40 m into its straight
+      segInfo[segInfo.length - 1].s1 = ks.length - C.runup;
     });
     var finish = ks.length - C.runup;
     for (i = 0; i < C.runoff; i++) push(0);
@@ -12034,9 +12095,70 @@ var RoadCourse = (function () {
     }
     var minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
     for (i = 0; i <= n; i++) { minx = Math.min(minx, x[i]); maxx = Math.max(maxx, x[i]); miny = Math.min(miny, y[i]); maxy = Math.max(maxy, y[i]); }
-    return { id: C.id, name: C.name, note: C.note, s0: -C.runup, sEnd: n - C.runup, finish: finish, splits: splits, bends: bends, k: k, th: th, x: x, y: y,
-      box: [minx, miny, maxx, maxy], lane: LANE, startY: START_Y };
+    // elevation (m) per 1 m sample: sum of cosine ramps (smooth grade, zero at both ends of each ramp)
+    var e = new Float64Array(n + 1), hilly = hills.length > 0;
+    for (i = 0; i <= n; i++) {
+      var st = i - C.runup, z = 0;
+      for (var hI = 0; hI < hills.length; hI++) { var H = hills[hI], q = (st - H.s0) / H.len; z += q <= 0 ? 0 : q >= 1 ? H.dh : H.dh * (1 - Math.cos(Math.PI * q)) / 2; }
+      e[i] = z;
+    }
+    var T = { id: C.id, name: C.name, note: C.note, s0: -C.runup, sEnd: n - C.runup, finish: finish, splits: splits, bends: bends, k: k, th: th, x: x, y: y,
+      box: [minx, miny, maxx, maxy], lane: LANE, startY: START_Y, e: e, hilly: hilly, stage: !!C.stage, props: [], segs: segInfo };
+    if (C.stage) T.props = makeProps(T, C);
+    return T;
   }
+  // ---- roadside objects (collision boxes in road space: s along, y right of the centre line; hl / hw half sizes, m kg, e restitution) ----
+  // m = Infinity: fixed (rock, tree trunk, gantry). Light ones (posts, boards) are knocked away. ht = height (m) for the renderer.
+  var PROP = {
+    cactus: { hl: 0.28, hw: 0.28, m: Infinity, e: 0.25, mu: 0.5, ht: 5.5 },     // saguaro trunk (~45-60 cm thick), 4-7 m tall
+    joshua: { hl: 0.3, hw: 0.3, m: Infinity, e: 0.25, mu: 0.5, ht: 6 },
+    rock: { hl: 0.9, hw: 0.9, m: Infinity, e: 0.2, mu: 0.6, ht: 1.6 },
+    boulder: { hl: 0.75, hw: 0.75, m: Infinity, e: 0.2, mu: 0.6, ht: 1.3 },     // rock fall on the road
+    post: { hl: 0.06, hw: 0.06, m: 6, e: 0.1, mu: 0.3, ht: 1.0 },              // delineator post (light, plastic)
+    chevron: { hl: 0.07, hw: 0.4, m: 18, e: 0.1, mu: 0.3, ht: 1.5 },          // 0.75 m board on a post
+    gantry: { hl: 0.25, hw: 0.25, m: Infinity, e: 0.25, mu: 0.5, ht: 6.2 },    // checkpoint arch legs
+    warn: { hl: 0.06, hw: 0.4, m: 15, e: 0.1, mu: 0.3, ht: 2.1 },             // 'falling rocks' warning sign
+    bush: { hl: 0.5, hw: 0.5, m: 0, ht: 1.0 },                                 // m 0: no collision (scenery)
+    mesa: { hl: 1, hw: 1, m: 0, ht: 60 },                                       // far rock towers (scenery only)
+  };
+  function makeProps(T, C) {
+    var R = rng(C.seed || 7), out = [], i;
+    function add(kind, s, y, extra) { var P = PROP[kind], o = { kind: kind, s: s, y: y, h: 0, hl: P.hl, hw: P.hw, m: P.m, e: P.e, mu: P.mu, ht: P.ht, vs: 0, vy: 0, w: 0, v: R() }; if (extra) for (var k in extra) o[k] = extra[k]; if (o.sc && o.m === Infinity) { o.hl *= o.sc; o.hw *= o.sc; } out.push(o); return o; }
+    // scenery both sides, denser near the road; nothing within 6 m of the centre line (the shoulder ends at 4.6 m)
+    for (var st = -40; st < T.sEnd - T.s0 - 80; st += 7 + R() * 9) {
+      var side = R() < 0.5 ? -1 : 1, r = R(), d = 6.3 + Math.pow(R(), 1.6) * 34;
+      add(r < 0.34 ? 'cactus' : r < 0.55 ? 'joshua' : r < 0.78 ? 'bush' : 'rock', st, side * d, { sc: 0.75 + R() * 0.5 });
+      if (R() < 0.12) add('mesa', st + 20, side * (90 + R() * 160), { sc: 0.7 + R() * 0.8 });
+    }
+    // delineator posts every 50 m, both sides
+    for (st = 0; st < T.finish + 200; st += 50) { add('post', st, -4.9); add('post', st, 4.9); }
+    // chevron boards on the outside of each bend: spacing by radius (Lotus: more boards = tighter bend)
+    T.bends.forEach(function (B) {
+      var gap = B.R < 50 ? 10 : B.R < 100 ? 15 : B.R < 160 ? 22 : 34;
+      for (var sc = B.s0 - 30; sc <= B.s1 - 10; sc += gap) add('chevron', sc, -B.dir * 5.6, { dir: B.dir });
+    });
+    // checkpoint gantries (and the finish): legs either side, the banner is drawn between them
+    T.splits.concat([T.finish]).forEach(function (cs, j) { add('gantry', cs, -6.4, { cp: j, fin: cs === T.finish }); add('gantry', cs, 6.4, { cp: j, fin: cs === T.finish, right: 1 }); });
+    // rock fall: boulders on the road along the straight flagged rocks, a warning sign before it
+    T.segs.forEach(function (S) {
+      if (!S.sg.rocks) return;
+      add('warn', S.s0 - 120, 5.4); add('warn', S.s0 - 120, -5.4);
+      // each boulder blocks half a lane or the centre line: a shift gets you past, a lane change is not needed (Lotus 2 Forest-style rocks)
+      var ys = [2.6, -2.6, 0, 2.5, -2.5];
+      for (var q = 0; q < ys.length; q++) add('boulder', S.s0 + 90 + q * 85 + R() * 20, ys[q], { sc: 0.85 + R() * 0.15 });
+    });
+    // keep scenery out of the road where the course doubles back (hairpin): drop collidable props closer than 6 m to any other part
+    out = out.filter(function (o) {
+      if (o.kind === 'post' || o.kind === 'chevron' || o.kind === 'gantry' || o.kind === 'boulder' || o.kind === 'warn' || o.kind === 'mesa') return true;
+      var p = poseAt(T, o.s), wx = p.x - Math.sin(p.th) * o.y, wy = p.y + Math.cos(p.th) * o.y;
+      for (var q = T.s0; q < T.sEnd; q += 4) { if (Math.abs(q - o.s) < Math.abs(o.y) + 12) continue; var c = poseAt(T, q), dx = c.x - wx, dy = c.y - wy; if (dx * dx + dy * dy < 49) return false; }
+      return true;
+    });
+    out.sort(function (a, b) { return a.s - b.s; });
+    out.forEach(function (o, j) { o.id = 'p' + j; });
+    return out;
+  }
+  function poseAt(T, s) { var u = s - T.s0; if (u < 0) u = 0; if (u > T.k.length - 1e-6) u = T.k.length - 1e-6; var i = Math.floor(u), f = u - i, j = Math.min(i + 1, T.th.length - 1); return { x: T.x[i] + (T.x[j] - T.x[i]) * f, y: T.y[i] + (T.y[j] - T.y[i]) * f, th: T.th[i] + (T.th[j] - T.th[i]) * f }; }
   // station lookups (s = metres from the start line; linear between 1 m samples)
   function idx(T, s) { var u = s - T.s0; if (u < 0) u = 0; if (u > T.k.length - 1e-6) u = T.k.length - 1e-6; return u; }
   function kAt(T, s) { var u = idx(T, s), i = Math.floor(u); return T.k[i]; }
@@ -12044,6 +12166,8 @@ var RoadCourse = (function () {
     var u = idx(T, s), i = Math.floor(u), f = u - i, j = Math.min(i + 1, T.th.length - 1);
     return { x: T.x[i] + (T.x[j] - T.x[i]) * f, y: T.y[i] + (T.y[j] - T.y[i]) * f, th: T.th[i] + (T.th[j] - T.th[i]) * f };
   }
+  function elev(T, s) { if (!T.hilly) return 0; var u = idx(T, s), i = Math.floor(u), f = u - i; return T.e[i] + (T.e[Math.min(i + 1, T.e.length - 1)] - T.e[i]) * f; }
+  function gradeAt(T, s) { if (!T.hilly) return 0; var u = idx(T, s), i = Math.floor(u); return T.e[Math.min(i + 1, T.e.length - 1)] - T.e[i]; }
   function surf(d) { for (var i = 0; i < SURF.length; i++) if (d <= SURF[i].to) return SURF[i]; return SURF[SURF.length - 1]; }
   function speedFactor(v) { var kmh = v * 3.6; return kmh <= 50 ? 1 : Math.max(0.8, 1 - 0.00147 * (kmh - 50)); }
   // steady-state cornering g per unit of tyre muPeak (load transfer, camber, slip on a real car). One sourced anchor: a 1971 VW Super Beetle
@@ -12060,9 +12184,33 @@ var RoadCourse = (function () {
     this.s = -6; this.y = T.startY; this.psi = 0; this.kap = 0; this.ay = 0; this.alpha = 0; this.over = 0; this.grip = 1; this.resist = 0;
     this.t = 0; this.phase = 'grid'; this.res = null; this.splitT = []; this.offT = 0; this.offs = 0; this.wasOff = false; this.vmax = 0; this.crash = 0;
     this.surfL = 'asphalt'; this.surfR = 'asphalt'; this.steerK = 0; this.lastSplit = 0;
+    this.vyc = 0; this.spin = 0; this.hitT = 0; this.grade = 0; this.vb = 0;   // v1.13.34: slide / spin after a collision, road grade
   };
   // inputs for the longitudinal solver this step (from the state at the end of the last step)
-  Sim.prototype.inputs = function () { return { grip: this.grip, resist: this.resist }; };
+  Sim.prototype.inputs = function () { return this.T.hilly ? { grip: this.grip, resist: this.resist, grade: this.grade } : { grip: this.grip, resist: this.resist }; };
+  var TAU_SPIN = 0.55;        // s, decay of a collision yaw rate (ESTIMATE: tyres re-align a car spun by a glancing hit in about a second)
+  var HIT_T = 0.7;            // s, steering is "wibbly" (half authority) after a hit (game feel, after Lotus 2; not physics)
+  // a collision changed the car's velocity: road-frame (vs, vy) and yaw-rate change dw (from js/collide.js). car.v (physics) takes the
+  // part along the heading (never below 0: the solver has no reverse for ICE cars); the rest becomes the sideways slide vyc.
+  Sim.prototype.hit = function (car, vs, vy, dw, soft) {
+    var c = car.c, ps = this.psi, u = vs * Math.cos(ps) + vy * Math.sin(ps), l = -vs * Math.sin(ps) + vy * Math.cos(ps);
+    car.v = Math.max(0, u); if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius;
+    this.vb = Math.max(-10, Math.min(0, u));   // a rebound backwards (the solver has no reverse): carried here, rolled out by the tyres
+    this.vyc = Math.max(-25, Math.min(25, l + (u < 0 ? 0 : 0)));
+    this.spin = Math.max(-6, Math.min(6, this.spin + dw));
+    if (!soft) this.hitT = HIT_T;   // a light post or board: no wobble
+  };
+  // the car as a collision body in road space (js/collide.js): position of its centre, heading, velocity, yaw rate, size
+  Sim.prototype.body = function (car) {
+    var c = car.c, L = c.lenM || (c.wheelbase || 2.5) + 1.7, W = c.widthM || 1.75, v = Math.max(0, car.v), ps = this.psi;
+    var b = this._b || (this._b = { id: 'player', kind: 'player', hl: 0, hw: 0, m: 0, e: 0.3, mu: 0.35 });
+    b.hl = L / 2; b.hw = W / 2; b.m = c.massKg || 1200;
+    b.s = this.s - L / 2 * Math.cos(ps); b.y = this.y - L / 2 * Math.sin(ps); b.h = ps;   // this.s is the car front
+    v += this.vb || 0; b.vs = v * Math.cos(ps) - this.vyc * Math.sin(ps); b.vy = v * Math.sin(ps) + this.vyc * Math.cos(ps); b.w = this.wNow || 0;
+    return b;
+  };
+  // the collision engine moved the body (contact push-out): move the car with it
+  Sim.prototype.place = function (b) { this.psi = b.h; this.s = b.s + b.hl * Math.cos(b.h); this.y = b.y + b.hl * Math.sin(b.h); };
   // the friction-circle and surface state, and the steering -> curvature map, for car spec c at speed v
   Sim.prototype.limits = function (c, v) {
     var hw = trackW(c) / 2, sl = surf(Math.abs(this.y - hw)), sr = surf(Math.abs(this.y + hw));
@@ -12084,19 +12232,36 @@ var RoadCourse = (function () {
     var aero = 0.5 * 1.2 * (c.cd || 0.4) * (c.area || 2) * v * v / m, axT = (car.a || 0) + aero + this.resist / m;   // tyre-driven part only
     var ayCap = lim.muLat * G, circ = Math.max(0, 1 - Math.pow(axT / Math.max(0.1, lim.muLong * G), 2));
     var ayMax = ayCap * Math.sqrt(circ);
-    var kCmd = steer * this.kFull(c, v), ayReq = Math.abs(kCmd) * v * v;
+    var auth = this.hitT > 0 ? 0.5 + 0.5 * (1 - this.hitT / HIT_T) : 1;   // after a hit: less steering for a moment
+    if (this.spin) auth *= Math.max(0.3, 1 - Math.abs(this.spin) / 4);
+    var kCmd = steer * auth * this.kFull(c, v), ayReq = Math.abs(kCmd) * v * v;
     var over = ayReq > ayMax && v > 0.5 ? (ayReq - ayMax) / Math.max(0.1, ayMax) : 0;
     var slideF = 1 - (1 - (c.muSlide || 0.6) / (c.muPeak || 0.8)) * Math.min(1, over / 0.3);
     var ayOk = ayMax * slideF, kSS = v > 0.5 ? Math.sign(kCmd) * Math.min(Math.abs(kCmd), ayOk / (v * v)) : kCmd;
     this.over = over; this.steerK = kCmd;
+    var sliding = this.vyc !== 0 || this.spin !== 0 || this.hitT > 0 || this.vb !== 0;
     for (var i = 0; i < n; i++) {
       this.kap += (kSS - this.kap) * Math.min(1, h / TAU_K);
       var kr = kAt(T, this.s), den = Math.max(0.2, 1 - this.y * kr);
-      var sd = v * Math.cos(this.psi) / den;
-      this.s += sd * h; this.y += v * Math.sin(this.psi) * h;
-      this.psi += (v * this.kap - kr * sd) * h;
+      if (!sliding) {
+        var sd = v * Math.cos(this.psi) / den;
+        this.s += sd * h; this.y += v * Math.sin(this.psi) * h;
+        this.psi += (v * this.kap - kr * sd) * h;
+      } else {   // v1.13.34: with a sideways slide and a collision yaw rate
+        var cs = Math.cos(this.psi), sn = Math.sin(this.psi), vf = v + this.vb, sd2 = (vf * cs - this.vyc * sn) / den;
+        this.s += sd2 * h; this.y += (vf * sn + this.vyc * cs) * h;
+        if (this.vb) { var rb = 0.6 * G * h; this.vb = this.vb >= -rb ? 0 : this.vb + rb; }   // the rebound rolls out (about 0.6 g: in gear, brakes)
+        this.psi += (v * this.kap - kr * sd2 + this.spin) * h;
+        this.vyc -= v * this.spin * h;                                     // spin turns the car, not its velocity
+        var scrub = lim.muLat * G * h; this.vyc = Math.abs(this.vyc) <= scrub ? 0 : this.vyc - Math.sign(this.vyc) * scrub;   // tyres scrub the slide
+        this.spin *= Math.exp(-h / TAU_SPIN); if (Math.abs(this.spin) < 0.02) this.spin = 0;
+        if (this.psi > 1.35) { this.psi = 1.35; this.spin = Math.min(0, this.spin); } else if (this.psi < -1.35) { this.psi = -1.35; this.spin = Math.max(0, this.spin); }   // game aid: never ends up backwards
+      }
       if (this.psi > Math.PI) this.psi -= 2 * Math.PI; else if (this.psi < -Math.PI) this.psi += 2 * Math.PI;
     }
+    if (this.hitT > 0) this.hitT = Math.max(0, this.hitT - dt);
+    this.wNow = v * this.kap - kAt(T, this.s) * (v + this.vb) * Math.cos(this.psi) + this.spin;
+    this.grade = gradeAt(T, this.s);
     var ay = Math.abs(this.kap) * v * v; this.ay = ay;
     var alpha = ALPHA_PK * Math.min(1, ay / Math.max(0.1, ayMax)) + Math.min(0.35, over * ALPHA_PK * 2);
     this.alpha = alpha;
@@ -12110,6 +12275,7 @@ var RoadCourse = (function () {
     }
     // inputs for the next physics step
     this.grip = lim.muF * Math.sqrt(Math.max(0.04, 1 - Math.pow(Math.min(1, ay / Math.max(0.1, ayCap)), 2)));   // surface x what the corner leaves
+    if (this.vyc) this.grip *= Math.sqrt(Math.max(0.04, 1 - Math.pow(Math.min(1, Math.abs(this.vyc) / Math.max(1, v)), 2)));   // a sliding car has less left for driving
     this.resist = m * ay * Math.sin(alpha) + lim.crr * m * G;
     this.surf = lim;
     // timing
@@ -12131,7 +12297,7 @@ var RoadCourse = (function () {
     }
     return this;
   };
-  Sim.prototype.view = function () { return { T: this.T, s: this.s, y: this.y, psi: this.psi, over: this.over, surf: this.surf ? this.surf.outer : 'asphalt' }; };
+  Sim.prototype.view = function () { return { T: this.T, s: this.s, y: this.y, psi: this.psi, over: this.over, surf: this.surf ? this.surf.outer : 'asphalt', spin: this.spin, vyc: this.vyc, hitT: this.hitT }; };
 
   // cornering speed limit for each bend (steady state, no braking): v = sqrt(mu_lat(v) g R) solved by iteration
   function cornerSpeed(c, R) {
@@ -12139,10 +12305,801 @@ var RoadCourse = (function () {
     return v;
   }
   var cache = {};
-  function course(id) { id = id || 'mesa'; if (!cache[id]) cache[id] = build(MESA); return cache[id]; }
-  return { course: course, Sim: Sim, pose: pose, kAt: kAt, cornerSpeed: cornerSpeed, speedFactor: speedFactor, surf: surf, ASSIST: ASSIST, FENCE: FENCE, MI: MI, SURF: SURF };
+  function course(id) { id = id || 'mesa'; if (!COURSES[id]) id = 'mesa'; if (!cache[id]) cache[id] = build(COURSES[id]); return cache[id]; }
+
+  // ---- v1.13.34 point-mass speed profile (m/s per 1 m sample, lane y): an ESTIMATE of a well-driven run for this car's data, used for
+  // checkpoint time allowances and as the AI cars' plan. Drive: 0.8 x peak power at the wheels (gear steps), traction mu g x driven-axle
+  // share, aero + rolling + grade; top speed capped at the limiter in top gear; corners: mu_lat(v) g / k; braking 0.75 x min(brake capG, mu) g.
+  function powerW(c) {
+    if (c.trans === 'ev') return ((c.powerFrontW || 0) + (c.powerRearW || 0) || 250000) * (c.drivelineEff || 0.95);
+    var P = 0; (c.torque || []).forEach(function (p) { P = Math.max(P, p[1] * p[0] * Math.PI / 30); });
+    return (P || 50000) * (c.netFactor || 0.85) * (c.drivelineEff || 0.9);
+  }
+  function vTop(c) {
+    if (c.trans === 'ev' || !c.gears || !c.limiterRpm) return 70;
+    return c.limiterRpm * Math.PI / 30 / (c.gears[c.gears.length - 1] * c.finalDrive) * c.tyreRadius;
+  }
+  function profile(T, c, lane, opt) {
+    opt = opt || {};
+    var n = T.k.length, v = new Float32Array(n), m = c.massKg || 1200, mu = c.muPeak || 0.8, P = powerW(c) * 0.8 * (opt.pK || 1), vt = vTop(c) * (opt.vK || 1);
+    var drv = c.awd || c.trans === 'ev' ? 1 : (c.rearFrac || 0.5), dec = 0.75 * Math.min((c.brakes && c.brakes.capG) || 0.9, mu) * G, y = lane === undefined ? START_Y : lane;
+    var crr = c.crr || 0.015, cdA = (c.cd || 0.4) * (c.area || 2), cK = opt.cK || 1;
+    for (var i = 0; i < n; i++) { var k = Math.abs(T.k[i] / (1 - y * T.k[i])), w = 60; for (var j = 0; j < 12; j++) w = k > 1e-6 ? Math.sqrt(cK * mu * latK(c) * speedFactor(w) * G / k) : 90; v[i] = Math.min(vt, w); }
+    var g = function (i) { return T.hilly ? T.e[Math.min(i + 1, T.e.length - 1)] - T.e[i] : 0; };
+    for (i = n - 2; i >= 0; i--) v[i] = Math.min(v[i], Math.sqrt(v[i + 1] * v[i + 1] + 2 * Math.max(1, dec + G * g(i))));
+    var s0 = -T.s0, u = opt.v0 || 0; v[s0] = Math.min(v[s0], u);
+    for (i = s0; i < n - 1; i++) {
+      var a = Math.min(P / (m * Math.max(u, 3)), mu * G * drv) - (0.6 * cdA * u * u + crr * m * G) / m - G * g(i);
+      u = Math.sqrt(Math.max(0.25, u * u + 2 * a)); u = Math.min(u, v[i + 1]); v[i + 1] = u;
+    }
+    for (i = 0; i < s0; i++) v[i] = 0.5;
+    return v;
+  }
+  function profTime(T, v, s0, s1) { var t = 0; for (var s = Math.max(0, Math.floor(s0)); s < s1; s++) t += 1 / Math.max(0.5, v[s - T.s0] || 0.5); return t; }
+
+  // ---- v1.13.34 stage: checkpoints with a countdown (Lotus 2 style). Allowance per section = profile time x SLACK + a margin; left-over
+  // time carries over. Time up: the throttle is cut and the car coasts; rolling over the next checkpoint still counts. Stopped with no
+  // time left: out. Rule values are game design, not physics.
+  var SLACK = 1.2;
+  function Stage(T, c) {
+    this.T = T; this.cps = T.splits.concat([T.finish]); this.prof = profile(T, c);
+    var self = this, prev = 0;
+    this.par = this.cps.map(function (s1) { var t = profTime(T, self.prof, prev, s1); prev = s1; return t; });
+    this.allow = this.par.map(function (p, i) { return Math.ceil(p * SLACK + (i === 0 ? 5 : 3)); });
+    this.left = this.allow[0]; this.cp = 0; this.out = false; this.over = false; this.events = []; this.stopT = 0;
+  }
+  Stage.prototype.update = function (dt, sim, v) {
+    if (this.over || sim.phase === 'grid') return this;
+    if (sim.phase === 'run' && !this.over) { this.left -= dt; if (this.left <= 0) { this.left = 0; this.out = true; } }
+    while (this.cp < this.cps.length && sim.s >= this.cps[this.cp]) {
+      this.cp++;
+      if (this.cp < this.cps.length) { var add = this.allow[this.cp]; this.left += add; this.out = false; this.events.push({ cp: this.cp, add: add, t: sim.t }); }
+      else this.events.push({ cp: this.cp, fin: true, t: sim.t });
+    }
+    if (this.out && sim.phase === 'run') { this.stopT = v < 0.6 ? this.stopT + dt : 0; if (this.stopT > 1.0) this.over = true; }
+    return this;
+  };
+
+  return { course: course, Sim: Sim, Stage: Stage, profile: profile, profTime: profTime, pose: pose, kAt: kAt, elev: elev, gradeAt: gradeAt, cornerSpeed: cornerSpeed, speedFactor: speedFactor, surf: surf,
+    ASSIST: ASSIST, FENCE: FENCE, MI: MI, SURF: SURF, PROP: PROP, COURSES: COURSES, latK: latK };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = RoadCourse;
+</script>
+<script>/* js/collide.js */
+/*
+ * collide.js (v1.13.34): a small generic 2D collision engine for the road course. Pure (no DOM); used by main.js, js/road-traffic.js
+ * and test/collide_test.js. It knows nothing about cars or the course: a body is an oriented box in road space.
+ *
+ *   body = { id, s, y (centre: metres along the road / right of the centre line), h (heading relative to the road, rad, + = right),
+ *            hl, hw (half length / width, m), vs, vy (velocity, m/s, road frame), w (yaw rate, rad/s), m (kg; Infinity = fixed;
+ *            0 = no collision), e (restitution 0..1), mu (contact friction), iK (optional yaw-inertia factor, default 1),
+ *            ps, py, ph (pose at the start of the frame) }
+ *
+ * Road space is treated as flat (s, y) Cartesian. In a bend the true distances differ by the factor (1 - y k): up to 6 % at the road
+ * edge in the R60 bends, 12 % in the R30 hairpin. Fine for contacts between neighbours (they sit at nearly the same y).
+ *
+ * Per frame (step):
+ *   broad   sweep and prune along s on the swept boxes (frame start -> end); fixed bodies come from a sorted list (binary search).
+ *   narrow  separating-axis test of two oriented boxes -> depth, normal (a -> b), contact point (deepest corner).
+ *   sweep   no tunnelling: the pair's relative motion this frame is cut into steps of at most 40 % of the smaller box's smallest half
+ *           size (and the turn into arcs of the same length); the first step that overlaps is the contact. Both bodies are put back
+ *           to that moment and pushed apart along the normal (by inverse mass).
+ *   impulse rigid-body impulse at the contact point with restitution e (the smaller of the two) and Coulomb friction mu
+ *           (j_t <= mu j_n), yaw from r x J with I = m (L^2 + W^2) / 12 (uniform box). Fixed bodies have 1/m = 1/I = 0.
+ * Returns the contacts; the owners (car sim, AI) turn the new velocities into their own state.
+ */
+var Collide = (function () {
+  'use strict';
+  function cross(ax, ay, bx, by) { return ax * by - ay * bx; }
+  function axes(h) { var c = Math.cos(h), s = Math.sin(h); return [c, s, -s, c]; }   // forward (c, s), right (-s, c) in (s, y)
+  function corners(b, s, y, h) {
+    var A = axes(h), fx = A[0] * b.hl, fy = A[1] * b.hl, rx = A[2] * b.hw, ry = A[3] * b.hw;
+    return [[s + fx + rx, y + fy + ry], [s + fx - rx, y + fy - ry], [s - fx - rx, y - fy - ry], [s - fx + rx, y - fy + ry]];
+  }
+  function project(C, ax, ay) { var lo = Infinity, hi = -Infinity; for (var i = 0; i < 4; i++) { var d = C[i][0] * ax + C[i][1] * ay; if (d < lo) lo = d; if (d > hi) hi = d; } return [lo, hi]; }
+  // separating axis test of two oriented boxes at poses pa, pb ([s, y, h]); null when apart
+  function sat(a, pa, b, pb) {
+    var Ca = corners(a, pa[0], pa[1], pa[2]), Cb = corners(b, pb[0], pb[1], pb[2]), Aa = axes(pa[2]), Ab = axes(pb[2]);
+    var list = [[Aa[0], Aa[1]], [Aa[2], Aa[3]], [Ab[0], Ab[1]], [Ab[2], Ab[3]]], best = Infinity, nx = 0, ny = 0;
+    for (var i = 0; i < 4; i++) {
+      var ax = list[i][0], ay = list[i][1], P = project(Ca, ax, ay), Q = project(Cb, ax, ay), o = Math.min(P[1], Q[1]) - Math.max(P[0], Q[0]);
+      if (o <= 0) return null;
+      if (o < best) { best = o; nx = ax; ny = ay; }
+    }
+    var dx = pb[0] - pa[0], dy = pb[1] - pa[1]; if (dx * nx + dy * ny < 0) { nx = -nx; ny = -ny; }   // normal from a to b
+    // contact point: the corner of one box deepest inside the other (average if two)
+    var pt = deepest(Cb, pa, a, -nx, -ny) || deepest(Ca, pb, b, nx, ny) || [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2];
+    return { depth: best, nx: nx, ny: ny, px: pt[0], py: pt[1] };
+  }
+  function inside(p, pose, b) { var A = axes(pose[2]), dx = p[0] - pose[0], dy = p[1] - pose[1]; return Math.abs(dx * A[0] + dy * A[1]) <= b.hl + 1e-9 && Math.abs(dx * A[2] + dy * A[3]) <= b.hw + 1e-9; }
+  function deepest(C, pose, b, nx, ny) {
+    var pts = C.filter(function (p) { return inside(p, pose, b); }); if (!pts.length) return null;
+    var sx = 0, sy = 0; pts.forEach(function (p) { sx += p[0]; sy += p[1]; }); return [sx / pts.length, sy / pts.length];
+  }
+  function inv(b) { return b.m === Infinity || !b.m ? 0 : 1 / b.m; }
+  function invI(b) { return b.m === Infinity || !b.m ? 0 : 12 / ((b.iK || 1) * b.m * (4 * b.hl * b.hl + 4 * b.hw * b.hw)); }   // iK: optional yaw-inertia factor
+  function poseAt(b, t) { var ps = b.ps === undefined ? b.s : b.ps, py = b.py === undefined ? b.y : b.py, ph = b.ph === undefined ? b.h : b.ph; return [ps + (b.s - ps) * t, py + (b.y - py) * t, ph + (b.h - ph) * t]; }
+  function minHalf(b) { return Math.max(0.05, Math.min(b.hl, b.hw)); }
+  function travel(b) { var ds = b.s - (b.ps === undefined ? b.s : b.ps), dy = b.y - (b.py === undefined ? b.y : b.py), dh = b.h - (b.ph === undefined ? b.h : b.ph); return { ds: ds, dy: dy, rot: Math.abs(dh) * Math.sqrt(b.hl * b.hl + b.hw * b.hw) }; }
+  // earliest overlap of a moving pair during the frame (t in 0..1)
+  function sweep(a, b) {
+    var ta = travel(a), tb = travel(b), rel = Math.sqrt(Math.pow(ta.ds - tb.ds, 2) + Math.pow(ta.dy - tb.dy, 2)) + ta.rot + tb.rot;
+    var stepL = 0.4 * Math.min(minHalf(a), minHalf(b)), n = Math.min(256, Math.max(1, Math.ceil(rel / stepL)));
+    for (var i = 0; i <= n; i++) {
+      var t = i / n, hit = sat(a, poseAt(a, t), b, poseAt(b, t));
+      if (hit) { hit.t = t; hit.steps = n; return hit; }
+    }
+    return null;
+  }
+  // impulse response at the contact; moves a and b to the contact moment first and separates them
+  function resolve(a, b, c) {
+    var ia = inv(a), ib = inv(b), Ia = invI(a), Ib = invI(b); if (ia + ib === 0) return null;
+    [a, b].forEach(function (q) { if (!q.vs) q.vs = 0; if (!q.vy) q.vy = 0; if (!q.w) q.w = 0; });
+    var pa = poseAt(a, c.t), pb = poseAt(b, c.t);
+    // the rest of the frame's motion is dropped (time of impact); separation along the normal by inverse mass (+1 mm)
+    var corr = (c.depth + 0.001) / (ia + ib);
+    a.s = pa[0] - c.nx * corr * ia; a.y = pa[1] - c.ny * corr * ia; a.h = pa[2];
+    b.s = pb[0] + c.nx * corr * ib; b.y = pb[1] + c.ny * corr * ib; b.h = pb[2];
+    var rax = c.px - pa[0], ray = c.py - pa[1], rbx = c.px - pb[0], rby = c.py - pb[1];
+    var vax = a.vs - a.w * ray, vay = a.vy + a.w * rax, vbx = b.vs - b.w * rby, vby = b.vy + b.w * rbx;
+    var rvx = vbx - vax, rvy = vby - vay, vn = rvx * c.nx + rvy * c.ny;
+    var out = { a: a.id, b: b.id, A: a, B: b, vn: vn, jn: 0, jt: 0, t: c.t, steps: c.steps, nx: c.nx, ny: c.ny, px: c.px, py: c.py };
+    if (vn >= 0) return out;   // already separating
+    var e = Math.min(a.e === undefined ? 0.3 : a.e, b.e === undefined ? 0.3 : b.e), mu = Math.min(a.mu === undefined ? 0.4 : a.mu, b.mu === undefined ? 0.4 : b.mu);
+    var ran = cross(rax, ray, c.nx, c.ny), rbn = cross(rbx, rby, c.nx, c.ny);
+    var jn = -(1 + e) * vn / (ia + ib + ran * ran * Ia + rbn * rbn * Ib);
+    var tx = -c.ny, ty = c.nx, vt = rvx * tx + rvy * ty, rat = cross(rax, ray, tx, ty), rbt = cross(rbx, rby, tx, ty);
+    var jt = -vt / (ia + ib + rat * rat * Ia + rbt * rbt * Ib); jt = Math.max(-mu * jn, Math.min(mu * jn, jt));
+    var Jx = jn * c.nx + jt * tx, Jy = jn * c.ny + jt * ty;
+    a.vs -= Jx * ia; a.vy -= Jy * ia; a.w -= cross(rax, ray, Jx, Jy) * Ia;
+    b.vs += Jx * ib; b.vy += Jy * ib; b.w += cross(rbx, rby, Jx, Jy) * Ib;
+    out.jn = jn; out.jt = jt; out.dv = jn * (ia + ib);   // closing speed change (m/s), for effects
+    return out;
+  }
+  function span(b) { var r = Math.sqrt(b.hl * b.hl + b.hw * b.hw), ps = b.ps === undefined ? b.s : b.ps; return [Math.min(ps, b.s) - r, Math.max(ps, b.s) + r]; }
+  function spanY(b) { var r = Math.sqrt(b.hl * b.hl + b.hw * b.hw), py = b.py === undefined ? b.y : b.py; return [Math.min(py, b.y) - r, Math.max(py, b.y) + r]; }
+  function lowerBound(arr, s) { var lo = 0, hi = arr.length; while (lo < hi) { var mid = (lo + hi) >> 1; if (arr[mid].s < s) lo = mid + 1; else hi = mid; } return lo; }
+  var MAXR = 2;   // largest half-diagonal of a fixed body (m), for the binary-search window
+  // dyn: moving bodies (start-of-frame pose in ps/py/ph, end pose in s/y/h); fixed: bodies sorted by s (only m > 0 collide; light ones
+  // with finite mass are knocked away and join the moving list via opts.wake). Returns the list of contacts.
+  function step(dyn, fixed, opts) {
+    opts = opts || {}; var contacts = [], i, j;
+    var list = dyn.filter(function (b) { return b.m; }).map(function (b) { return { b: b, sp: span(b) }; });
+    list.sort(function (p, q) { return p.sp[0] - q.sp[0]; });
+    for (i = 0; i < list.length; i++) {
+      for (j = i + 1; j < list.length && list[j].sp[0] <= list[i].sp[1]; j++) {
+        var a = list[i].b, b = list[j].b, ya = spanY(a), yb = spanY(b);
+        if (ya[1] < yb[0] || yb[1] < ya[0]) continue;
+        if (a.m === Infinity && b.m === Infinity) continue;
+        var c = sweep(a, b); if (c) { var r = resolve(a, b, c); if (r) contacts.push(r); }
+      }
+      if (fixed && fixed.length) {
+        var A = list[i].b, sp = list[i].sp, yA = spanY(A);
+        for (var k = lowerBound(fixed, sp[0] - MAXR); k < fixed.length && fixed[k].s <= sp[1] + MAXR; k++) {
+          var F = fixed[k]; if (!F.m || F.gone) continue;
+          if (F.y + MAXR < yA[0] || F.y - MAXR > yA[1]) continue;
+          var cF = sweep(A, F); if (!cF) continue;
+          var rF = resolve(A, F, cF); if (rF) { rF.fixed = F; contacts.push(rF); if (F.m !== Infinity && opts.wake) opts.wake(F); }
+        }
+      }
+    }
+    return contacts;
+  }
+  function begin(b) { b.ps = b.s; b.py = b.y; b.ph = b.h; }
+  return { step: step, sat: sat, sweep: sweep, resolve: resolve, begin: begin, corners: corners };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Collide;
+</script>
+<script>/* js/road-traffic.js */
+/*
+ * road-traffic.js (v1.13.34): AI cars on the stage course. Pure (no DOM); used by main.js and test/stage_test.js.
+ *   rivals    3 cars racing the same stage from the grid ahead of the player. Plan = the player car's point-mass profile
+ *             (RoadCourse.profile, the same data the time allowances come from) x a skill factor, so they are about as quick as a
+ *             tidy run in YOUR car, whatever the car (no per-car code). They overtake slower traffic in the left lane when it is
+ *             clear of oncoming cars.
+ *   traffic   slower cars in the right lane (50-75 km/h, slower in bends: lateral 0.3 g); recycled ahead of the player.
+ *   oncoming  cars and lorries in the left lane coming the other way (55-85 km/h); recycled ahead of the player.
+ * Every car is a collision body for js/collide.js (oriented box, mass, restitution, yaw inertia factor iK 2 = tyres resist the
+ * yaw during the hit, ESTIMATE). After a hit an AI car coasts and re-aligns, then drives on. Knocked props (posts, boards) slide
+ * and fall over (debris). Sizes / masses are typical period/modern values (ESTIMATES): coupe 4.3 x 1.78 m 1300 kg, sedan 4.8 x 1.85 m
+ * 1500 kg, pickup 5.4 x 2.0 m 2100 kg, van 5.2 x 2.0 m 2200 kg, lorry 9.5 x 2.5 m 9000 kg.
+ */
+var RoadTraffic = (function () {
+  'use strict';
+  var G = 9.81, LANE_R = 1.8, LANE_L = -1.8;
+  var TYPES = {
+    coupe: { L: 4.3, W: 1.78, m: 1300, ht: 1.3 }, sedan: { L: 4.8, W: 1.85, m: 1500, ht: 1.45 }, pickup: { L: 5.4, W: 2.0, m: 2100, ht: 1.8 },
+    van: { L: 5.2, W: 2.0, m: 2200, ht: 2.1 }, lorry: { L: 9.5, W: 2.5, m: 9000, ht: 3.4 },
+  };
+  var RIVAL_COL = ['#d7262e', '#f2b51c', '#2a6fdb'], RIVAL_NAME = ['Red', 'Yellow', 'Blue'], SKILL = [0.9, 0.95, 0.99];
+  var CIV_COL = ['#e9e6df', '#9aa3ab', '#3c4148', '#7e2a2a', '#2f5d4a', '#c9b48a', '#5b6f8f', '#b8432f', '#1f2a44'];
+  function rng(seed) { var x = seed; return function () { x = (x * 16807) % 2147483647; return (x - 1) / 2147483646; }; }
+  function body(kind, type, s, y, dir, v, col, R) {
+    var t = TYPES[type];
+    return { id: kind + Math.floor(R() * 1e9), kind: kind, type: type, col: col, s: s, y: y, yT: y, h: dir > 0 ? 0 : Math.PI, dir: dir,
+      hl: t.L / 2, hw: t.W / 2, m: t.m, ht: t.ht, e: 0.3, mu: 0.35, iK: 2, vs: dir * v, vy: 0, w: 0, vCruise: v, hitT: 0, brake: 0, lights: 0 };
+  }
+  // gentle corner speed for civilians (lateral 0.3 g) per 1 m sample
+  function gentle(T, aLat) {
+    var n = T.k.length, v = new Float32Array(n);
+    for (var i = 0; i < n; i++) { var k = Math.abs(T.k[i]); v[i] = k > 1e-5 ? Math.sqrt(aLat * G / k) : 99; }
+    return v;
+  }
+  function at(T, arr, s) { var i = Math.round(s - T.s0); return arr[i < 0 ? 0 : i >= arr.length ? arr.length - 1 : i]; }
+  function Traffic(T, c, opt) {
+    opt = opt || {};
+    var R = this.R = rng(opt.seed || 4242), i;
+    this.T = T; this.plan = RoadCourse.profile(T, c); this.gentle = gentle(T, 0.3); this.list = []; this.debris = [];
+    this.onRoad = (T.props || []).filter(function (p) { return p.m === Infinity && Math.abs(p.y) < 4.4; });   // boulders on the road
+    var nR = opt.rivals === undefined ? 3 : opt.rivals;
+    for (i = 0; i < nR; i++) { var r = body('rival', 'coupe', 8 + i * 9, i % 2 ? LANE_L : LANE_R, 1, 0, RIVAL_COL[i % 3], R); r.skill = SKILL[i % 3]; r.name = RIVAL_NAME[i % 3]; r.yT = r.y; r.grid = 1; this.list.push(r); }
+    if (opt.traffic !== false) {
+      for (var s = 260; s < T.finish - 150; s += 300 + R() * 220) if (this.laneFree(s, LANE_R, 60)) this.list.push(this.civ(s, 1));
+      for (s = 500; s < T.finish + 200; s += 420 + R() * 320) if (this.laneFree(s, LANE_L, 60)) this.list.push(this.civ(s, -1));
+    }
+    this.t = 0;
+  }
+  Traffic.prototype.civ = function (s, dir) {
+    var R = this.R, r = R(), type = dir > 0 ? (r < 0.5 ? 'sedan' : r < 0.72 ? 'pickup' : r < 0.9 ? 'van' : 'lorry') : (r < 0.45 ? 'sedan' : r < 0.65 ? 'pickup' : r < 0.8 ? 'van' : 'lorry');
+    var v = (dir > 0 ? 50 + R() * 25 : 55 + R() * 30) / 3.6; if (type === 'lorry') v *= 0.85;
+    var b = body(dir > 0 ? 'traffic' : 'oncoming', type, s, dir > 0 ? LANE_R : LANE_L, dir, v, CIV_COL[Math.floor(R() * CIV_COL.length)], R);
+    b.lights = dir < 0 ? 1 : 0; return b;
+  };
+  // the nearest body ahead of a (in its direction of travel) whose lane overlaps lane y, within range
+  function ahead(a, list, y, range) {
+    var best = null, bd = range;
+    for (var i = 0; i < list.length; i++) {
+      var o = list[i]; if (o === a || !o.m) continue;
+      var d = (o.s - a.s) * a.dir - (o.hl + a.hl); if (d < -1 || d > bd) continue;
+      if (Math.abs(o.y - y) > (o.hw + a.hw + 0.3)) continue;
+      best = o; bd = d;
+    }
+    return best ? { o: best, d: bd } : null;
+  }
+  // distance (m, bumper to obstacle) to the first thing in line y ahead of a that is slower than a (or fixed), within range
+  Traffic.prototype.clear = function (a, y, range, all) {
+    var bd = Infinity, bo = null, fwd = a.vs * a.dir, i;
+    for (i = 0; i < all.length; i++) {
+      var o = all[i]; if (o === a || !o.m) continue;
+      var d = (o.s - a.s) * a.dir - (o.hl + a.hl); if (d < -1.5 || d > range || d >= bd) continue;
+      if (Math.abs(o.y - y) > o.hw + a.hw + 0.35) continue;
+      if ((o.vs || 0) * a.dir > fwd + 2 && d > 2) continue;   // pulling away
+      bd = d; bo = o;
+    }
+    var F = this.onRoad;
+    for (i = 0; i < F.length; i++) {
+      var p = F[i]; if (p.gone) continue; var dp = (p.s - a.s) * a.dir - (p.hl + a.hl); if (dp < -1.5 || dp > range || dp >= bd) continue;
+      if (Math.abs(p.y - y) > p.hw + a.hw + 0.4) continue; bd = dp; bo = p;
+    }
+    return { d: bd, o: bo };
+  };
+  // no car coming the other way in line y within the time a pass needs (about 6 s at the closing speed)
+  Traffic.prototype.oncomingClear = function (a, y, fwd, all) {
+    for (var i = 0; i < all.length; i++) {
+      var o = all[i]; if (o === a || !o.m) continue;
+      var opp = (o.vs || 0) * a.dir < -1, d = (o.s - a.s) * a.dir;
+      if (Math.abs(o.y - y) > o.hw + a.hw + 0.6) continue;
+      if (opp && d > -5 && d < 6 * (fwd + Math.abs(o.vs)) + 20) return false;
+      if (!opp && Math.abs(d) < o.hl + a.hl + 6) return false;   // someone alongside in that lane
+    }
+    return true;
+  };
+  Traffic.prototype.laneFree = function (s, y, gap, self) {
+    for (var i = 0; i < this.list.length; i++) { var o = this.list[i]; if (o !== self && Math.abs(o.s - s) < gap && Math.abs(o.y - y) < 2.5) return false; }
+    for (i = 0; i < this.onRoad.length; i++) { var p = this.onRoad[i]; if (Math.abs(p.s - s) < 20 && Math.abs(p.y - y) < 2.5) return false; }
+    return true;
+  };
+  Traffic.prototype.freeLine = function (s, self, all) {
+    var ys = [1.8, 0.6, -0.6, -1.8, 2.8, -2.8];
+    for (var q = 0; q < ys.length; q++) {
+      var ok = true, y = ys[q];
+      for (var i = 0; i < all.length && ok; i++) { var o = all[i]; if (o === self || !o.m) continue; if (Math.abs(o.s - s) < o.hl + self.hl + 3 && Math.abs(o.y - y) < o.hw + self.hw + 0.3) ok = false; }
+      for (i = 0; i < this.onRoad.length && ok; i++) { var p = this.onRoad[i]; if (Math.abs(p.s - s) < p.hl + self.hl + 3 && Math.abs(p.y - y) < p.hw + self.hw + 0.3) ok = false; }
+      if (ok) return y;
+    }
+    return null;
+  };
+  // line choice (generic for every AI car, and the test driver): keep to its own lane; when that line is blocked ahead (a slower car, a
+  // stopped car, a boulder) take the clearest other line: a shift inside its lane, the shoulder, or (rivals, and anyone round a stopped
+  // obstacle) the other lane if no car is coming the other way within the time it needs. Sets a.yT; returns the look-ahead range.
+  Traffic.prototype.chooseLine = function (a, fwd, all) {
+    var home = a.dir > 0 ? LANE_R : LANE_L, range = 25 + fwd * 2.2, cur = this.clear(a, a.yT, range, all);
+    if (a.kind === 'rival' || cur.d < range) {
+      var opts = [home, home + 0.9 * a.dir, home - 0.9 * a.dir, home - 1.2 * a.dir, home + 1.6 * a.dir, -home, -home - 0.6 * a.dir], best = a.yT, bestD = cur.d;
+      if (a.kind === 'rival' && cur.d >= range) opts = [home];   // clear ahead: drift back home when home is clear
+      for (var q = 0; q < opts.length; q++) {
+        var yq = opts[q], cq = this.clear(a, yq, range, all), other = yq * home < 0;
+        if (other && !this.oncomingClear(a, yq, fwd, all)) continue;
+        var want = cq.d - Math.abs(yq - home) * 2 - (other ? 15 : 0);   // prefer home, then small shifts, the other lane last
+        if (a.kind !== 'rival' && other && cur.o && !(cur.o.m === Infinity || Math.abs(cur.o.vs) < 1)) continue;   // civilians only pass stopped things
+        if (want > bestD - Math.abs(a.yT - home) * 2 + 0.5 || (yq === home && cq.d >= range)) { best = yq; bestD = cq.d - Math.abs(yq - home) * 2; if (yq === home && cq.d >= range) break; }
+      }
+      a.yT = best;
+    }
+    if (a.yT * home < 0 && !this.oncomingClear(a, a.yT, fwd, all) && this.clear(a, home, 12, all).d > 10) a.yT = home;   // abort a pass
+    return range;
+  };
+  // player: the player's collision body (obstacle for the AI); dt: s
+  Traffic.prototype.step = function (dt, player) {
+    var T = this.T, L = this.list, all = player ? L.concat([player]) : L, i;
+    this.t += dt;
+    for (i = 0; i < L.length; i++) {
+      var a = L[i]; window_begin(a);
+      var fwd = a.vs * a.dir;   // speed in its own direction
+      if (a.grid) { if (player && player.s > -2) a.grid = 0; else continue; }   // rivals wait on the grid until the player moves off
+      if (a.kind === 'rival') { a.rt = (a.rt || 0) + dt; if (a.fin === undefined && a.s >= T.finish) a.fin = a.rt; }   // race clock (from moving off)
+      // target speed
+      var vt;
+      if (a.kind === 'rival') {
+        if (a.s > T.finish + 60) vt = 0;
+        else { vt = 99; for (var la = 0; la <= 60; la += 15) { var p = at(T, this.plan, a.s + la) * a.skill; vt = Math.min(vt, Math.sqrt(p * p + 2 * 5 * la)); } }
+      } else {
+        vt = a.vCruise;
+        for (var lb = 0; lb <= 80; lb += 20) { var g = at(T, this.gentle, a.s + a.dir * lb); vt = Math.min(vt, Math.sqrt(g * g + 2 * 2.5 * lb)); }
+      }
+      var range = this.chooseLine(a, fwd, all);
+      var blk = this.clear(a, a.y, range, all); blk = blk.o ? blk : null;
+      if (blk) { var vo = Math.max(0, (blk.o.vs || 0) * a.dir), gap = blk.d - (4 + fwd * 0.8); vt = Math.min(vt, Math.max(0, vo + gap * 0.6)); }
+      // longitudinal and lateral control (after a hit: coast and scrub the slide first)
+      if (a.hitT > 0) { a.hitT -= dt; vt = Math.min(vt, fwd); }
+      var acc = vt > fwd ? Math.min(a.kind === 'rival' ? 4.5 : 2.0, (vt - fwd) * 2) : Math.max(-7, (vt - fwd) * 3);
+      a.brake = acc < -1 ? 1 : 0;
+      fwd = Math.max(0, fwd + acc * dt);
+      var vyT = Math.max(-2.5, Math.min(2.5, (a.yT - a.y) * 1.2)), dvy = vyT - a.vy, lat = (a.hitT > 0 ? 7 : 4) * dt;
+      a.vy += Math.max(-lat, Math.min(lat, dvy));
+      a.vs = a.dir * fwd;
+      var hT = fwd > 2 ? Math.atan2(a.vy, a.vs) : a.h, dh = hT - a.h; dh -= 2 * Math.PI * Math.round(dh / (2 * Math.PI));
+      if (a.hitT > 0) a.w *= Math.exp(-dt / 0.55);                           // spun by a hit: the yaw rate dies away
+      else a.w += (dh / 0.3 - a.w) * Math.min(1, dt / 0.15);                  // re-align with the direction of travel
+      a.s += a.vs * dt; a.y += a.vy * dt; a.h += a.w * dt;
+      if (Math.abs(a.y) > 9) { a.y = Math.sign(a.y) * 9; a.vy = 0; }   // off in the dirt: stays near the road
+      // stuck behind something for a while (a pile-up, a car stopped across the road)
+      a.stuckT = fwd < 1 && a.s < T.finish + 40 ? (a.stuckT || 0) + dt : 0;
+      if (a.stuckT > 4) {
+        if (a.kind === 'rival') { var yl = this.freeLine(a.s, a, all); if (yl !== null) { a.y = a.yT = yl; a.h = 0; a.w = 0; a.vy = 0; a.hitT = 0; } a.stuckT = 0; }   // like the player's recovery
+        else if (player && Math.abs(a.s - player.s) > 120) a.recycle = 1;
+      }
+      // recycle civilians far behind the player (or stuck out of sight): a new car ahead, out of sight, where the lane is free
+      if (player && a.kind !== 'rival') {
+        var far = a.recycle || (a.dir > 0 ? a.s < player.s - 250 : a.s < player.s - 150);
+        if (far) {
+          var nOn = 0; for (var k2 = 0; k2 < L.length; k2++) if (L[k2].dir === a.dir && L[k2] !== a && L[k2].kind !== 'rival' && Math.abs(L[k2].s - player.s) < 900) nOn++;
+          if (nOn >= (a.dir > 0 ? 3 : 2)) { a.recycle = 0; if (a.s < player.s - 400) a.m = 0; continue; }   // enough cars about: park it out of play
+          a.m = a.m || TYPES[a.type].m;
+          for (var tries = 0; tries < 6; tries++) {
+            var ns = player.s + 650 + this.R() * 350; if (ns >= T.finish - (a.dir > 0 ? 150 : -150)) break;
+            if (this.laneFree(ns, a.dir > 0 ? LANE_R : LANE_L, 60, a)) { var nb = this.civ(ns, a.dir); nb.id = a.id; L[i] = nb; break; }
+          }
+        }
+      }
+    }
+    // debris: knocked posts / boards slide, spin and fall over
+    for (i = this.debris.length - 1; i >= 0; i--) {
+      var d = this.debris[i], sp = Math.hypot(d.vs, d.vy), dec = 6 * dt;
+      if (sp > dec) { d.vs -= d.vs / sp * dec; d.vy -= d.vy / sp * dec; } else { d.vs = 0; d.vy = 0; }
+      d.s += d.vs * dt; d.y += d.vy * dt; d.tilt = Math.min(Math.PI / 2, (d.tilt || 0) + dt * 5); d.spin = (d.spin || 0) + (d.w || 0) * dt;
+      if (sp <= dec && d.tilt >= Math.PI / 2) this.debris.splice(i, 1);
+    }
+    return this;
+  };
+  function window_begin(a) { a.ps = a.s; a.py = a.y; a.ph = a.h; }
+  // a prop was knocked by a contact: it stops colliding and becomes debris
+  Traffic.prototype.wake = function (F) { if (F.gone) return; F.gone = true; F.tilt = 0; this.debris.push(F); };
+  // after a contact the AI car was hit: coast a moment
+  Traffic.prototype.hit = function (a, dv) { if (a && a.kind) a.hitT = Math.max(a.hitT || 0, Math.min(1.5, 0.4 + dv * 0.08)); };
+  // race order: rivals and the player by distance (finished cars by finish order)
+  Traffic.prototype.position = function (s) { var p = 1; this.list.forEach(function (a) { if (a.kind === 'rival' && a.s > s) p++; }); return p; };
+  Traffic.prototype.rivals = function () { return this.list.filter(function (a) { return a.kind === 'rival'; }); };
+  // ---- one run of a course: the player's sim, the stage clock, the AI cars and the collisions, stepped together (main.js and tests) ----
+  function Run(T, car, opt) {
+    this.T = T; this.sim = new RoadCourse.Sim(T); this.stage = T.stage ? new RoadCourse.Stage(T, car.c) : null;
+    this.traffic = T.stage ? new Traffic(T, car.c, opt) : null; this.contacts = 0; this.lastHit = null; this.hitLog = [];
+  }
+  Run.prototype.inputs = function () { return this.sim.inputs(); };
+  Run.prototype.step = function (dt, car, steer) {
+    var sim = this.sim, self = this; this.lastHit = null;
+    if (!this.traffic) { sim.step(dt, car, steer); return this; }
+    Collide.begin(sim.body(car));
+    sim.step(dt, car, steer);
+    var pb = sim.body(car);
+    this.traffic.step(dt, pb);
+    var w0 = pb.w, cs = Collide.step([pb].concat(this.traffic.list), this.T.props, { wake: function (F) { self.traffic.wake(F); } }), mine = null;
+    for (var i = 0; i < cs.length; i++) {
+      var c = cs[i], dv = Math.abs(c.dv || 0);
+      [c.A, c.B].forEach(function (q) { if (q && q.kind && q.kind !== 'player' && q.dir) self.traffic.hit(q, dv); });
+      if (c.A === pb || c.B === pb) {
+        var other = c.A === pb ? c.B : c.A;
+        if (!mine || dv > mine.dv) mine = { dv: dv, kind: other.kind, type: other.type, fixed: other.m === Infinity, light: other.m !== Infinity && !other.dir, t: sim.t, s: sim.s };
+      }
+    }
+    if (mine) {
+      sim.place(pb); sim.hit(car, pb.vs, pb.vy, pb.w - w0, mine.light);
+      // a new hit (not the same contact rubbing on): closing-speed change over 0.5 m/s, or 0.5 s after the last one
+      if (mine.dv > 0.5 && (!this.prevHit || sim.t - this.prevHit.t > 0.5 || this.prevHit.kind !== mine.kind)) { this.contacts++; this.lastHit = mine; if (this.hitLog.length < 200) this.hitLog.push(mine); }
+      this.prevHit = mine;
+    }
+    // stuck (game aid, after Lotus 2 which bounces you back onto the road): pinned against something or stopped off the road with the
+    // throttle on -> after a moment the car is put back on the road beside where it was, pointing down the road, at rest
+    if (mine && mine.dv >= 0) this.lastContactT = sim.t;
+    var pinned = sim.t - (this.lastContactT === undefined ? -9 : this.lastContactT) < 0.4, off = Math.abs(sim.y) > 5;
+    this.stuckT = (pinned || off) && car.v < 2 && sim.phase === 'run' && !(this.stage && this.stage.out) ? (this.stuckT || 0) + dt : 0;
+    if (this.stuckT > (pinned ? 1.2 : 2.5)) { this.recover(car); this.stuckT = 0; }
+    if (this.stage) this.stage.update(dt, sim, car.v);
+    return this;
+  };
+  // put the car back on the road at the clearest line near its station (nothing solid within 8 m ahead and 3 m behind)
+  Run.prototype.recover = function (car) {
+    var sim = this.sim, tr = this.traffic, best = null;
+    [1.8, 0.6, -0.6, -1.8, 2.8, -2.8].forEach(function (y) {
+      var free = true;
+      tr.onRoad.concat(tr.list).forEach(function (o) { if (o.gone || !o.m) return; if (o.s - o.hl < sim.s + 8 && o.s + o.hl > sim.s - 7 && Math.abs(o.y - y) < o.hw + 1.1) free = false; });
+      if (free && best === null) best = y;
+    });
+    if (best === null) best = 1.8;
+    sim.y = best; sim.psi = 0; sim.kap = 0; sim.vyc = 0; sim.spin = 0; sim.hitT = 0; sim.vb = 0; car.v = 0; if (car.ww !== undefined) car.ww = 0;
+    this.recovered = (this.recovered || 0) + 1; this.lastRecover = sim.t;
+  };
+  return { Traffic: Traffic, Run: Run, TYPES: TYPES, LANE_R: LANE_R, LANE_L: LANE_L };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = RoadTraffic;
+</script>
+<script>/* js/road3d.js */
+/*
+ * road3d.js (v1.13.34): the road-course scene in the Lotus-Turbo-Challenge-2 manner (a road unrolling towards the horizon behind the
+ * car, curves AND hills, roadside objects streaming past, other cars), drawn with today's means: true perspective of the course plan,
+ * elevation with the camera pitching with the road under the car, distance haze, soft shadows, gradient-shaded sprites. All art is
+ * procedural (drawn here once into small canvases); nothing is taken from the 1991 game.
+ *
+ * Used by visuals-painted.js in place of its flat road-course scenery while the road mode is on (chase AND cabin views), so the
+ * painted cars, cockpits and sky stay as they are. Pure 2D canvas, batched: ~45 path fills for ground and road + one drawImage per
+ * visible object, so it holds 60 fps on an iPhone / the Tesla browser.
+ *
+ * Draw order: sky (cached, slid with heading and pitch) -> base ground -> road segments near->far with "max-y" crest clipping (a
+ * crest hides what lies behind it; a segment is only drawn where nothing nearer already covers the screen row) -> objects and cars
+ * far->near, each clipped at the crest line of its station -> post(): cars nearer than the player's car, after the car is drawn.
+ */
+var Road3D = (function () {
+  'use strict';
+  var DRAW = 640, ZN = 0.8, FOG0 = 160, FOG1 = DRAW, NFOG = 6;
+  var LANE = 3.6, EDGE = 3.45, EDGEW = 0.12, SHOULDER = 4.6, RUMBLE = 0.55, GW = 400;
+  var PAL = {
+    flat: { gA: [207, 160, 108], gB: [199, 152, 101], sh: [181, 140, 99], as: [76, 75, 80], as2: [70, 69, 74], line: [239, 236, 228], dash: [240, 194, 74], rR: [200, 54, 44], rW: [242, 239, 232], fog: [228, 198, 165] },
+    ink: { gA: [214, 164, 104], gB: [204, 154, 96], sh: [195, 144, 88], as: [77, 79, 90], as2: [70, 72, 82], line: [246, 234, 208], dash: [245, 198, 58], rR: [214, 58, 36], rW: [246, 234, 208], fog: [232, 204, 166] },
+  };
+  function mix(a, b, t) { return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * t) + ',' + Math.round(a[1] + (b[1] - a[1]) * t) + ',' + Math.round(a[2] + (b[2] - a[2]) * t) + ')'; }
+  var COLS = {};
+  function cols(sty) {
+    if (COLS[sty]) return COLS[sty];
+    var P = PAL[sty] || PAL.flat, out = [];
+    for (var i = 0; i < NFOG; i++) { var t = Math.pow(i / (NFOG - 1), 1.3) * 0.85, o = {}; for (var k in P) if (k !== 'fog') o[k] = mix(P[k], P.fog, t); out.push(o); }
+    out.fogC = mix(P.fog, P.fog, 0); out.base = mix(P.gA, P.fog, 0.55); out.P = P;
+    return (COLS[sty] = out);
+  }
+  // ------------------------------------------------------------------ procedural sprites (drawn once, scaled per frame)
+  var SPR = {};
+  function cv(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  function lg(x, x0, y0, x1, y1, st) { var g = x.createLinearGradient(x0, y0, x1, y1); st.forEach(function (s) { g.addColorStop(s[0], s[1]); }); return g; }
+  function rg(x, cx, cy, r0, r1, st) { var g = x.createRadialGradient(cx, cy, r0, cx, cy, r1); st.forEach(function (s) { g.addColorStop(s[0], s[1]); }); return g; }
+  function shadow(x, cx, cy, rx, ry, a) { x.save(); x.translate(cx, cy); x.scale(1, ry / rx); x.fillStyle = rg(x, 0, 0, 0, rx, [[0, 'rgba(30,18,10,' + a + ')'], [0.6, 'rgba(30,18,10,' + a * 0.55 + ')'], [1, 'rgba(30,18,10,0)']]); x.beginPath(); x.arc(0, 0, rx, 0, 7); x.fill(); x.restore(); }
+  // each sprite: { c: canvas, ax: anchor x (0..1, the ground point), ay: anchor y (0..1), wM: width in metres at sc 1, hM: height in metres }
+  function make(name, ink) {
+    var key = name + (ink ? '/i' : ''); if (SPR[key]) return SPR[key];
+    var s = null, x, c, OL = ink ? 'rgba(13,10,8,0.9)' : null;
+    function outline(lw) { if (OL) { x.strokeStyle = OL; x.lineWidth = lw; x.stroke(); } }
+    if (name === 'cactus') {   // saguaro: ribbed trunk + two arms, lit from the right (low sun ahead-right)
+      c = cv(160, 320); x = c.getContext('2d'); shadow(x, 66, 306, 58, 11, 0.35);
+      var green = function (x0, x1) { return lg(x, x0, 0, x1, 0, [[0, '#2f5a33'], [0.55, '#4f8a4c'], [1, '#86b46b']]); };
+      function limb(path) { x.beginPath(); path(); x.fillStyle = green(40, 120); x.fill(); outline(3); }
+      limb(function () { x.moveTo(62, 308); x.lineTo(62, 40); x.quadraticCurveTo(80, 14, 98, 40); x.lineTo(98, 308); x.closePath(); });
+      limb(function () { x.moveTo(64, 190); x.lineTo(34, 190); x.quadraticCurveTo(20, 190, 20, 170); x.lineTo(20, 96); x.quadraticCurveTo(31, 80, 42, 96); x.lineTo(42, 166); x.lineTo(64, 166); x.closePath(); });
+      limb(function () { x.moveTo(96, 150); x.lineTo(124, 150); x.quadraticCurveTo(140, 150, 140, 132); x.lineTo(140, 70); x.quadraticCurveTo(129, 54, 118, 70); x.lineTo(118, 128); x.lineTo(96, 128); x.closePath(); });
+      x.strokeStyle = 'rgba(20,40,22,0.35)'; x.lineWidth = 2; [70, 80, 90].forEach(function (rx) { x.beginPath(); x.moveTo(rx, 40); x.lineTo(rx, 300); x.stroke(); });
+      s = { c: c, ax: 80 / 160, ay: 306 / 320, wM: 2.8, hM: 5.5 };
+    } else if (name === 'joshua') {
+      c = cv(240, 280); x = c.getContext('2d'); shadow(x, 112, 268, 80, 12, 0.32);
+      x.strokeStyle = lg(x, 90, 0, 140, 0, [[0, '#4a3826'], [1, '#8a6a48']]); x.lineCap = 'round';
+      [[120, 270, 118, 150, 16], [118, 160, 70, 90, 11], [118, 150, 170, 80, 11], [70, 92, 48, 50, 8], [70, 92, 96, 44, 8], [170, 82, 196, 40, 8], [170, 82, 150, 36, 7]].forEach(function (b) { x.lineWidth = b[4]; x.beginPath(); x.moveTo(b[0], b[1]); x.lineTo(b[2], b[3]); x.stroke(); });
+      [[48, 46], [96, 40], [196, 36], [150, 32], [118, 148]].forEach(function (p) {
+        for (var i = 0; i < 14; i++) { var a = i / 14 * Math.PI * 2; x.strokeStyle = i % 3 ? '#35562f' : '#6e8f4a'; x.lineWidth = 4; x.beginPath(); x.moveTo(p[0], p[1]); x.lineTo(p[0] + Math.cos(a) * 20, p[1] + Math.sin(a) * 16 - 4); x.stroke(); }
+      });
+      s = { c: c, ax: 120 / 240, ay: 268 / 280, wM: 5, hM: 6 };
+    } else if (name === 'bush') {
+      c = cv(200, 110); x = c.getContext('2d'); shadow(x, 92, 96, 92, 12, 0.3);
+      [[60, 70, 38], [100, 58, 46], [140, 72, 36], [92, 80, 34]].forEach(function (b) { x.fillStyle = rg(x, b[0] + b[2] * 0.4, b[1] - b[2] * 0.4, 2, b[2] * 1.2, [[0, '#a9a86a'], [0.6, '#7c7c47'], [1, '#55562f']]); x.beginPath(); x.arc(b[0], b[1], b[2], 0, 7); x.fill(); outline(2); });
+      s = { c: c, ax: 0.5, ay: 96 / 110, wM: 2.6, hM: 1.3 };
+    } else if (name === 'rock' || name === 'boulder') {
+      c = cv(220, 160); x = c.getContext('2d'); shadow(x, 100, 146, 100, 14, 0.42);
+      x.beginPath(); x.moveTo(18, 146); x.lineTo(30, 80); x.lineTo(70, 34); x.lineTo(128, 22); x.lineTo(178, 52); x.lineTo(202, 112); x.lineTo(196, 146); x.closePath();
+      x.fillStyle = lg(x, 20, 30, 200, 140, name === 'rock' ? [[0, '#a0673f'], [0.5, '#bd8253'], [1, '#e0a874']] : [[0, '#6b5446'], [0.55, '#8e7260'], [1, '#c09a7c']]); x.fill(); outline(3);
+      x.fillStyle = 'rgba(40,20,10,0.25)'; x.beginPath(); x.moveTo(18, 146); x.lineTo(30, 80); x.lineTo(70, 34); x.lineTo(96, 146); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(60,30,15,0.35)'; x.lineWidth = 2; x.beginPath(); x.moveTo(70, 34); x.lineTo(110, 100); x.lineTo(196, 120); x.moveTo(128, 22); x.lineTo(110, 100); x.stroke();
+      s = { c: c, ax: 0.48, ay: 146 / 160, wM: name === 'rock' ? 2.2 : 1.9, hM: name === 'rock' ? 1.6 : 1.3 };
+    } else if (name === 'post') {
+      c = cv(24, 120); x = c.getContext('2d'); shadow(x, 9, 114, 9, 3, 0.35);
+      x.fillStyle = lg(x, 4, 0, 20, 0, [[0, '#cfcac0'], [1, '#ffffff']]); x.fillRect(5, 8, 14, 108); x.fillStyle = '#e04a2a'; x.fillRect(5, 14, 14, 18); x.fillStyle = '#ffb21e'; x.fillRect(7, 16, 10, 6);
+      if (OL) { x.strokeStyle = OL; x.lineWidth = 2; x.strokeRect(5, 8, 14, 108); }
+      s = { c: c, ax: 0.5, ay: 114 / 120, wM: 0.14, hM: 1.0 };
+    } else if (name === 'chevronL' || name === 'chevronR') {
+      var d = name === 'chevronR' ? 1 : -1; c = cv(120, 150); x = c.getContext('2d'); shadow(x, 54, 144, 30, 5, 0.3);
+      x.fillStyle = '#3a3836'; x.fillRect(56, 60, 8, 86);
+      x.fillStyle = lg(x, 0, 0, 0, 64, [[0, '#ffd84a'], [1, '#f1b51c']]); x.fillRect(6, 4, 108, 60); if (OL) { x.strokeStyle = OL; x.lineWidth = 3; x.strokeRect(6, 4, 108, 60); }
+      x.fillStyle = '#16130f'; [0, 1].forEach(function (k) { var cx = 40 + k * 40; x.beginPath(); x.moveTo(cx - d * 16, 12); x.lineTo(cx + d * 12, 34); x.lineTo(cx - d * 16, 56); x.lineTo(cx - d * 4, 56); x.lineTo(cx + d * 24, 34); x.lineTo(cx - d * 4, 12); x.closePath(); x.fill(); });
+      s = { c: c, ax: 0.5, ay: 144 / 150, wM: 0.75 * 120 / 108, hM: 1.5 };
+    } else if (name === 'warn') {
+      c = cv(130, 190); x = c.getContext('2d'); shadow(x, 60, 184, 26, 5, 0.3);
+      x.fillStyle = '#5a5856'; x.fillRect(61, 90, 8, 96);
+      x.beginPath(); x.moveTo(65, 6); x.lineTo(124, 108); x.lineTo(6, 108); x.closePath(); x.fillStyle = '#d8322a'; x.fill();
+      x.beginPath(); x.moveTo(65, 24); x.lineTo(109, 99); x.lineTo(21, 99); x.closePath(); x.fillStyle = '#f7f3ea'; x.fill();
+      x.fillStyle = '#16130f'; [[58, 62, 8], [72, 74, 7], [56, 84, 6], [78, 90, 5]].forEach(function (r) { x.beginPath(); x.arc(r[0], r[1], r[2], 0, 7); x.fill(); });
+      x.fillRect(36, 92, 40, 4);
+      s = { c: c, ax: 0.5, ay: 184 / 190, wM: 1.0, hM: 2.1 };
+    } else if (name === 'gantry') {
+      c = cv(40, 300); x = c.getContext('2d'); shadow(x, 18, 292, 18, 5, 0.35);
+      x.fillStyle = lg(x, 6, 0, 34, 0, [[0, '#3c4048'], [0.6, '#6c727c'], [1, '#9aa0a8']]); x.fillRect(8, 6, 24, 288); if (OL) { x.strokeStyle = OL; x.lineWidth = 2; x.strokeRect(8, 6, 24, 288); }
+      s = { c: c, ax: 0.5, ay: 292 / 300, wM: 0.5 * 40 / 24, hM: 6.2 };
+    } else if (name === 'mesa') {   // a far sandstone butte (scenery only)
+      c = cv(400, 260); x = c.getContext('2d');
+      x.beginPath(); x.moveTo(0, 260); x.lineTo(40, 200); x.lineTo(70, 70); x.lineTo(110, 40); x.lineTo(290, 36); x.lineTo(330, 70); x.lineTo(350, 190); x.lineTo(400, 260); x.closePath();
+      x.fillStyle = lg(x, 0, 0, 400, 0, [[0, '#8f5236'], [0.45, '#b56a42'], [1, '#e19a62']]); x.fill();
+      x.fillStyle = 'rgba(255,220,180,0.16)'; for (var b = 60; b < 240; b += 34) x.fillRect(40, b, 320, 5);
+      x.fillStyle = 'rgba(60,25,10,0.28)'; x.beginPath(); x.moveTo(0, 260); x.lineTo(40, 200); x.lineTo(70, 70); x.lineTo(110, 40); x.lineTo(150, 40); x.lineTo(120, 260); x.closePath(); x.fill();
+      s = { c: c, ax: 0.5, ay: 1, wM: 90, hM: 60 };
+    }
+    return (SPR[key] = s);
+  }
+  // cars: rear (same direction) and front (oncoming) views per body type and colour, brake lamps on / off
+  function shade(hex, k) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; function f(v) { return Math.max(0, Math.min(255, Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k)))); } return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')'; }
+  function carSprite(type, col, front, brake, ink) {
+    var key = ['car', type, col, front ? 'f' : 'r', brake ? 1 : 0, ink ? 1 : 0].join('/'); if (SPR[key]) return SPR[key];
+    var T = { coupe: [1.78, 1.3], sedan: [1.85, 1.45], pickup: [2.0, 1.8], van: [2.0, 2.1], lorry: [2.5, 3.4] }[type] || [1.8, 1.4];
+    var W = 240, H = Math.round(W * (T[1] + 0.25) / (T[0] + 0.5)), c = cv(W, H), x = c.getContext('2d'), sc = (W - 30) / (T[0] + 0.2), base = H - 10;
+    var OL = ink ? 'rgba(13,10,8,0.95)' : null;
+    function rr(x0, y0, w, h, r) { x.beginPath(); x.moveTo(x0 + r, y0); x.lineTo(x0 + w - r, y0); x.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + r); x.lineTo(x0 + w, y0 + h - r); x.quadraticCurveTo(x0 + w, y0 + h, x0 + w - r, y0 + h); x.lineTo(x0 + r, y0 + h); x.quadraticCurveTo(x0, y0 + h, x0, y0 + h - r); x.lineTo(x0, y0 + r); x.quadraticCurveTo(x0, y0, x0 + r, y0); x.closePath(); }
+    shadow(x, W / 2 - 8, base + 2, W * 0.52, 12, 0.5);
+    var bw = T[0] * sc, bx = (W - bw) / 2, hgt = T[1] * sc, top = base - hgt, wheel = 0.33 * sc;
+    x.fillStyle = '#141414'; rr(bx + 6, base - wheel * 1.1, wheel * 0.9, wheel * 1.1, 6); x.fill(); rr(bx + bw - 6 - wheel * 0.9, base - wheel * 1.1, wheel * 0.9, wheel * 1.1, 6); x.fill();
+    var body = lg(x, 0, top, 0, base, [[0, shade(col, 0.35)], [0.45, col], [1, shade(col, -0.45)]]);
+    if (type === 'lorry') {
+      x.fillStyle = lg(x, bx, 0, bx + bw, 0, [[0, shade(col, -0.25)], [0.5, col], [1, shade(col, 0.3)]]); rr(bx, top, bw, hgt * 0.86, 6); x.fill(); if (OL) { x.strokeStyle = OL; x.lineWidth = 3; x.stroke(); }
+      x.fillStyle = 'rgba(0,0,0,0.25)'; for (var i = 1; i < 5; i++) x.fillRect(bx + bw * i / 5 - 1, top + 6, 2, hgt * 0.8);
+      x.fillStyle = '#26282c'; x.fillRect(bx + 4, base - hgt * 0.2, bw - 8, hgt * 0.12);
+      if (front) { x.fillStyle = lg(x, 0, top + hgt * 0.1, 0, top + hgt * 0.45, [[0, '#a9c6dc'], [1, '#3c5266']]); rr(bx + 10, top + hgt * 0.12, bw - 20, hgt * 0.3, 6); x.fill(); }
+    } else {
+      var roofH = type === 'van' ? 0.95 : type === 'pickup' ? 0.48 : 0.42, cabin = hgt * roofH, inset = type === 'van' ? 0.06 : 0.17;
+      x.fillStyle = body; rr(bx, top + cabin * 0.85, bw, hgt - cabin * 0.85 - wheel * 0.35, 12); x.fill(); if (OL) { x.strokeStyle = OL; x.lineWidth = 3; x.stroke(); }
+      x.beginPath(); x.moveTo(bx + bw * inset, top + cabin * 0.9); x.lineTo(bx + bw * (inset + 0.06), top + 4); x.lineTo(bx + bw * (1 - inset - 0.06), top + 4); x.lineTo(bx + bw * (1 - inset), top + cabin * 0.9); x.closePath();
+      x.fillStyle = lg(x, 0, top, 0, top + cabin, [[0, shade(col, 0.2)], [1, shade(col, -0.2)]]); x.fill(); if (OL) { x.strokeStyle = OL; x.lineWidth = 3; x.stroke(); }
+      x.beginPath(); x.moveTo(bx + bw * (inset + 0.035), top + cabin * 0.86); x.lineTo(bx + bw * (inset + 0.08), top + 10); x.lineTo(bx + bw * (1 - inset - 0.08), top + 10); x.lineTo(bx + bw * (1 - inset - 0.035), top + cabin * 0.86); x.closePath();
+      x.fillStyle = lg(x, 0, top, 0, top + cabin, front ? [[0, '#c5dced'], [0.5, '#5d7a92'], [1, '#22303d']] : [[0, '#3a4a58'], [0.5, '#1d2a35'], [1, '#121a22']]); x.fill();
+      x.fillStyle = 'rgba(255,255,255,0.22)'; x.beginPath(); x.moveTo(bx + bw * 0.62, top + 12); x.lineTo(bx + bw * 0.72, top + 12); x.lineTo(bx + bw * 0.6, top + cabin * 0.84); x.lineTo(bx + bw * 0.5, top + cabin * 0.84); x.closePath(); x.fill();
+      x.fillStyle = 'rgba(255,255,255,0.18)'; x.fillRect(bx + 8, top + cabin * 0.92, bw - 16, 3);   // shoulder highlight
+      x.fillStyle = '#1c1d20'; rr(bx + bw * 0.3, base - wheel * 0.95, bw * 0.4, hgt * 0.12, 4); x.fill();   // plate / grille area
+      x.fillStyle = '#e9e6dc'; x.fillRect(bx + bw * 0.4, base - wheel * 0.9, bw * 0.2, hgt * 0.08);
+    }
+    // lamps
+    var ly = type === 'lorry' ? base - hgt * 0.17 : top + hgt * 0.56, lw = bw * 0.17, lh = hgt * (type === 'lorry' ? 0.06 : 0.1);
+    [bx + 6, bx + bw - 6 - lw].forEach(function (lx) {
+      if (front) { x.fillStyle = rg(x, lx + lw / 2, ly + lh / 2, 1, lw, [[0, '#ffffff'], [0.4, '#fff4d2'], [1, 'rgba(255,240,200,0)']]); x.fillRect(lx - lw * 0.5, ly - lh, lw * 2, lh * 3); x.fillStyle = '#fffdf2'; rr(lx, ly, lw, lh, 4); x.fill(); }
+      else {
+        x.fillStyle = brake ? '#ff2a1a' : '#a3191a'; rr(lx, ly, lw, lh, 4); x.fill();
+        if (brake) { x.fillStyle = rg(x, lx + lw / 2, ly + lh / 2, 1, lw * 1.4, [[0, 'rgba(255,90,60,0.85)'], [1, 'rgba(255,40,20,0)']]); x.fillRect(lx - lw, ly - lh * 1.5, lw * 3, lh * 4); }
+      }
+    });
+    return (SPR[key] = { c: c, ax: 0.5, ay: base / H, wM: (T[0] + 0.2) * W / (W - 30), hM: T[1] * (H - 10) / hgt });
+  }
+  // ------------------------------------------------------------------ sky: cached layer, slid sideways with heading and up / down with pitch
+  var SKY = { cv: null, key: '' };
+  function sky(g, P, hd, hzY) {
+    if (!P.sky) { g.fillStyle = lg(g, 0, -400, 0, hzY, [[0, '#3d78c4'], [0.7, '#9cc3e4'], [1, '#f2d3ac']]); g.fillRect(-900, -400, P.pw + 1800, hzY + 401); return; }
+    var m = g.getTransform ? g.getTransform() : null;
+    var per = P.skyPeriod || 4000, dxP = -hd / (2 * Math.PI) * per; dxP -= per * Math.round(dxP / per);
+    if (!m || m.b || m.c) { g.save(); g.beginPath(); g.rect(-900, -400, P.pw + 1800, hzY + 400); g.clip(); P.sky(g, hd, hzY, dxP); g.restore(); return; }
+    var q = Math.round(dxP / 120) * 120, mg = Math.ceil(160 * m.a), W = g.canvas.width + 2 * mg, Hc = Math.max(1, Math.min(g.canvas.height, Math.ceil(m.d * (P.hz + 40) + m.f) + 2 * mg));
+    var key = [q, m.a, m.d, Math.round(m.e), Math.round(m.f), g.canvas.width, g.canvas.height, P.hz, P.styKey].join('/');
+    if (!SKY.cv) { SKY.cv = document.createElement('canvas'); }
+    if (SKY.key !== key) {
+      if (SKY.cv.width !== W || SKY.cv.height !== Hc) { SKY.cv.width = W; SKY.cv.height = Hc; }
+      var x = SKY.cv.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, Hc);
+      x.setTransform(m.a, 0, 0, m.d, Math.round(m.e) + mg, Math.round(m.f) + mg); P.sky(x, null, P.hz, q);
+      SKY.key = key; SKY.e = Math.round(m.e); SKY.f = Math.round(m.f); SKY.n = (SKY.n || 0) + 1;
+    }
+    var sh = Math.round((dxP - q) * m.a), sv = Math.round((hzY - P.hz) * m.d);
+    if (Math.abs(sh) > mg || Math.abs(sv) > mg) { g.save(); g.beginPath(); g.rect(-900, -400, P.pw + 1800, hzY + 400); g.clip(); P.sky(g, null, hzY, dxP); g.restore(); return; }
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+    var y1 = Math.max(0, Math.min(g.canvas.height, Math.ceil(m.d * hzY + m.f) + 2));
+    g.beginPath(); g.rect(0, 0, g.canvas.width, y1); g.clip();
+    g.drawImage(SKY.cv, mg - sh, mg - sv, g.canvas.width, Hc - mg, 0, 0, g.canvas.width, Hc - mg);
+    g.restore();
+  }
+  // ------------------------------------------------------------------ the scene
+  var ST = { st: [], segs: [] };
+  function clipPoly(pts, yc) {   // keep y <= yc (screen rows above the crest line)
+    var out = [];
+    for (var i = 0; i < pts.length; i++) {
+      var a = pts[i], b = pts[(i + 1) % pts.length], ina = a[1] <= yc, inb = b[1] <= yc;
+      if (ina) out.push(a);
+      if (ina !== inb) { var t = (yc - a[1]) / (b[1] - a[1]); out.push([a[0] + (b[0] - a[0]) * t, yc]); }
+    }
+    return out;
+  }
+  function poly(g, p) { if (p.length < 3) return; g.moveTo(p[0][0], p[0][1]); for (var i = 1; i < p.length; i++) g.lineTo(p[i][0], p[i][1]); g.closePath(); }
+  // g: context in painting space; P: camera { axisX, hz, f, cy, camH, back (eye behind the car front, m), lat (eye right of the car
+  // centre, m), pw, ph, yMax, clipTop, sky(g, hd, hzY, dx), skyPeriod, sty 'flat' | 'ink' }; R: sim.view() + { agents, debris, stage }
+  function draw(g, P, R) {
+    var TK = R.T, f = P.f, cy = P.cy || 360, h = P.camH, tp = (cy - P.hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp, ink = P.sty === 'ink', C = cols(P.sty || 'flat');
+    var C0 = RoadCourse.pose(TK, R.s), hd = C0.th + R.psi, carX = C0.x - Math.sin(C0.th) * R.y, carY = C0.y + Math.cos(C0.th) * R.y;
+    var ex = carX - Math.cos(hd) * P.back - Math.sin(hd) * P.lat, ey = carY - Math.sin(hd) * P.back + Math.cos(hd) * P.lat;
+    var ca = Math.cos(hd), sa = Math.sin(hd), sCar = R.s - 2, eCar = RoadCourse.elev(TK, sCar);
+    // the camera sits on the car: eye height above the road under the car, pitched with the road there (smoothed over 6 m)
+    var gam = Math.atan((RoadCourse.elev(TK, R.s) - RoadCourse.elev(TK, R.s - 6)) / 6) * Math.cos(R.psi), cg = Math.cos(gam), sg = Math.sin(gam), eyeZ = RoadCourse.elev(TK, R.s) - P.back * sg + h * cg;
+    if (R.shake) { cy += R.shake; }
+    function proj(px, py, pz, up) {   // world point (+ up m) -> [screen x, screen y, depth]
+      var dx = px - ex, dy = py - ey, zf = dx * ca + dy * sa, xl = -dx * sa + dy * ca, dz = pz + (up || 0) - eyeZ;
+      var z = zf * cg + dz * sg, yv = -zf * sg + dz * cg, den = z * cp - yv * sp;
+      return [P.axisX + f * xl / den, cy - f * (yv * cp + z * sp) / den, z, den, xl, yv];
+    }
+    // a ground polygon cut at the near plane (view-axis depth den >= DN) in camera space, then projected: with the car turned
+    // across the road after a hit, one side of a quad can be behind the eye while its middle is in front
+    var DN = 0.5;
+    function nearClip(pp) {
+      var ok = true, i; for (i = 0; i < pp.length; i++) if (pp[i][3] < DN) { ok = false; break; }
+      if (ok) return pp.map(function (p) { return [p[0], p[1]]; });
+      var o = [];
+      for (i = 0; i < pp.length; i++) {
+        var a = pp[i], b = pp[(i + 1) % pp.length], ia = a[3] >= DN, ib = b[3] >= DN;
+        if (ia) o.push([a[0], a[1]]);
+        if (ia !== ib) { var t = (DN - a[3]) / (b[3] - a[3]), xl = a[4] + (b[4] - a[4]) * t, yv = a[5] + (b[5] - a[5]) * t, z = a[2] + (b[2] - a[2]) * t;
+          o.push([P.axisX + f * xl / DN, cy - f * (yv * cp + z * sp) / DN]); }
+      }
+      return o;
+    }
+    function yOf(z, up) { var yv = -h + (up || 0); return cy - f * (yv * cp + z * sp) / (z * cp - yv * sp); }
+    function xOf(z, lx, up) { var yv = -h + (up || 0); return P.axisX + f * (lx - (P.dx || 0)) / (z * cp - yv * sp); }
+    var hz = proj(ex + ca * 1e5, ey + sa * 1e5, eyeZ)[1];   // where level ground at infinity meets the sky
+    var yBot = P.yMax || P.ph + 400;
+    if (P.yMax) { g.save(); g.beginPath(); g.rect(-900, -400, P.pw + 1800, P.yMax + 400); g.clip(); }
+    sky(g, P, hd, hz);
+    g.fillStyle = lg(g, 0, hz, 0, P.ph, [[0, C.fogC], [0.12, C.base], [1, C[0].gA]]); g.fillRect(-900, hz - 1, P.pw + 1800, yBot - hz + 401);
+    // ---- samples along the road from just behind the eye
+    var sE = R.s - P.back, st = ST.st; st.length = 0;
+    var u = -4, lastZ = -1e9;
+    while (u < DRAW) {
+      var s = sE + u; if (s > TK.sEnd - 1) break;
+      var ps = RoadCourse.pose(TK, s), kk = Math.abs(RoadCourse.kAt(TK, s)), e = RoadCourse.elev(TK, s), nx = -Math.sin(ps.th), ny = Math.cos(ps.th);
+      var c = proj(ps.x, ps.y, e);
+      if (c[2] < lastZ - 0.5 && c[2] > ZN) break;   // the road turns back towards us (hairpin): the rest is out of this view
+      lastZ = Math.max(lastZ, c[2]);
+      st.push({ s: s, x: ps.x, y: ps.y, e: e, nx: nx, ny: ny, c: c, k: RoadCourse.kAt(TK, s) });
+      u += Math.max(0.8, Math.min(10, 1 + u * 0.022, kk > 1e-5 ? 0.05 / kk : 99));
+    }
+    function at(q, off, up) { return proj(q.x + q.nx * off, q.y + q.ny * off, q.e, up); }
+    // ---- segments near -> far with crest clipping; batched fills per haze level
+    var B = {}; function path(k) { return B[k] || (B[k] = []); }
+    var maxY = yBot + 50, segs = ST.segs; segs.length = 0;
+    for (var i = 0; i + 1 < st.length; i++) {
+      var A = st[i], Bq = st[i + 1];
+      if (Bq.c[2] < ZN) { segs.push({ clip: maxY, s0: A.s, s1: Bq.s, vis: false }); continue; }
+      var yN = A.c[2] < ZN ? yBot + 50 : A.c[1], yF = Bq.c[1], clip = maxY;
+      segs.push({ clip: clip, s0: A.s, s1: Bq.s, yC: yF, vis: yF < clip });
+      if (yF >= clip) continue;
+      var fl = Math.max(0, Math.min(NFOG - 1, Math.floor((Bq.c[2] - FOG0) / (FOG1 - FOG0) * NFOG))), cl = C[fl];
+      // ground band across the whole width, between the two rows (and above what is nearer)
+      var yb = Math.min(yN, clip), stripe = Math.floor(A.s / 10) % 2 ? 'gA' : 'gB';
+      path(cl[stripe]).push(['r', yF, yb]);
+      var q = function (o0, o1, colr) {
+        var pts = nearClip([at(A, o0), at(A, o1), at(Bq, o1), at(Bq, o0)]);
+        if (clip < yBot + 40) pts = clipPoly(pts, clip);
+        if (pts.length >= 3) path(colr).push(['p', pts]);
+      };
+      q(-SHOULDER, SHOULDER, cl.sh);
+      if (Math.abs(A.k) > 1 / 420) { var rr2 = Math.floor(A.s / 4) % 2 ? cl.rR : cl.rW; q(-LANE - RUMBLE, -LANE, rr2); q(LANE, LANE + RUMBLE, rr2); }
+      q(-LANE, LANE, Math.floor(A.s / 25) % 2 ? cl.as : cl.as2);
+      if (Bq.c[2] < 320) { q(-EDGE - EDGEW, -EDGE, cl.line); q(EDGE, EDGE + EDGEW, cl.line); }
+      // centre dashes (3 m every 12 m) and the start / checkpoint / finish lines, by interpolation inside the segment
+      if (Bq.c[2] < 260) for (var ds = Math.ceil((A.s - 3) / 12) * 12; ds < Bq.s; ds += 12) {
+        var d0 = Math.max(A.s, ds), d1 = Math.min(Bq.s, ds + 3); if (d1 <= d0) continue;
+        var t0 = (d0 - A.s) / (Bq.s - A.s), t1 = (d1 - A.s) / (Bq.s - A.s), L0 = lerpQ(A, Bq, t0), L1 = lerpQ(A, Bq, t1);
+        var dpp = nearClip([at(L0, -0.07), at(L0, 0.07), at(L1, 0.07), at(L1, -0.07)]); if (dpp.length < 3) continue; if (clip < yBot + 40) dpp = clipPoly(dpp, clip); if (dpp.length >= 3) path(cl.dash).push(['p', dpp]);
+      }
+      (R.lines || []).forEach(function (Ln) {
+        if (Ln.s < A.s - 2 || Ln.s >= Bq.s) return;
+        for (var k = 0; k < (Ln.fin ? 2 : 1); k++) for (var cI = 0; cI < (Ln.fin ? 12 : 1); cI++) {
+          var w0 = Ln.fin ? -LANE + 2 * LANE * cI / 12 : -LANE, w1 = Ln.fin ? w0 + 2 * LANE / 12 : LANE; if (Ln.fin && (cI + k) % 2) continue;
+          var sa0 = Ln.s + k * 0.6, sa1 = sa0 + (Ln.fin ? 0.6 : 0.5), ta = (sa0 - A.s) / (Bq.s - A.s), tb = (sa1 - A.s) / (Bq.s - A.s);
+          var La = lerpQ(A, Bq, ta), Lb = lerpQ(A, Bq, tb), lpp = nearClip([at(La, w0), at(La, w1), at(Lb, w1), at(Lb, w0)]); if (lpp.length < 3) continue; if (clip < yBot + 40) lpp = clipPoly(lpp, clip); if (lpp.length >= 3) path(Ln.col || cl.line).push(['p', lpp]);
+        }
+      });
+      maxY = Math.min(maxY, yF);
+    }
+    // fill: ground bands first, then the rest in a fixed order (shoulder, rumble, asphalt, lines)
+    var order = Object.keys(B).sort(function (a, b) { return rank(a) - rank(b); });
+    function rank(k) { for (var l = 0; l < NFOG; l++) { var cl = C[l]; if (k === cl.gA || k === cl.gB) return 0; if (k === cl.sh) return 1; if (k === cl.rR || k === cl.rW) return 2; if (k === cl.as || k === cl.as2) return 3; } return 4; }
+    order.forEach(function (k) {
+      g.beginPath();
+      B[k].forEach(function (it) { if (it[0] === 'r') g.rect(-900, it[1], P.pw + 1800, it[2] - it[1] + 0.6); else poly(g, it[1]); });
+      g.fillStyle = k; g.fill();
+    });
+    if (!ink) {   // haze at the horizon + warm low sun bloom
+      g.fillStyle = lg(g, 0, hz - 30, 0, hz + 60, [[0, 'rgba(240,214,180,0)'], [0.45, 'rgba(240,214,180,0.45)'], [1, 'rgba(240,214,180,0)']]); g.fillRect(-900, hz - 30, P.pw + 1800, 90);
+    }
+    // ---- objects and cars, far -> near
+    var items = [], s0 = st.length ? st[0].s : sE, s1 = st.length ? st[st.length - 1].s : sE;
+    function segOf(s) { for (var j = segs.length - 1; j >= 0; j--) if (segs[j].s0 <= s) return segs[j]; return null; }
+    var props = TK.props || [], lo = lowerBound(props, s0 - 20);
+    for (var pI = lo; pI < props.length && props[pI].s <= s1 + 300; pI++) { var pr = props[pI]; if (pr.right) continue; items.push({ o: pr, s: pr.s, y: pr.y, deb: pr.gone ? 1 : 0 }); }   // knocked ones lie where they slid
+    (R.agents || []).forEach(function (a) { if (a.m && a.s > s0 - 8 && a.s < s1) items.push({ o: a, s: a.s, y: a.y, car: 1 }); });
+    items.forEach(function (it) {
+      var ps2 = RoadCourse.pose(TK, it.s), e2 = RoadCourse.elev(TK, it.s), nx2 = -Math.sin(ps2.th), ny2 = Math.cos(ps2.th);
+      it.wx = ps2.x + nx2 * it.y; it.wy = ps2.y + ny2 * it.y; it.e = e2; it.nx = nx2; it.ny = ny2; it.th = ps2.th;
+      var p = proj(it.wx, it.wy, e2); it.p = p; it.z = p[2];
+    });
+    items.sort(function (a, b) { return b.z - a.z; });
+    var near = [], zCar = P.back - 0.5;
+    for (var n = 0; n < items.length; n++) { var it = items[n]; if (it.z < ZN + 0.4) continue; if (it.car && it.z < zCar + 2) { near.push(it); continue; } drawItem(g, it); }
+    function drawItem(g2, it) {
+      var o = it.o, p = it.p, z = it.z; if (z > DRAW + 300) return;
+      var sg2 = segOf(it.s), clipY = null;
+      if (sg2 && sg2.yC !== undefined && sg2.clip < sg2.yC - 1) clipY = sg2.clip + (p[1] - sg2.yC);   // behind a crest: hide what it hides
+      var spr, wM, hM, sc = o.sc || 1, alpha = z > FOG0 ? Math.max(0.15, 1 - (z - FOG0) / (DRAW + 300 - FOG0) * 0.85) : 1;
+      if (it.car) {
+        var front = o.dir < 0; spr = carSprite(o.type, o.col, front, !front && o.brake, ink); wM = spr.wM; hM = spr.hM;
+      } else if (o.kind === 'chevron') spr = make(o.dir > 0 ? 'chevronR' : 'chevronL', ink);
+      else if (o.kind === 'gantry') return drawGantry(g2, it, clipY);
+      else spr = make(o.kind, ink);
+      if (!spr) return;
+      wM = spr.wM * sc; hM = spr.hM * sc;
+      var wp = f * wM / p[3], hp = wp * spr.c.height / spr.c.width;
+      if (hp < 1.2 || p[0] + wp < -900 || p[0] - wp > P.pw + 900) return;
+      var dw = wp, dh = wp * spr.c.height / spr.c.width;
+      g2.save();
+      if (clipY !== null) { g2.beginPath(); g2.rect(-900, -400, P.pw + 1800, clipY + 400); g2.clip(); }
+      if (P.clipTop !== undefined && p[1] < P.clipTop) { g2.restore(); return; }
+      g2.globalAlpha = alpha;
+      if (it.deb || o.tilt) { g2.translate(p[0], p[1]); g2.rotate((o.vy || 0) >= 0 ? o.tilt || 0 : -(o.tilt || 0)); g2.drawImage(spr.c, -dw * spr.ax, -dh * spr.ay, dw, dh); }
+      else if (it.car) {
+        var yaw = o.h - (o.dir > 0 ? 0 : Math.PI); yaw -= 2 * Math.PI * Math.round(yaw / (2 * Math.PI)); yaw -= (hd - it.th);
+        g2.translate(p[0], p[1]); g2.rotate(Math.max(-0.5, Math.min(0.5, yaw * 0.25))); g2.drawImage(spr.c, -dw * spr.ax, -dh * spr.ay, dw, dh);
+      } else g2.drawImage(spr.c, p[0] - dw * spr.ax, p[1] - dh * spr.ay, dw, dh);
+      g2.restore();
+    }
+    function drawGantry(g2, it, clipY) {
+      var o = it.o, ps3 = RoadCourse.pose(TK, it.s), e3 = it.e, nx3 = -Math.sin(ps3.th), ny3 = Math.cos(ps3.th), Lg = 6.4;
+      var l0 = proj(ps3.x - nx3 * Lg, ps3.y - ny3 * Lg, e3), r0 = proj(ps3.x + nx3 * Lg, ps3.y + ny3 * Lg, e3);
+      var lt = proj(ps3.x - nx3 * Lg, ps3.y - ny3 * Lg, e3, 6.2), rt = proj(ps3.x + nx3 * Lg, ps3.y + ny3 * Lg, e3, 6.2), lb = proj(ps3.x - nx3 * Lg, ps3.y - ny3 * Lg, e3, 4.9), rb = proj(ps3.x + nx3 * Lg, ps3.y + ny3 * Lg, e3, 4.9);
+      if (l0[2] < ZN || r0[2] < ZN) return;
+      var spr = make('gantry', ink), alpha = it.z > FOG0 ? Math.max(0.2, 1 - (it.z - FOG0) / (DRAW + 300 - FOG0) * 0.8) : 1;
+      g2.save(); if (clipY !== null) { g2.beginPath(); g2.rect(-900, -400, P.pw + 1800, clipY + 400); g2.clip(); }
+      g2.globalAlpha = alpha;
+      [l0, r0].forEach(function (b, k) { var w = f * spr.wM / b[3], hh = w * spr.c.height / spr.c.width; g2.drawImage(spr.c, b[0] - w * spr.ax, b[1] - hh * spr.ay, w, hh); });
+      var ban = banner(o.fin, o.cp, ink);
+      g2.save(); g2.beginPath(); g2.moveTo(lt[0], lt[1]); g2.lineTo(rt[0], rt[1]); g2.lineTo(rb[0], rb[1]); g2.lineTo(lb[0], lb[1]); g2.closePath(); g2.clip();
+      g2.drawImage(ban, Math.min(lt[0], lb[0]), Math.min(lt[1], rt[1]), Math.abs(rt[0] - lt[0]), Math.max(lb[1], rb[1]) - Math.min(lt[1], rt[1]));
+      g2.restore(); g2.restore();
+    }
+    if (P.yMax) g.restore();
+    return {
+      yOf: yOf, xOf: xOf, hz: hz,
+      post: function (g2) { if (!near.length) return; if (P.yMax) { g2.save(); g2.beginPath(); g2.rect(-900, -400, P.pw + 1800, P.yMax + 400); g2.clip(); } near.forEach(function (it) { drawItem(g2, it); }); if (P.yMax) g2.restore(); },
+      stats: { samples: st.length, fills: order.length, items: items.length },
+    };
+  }
+  function lerpQ(A, B, t) { return { x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t, e: A.e + (B.e - A.e) * t, nx: A.nx + (B.nx - A.nx) * t, ny: A.ny + (B.ny - A.ny) * t }; }
+  function lowerBound(arr, s) { var lo = 0, hi = arr.length; while (lo < hi) { var mid = (lo + hi) >> 1; if (arr[mid].s < s) lo = mid + 1; else hi = mid; } return lo; }
+  var BAN = {};
+  function banner(fin, cp, ink) {
+    var key = (fin ? 'F' : 'C') + (ink ? 'i' : ''); if (BAN[key]) return BAN[key];
+    var c = cv(512, 64), x = c.getContext('2d');
+    x.fillStyle = lg(x, 0, 0, 0, 64, fin ? [[0, '#1a1a1a'], [1, '#000']] : [[0, '#2fb55a'], [1, '#1d8a41']]); x.fillRect(0, 0, 512, 64);
+    if (fin) for (var i = 0; i < 32; i++) for (var j = 0; j < 4; j++) if ((i + j) % 2) { x.fillStyle = '#f4f4f0'; x.fillRect(i * 16, j * 16, 16, 16); }
+    x.fillStyle = fin ? '#e8302a' : '#ffffff'; x.font = 'bold 40px "Avenir Next", "Futura", "Trebuchet MS", Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    if (fin) { x.fillStyle = 'rgba(0,0,0,0.65)'; x.fillRect(150, 8, 212, 48); x.fillStyle = '#ffd84a'; }
+    x.fillText(fin ? 'FINISH' : 'CHECKPOINT', 256, 34);
+    if (ink) { x.strokeStyle = '#0d0a08'; x.lineWidth = 6; x.strokeRect(3, 3, 506, 58); }
+    return (BAN[key] = c);
+  }
+  return { draw: draw, sprite: make, carSprite: carSprite, DRAW: DRAW };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Road3D;
 </script>
 <script>/* js/radio.js */
 /*
@@ -14580,7 +15537,17 @@ var PaintedVisuals = (function () {
     if (P.yMax) g.restore();
     return { yOf: yOf, xOf: xOf };
   }
+  // v1.13.34: stage courses (hills, objects, other cars) use the Lotus-style scene of js/road3d.js with this style's painted sky
+  function sceneryRoad3D(g, P, s) {
+    var B = M.backdrop, img = A['desert-backdrop'], f = P.f, hb = camHB(), k = Math.max((f * hb / 4.0) / B.bottomPx, P.minK || 0), w = B.w * k, hh = B.h * k;
+    var pano = panoOf(img, B.hz / B.h), per = 2 * w, ox0 = P.axisX - B.vx * k;
+    var SC = Road3D.draw(g, { axisX: P.axisX, hz: P.hz, f: f, cy: P.cy || 360, camH: P.camH, back: P.road.back, lat: P.road.lat, dx: P.dx, pw: PW, ph: PH, yMax: P.yMax, clipTop: P.clipTop, sty: STY, styKey: STY + '/' + k.toFixed(4),
+      skyPeriod: per, sky: function (g2, hd, hzY, dx) { var oy = hzY - B.hz * k; for (var t = -1; t <= 1; t++) g2.drawImage(pano, ox0 + dx + t * per, oy, per, hh); } }, s.road);
+    if (!P.road.chase && SC.post) { SC.post(g); SC.post = null; }   // inside views: the cockpit covers what is nearer anyway
+    return SC;
+  }
   function scenery(g, P, s) {
+    if (s.road && P.road && typeof RoadCourse !== 'undefined' && s.road.T.stage && typeof Road3D !== 'undefined' && !(window.__pvOff || {}).road3d) return sceneryRoad3D(g, P, s);
     if (s.road && P.road && typeof RoadCourse !== 'undefined') return sceneryRoad(g, P, s);   // road-course draft (opt-in mode only)
     var B = M.backdrop, img = A['desert-backdrop'], hz = P.hz, f = P.f, h = P.camH, cy = P.cy || 360, tp = (cy - hz) / f, cp = 1 / Math.sqrt(1 + tp * tp), sp = tp * cp;
     var dx = P.dx, yaw = P.yaw || 0, vpX = P.axisX - f * Math.tan(yaw) / cp;
@@ -15338,7 +16305,7 @@ var PaintedVisuals = (function () {
     var doorZ = c.dist + c.len + 0.7;
     var SC = garage
       ? garageScenery(g, { axisX: V.vx, hz: V.hz, f: f, cy: 360, camH: camH, dx: 0, doorZ: doorZ }, s)
-      : scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len, road: s.road ? { back: c.dist + c.len, lat: 0 } : null }, s);
+      : scenery(g, { axisX: V.vx - sway * 0.6, hz: V.hz, f: f, cy: 360, camH: camH, dx: 1.8 + (s.lat || 0), yaw: yawOf(s) * 0.6, camOff: c.dist + c.len, road: s.road ? { back: c.dist + c.len, lat: 0, chase: 1 } : null }, s);
     var tpc = (360 - V.hz) / f, cpc = 1 / Math.sqrt(1 + tpc * tpc), spc = tpc * cpc;   // pitched camera: depth of the rear face at mid height
     var wpx = f * c.realW / (c.dist * cpc + (camH - 0.6) * spc), sc = wpx / (c.bodyX[1] - c.bodyX[0]), zc = c.dist + (car === 'gt350' ? 0.9 : car === 'p997' ? 0.99 : car === 'beetle' ? 1.02 : car === 'modelx' ? 1.104 : 1.35), yc = SC.yOf(zc);
     var rearKey = (garage && A[car + '-rear-open'] && (A[car + '-rear-open'].naturalWidth || A[car + '-rear-open'].width)) ? '-rear-open' : '-rear';
@@ -15380,6 +16347,7 @@ var PaintedVisuals = (function () {
       g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
     var tips = c.tips.map(function (t) { return [x0 + t[0] * sc, y0 + t[1] * sc + pitch, t[2] * sc]; });
     g.restore();
+    if (SC.post) SC.post(g);   // v1.13.34 stage course: cars alongside / just behind ours are drawn over it
     // exhaust smoke: puffs leave the tips, grow, drift back towards the camera and fade (more under throttle and at idle when cold)
     if ((window.__pvOff || {}).smoke) smoke.length = 0;
     if (run) { var rate = (6 + 26 * (s.thr || 0) + s.rpm / 600) * dt;
@@ -15697,6 +16665,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.13.34", date: "2026-11-27", status: "done", headline: "Road course: Lotus-style stage with hills, traffic, rivals and collisions (prototype)", text: "The Road course is now a stage in the spirit of Lotus Turbo Challenge 2 (Amiga, 1991), drawn in this game\u2019s own painted style: Mesa Run, 6.2 km with crests and dips, five checkpoints and a countdown (each checkpoint adds time, time left carries on; out of time the engine is cut and you can still coast over the next checkpoint), three rivals that drive your car\u2019s own numbers, slower traffic and oncoming cars with lights, and road-side posts, chevron boards and fallen boulders. A new generic collision engine (oriented boxes, swept so nothing passes through at speed, impulses with bounce and friction) handles car against car and car against objects: you bounce, lose speed and may spin; light posts and boards get knocked flying. Hills feed a new generic grade input to the physics. The old flat lap is still there with ?course=mesa. Stock sounds unchanged." },
       { v: "v1.13.32", date: "2026-11-26", status: "done", headline: "Road course (draft): one winding road, solo", text: "A new opt-in mode next to the drag strip: Road course (key C, or the Road course button). Mesa Road is an original 2.5-mile (4.02 km) two-lane desert road, a nod to the 1989 game\u2019s winding road race: a long start straight, sweepers, esses, a back straight into a tight 30 m hairpin, and a run to the finish. The clock starts at the line, with three split points and a best time stored per car. Steering is new: A / D on the keyboard, or the steering pad on touch screens (iPhone, Tesla). The car now really corners: grip comes from the tyres (a 1971 Super Beetle pulled 0.617 g on Road & Track\u2019s skidpad, used for the 1956 car as an estimate), falls off a little with speed, and is shared with braking and power (friction circle). Ask too much and the car runs wide and scrubs speed; dirt and sand off the road slow it down hard. The stock 1956 Beetle needs about 2:52 for a clean run (simulated). Drag strip, cruising and every sound are unchanged." },
       { v: "v1.11.23", date: "2026-11-14", status: "done", headline: "911 top speed checked: the official C4S manual figure is 288 km/h", text: "The 911 Carrera 4S (3.8 L, 355 PS, six-speed manual) was checked against Porsche's own 29 August 2006 product description for the 997.1 Carrera 4 and 4S. The official top speed is 288 km/h (179 mph), and 0–100 km/h is 4.8 s. 280 km/h is the Carrera 4 (3.6 L) manual figure, and also the Tiptronic S 4S figure; 295 km/h is not a factory C4S number. The game already reaches 288 km/h in sixth, below the limiter, so the gearing and the physics are unchanged." },
       { v: "v1.11.20", date: "2026-11-14", status: "done", headline: "In the garage you can rev the engine; shifts stay locked", text: "In both garage positions the car stays parked in neutral (N on the Cadillac’s Hydra-Matic). The gas pedal, the up arrow and the on-screen GAS button free-rev the engine against its own inertia, up to the rev limiter; the car does not move. Shift up and down (the keys, the on-screen buttons and the selector) are disabled and greyed out while you are in the garage." },
@@ -17189,7 +18158,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // ---- road course (draft): one winding road, solo (js/road.js). Opt-in like the drag strip; drag / cruise unchanged when it is off ----
   var road = null, roadHudT = 0, roadMap = null;
   var hasRoad = typeof RoadCourse !== 'undefined';
-  function roadBestKey() { return 'streetrod.road.best.' + state.carId + '.' + RoadCourse.course().id; }
+  // v1.13.34: the stage course (Lotus-2 style: hills, checkpoints with a countdown, traffic, rivals, collisions) is the default;
+  // ?course=mesa keeps the v1.13.32 flat lap course for comparison
+  var ROAD_ID = params.get('course') === 'mesa' || typeof RoadTraffic === 'undefined' ? 'mesa' : 'mesa-run';
+  function roadCourse() { return RoadCourse.course(ROAD_ID); }
+  function roadBestKey() { return 'streetrod.road.best.' + state.carId + '.' + roadCourse().id; }
   function roadBest() { try { return JSON.parse(localStorage.getItem(roadBestKey()) || 'null'); } catch (e) { return null; } }
   function fmtT(x) { if (x === undefined || x === null || !isFinite(x)) return '\u2013'; var m = Math.floor(x / 60), s2 = x - 60 * m; return m + ':' + (s2 < 10 ? '0' : '') + s2.toFixed(2); }
   function roadEnter() {
@@ -17200,28 +18173,41 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (c.engine === 'off') c.ignition();
     c.v = 0; c.ww = 0; c.a = 0;
     if (c.c.trans === 'ev' || c.c.trans === 'auto') { if (c.range !== 'D') c.setRange('D'); } else if (c.gear !== 1) { c.gear = 1; c.shift = null; }
-    road = { sim: new RoadCourse.Sim(RoadCourse.course()), car: state.carId, done: false };
+    var T = roadCourse(), run = typeof RoadTraffic !== 'undefined' ? new RoadTraffic.Run(T, c) : null;
+    road = { run: run, sim: run ? run.sim : new RoadCourse.Sim(T), car: state.carId, done: false, shake: 0, ev: 0,
+      lines: [{ s: 0 }].concat(T.splits.map(function (x) { return { s: x }; })).concat([{ s: T.finish, fin: 1 }]) };
     state.lat = 0; state.steer = 0;
     document.getElementById('roadCard').classList.add('hidden');
     document.getElementById('roadHud').classList.remove('hidden'); document.getElementById('steerPad').classList.remove('hidden');
     roadMapBuild(); layoutRoad(); roadHud(true);
-    flash(RoadCourse.course().name + ': 2.5 miles. The clock starts at the line. Steer: A / D or the steering pad', 3.5); updatePanel();
+    if (T.stage) flash(T.name + ': ' + (T.finish / 1000).toFixed(1) + ' km, ' + T.splits.length + ' checkpoints and the finish. Beat the clock to each one. Steer: A / D or the steering pad', 4);
+    else flash(T.name + ': 2.5 miles. The clock starts at the line. Steer: A / D or the steering pad', 3.5);
+    updatePanel();
   }
   function roadExit() {
     road = null; state.lat = 0;
     ['roadHud', 'steerPad', 'roadCard'].forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
     updatePanel();
   }
-  function roadDone(r) {
-    var best = roadBest(), isBest = !best || r.time < best.time;
+  function roadDone(r, timeUp) {
+    var best = roadBest(), isBest = !timeUp && (!best || r.time < best.time), T = roadCourse(), run = road && road.run, st = run && run.stage;
     if (isBest) { best = { time: r.time, sectors: r.sectors, date: new Date().toISOString().slice(0, 10) }; lsSet(roadBestKey(), JSON.stringify(best)); }
     var mph = state.units === 'mph', sp = function (m) { return mph ? (m * 2.236936).toFixed(1) + ' mph' : (m * 3.6).toFixed(1) + ' km/h'; };
-    var h = '<h3>' + spec().label + ' \u00b7 ' + RoadCourse.course().name + '</h3><table>' +
+    if (timeUp) {
+      var h0 = '<h3>' + spec().label + ' \u00b7 ' + T.name + '</h3><p class="best">Time up at ' + Math.round(road.sim.s) + ' m (' + Math.max(0, Math.min(100, road.sim.s / T.finish * 100)).toFixed(0) + ' %), ' + (st ? st.cp : 0) + ' of ' + T.splits.length + ' checkpoints passed.</p>' +
+        '<table><tr><td>Hits</td><td>' + (run ? run.contacts : 0) + '</td></tr><tr><td>Best</td><td>' + (best ? fmtT(best.time) : '\u2013') + '</td></tr></table>' +
+        '<p class="note">Each checkpoint adds time; time left over carries on. Out of time the engine is cut and you coast: roll over the next checkpoint and you are back in.</p>' +
+        '<div class="row"><button class="tb" data-act3="again">Try again</button><button class="tb" data-act3="exit">Exit road course</button></div>';
+      var el0 = document.getElementById('roadCard'); el0.innerHTML = h0; el0.classList.remove('hidden'); window.__lastRoad = { timeUp: true, s: road.sim.s, cp: st ? st.cp : 0 }; return;
+    }
+    var h = '<h3>' + spec().label + ' \u00b7 ' + T.name + '</h3><table>' +
       r.sectors.map(function (x, i) { return '<tr><td>Sector ' + (i + 1) + '</td><td>' + x.toFixed(2) + ' s</td></tr>'; }).join('') +
       '<tr class="et"><td>Time</td><td>' + fmtT(r.time) + '</td></tr><tr><td>Average</td><td>' + sp(r.avg) + '</td></tr><tr><td>Top speed</td><td>' + sp(r.vmax) + '</td></tr>' +
-      '<tr><td>Off the road</td><td>' + r.offs + '\u00d7 (' + r.offT.toFixed(1) + ' s)</td></tr></table>' +
+      '<tr><td>Off the road</td><td>' + r.offs + '\u00d7 (' + r.offT.toFixed(1) + ' s)</td></tr>' +
+      (run && run.traffic ? '<tr><td>Hits</td><td>' + run.contacts + '</td></tr><tr><td>Position</td><td>' + run.traffic.position(road.sim.s) + ' / ' + (run.traffic.rivals().length + 1) + '</td></tr><tr><td>Time left</td><td>' + st.left.toFixed(1) + ' s</td></tr>' : '') + '</table>' +
       '<p class="best">' + (isBest ? 'New best for this car!' : 'Best: ' + fmtT(best.time) + ' (' + best.date + ')') + '</p>' +
-      '<p class="note">Draft road course: one car, no traffic. Cornering grip from the tyres (skidpad-based), friction circle with braking and power, dirt and sand cost speed.</p>' +
+      (T.stage ? '<p class="note">Stage course (prototype): hills, checkpoints with a countdown, traffic and three rivals that drive your car\u2019s numbers. Hits are real collisions: you bounce, lose speed and may spin.</p>'
+        : '<p class="note">Draft road course: one car, no traffic. Cornering grip from the tyres (skidpad-based), friction circle with braking and power, dirt and sand cost speed.</p>') +
       '<div class="row"><button class="tb" data-act3="again">Run again</button><button class="tb" data-act3="exit">Exit road course</button></div>';
     var el = document.getElementById('roadCard'); el.innerHTML = h; el.classList.remove('hidden');
     window.__lastRoad = r;
@@ -17232,7 +18218,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   });
   function roadMapBuild() {
     if (roadMap) return;
-    var T = RoadCourse.course(), bx = T.box, W = 120, H = 120, sc = Math.min((W - 10) / (bx[2] - bx[0]), (H - 10) / (bx[3] - bx[1]));
+    var T = roadCourse(), bx = T.box, W = 120, H = 120, sc = Math.min((W - 10) / (bx[2] - bx[0]), (H - 10) / (bx[3] - bx[1]));
     var ox = (W - (bx[2] - bx[0]) * sc) / 2 - bx[0] * sc, oy = (H - (bx[3] - bx[1]) * sc) / 2 - bx[1] * sc, pts = [];
     for (var i = 0; i < T.x.length; i += 15) pts.push((T.x[i] * sc + ox).toFixed(1) + ',' + (T.y[i] * sc + oy).toFixed(1));
     var pf = RoadCourse.pose(T, T.finish), p0 = RoadCourse.pose(T, 0);
@@ -17243,14 +18229,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   function roadHud(force) {
     var el = document.getElementById('roadHudT'); if (!road || !el) return;
-    var sim = road.sim, T = sim.T, best = roadBest(), next = null;
+    var sim = road.sim, T = sim.T, best = roadBest(), next = null, run = road.run, st = run && run.stage;
     for (var i = 0; i < T.bends.length; i++) if (T.bends[i].s1 > sim.s) { next = T.bends[i]; break; }
     var t = sim.phase === 'grid' ? 0 : sim.phase === 'done' && sim.res ? sim.res.time : sim.t, sec = Math.min(sim.splitT.length + 1, T.splits.length + 1);
     var dl = '';
     if (best && best.sectors && sim.splitT.length && sim.phase === 'run') { var k = sim.splitT.length - 1, bs = 0; for (var j = 0; j <= k; j++) bs += best.sectors[j]; var d = sim.splitT[k] - bs; dl = ' <b class="' + (d <= 0 ? 'g' : 'r') + '">' + (d <= 0 ? '\u2212' : '+') + Math.abs(d).toFixed(2) + '</b>'; }
     var mph = state.units === 'mph', bendTxt = '';
     if (next) { var dist = next.s0 - sim.s, vs = RoadCourse.cornerSpeed(spec(), next.R); bendTxt = (dist > 0 ? Math.round(dist) + ' m: ' : 'Now: ') + (next.name || (next.dir > 0 ? 'Right' : 'Left')) + ' ' + (next.dir > 0 ? '\u21b1' : '\u21b0') + ' R' + next.R + ' \u00b7 grip limit ' + Math.round(mph ? vs * 2.236936 : vs * 3.6) + (mph ? ' mph' : ' km/h'); }
-    var surf = sim.surf && sim.surf.outer !== 'asphalt' ? ' <b class="r">' + sim.surf.outer.toUpperCase() + '</b>' : '', slide = sim.over > 0.12 ? ' <b class="r">SLIDING</b>' : '';
+    var surf = sim.surf && sim.surf.outer !== 'asphalt' ? ' <b class="r">' + sim.surf.outer.toUpperCase() + '</b>' : '', slide = sim.spin && Math.abs(sim.spin) > 0.6 ? ' <b class="r">SPIN</b>' : sim.over > 0.12 ? ' <b class="r">SLIDING</b>' : '';
+    if (st) {   // v1.13.34 stage: Lotus-style countdown, checkpoint, position
+      var left = Math.max(0, st.left), low = left < 10 && sim.phase === 'run';
+      var pos = run.traffic ? run.traffic.position(sim.s) : 1, nR = run.traffic ? run.traffic.rivals().length + 1 : 1, toCp = st.cp < st.cps.length ? Math.max(0, st.cps[st.cp] - sim.s) : 0;
+      el.innerHTML = '<span class="rc' + (low ? ' low' : '') + (st.out ? ' out' : '') + '">' + (st.out ? 'TIME UP' : Math.ceil(left)) + '</span> <span class="rt">' + fmtT(t) + '</span>' + dl + surf + slide +
+        '<br><span class="rs">CP ' + Math.min(st.cp + 1, st.cps.length) + '/' + st.cps.length + ' \u00b7 ' + (toCp > 0 ? (toCp >= 1000 ? (toCp / 1000).toFixed(1) + ' km' : Math.round(toCp) + ' m') : 'finish') + '</span> <span class="rp">P' + pos + '/' + nR + '</span>' +
+        '<br><span class="rb">' + (best ? 'Best ' + fmtT(best.time) : sim.phase === 'grid' ? 'Go when ready' : 'No best yet') + '</span>' +
+        (bendTxt ? '<br><span class="rn">' + bendTxt + '</span>' : '');
+    } else
     el.innerHTML = '<span class="rt">' + fmtT(t) + '</span> <span class="rs">S' + sec + '/' + (T.splits.length + 1) + '</span>' + dl + surf + slide +
       '<br><span class="rb">' + (best ? 'Best ' + fmtT(best.time) : sim.phase === 'grid' ? 'Go when ready' : 'No best yet') + ' \u00b7 ' + Math.max(0, Math.min(100, sim.s / T.finish * 100)).toFixed(0) + ' %</span>' +
       (bendTxt ? '<br><span class="rn">' + bendTxt + '</span>' : '');
@@ -17270,14 +18264,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     hud.style.left = Math.round(cr.left - st.left + 8) + 'px'; hud.style.top = Math.round(top - st.top + 6) + 'px';
     hud.classList.toggle('narrow', cr.width < 520);
   }
-  function roadTickPre() { return road ? road.sim.inputs() : null; }
+  function roadTickPre() { return road ? (road.run ? road.run.inputs() : road.sim.inputs()) : null; }
   function roadTickPost(dt, c) {
     if (!road) return;
     if (road.car !== state.carId) { roadExit(); return; }
-    road.sim.step(dt, c, state.steer);
+    if (road.run) road.run.step(dt, c, state.steer); else road.sim.step(dt, c, state.steer);
+    var run = road.run, st = run && run.stage;
     if (road.sim.crash) flash('Into the fence!', 1.5);
+    if (run && run.lastHit) {   // a new hit: a short camera shake (Lotus 2: "the control goes wibbly"), and a word on what it was
+      var hk = run.lastHit; road.shake = Math.min(14, 2 + hk.dv * 0.7);
+      if (hk.dv > 3) flash(hk.kind === 'oncoming' ? 'Head-on!' : hk.kind === 'rival' ? 'Contact!' : hk.kind === 'traffic' ? 'Rear-ended!' : hk.fixed ? 'Crash!' : 'Bump', 1.2);
+    }
+    road.shake *= Math.exp(-dt / 0.18);
+    if (run && run.lastRecover !== undefined && run.lastRecover !== road.recShown) { road.recShown = run.lastRecover; flash('Back on the road', 1.5); }
+    if (st) while (road.ev < st.events.length) { var e = st.events[road.ev++]; if (!e.fin) flash('CHECKPOINT  +' + e.add + ' s', 2); }
+    if (st && st.over && !road.done) { road.done = true; roadDone(null, true); }
     if (!road.done && road.sim.phase === 'done') { road.done = true; roadDone(road.sim.res); }
     roadHudT += dt; if (roadHudT > 0.1) { roadHudT = 0; roadHud(); }
+  }
+  function roadView() {
+    var v = road.sim.view(), run = road.run;
+    if (run && run.traffic) { v.agents = run.traffic.list; v.lines = road.lines; v.shake = road.shake * Math.sin(state.time * 55); }
+    return v;
   }
   (function () {   // steering pad: the finger's position on the pad is the steering input (-1 left .. +1 right); release = straight ahead
     var pad = document.getElementById('steerPad'); if (!pad) return;
@@ -17417,7 +18425,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       if (state.carId !== 'brm') brk = 1;
     }
     var rIn = road ? roadTickPre() : null;
-    c.update(dt, rIn ? { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist } : { throttle: thr, brake: brk });
+    if (road && road.run && road.run.stage && road.run.stage.out) thr = 0;   // v1.13.34: out of time, the engine is cut and the car coasts
+    c.update(dt, rIn ? (rIn.grade !== undefined ? { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist, grade: rIn.grade } : { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist }) : { throttle: thr, brake: brk });
     if (state.garage) { c.v = 0; c.ww = 0; c.a = 0; }
     dragTick(dt, c);
     roadTickPost(dt, c);
@@ -17431,7 +18440,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       var running = c.engine === 'running', inGear = c.c.trans === 'ev' ? (c.range === 'D' || c.range === 'R') : (c.c.trans === 'auto' ? (c.range !== 'N' && c.range !== 'P') : (c.gear > 0 && !c.shift));
       var evCtl = c.c.trans === 'ev' ? { rpmF: c.rpmF || 0, rpmR: c.rpmR || c.rpm(), tqSign: c.tqSign || 0, range: c.range, avas: !!c.avas, avasLevel: c.avasLevel || 0 } : {};
       audio.control(Object.assign({ rpm: c.c.trans === 'ev' ? Math.abs(c.rpm()) : Math.max(60, c.rpm()), thr: running ? (c.soundThr || 0) : 0, running: running, starter: c.engine === 'cranking',
-        crank: Math.max(150, c.rpm()), speed: c.v, skid: 0.35 * c.skid, listen: state.view,
+        crank: Math.max(150, c.rpm()), speed: c.v, skid: 0.35 * Math.max(c.skid, road && road.sim.vyc ? Math.min(1, Math.abs(road.sim.vyc) / 4) : 0), listen: state.view,
         gear: inGear ? Math.max(1, c.gear || 1) : 0, tq: running && c.TeRef ? (c.Te || 0) / c.TeRef : 0, warm: !!c.warmed }, evCtl,
         c.c.boost ? { bst: running ? (c.boost || 0) : 0 } : {}));   // v1.13.30: turbo boost state (physics) -> the sound's charge block
     }
@@ -17477,7 +18486,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       drag: drag ? { start: -drag.run.fromLine(), finish: DragStrip.QUARTER - drag.run.fromLine() } : null,
       wAngF: c.angF || 0, wAngR: c.angR || 0, wW: c.ww || 0, wWF: c.frontLocked ? 0 : c.v / (v.tyreRadiusFront || v.tyreRadius),   // v1.10.6 draft: wheel angles + speeds (rad, rad/s)
       engine: c.engine, viewBlend: state.viewBlend, steer: state.steer, lat: state.lat, dist: state.dist, time: state.time, accel: c.a / 9.81,
-      road: road ? road.sim.view() : null,
+      road: road ? roadView() : null,
       clock: d.getHours() + d.getMinutes() / 60,
       radioOn: !!(radio && radio.on),
       msg: state.msg || (!state.started ? (isTouch ? 'Tap \u201cStart engine\u201d' : 'Click \u201cStart engine\u201d or press S') : ''),
