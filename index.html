@@ -12340,7 +12340,7 @@ var RoadCourse = (function () {
   // ---- v1.13.34 stage: checkpoints with a countdown (Lotus 2 style). Allowance per section = profile time x SLACK + a margin; left-over
   // time carries over. Time up: the throttle is cut and the car coasts; rolling over the next checkpoint still counts. Stopped with no
   // time left: out. Rule values are game design, not physics.
-  var SLACK = 1.2;
+  var SLACK = 1.3;
   function Stage(T, c) {
     this.T = T; this.cps = T.splits.concat([T.finish]); this.prof = profile(T, c);
     var self = this, prev = 0;
@@ -12532,7 +12532,7 @@ var RoadTraffic = (function () {
     this.T = T; this.plan = RoadCourse.profile(T, c); this.gentle = gentle(T, 0.3); this.list = []; this.debris = [];
     this.onRoad = (T.props || []).filter(function (p) { return p.m === Infinity && Math.abs(p.y) < 4.4; });   // boulders on the road
     var nR = opt.rivals === undefined ? 3 : opt.rivals;
-    for (i = 0; i < nR; i++) { var r = body('rival', 'coupe', 8 + i * 9, i % 2 ? LANE_L : LANE_R, 1, 0, RIVAL_COL[i % 3], R); r.skill = SKILL[i % 3]; r.name = RIVAL_NAME[i % 3]; r.yT = r.y; r.grid = 1; this.list.push(r); }
+    for (i = 0; i < nR; i++) { var r = body('rival', 'coupe', 12 + i * 12, i % 2 ? LANE_R : LANE_L, 1, 0, RIVAL_COL[i % 3], R); r.skill = SKILL[i % 3]; r.name = RIVAL_NAME[i % 3]; r.yT = r.y; r.grid = 1; this.list.push(r); }
     if (opt.traffic !== false) {
       for (var s = 260; s < T.finish - 150; s += 300 + R() * 220) if (this.laneFree(s, LANE_R, 60)) this.list.push(this.civ(s, 1));
       for (s = 500; s < T.finish + 200; s += 420 + R() * 320) if (this.laneFree(s, LANE_L, 60)) this.list.push(this.civ(s, -1));
