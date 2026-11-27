@@ -12609,6 +12609,7 @@ var RoadTraffic = (function () {
       if (a.kind === 'rival' && cur.d >= range) opts = [home];   // clear ahead: drift back home when home is clear
       for (var q = 0; q < opts.length; q++) {
         var yq = opts[q], cq = this.clear(a, yq, range, all), other = yq * home < 0;
+        if (Math.abs(yq - a.y) > 0.3 && !this.sideFree(a, yq, all)) continue;   // never move across onto a car alongside (the player too)
         if (other && !this.oncomingClear(a, yq, fwd, all)) continue;
         var want = cq.d - Math.abs(yq - home) * 2 - (other ? 15 : 0);   // prefer home, then small shifts, the other lane last
         if (a.kind !== 'rival' && other && cur.o && !(cur.o.m === Infinity || Math.abs(cur.o.vs) < 1)) continue;   // civilians only pass stopped things
@@ -12617,7 +12618,15 @@ var RoadTraffic = (function () {
       a.yT = best;
     }
     if (a.yT * home < 0 && !this.oncomingClear(a, a.yT, fwd, all) && this.clear(a, home, 12, all).d > 10) a.yT = home;   // abort a pass
+    if (Math.abs(a.yT - a.y) > 0.3 && !this.sideFree(a, a.yT, all)) a.yT = a.y;   // a car came alongside mid-shift: hold the line
     return range;
+  };
+  // nothing alongside (overlapping in station, with a 2 m margin) between the current offset and y
+  Traffic.prototype.sideFree = function (a, y, all) {
+    var lo = Math.min(a.y, y) - a.hw - 0.3, hi = Math.max(a.y, y) + a.hw + 0.3;
+    for (var i = 0; i < all.length; i++) { var o = all[i]; if (o === a || o.gone || !o.m) continue;
+      if (Math.abs(o.s - a.s) < a.hl + o.hl + 2 && o.y + o.hw > lo && o.y - o.hw < hi && Math.abs(o.y - a.y) > 0.5 * (a.hw + o.hw)) return false; }
+    return true;
   };
   // player: the player's collision body (obstacle for the AI); dt: s
   Traffic.prototype.step = function (dt, player) {
