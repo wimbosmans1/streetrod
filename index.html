@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.35)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.36)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -389,10 +389,27 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 #roadMap svg { display: block; background: rgba(22,18,14,.55); border-radius: 8px; }
 #roadMap .rmRoad { stroke: #f6ead0; stroke-width: 2.2; stroke-linejoin: round; } #roadMap .rmCar { fill: #ff4a2a; stroke: #fff; stroke-width: 1.2; }
 #roadMap .rmStart { fill: #6be37b; } #roadMap .rmFin { fill: #fff; stroke: #000; stroke-width: 1; }
-#steerPad { position: absolute; z-index: 13; height: 58px; pointer-events: auto; touch-action: none; -webkit-user-select: none; user-select: none; cursor: pointer; }
-#steerPad .spTrack { position: relative; height: 100%; border-radius: 29px; background: rgba(22,18,14,.55); border: 2px solid rgba(246,234,208,.7); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-sizing: border-box; color: #f6ead0; font: bold 13px 'Trebuchet MS', Arial, sans-serif; letter-spacing: .12em; }
-#steerPad .spT { opacity: .65; } #steerPad .spL, #steerPad .spR { font-size: 18px; }
-#steerPad #spKnob { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: #f2c230; border: 3px solid #1c1a17; box-sizing: border-box; pointer-events: none; }
+/* v1.13.36 road-course drive controls (#roadCtl, placed by layoutRoad() in js/main.js): steering pad bottom left (left thumb),
+   GAS and BRAKE bottom right (right thumb), a small gear chip (AUTO by default) above the brake. Several fingers at once. */
+#roadCtl { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 13; pointer-events: none; }
+#roadCtl > * { position: absolute; pointer-events: auto; touch-action: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
+html.roadOn #touch .pedal, html.roadOn #touch .shifts { display: none; }
+#steerPad { cursor: pointer; }
+#steerPad .spTrack { position: relative; height: 100%; border-radius: 22px; background: rgba(22,18,14,.5); border: 2px solid rgba(246,234,208,.75); color: #f6ead0; font: bold 13px 'Trebuchet MS', Arial, sans-serif; overflow: hidden; }
+#steerPad .spL, #steerPad .spR { position: absolute; top: 0; bottom: 0; width: 34%; display: flex; align-items: center; justify-content: center; font-size: 30px; background: rgba(246,234,208,.10); }
+#steerPad .spL { left: 0; border-right: 1px dashed rgba(246,234,208,.35); } #steerPad .spR { right: 0; border-left: 1px dashed rgba(246,234,208,.35); }
+#steerPad .spMid { position: absolute; left: 50%; top: 18%; bottom: 18%; width: 2px; margin-left: -1px; background: rgba(246,234,208,.45); }
+#steerPad #spKnob { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: #f2c230; border: 3px solid #1c1a17; box-sizing: border-box; pointer-events: none; }
+#steerPad.on .spTrack { border-color: #f2c230; }
+#roadCtl .pedal { top: auto; right: auto; bottom: auto; min-width: 0; opacity: .85; }
+#roadCtl .pedal span { bottom: auto; top: 50%; margin-top: -10px; font-size: 17px; }
+#roadCtl #rpGas .fill { background: #57c25b; } #roadCtl #rpBrake .fill { background: #e0483c; }
+#rcGear { display: flex; align-items: center; gap: 6px; }
+#rcGear .tb { flex: 1 1 0; min-width: 0; height: 100%; padding: 0 4px; font-size: 18px; opacity: .9; }
+#rcGear #rcAuto { flex: 1.6 1 0; font-size: 12px; letter-spacing: .06em; } #rcGear #rcAuto.on { background: #ffcf4a; color: #1a120c; }
+#rcGear b { flex: 0 0 auto; min-width: 1.4em; text-align: center; font: bold 22px 'Trebuchet MS', Arial, sans-serif; color: #ffd36a; text-shadow: 0 1px 2px #000; }
+#rcGear.auto #rcUp, #rcGear.auto #rcDown { opacity: .45; }
+#rcGear.noman #rcUp, #rcGear.noman #rcDown, #rcGear.noman #rcAuto { display: none; }
 #roadCard { position: absolute; z-index: 25; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f3e9d2; color: #2a2016; border-radius: 12px; padding: 12px 16px; font: 15px/1.35 Georgia, serif; box-shadow: 0 8px 30px rgba(0,0,0,.6); min-width: 280px; max-height: 92%; overflow-y: auto; }
 #roadCard h3 { margin: 0 0 6px; color: #8a3b12 !important; font-size: 17px; }
 #roadCard table { border-collapse: collapse; width: 100%; } #roadCard td { padding: 2px 6px; } #roadCard td:last-child { text-align: right; font-family: 'Courier New', monospace; font-weight: bold; }
@@ -478,7 +495,12 @@ html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: syst
     <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
     <div id="dragCard" class="hidden"></div>
     <div id="roadHud" class="hidden" aria-live="off"><div id="roadMap"></div><div id="roadHudT"></div></div>
-    <div id="steerPad" class="hidden" aria-label="Steering pad: touch left or right of the centre"><div class="spTrack"><span class="spL">&#9664;</span><span class="spT">STEER</span><span class="spR">&#9654;</span><i id="spKnob"></i></div></div>
+    <div id="roadCtl" class="hidden">
+      <div id="steerPad" aria-label="Steering: hold the left or right half (the outer part is full lock); slide toward the middle for less"><div class="spTrack"><span class="spL">&#9664;</span><span class="spR">&#9654;</span><i class="spMid"></i><i id="spKnob"></i></div></div>
+      <div class="pedal rp" id="rpBrake" data-pedal="brake"><div class="fill"></div><span>BRAKE</span></div>
+      <div class="pedal rp" id="rpGas" data-pedal="gas"><div class="fill"></div><span>GAS</span></div>
+      <div id="rcGear"><button class="tb" id="rcDown" data-act="down" aria-label="Shift down">&minus;</button><b id="rcGearN">1</b><button class="tb" id="rcUp" data-act="up" aria-label="Shift up">+</button><button class="tb" id="rcAuto" data-act="autoshift" title="Automatic shifting on the road course (key O)">AUTO</button></div>
+    </div>
     <div id="roadCard" class="hidden"></div>
     <div id="about" class="hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><div class="aboutBox"><button class="tb aboutX" data-act="aboutClose" aria-label="Close">&times;</button><h2 id="aboutTitle">About / History</h2><div id="aboutBody"></div></div></div>
     <div id="partsDlg" class="hidden" role="dialog" aria-labelledby="partsTitle"><div class="partsBox"><div class="partsHead"><button class="tb aboutX" data-act="partsClose" aria-label="Close">&times;</button><h2 id="partsTitle">Swap parts</h2></div><div id="partsBody" class="partsScroll"></div><div class="partsBtns"><span id="partsState" class="pstate"></span><button class="tb pApply" id="bPartsApply" data-act="partsApply">Apply</button><button class="tb" data-act="partsStock">Stock</button><button class="tb" data-act="partsClose">Close</button></div></div></div>
@@ -500,7 +522,7 @@ html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: syst
       <tr><td>U</td><td>km/h &harr; mph</td></tr>
       <tr><td>A / D</td><td>Steer left / right (touch: drag sideways on the road)</td></tr>
       <tr><td>Q</td><td>Drag strip (1/4 mile) on / off</td></tr>
-      <tr><td>C</td><td>Road course (prototype), on / off: Mesa Run, 6.2 km over the hills, 4 checkpoints and the finish against a countdown (each checkpoint adds time), three rivals, traffic and things to hit. A / D steer (touch: the steering pad). ?course=mesa: the old flat lap</td></tr>
+      <tr><td>C</td><td>Road course (prototype), on / off: Mesa Run, 6.2 km over the hills, 4 checkpoints and the finish against a countdown (each checkpoint adds time), three rivals, traffic and things to hit. On the road course: &larr; / &rarr; or A / D steer, &uarr; or W gas, &darr; or S brake; gears shift themselves (AUTO; O toggles), or . / , (PageUp / PageDown) shift up / down. Touch: steering pad bottom left, GAS and BRAKE bottom right. ?course=mesa: the old flat lap</td></tr>
       <tr><td>R</td><td>Radio (Cadillac)</td></tr>
       <tr><td>T</td><td>Reset trip meter</td></tr>
       <tr><td>M</td><td>Mute</td></tr>
@@ -508,7 +530,7 @@ html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: syst
       <tr><td></td><td>Engine specifications (Specs button, or the link under Car)</td></tr>
     </table>
     <h3>Touch / mouse</h3>
-    <p class="note">Brake pedal left, gas right: press higher up the pedal for more. Shift buttons next to the gas. Works with several fingers at once, and with a mouse. Steer by dragging sideways on the road.</p>
+    <p class="note">Brake pedal left, gas right: press higher up the pedal for more. Shift buttons next to the gas. Works with several fingers at once, and with a mouse. Steer by dragging sideways on the road. On the road course the controls change: a steering pad bottom left (hold the left or right half; the outer part is full lock), GAS and BRAKE bottom right (full anywhere on the pedal), and gears that shift themselves (AUTO).</p>
     <h3>Car</h3>
     <div id="specs"></div>
     <p><button class="tb" id="bSpecsAside" data-act="specs">Engine specifications</button></p>
@@ -9927,6 +9949,7 @@ var Physics = (function () {
     this.time += dt;
     var rpm = this.we * RPM;
     var pedal = clamp(inp.throttle, 0, 1), bpedal = clamp(inp.brake, 0, 1);
+    if (inp.tc !== undefined && inp.tc < 1) pedal *= inp.tc;   // v1.13.36 road-course arcade traction aid (generic, default off): throttle share from js/road.js
     if (!this.shift) this.lastPedal = pedal;
     var auto = c.trans === 'auto';
 
@@ -9992,7 +10015,7 @@ var Physics = (function () {
     var FbfDem = bpedal * B.capG * Wt * B.frontBias * fadeF;
     var FbrDem = bpedal * B.capG * Wt * (1 - B.frontBias) * fadeR;
     this.fadeF = fadeF; this.fadeR = fadeR;
-    if (B.abs) { FbfDem = Math.min(FbfDem, 0.97 * c.muPeak * Nf); FbrDem = Math.min(FbrDem, 0.97 * c.muPeak * Nr); }   // job 8: ABS holds each axle under lock-up
+    if (B.abs || inp.abs) { FbfDem = Math.min(FbfDem, 0.97 * c.muPeak * Nf); FbrDem = Math.min(FbrDem, 0.97 * c.muPeak * Nr); }   // job 8: ABS holds each axle under lock-up
     if (!this.frontLocked && FbfDem > c.muPeak * Nf && this.v > 0.3) this.frontLocked = true;
     else if (this.frontLocked && (FbfDem < c.muSlide * Nf * 0.98 || this.v < 0.05)) this.frontLocked = false;
     var Fbf = this.frontLocked ? c.muSlide * Nf : FbfDem;
@@ -10196,6 +10219,7 @@ var Physics = (function () {
     var ratioF = ev.ratioFront || c.finalDrive, ratioR = ev.ratioRear || c.finalDrive;
     var m = c.massKg, pedal = (inp.throttle < 0 ? 0 : inp.throttle > 1 ? 1 : inp.throttle);
     var bpedal = (inp.brake < 0 ? 0 : inp.brake > 1 ? 1 : inp.brake);
+    if (inp.tc !== undefined && inp.tc < 1) pedal *= inp.tc;   // v1.13.36 road-course arcade stability aid (generic, default off)
     var ready = this.engine === 'running';
     var range = this.range || 'P';
     this.time += dt;
@@ -12185,10 +12209,13 @@ var RoadCourse = (function () {
     this.t = 0; this.phase = 'grid'; this.res = null; this.splitT = []; this.offT = 0; this.offs = 0; this.wasOff = false; this.vmax = 0; this.crash = 0;
     this.surfL = 'asphalt'; this.surfR = 'asphalt'; this.steerK = 0; this.lastSplit = 0;
     this.vyc = 0; this.spin = 0; this.hitT = 0; this.grade = 0; this.vb = 0;   // v1.13.34: slide / spin after a collision, road grade
-    this.vLat = 0; this.vk = 0; this.wob = 0; this.wobT = 9; this.skidA = 0;     // v1.13.35 arcade handling: lateral rate, hit kick, wobble
+    this.vLat = 0; this.vk = 0; this.wob = 0; this.wobT = 9; this.skidA = 0; this.axS = 0; this.tcK = 1;     // v1.13.35 arcade handling: lateral rate, hit kick, wobble
   };
   // inputs for the longitudinal solver this step (from the state at the end of the last step)
-  Sim.prototype.inputs = function () { return this.T.hilly ? { grip: this.grip, resist: this.resist, grade: this.grade } : { grip: this.grip, resist: this.resist }; };
+  Sim.prototype.inputs = function () {
+    if (this.T.arcade) return { grip: this.grip, resist: this.resist, grade: this.grade || 0, abs: 1, tc: this.tcK };   // v1.13.36 arcade: driving aids (js/physics.js keys abs / tc, default off)
+    return this.T.hilly ? { grip: this.grip, resist: this.resist, grade: this.grade } : { grip: this.grip, resist: this.resist };
+  };
   var TAU_SPIN = 0.55;        // s, decay of a collision yaw rate (ESTIMATE: tyres re-align a car spun by a glancing hit in about a second)
   var HIT_T = 0.7;            // s, steering is "wibbly" (half authority) after a hit (game feel, after Lotus 2; not physics)
   // a collision changed the car's velocity: road-frame (vs, vy) and yaw-rate change dw (from js/collide.js). car.v (physics) takes the
@@ -12260,14 +12287,23 @@ var RoadCourse = (function () {
     KICK: 5, TAUK: 0.35, WOB: 0.22, TAUW: 0.28, HIT_T: 0.45,  // collisions (softer than v1.13.34)
     YAWV: 0.6,                                       // heading shown / used for the body = 0.6 x the direction of travel
     PSIMAX: 0.35,                                    // never more than 20 degrees off the road direction (no spins)
-    GLANCE: 0.6, GLANCEW: 0.8                        // an offset hit (overlap <= 0.8 m) knocks the car aside, keeping up to 0.6 x the speed
+    GLANCE: 0.6, GLANCEW: 0.8,                       // an offset hit (overlap <= 0.8 m) knocks the car aside, keeping up to 0.6 x the speed
+    // v1.13.36 traction (Lotus 2: power out of a bend and brake into it without losing the car). In v1.13.35 the friction circle took
+    // the whole lateral budget under throttle / brakes (circ floor 0.15, scrub fed back into it), and the share of grip handed to the
+    // engine model (inp.grip) fell to the 0.05 floor at the cornering limit, so any throttle lit the tyres up and any brake locked them.
+    CIRC: 0.35, CIRCMIN: 0.7,    // aMax x sqrt(1 - 0.35 (ax / mu g)^2), at least sqrt(0.7) = 84 %: driving / braking costs a little line, not the car
+    TAUA: 0.25,                  // s, the longitudinal load used for that follows the car's acceleration smoothly (no flicker from gear changes)
+    GRIPUSE: 0.35,               // grip left for driving / braking at the cornering limit: 1 - 0.35 (ay / ayCap)^2 (at least 65 %)
+    TCSR: 0.08, TCDN: 0.1, TCUP: 0.35, TCMIN: 0.1,   // traction aid: wheelspin over 8 % slip trims the throttle (down in 0.1 s, back in 0.35 s)
+    TCOVER: 10                   // ... and so does driving past the cornering limit: throttle x (1 - 10 (over - 0.03)), at least 0.1
   };
   function arcLat(v) { return Math.min(ARC.LATMAX, ARC.LAT0 + ARC.LATK * v, ARC.LATV * v); }
   Sim.prototype.stepArcade = function (dt, car, steer) {
     var T = this.T, c = car.c, v = Math.max(0, car.v), m = c.massKg, n = Math.max(1, Math.ceil(dt / 0.005)), h = dt / n;
     var lim = this.limits(c, v);
-    var aero = 0.5 * 1.2 * (c.cd || 0.4) * (c.area || 2) * v * v / m, axT = (car.a || 0) + aero + this.resist / m;
-    var ayCap = lim.muLat * G, circ = Math.max(0.15, 1 - Math.pow(axT / Math.max(0.1, lim.muLong * G), 2)), aMax = Math.max(0.5, ayCap * Math.sqrt(circ));
+    var aero = 0.5 * 1.2 * (c.cd || 0.4) * (c.area || 2) * v * v / m, axT = (car.a || 0) + aero;   // v1.13.36: the tyres' drive / brake load (not the scrub: no feedback)
+    this.axS += (axT - this.axS) * Math.min(1, dt / ARC.TAUA);
+    var ayCap = lim.muLat * G, circ = Math.max(ARC.CIRCMIN, 1 - ARC.CIRC * Math.pow(this.axS / Math.max(0.1, lim.muLong * G), 2)), aMax = Math.max(0.5, ayCap * Math.sqrt(circ));
     var auth = this.hitT > 0 ? 0.55 + 0.45 * (1 - this.hitT / ARC.HIT_T) : 1, L = arcLat(v), aReq = 0, kr = 0;
     for (var i = 0; i < n; i++) {
       kr = kAt(T, this.s); var den = Math.max(0.2, 1 - this.y * kr);
@@ -12295,7 +12331,10 @@ var RoadCourse = (function () {
       this.y = Math.sign(this.y) * FENCE; if (Math.sign(this.vLat) === Math.sign(this.y)) this.vLat = 0; if (Math.sign(this.vk) === Math.sign(this.y)) this.vk = 0;
       if (vOut > 1) { car.v *= 0.7; if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius; this.crash = 1; }
     }
-    this.grip = lim.muF * Math.sqrt(Math.max(0.04, 1 - Math.pow(Math.min(1, ay / Math.max(0.1, ayCap)), 2)));
+    this.grip = lim.muF * (1 - ARC.GRIPUSE * Math.pow(Math.min(1, ay / Math.max(0.1, ayCap)), 2));
+    // traction / stability aid: wheelspin, or driving the car past its cornering limit, trims the throttle (never the brakes)
+    var tcT = Math.max(ARC.TCMIN, 1 - ARC.TCOVER * Math.max(0, over - 0.03)); if (car.tyre === 'spin' && (car.sr || 0) > ARC.TCSR) tcT = ARC.TCMIN;
+    this.tcK = tcT < this.tcK ? Math.max(tcT, this.tcK - dt / ARC.TCDN) : Math.min(tcT, this.tcK + dt / ARC.TCUP);
     this.resist = m * ay * Math.sin(alpha) + lim.crr * m * G + m * Math.min(ARC.SCRUB * Math.max(0, aReq - aMax), ARC.SCRUBMAX * (c.muSlide || 0.6) * lim.muF * G);
     this.surf = lim;
     return this.timing(dt, lim, v);
@@ -16771,6 +16810,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.13.36", date: "2026-11-27", status: "done", headline: "Stage course: new drive controls, grip when you power out and brake in", text: "The road course is meant to be fun now. Touch: a big steering pad bottom left (hold the left or right half for full lock, slide toward the middle for less) and big GAS and BRAKE buttons bottom right, so one thumb steers while the other drives; gears shift themselves (AUTO; tap it for manual). Keyboard: arrows or WASD, the left and right arrows now steer on the course. Full throttle out of a bend and braking into one no longer light up or lock the tyres: on the stage the tyres keep most of their grip for driving and braking while cornering, a traction aid trims wheelspin and power past the cornering limit, and the brakes do not lock. Drag strip, cruising, the old lap and every sound are unchanged." },
       { v: "v1.13.35", date: "2026-11-27", status: "done", headline: "Stage course: Lotus 2-style handling on the real engine", text: "On the Mesa Run stage the car now handles like Lotus Turbo Challenge 2: it stays pointed down the road, steering moves it across the road at a rate that grows with speed, and bends carry it to the outside harder the faster you go. Hold the steering into the bend to keep your line; too fast and you are carried wide and lose speed, but you never spin. Lifting off pulls you in. The verge slows you down. Better tyres corner faster. Hits still bounce you and cost speed, with a short wobble and no spins. Engine, gearbox, drag and hills are the real model as before. The old flat lap (?course=mesa), drag strip and every sound are unchanged." },
       { v: "v1.13.34", date: "2026-11-27", status: "done", headline: "Road course: Lotus-style stage with hills, traffic, rivals and collisions (prototype)", text: "The Road course is now a stage in the spirit of Lotus Turbo Challenge 2 (Amiga, 1991), drawn in this game\u2019s own painted style: Mesa Run, 6.2 km with crests and dips, five checkpoints and a countdown (each checkpoint adds time, time left carries on; out of time the engine is cut and you can still coast over the next checkpoint), three rivals that drive your car\u2019s own numbers, slower traffic and oncoming cars with lights, and road-side posts, chevron boards and fallen boulders. A new generic collision engine (oriented boxes, swept so nothing passes through at speed, impulses with bounce and friction) handles car against car and car against objects: you bounce, lose speed and may spin; light posts and boards get knocked flying. Hills feed a new generic grade input to the physics. The old flat lap is still there with ?course=mesa. Stock sounds unchanged." },
       { v: "v1.13.32", date: "2026-11-26", status: "done", headline: "Road course (draft): one winding road, solo", text: "A new opt-in mode next to the drag strip: Road course (key C, or the Road course button). Mesa Road is an original 2.5-mile (4.02 km) two-lane desert road, a nod to the 1989 game\u2019s winding road race: a long start straight, sweepers, esses, a back straight into a tight 30 m hairpin, and a run to the finish. The clock starts at the line, with three split points and a best time stored per car. Steering is new: A / D on the keyboard, or the steering pad on touch screens (iPhone, Tesla). The car now really corners: grip comes from the tyres (a 1971 Super Beetle pulled 0.617 g on Road & Track\u2019s skidpad, used for the 1956 car as an estimate), falls off a little with speed, and is shared with braking and power (friction circle). Ask too much and the car runs wide and scrubs speed; dirt and sand off the road slow it down hard. The stock 1956 Beetle needs about 2:52 for a clean run (simulated). Drag strip, cruising and every sound are unchanged." },
@@ -18163,11 +18203,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 
 
   // ---- keyboard ----
-  var HANDLED = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+  var HANDLED = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'PageUp', 'PageDown'];
+  var ROAD_KEYS = ['ArrowLeft', 'ArrowRight', 'w', 'W', 's', 'S', '.', ',', '>', '<', 'PageUp', 'PageDown', 'o', 'O'];
   window.addEventListener('keydown', function (e) {
     if (HANDLED.indexOf(e.key) >= 0) e.preventDefault();
     if (e.repeat) return;
     state.keys[e.key] = true;
+    if (road && ROAD_KEYS.indexOf(e.key) >= 0) {   // v1.13.36 road course: arrows / WASD drive (tick reads state.keys); . , PageUp / PageDown shift; O auto-shift
+      if (e.key === '.' || e.key === '>' || e.key === 'PageUp') shiftUp(); else if (e.key === ',' || e.key === '<' || e.key === 'PageDown') shiftDown(); else if (e.key === 'o' || e.key === 'O') toggleAutoShift();
+      return;
+    }
     switch (e.key) {
       case 'ArrowRight': shiftUp(); break;
       case 'ArrowLeft': shiftDown(); break;
@@ -18225,7 +18270,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // ---- tap buttons: act on pointerup (reliable on iOS), ignore the follow-up click ----
   var ACTIONS = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); }, brmsound: function (b) { setBrmSound(b.dataset.v); },
-    units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, road: function () { if (road) roadExit(); else roadEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox,
+    units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, road: function () { if (road) roadExit(); else roadEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox, autoshift: function () { toggleAutoShift(); },
     about: function () { openSpecs(false); openAbout(true); }, aboutClose: function () { openAbout(false); }, aboutHow: function () { openAboutHow(); },
     specs: function () { openSpecs(true); }, specsClose: function () { openSpecs(false); },
     menu: function () { document.getElementById('topbar').classList.toggle('open'); },
@@ -18244,8 +18289,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 
   // ---- pedals: multitouch, pressure from finger height on the pedal ----
   document.querySelectorAll('.pedal').forEach(function (p) {
-    var which = p.dataset.pedal, active = {}, fill = deskPedals ? p.querySelector('.fill') : null;
-    function val(e) { var r = p.getBoundingClientRect(); return Math.max(0.15, Math.min(1, (r.bottom - e.clientY) / r.height * 1.15)); }
+    var rp = p.classList.contains('rp'), which = p.dataset.pedal, active = {}, fill = deskPedals || rp ? p.querySelector('.fill') : null;
+    // v1.13.36: the road-course pedals (.rp) are full on anywhere (Lotus 2: a button, not a pedal); the aids keep the tyres in check
+    function val(e) { if (rp) return 1; var r = p.getBoundingClientRect(); return Math.max(0.15, Math.min(1, (r.bottom - e.clientY) / r.height * 1.15)); }
     function update() {
       var v = 0; for (var k in active) v = Math.max(v, active[k]);
       if (which === 'gas') state.touchGas = v; else state.touchBrake = v;
@@ -18259,7 +18305,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   (function () {
     var id = null, x0 = 0;
     var end = function (e) { if (e.pointerId === id) { id = null; state.touchSteer = null; } };
-    onPtr(canvas, { down: function (e) { if (id !== null) return; id = e.pointerId; x0 = e.clientX; capture(canvas, id); },
+    onPtr(canvas, { down: function (e) { if (id !== null || road) return; id = e.pointerId; x0 = e.clientX; capture(canvas, id); },
       move: function (e) { if (e.pointerId === id) state.touchSteer = Math.max(-1, Math.min(1, (e.clientX - x0) / (canvas.clientWidth * 0.18))); }, up: end });
   })();
   // ---- road course (draft): one winding road, solo (js/road.js). Opt-in like the drag strip; drag / cruise unchanged when it is off ----
@@ -18285,15 +18331,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       lines: [{ s: 0 }].concat(T.splits.map(function (x) { return { s: x }; })).concat([{ s: T.finish, fin: 1 }]) };
     state.lat = 0; state.steer = 0;
     document.getElementById('roadCard').classList.add('hidden');
-    document.getElementById('roadHud').classList.remove('hidden'); document.getElementById('steerPad').classList.remove('hidden');
+    document.getElementById('roadHud').classList.remove('hidden'); if (isTouch || deskPedals) document.getElementById('roadCtl').classList.remove('hidden');
+    document.documentElement.classList.add('roadOn'); state.touchGas = state.touchBrake = 0; state.touchSteer = null; road.asT = 0;
     roadMapBuild(); layoutRoad(); roadHud(true);
-    if (T.stage) flash(T.name + ': ' + (T.finish / 1000).toFixed(1) + ' km, ' + T.splits.length + ' checkpoints and the finish. Beat the clock to each one. Steer: A / D or the steering pad', 4);
+    if (T.stage) flash(isTouch ? T.name + ': beat the clock!' : T.name + ': beat the clock! Arrows / WASD', 3);
     else flash(T.name + ': 2.5 miles. The clock starts at the line. Steer: A / D or the steering pad', 3.5);
     updatePanel();
   }
   function roadExit() {
     road = null; state.lat = 0;
-    ['roadHud', 'steerPad', 'roadCard'].forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
+    ['roadHud', 'roadCtl', 'roadCard'].forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
+    document.documentElement.classList.remove('roadOn'); state.touchGas = state.touchBrake = 0; state.touchSteer = null;
     updatePanel();
   }
   function roadDone(r, timeUp) {
@@ -18356,20 +18404,62 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       '<br><span class="rb">' + (best ? 'Best ' + fmtT(best.time) : sim.phase === 'grid' ? 'Go when ready' : 'No best yet') + ' \u00b7 ' + Math.max(0, Math.min(100, sim.s / T.finish * 100)).toFixed(0) + ' %</span>' +
       (bendTxt ? '<br><span class="rn">' + bendTxt + '</span>' : '');
     if (roadMap) { var p = RoadCourse.pose(T, sim.s); roadMap.dot.setAttribute('cx', (p.x * roadMap.sc + roadMap.ox).toFixed(1)); roadMap.dot.setAttribute('cy', (p.y * roadMap.sc + roadMap.oy).toFixed(1)); }
-    var kn = document.getElementById('spKnob'); if (kn) kn.style.transform = 'translateX(' + (state.steer * 42).toFixed(1) + '%)';
+    var gc = car(), gEl = document.getElementById('rcGearN'), man = gc.c.trans === 'manual';
+    if (gEl) gEl.textContent = man ? (gc.gear > 0 ? String(gc.gear) : 'N') : (gc.range || 'D');
+    var chip = document.getElementById('rcGear'); if (chip) { chip.classList.toggle('noman', !man); chip.classList.toggle('auto', man && state.roadAuto); }
+    var ab = document.getElementById('rcAuto'); if (ab) ab.classList.toggle('on', !!state.roadAuto);
   }
   // the steering pad and the HUD sit on the canvas (bottom centre / top left), placed from the canvas box so every layout works
   function layoutRoad() {
     if (!road) return;
     var st = stageEl.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), tb = document.getElementById('topbar').getBoundingClientRect();
-    // portrait: the canvas readouts are along the top, so the HUD goes below them and the pad sits at the bottom edge;
-    // landscape / desktop: the speed panel is at the bottom centre, so the pad sits just above it and the HUD top left
-    var port = cr.height > cr.width, pad = document.getElementById('steerPad'), w = Math.round(Math.min(cr.width * (port ? 0.62 : 0.42), 380)), hgt = 58;
-    pad.style.width = w + 'px'; pad.style.left = Math.round(cr.left - st.left + (cr.width - w) / 2) + 'px';
-    pad.style.top = Math.round(cr.bottom - st.top - hgt - (port ? 10 : Math.max(12, cr.height * 0.115 + 6))) + 'px';
+    var tp = document.getElementById('touch'), tr = tp ? tp.getBoundingClientRect() : null;
+    var port = cr.height > cr.width;
     var hud = document.getElementById('roadHud'), top = Math.max(cr.top, tb.bottom > cr.top && tb.bottom < cr.top + cr.height * 0.5 ? tb.bottom : cr.top) + (port ? 44 : 0);
     hud.style.left = Math.round(cr.left - st.left + 8) + 'px'; hud.style.top = Math.round(top - st.top + 6) + 'px';
     hud.classList.toggle('narrow', cr.width < 520);
+    // v1.13.36 drive controls. A control deck under the scene (phone portrait, 4:3 tablets) holds them; otherwise they sit on the
+    // scene's bottom corners, clear of the speed panel (bottom centre, about 32-70 % of the width) and the HUD (top left)
+    var R = {}, cl = function (x, a, b) { return Math.max(a, Math.min(b, x)); };
+    var deck = tr && tr.height > 60 && tr.top >= cr.bottom - 2 && tr.width > 0;
+    if (deck) {
+      var m = 10, X = tr.left - st.left + m, Y = tr.top - st.top + m, W = tr.width - 2 * m, Hh = tr.height - 2 * m - 4, g = 10;
+      if (W / Hh > 2.4) {   // wide, short deck (landscape tablet): one row
+        var pw = W * 0.4, gw = W * 0.22, bw = W * 0.18, cw = Math.min(W * 0.16, 300);   // steer | gear chip | BRAKE | GAS (the Tesla's band under the scene)
+        R.steerPad = [X, Y, pw, Hh]; R.rpGas = [X + W - gw, Y, gw, Hh]; R.rpBrake = [X + W - gw - g - bw, Y, bw, Hh]; R.rcGear = [X + W - gw - 2 * g - bw - cw, Y + Hh / 2 - 22, cw, 44];
+      } else {               // phone portrait: pad on the left half, gear chip / BRAKE / GAS stacked on the right (gas lowest, under the thumb)
+        var lw = W * 0.54 - g / 2, rw = W - lw - g, rx = X + lw + g, gh = 38, bh = (Hh - gh - 2 * g) * 0.4;
+        R.steerPad = [X, Y, lw, Hh]; R.rcGear = [rx, Y, rw, gh]; R.rpBrake = [rx, Y + gh + g, rw, bh]; R.rpGas = [rx, Y + gh + 2 * g + bh, rw, Hh - gh - 2 * g - bh];
+      }
+    } else {
+      var X0 = cr.left - st.left, Y0 = cr.top - st.top, CW = cr.width, CH = cr.height, mg = 12;
+      var pw2 = cl(CW * 0.26, 180, 420), ph = cl(CH * 0.36, 110, 200);
+      var gw2 = cl(CW * 0.13, 96, 190), gh2 = cl(CH * 0.56, 150, 380), bw2 = cl(CW * 0.105, 84, 160), bh2 = cl(CH * 0.4, 110, 270);
+      var yb = Y0 + CH - mg, xg = X0 + CW - mg - gw2, xb = xg - 12 - bw2;
+      // the painted speed panel (js/visuals-painted.js themedHud: 470 x 66 units + 8, one unit = width / 900 CSS px, 0.55 .. 1), bottom centre
+      var ku = cl(CW / 900, 0.55, 1), spL = X0 + CW / 2 - 235 * ku - 8, spR = X0 + CW / 2 + 235 * ku + 8, spT = Y0 + CH - 74 * ku - 8;
+      var padX = X0 + mg, padB = yb;
+      if (padX + pw2 > spL) { if (spL - padX >= 170) pw2 = spL - padX; else padB = spT; }        // narrower, or (very narrow screens) above the panel
+      var brB = xb < spR ? spT : yb;                                                                  // the brake sits beside the gas, raised over the panel if they would touch
+      R.steerPad = [padX, padB - ph, pw2, ph]; R.rpGas = [xg, yb - gh2, gw2, gh2]; R.rpBrake = [xb, brB - bh2, bw2, bh2];
+      R.rcGear = [xb, Math.min(yb - gh2, brB - bh2) - 8 - 40, bw2 + 12 + gw2, 40];
+    }
+    for (var k in R) { var el = document.getElementById(k); if (!el) continue; var q = R[k];
+      el.style.left = Math.round(q[0]) + 'px'; el.style.top = Math.round(q[1]) + 'px'; el.style.width = Math.round(q[2]) + 'px'; el.style.height = Math.round(q[3]) + 'px'; }
+  }
+  // v1.13.36 road course: gears shift themselves (manual cars; AUTO, on by default, key O / the AUTO button). Up near the limiter,
+  // down when the lower gear has room and the revs are low (or earlier when braking), never two shifts within 0.45 s.
+  state.roadAuto = lsGet('streetrod.road.autoshift', '1') !== '0';
+  function toggleAutoShift() { state.roadAuto = !state.roadAuto; lsSet('streetrod.road.autoshift', state.roadAuto ? '1' : '0'); flash(state.roadAuto ? 'Gears: automatic' : 'Gears: manual (. / , or + / -)', 1.5); if (road) roadHud(true); }
+  function roadAutoShift(dt, c, thr, brk) {
+    road.asT = (road.asT || 0) + dt;
+    if (!state.roadAuto || c.c.trans !== 'manual' || c.shift || state.garage || road.asT < 0.45 || c.engine === 'off') return;
+    var n = c.c.gears.length, red = c.c.limiterRpm || 6000, g = c.gear;
+    if (g < 1) { if (thr > 0.05) { c.gear = 1; road.asT = 0; } return; }
+    var rpm = Math.max(0, c.v) / c.c.tyreRadius * c.c.gears[g - 1] * c.c.finalDrive * 9.5493;   // road-speed revs (not the engine's, which lag on a slipping clutch)
+    var down = g > 1 ? rpm * c.c.gears[g - 2] / c.c.gears[g - 1] : 1e9;
+    if (g < n && rpm > 0.93 * red && thr > 0.05) { c.shiftUp(); road.asT = 0; }
+    else if (g > 1 && down < 0.86 * red && (rpm < 0.42 * red || (brk > 0.15 && rpm < 0.62 * red) || (thr > 0.9 && rpm < 0.55 * red && down < 0.8 * red))) { c.shiftDown(); road.asT = 0; }
   }
   function roadTickPre() { return road ? (road.run ? road.run.inputs() : road.sim.inputs()) : null; }
   function roadTickPost(dt, c) {
@@ -18388,19 +18478,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (st && st.over && !road.done) { road.done = true; roadDone(null, true); }
     if (!road.done && road.sim.phase === 'done') { road.done = true; roadDone(road.sim.res); }
     roadHudT += dt; if (roadHudT > 0.1) { roadHudT = 0; roadHud(); }
+    var kn = document.getElementById('spKnob'), pd = document.getElementById('steerPad');
+    if (kn && pd) kn.style.transform = 'translateX(' + (state.steer * (pd.clientWidth / 2 - 24)).toFixed(1) + 'px)';
   }
   function roadView() {
     var v = road.sim.view(), run = road.run;
     if (run && run.traffic) { v.agents = run.traffic.list; v.lines = road.lines; v.shake = road.shake * Math.sin(state.time * 55); }
     return v;
   }
+  var PAD_DZ = 0.05, PAD_FULL = 0.66;
   (function () {   // steering pad: the finger's position on the pad is the steering input (-1 left .. +1 right); release = straight ahead
     var pad = document.getElementById('steerPad'); if (!pad) return;
     var id = null;
-    function val(e) { var r = pad.getBoundingClientRect(); return Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width * 0.42))); }
-    var end = function (e) { if (e.pointerId === id) { id = null; state.touchSteer = null; } };
-    onPtr(pad, { down: function (e) { e.preventDefault(); if (id !== null) return; id = e.pointerId; capture(pad, id); state.touchSteer = val(e); },
-      move: function (e) { if (e.pointerId === id) state.touchSteer = val(e); }, up: end, lost: end });
+    // v1.13.36: a dead zone round the centre line (5 % of the half-width), full lock over the outer third of each half (the big
+    // arrow zones: press and hold), and a gentle curve between (u^1.2) so small corrections near the middle stay small
+    function val(e) {
+      var r = pad.getBoundingClientRect(), u = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), a = Math.abs(u);
+      var k = a <= PAD_DZ ? 0 : a >= PAD_FULL ? 1 : Math.pow((a - PAD_DZ) / (PAD_FULL - PAD_DZ), 1.2);
+      return u < 0 ? -k : k;
+    }
+    var end = function (e) { if (e.pointerId === id) { id = null; state.touchSteer = null; pad.classList.remove('on'); } };
+    onPtr(pad, { down: function (e) { e.preventDefault(); if (id !== null) return; id = e.pointerId; capture(pad, id); state.touchSteer = val(e); pad.classList.add('on'); },
+      move: function (e) { if (e.pointerId === id) state.touchSteer = val(e); }, up: end, lost: end, cancel: end });
   })();
   // no scrolling / pinch / double-tap zoom on the stage
   ['gesturestart', 'gesturechange', 'dblclick'].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
@@ -18517,14 +18616,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var kThr = k.ArrowUp ? 1 : 0, kBrk = k.ArrowDown ? 1 : 0;
     // steering (visual: lane position + wheel), keys A/D ramp, touch drag sets it directly
     var kSt = (k.d || k.D ? 1 : 0) - (k.a || k.A ? 1 : 0), stT = state.touchSteer !== null ? state.touchSteer : kSt;
+    if (road) {   // v1.13.36 road course: arrows or WASD (left / right arrows steer here; they shift gears elsewhere)
+      kThr = k.ArrowUp || k.w || k.W ? 1 : 0; kBrk = k.ArrowDown || k.s || k.S ? 1 : 0;
+      kSt = (k.d || k.D || k.ArrowRight ? 1 : 0) - (k.a || k.A || k.ArrowLeft ? 1 : 0); if (state.touchSteer === null) stT = kSt;
+    }
     var stR = road ? 4 : 2.5;   // road course (draft): quicker steering ramp; the lane-wander mode keeps 2.5 / s
     // v1.13.35 arcade stage handling: keys / pad reach full lock in 0.17 s and centre (or reverse) in 0.1 s: crisp, Lotus-2-like
     if (road && road.sim.T.arcade) stR = (stT === 0 || stT * state.steer < 0) ? 10 : 6;
     state.steer += Math.max(-dt * stR, Math.min(dt * stR, stT - state.steer));
     if (!road) state.lat = Math.max(-4.4, Math.min(0.8, state.lat + state.steer * Math.min(c.v, 25) * 0.09 * dt));
     // keyboard pedals ramp (throttle ~0.7 s, brake ~0.6 s); touch pedals follow the finger quickly
-    var tgtT = Math.max(kThr ? Math.min(1, state.throttle + dt / 0.7) : 0, state.touchGas);
-    var tgtB = Math.max(kBrk ? Math.min(1, state.brake + dt / 0.6) : 0, state.touchBrake);
+    var arc = road && road.sim.T.arcade, rT = arc ? 0.25 : 0.7, rB = arc ? 0.25 : 0.6;   // v1.13.36 arcade course: keys reach full in 0.25 s (were 0.7 / 0.6 s)
+    var tgtT = Math.max(kThr ? Math.min(1, state.throttle + dt / rT) : 0, state.touchGas);
+    var tgtB = Math.max(kBrk ? Math.min(1, state.brake + dt / rB) : 0, state.touchBrake);
     state.throttle = tgtT >= state.throttle ? (kThr ? tgtT : Math.min(tgtT, state.throttle + dt / 0.15)) : Math.max(tgtT, state.throttle - dt / 0.12);
     state.brake = tgtB >= state.brake ? (kBrk ? tgtB : Math.min(tgtB, state.brake + dt / 0.2)) : Math.max(tgtB, state.brake - dt / 0.15);
     var brk = Math.max(state.brake, dragHold());
@@ -18534,6 +18638,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       if (state.carId !== 'brm') brk = 1;
     }
     var rIn = road ? roadTickPre() : null;
+    if (road) roadAutoShift(dt, c, thr, brk);
     if (road && road.run && road.run.stage && road.run.stage.out) thr = 0;   // v1.13.34: out of time, the engine is cut and the car coasts
     c.update(dt, rIn ? (rIn.grade !== undefined ? { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist, grade: rIn.grade } : { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist }) : { throttle: thr, brake: brk });
     if (state.garage) { c.v = 0; c.ww = 0; c.a = 0; }

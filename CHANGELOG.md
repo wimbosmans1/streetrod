@@ -1,3 +1,7 @@
+## v1.13.36 (local, not tagged or pushed), 2026-11-27 (Stage course: drive controls and traction)
+
+* (filled in below)
+
 ## v1.13.35 (local, not tagged or pushed), 2026-11-27 (Stage course: Lotus 2-style handling on the real engine)
 
 * **Why.** Wim drove v1.13.34. The course and the other cars are fine, but the handling felt off. His choice: Lotus Turbo Challenge 2 handling, with our real engine underneath. Public descriptions (lotus-notes/HANDLING.md: Amiga Format #29, the Lemon Amiga reviews, Retro Gamer, MobyGames) say the handling is responsive, that lifting off briefly "pulls you in" on a corner, that you brake for the sharper ones, and that collisions are "friendlier, bouncier".
