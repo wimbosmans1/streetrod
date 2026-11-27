@@ -12193,14 +12193,24 @@ var RoadCourse = (function () {
   var HIT_T = 0.7;            // s, steering is "wibbly" (half authority) after a hit (game feel, after Lotus 2; not physics)
   // a collision changed the car's velocity: road-frame (vs, vy) and yaw-rate change dw (from js/collide.js). car.v (physics) takes the
   // part along the heading (never below 0: the solver has no reverse for ICE cars); the rest becomes the sideways slide vyc.
-  Sim.prototype.hit = function (car, vs, vy, dw, soft) {
-    var c = car.c, ps = this.psi, u = vs * Math.cos(ps) + vy * Math.sin(ps), l = -vs * Math.sin(ps) + vy * Math.cos(ps);
+  Sim.prototype.hit = function (car, vs, vy, dw, soft, o) {
+    var c = car.c, ps = this.psi, u = vs * Math.cos(ps) + vy * Math.sin(ps), l = -vs * Math.sin(ps) + vy * Math.cos(ps), v0 = Math.max(0, car.v);
     car.v = Math.max(0, u); if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius;
     this.vb = Math.max(-10, Math.min(0, u));   // a rebound backwards (the solver has no reverse): carried here, rolled out by the tyres
     if (this.T.arcade) {   // v1.13.35 arcade handling: the same impulse, softer for the player: the sideways part is a kick that the
       // tyres take out in ~0.35 s, the yaw kick is only a brief wobble of the heading (no spin), the steering is wobbly for 0.45 s
       var vr = vy;   // road-frame sideways velocity after the hit
       this.vk = Math.max(-ARC.KICK, Math.min(ARC.KICK, vr - this.vLat)); this.vyc = 0; this.spin = 0;
+      // an offset hit glances off (Lotus 2's "bouncy" collisions): part of the speed is kept and the car is pushed aside, away from
+      // the object; a square hit (full overlap) still stops / bounces the car
+      if (o && o.oy !== undefined && u < v0) {
+        var hwP = (c.widthM || 1.75) / 2, ov = Math.max(0, Math.min(1, (hwP + o.ohw - Math.abs(this.y - o.oy)) / (2 * Math.min(hwP, o.ohw)))), keep = ARC.GLANCE * Math.max(0, 1 - ov);
+        var wO = hwP + o.ohw - Math.abs(this.y - o.oy);
+        if (keep > 0 && wO <= ARC.GLANCEW) { var side = this.y >= o.oy ? 1 : -1;
+          this.y = o.oy + side * (o.ohw + hwP + 0.1); this.psi = 0; this.vLat = 0;   // knocked aside, straight and clear of it
+          car.v = Math.max(car.v, keep * v0); if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius; this.vb = 0;
+          this.vk = side * Math.min(ARC.KICK, Math.max(Math.abs(this.vk), 0.1 * (v0 - u) + 1)); }
+      }
       if (Math.abs(dw) > 0.3 || !soft) { this.wob = Math.max(-ARC.WOB, Math.min(ARC.WOB, dw * 0.08 + (soft ? 0 : 0.06 * Math.sign(dw || 1)))); this.wobT = 0; }
       if (!soft) this.hitT = ARC.HIT_T;
       return;
@@ -12249,7 +12259,8 @@ var RoadCourse = (function () {
     PUSHMAX: 2.5,                                    // the outward rate is capped at 2.5 x the steering rate (way over the limit)
     KICK: 5, TAUK: 0.35, WOB: 0.22, TAUW: 0.28, HIT_T: 0.45,  // collisions (softer than v1.13.34)
     YAWV: 0.6,                                       // heading shown / used for the body = 0.6 x the direction of travel
-    PSIMAX: 0.35                                     // never more than 20 degrees off the road direction (no spins)
+    PSIMAX: 0.35,                                    // never more than 20 degrees off the road direction (no spins)
+    GLANCE: 0.6, GLANCEW: 0.8                        // an offset hit (overlap <= 0.8 m) knocks the car aside, keeping up to 0.6 x the speed
   };
   function arcLat(v) { return Math.min(ARC.LATMAX, ARC.LAT0 + ARC.LATK * v, ARC.LATV * v); }
   Sim.prototype.stepArcade = function (dt, car, steer) {
@@ -12797,11 +12808,11 @@ var RoadTraffic = (function () {
       [c.A, c.B].forEach(function (q) { if (q && q.kind && q.kind !== 'player' && q.dir) self.traffic.hit(q, dv); });
       if (c.A === pb || c.B === pb) {
         var other = c.A === pb ? c.B : c.A;
-        if (!mine || dv > mine.dv) mine = { dv: dv, kind: other.kind, type: other.type, fixed: other.m === Infinity, light: other.m !== Infinity && !other.dir, t: sim.t, s: sim.s };
+        if (!mine || dv > mine.dv) mine = { dv: dv, kind: other.kind, type: other.type, fixed: other.m === Infinity, light: other.m !== Infinity && !other.dir, t: sim.t, s: sim.s, oy: other.y, ohw: other.hw };
       }
     }
     if (mine) {
-      sim.place(pb); sim.hit(car, pb.vs, pb.vy, pb.w - w0, mine.light);
+      sim.place(pb); sim.hit(car, pb.vs, pb.vy, pb.w - w0, mine.light, mine);
       // a new hit (not the same contact rubbing on): closing-speed change over 0.5 m/s, or 0.5 s after the last one
       if (mine.dv > 0.5 && (!this.prevHit || sim.t - this.prevHit.t > 0.5 || this.prevHit.kind !== mine.kind)) { this.contacts++; this.lastHit = mine; if (this.hitLog.length < 200) this.hitLog.push(mine); }
       this.prevHit = mine;

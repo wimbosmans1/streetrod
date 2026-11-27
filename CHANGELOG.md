@@ -11,7 +11,19 @@
 * **Collisions (same engine, softer for the player).**
   * The impulse still sets the speed along the road and the bounce backwards.
   * The sideways part becomes a kick of at most 5 m/s that dies away in 0.35 s.
-  * The yaw kick becomes a short heading wobble (at most 0.22 rad, damped in 0.28 s), with half steering for 0.45 s. No spins.
+  * The yaw kick becomes a short heading wobble (at most 0.22 rad, damped in 0.28 s), with half steering for 0.45 s. No spins; the heading stays within 20 degrees.
+  * Offset hits glance off. When the overlap is 0.8 m or less, the car is knocked aside, straight and clear of the object, keeping up to 0.6 x its speed (scaled by how little the bodies overlapped). A square hit still stops the car and bounces it back.
+  * Beetle at 75 km/h into a boulder (test/stage_test.js, a node probe), with the speed kept after the first hit:
+
+    | Lateral offset | Speed kept |
+    |---|---|
+    | 0 m | 0 km/h (bounce) |
+    | 0.5 m | 0 km/h |
+    | 0.9 m | 22 km/h |
+    | 1.3 m | 34 km/h |
+    | 1.0 m the other side | 25 km/h |
+
+    The car drives on in every case, with no spin.
 * **Controls.** In the stage, keys and the steering pad reach full lock in 0.17 s and centre or reverse in 0.1 s (was 0.25 s both ways). Keyboard, the touch pad and the Tesla screen use the same input path. The HUD says TOO FAST instead of SLIDING, and the tyre screech follows how far over the limit you are and the hit kicks.
 * **Numbers.** The grip-limit (hold) speed is the steady speed with full lock that keeps the line. The constant-speed pass speed is the fastest a car can go through the whole bend at constant speed from the right-lane line, using the road width, without leaving the asphalt (lotus-notes/tools/arc_speeds.js).
 
