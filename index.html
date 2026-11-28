@@ -10852,6 +10852,9 @@ var Parts = (function () {
       var scR = c.tm.rkr / (c.tm.rkr0 || c.attrs.rkr_stock || 1.1);
       c.car = Object.assign({}, c.car, { ev_lift: (c.car.ev_lift || 0.008) * scR });
     }
+    // v1.13.39: rod centre-to-centre (tm.rod_l) is the sound kernel's car.rod (piston motion, Q_ROD).
+    // Without this, a longer/shorter rod changed the torque model's exhaust pumping but not the worklet.
+    if (c.tm.rod_l) c.car = Object.assign({}, c.car, { rod: c.tm.rod_l });
     var ts = tmOf(s, s), tb = tmOf(c, s);
     if (Math.abs(tb.cr - ts.cr) > 1e-9) c.car.cr = s.car.cr * tb.cr / ts.cr;   // anchored CR (vch+deck or vc / bore / stroke)
     ['car', 'phys'].forEach(function (g) {
