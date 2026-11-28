@@ -1,3 +1,45 @@
+## v1.13.41 (local, not tagged or pushed), 2026-11-28 (Beetle kits: EMPI, Shorrock, Judson, Okrasa TSV, Scat, CB and Inch Pincher packages)
+
+* **Why.** Queue job SR-24 (Wim: "a few more kit options"). The picker had eleven presets (Okrasa TS / TSV, Speedwell, Rajay, Schwitzer, Garrett, CB radiator, Volkswagen Sport merged, 1600 dual-port, Type 4, Rajay + carb kit). Eighteen new complete kits were added, each assembled only from parts already in the catalogue, so the sound, dyno and drag time follow through the existing generic forwards (`Parts.vehicle`, `Parts.soundOverrides`). No new parts, no per-car code.
+
+* **Kits** (every kit is hard-rule legal when applied to the stock build; soft period / knock / cooling warnings still show). Dyno figures are the model's, not claims; the maker's claim is shown for comparison only.
+
+  | Kit id | Package | cc | Model peak | Maker / period claim | ET / mph / 60 ft, stock tyres | ET / mph, M&H slick |
+  |---|---|---:|---|---|---|---|
+  | `kit.empi_bb1352` | EMPI Big Bore 82 mm (PBBV-100 barrels) | 1352 | 39.3 PS @ 3500 | none found | 21.00 / 60.8 / 2.80 | 20.95 / 61.1 |
+  | `kit.empi_bb1385` | EMPI 98-1947-B 83 mm slip-in | 1385 | 39.9 PS @ 3400 | none found | 20.91 / 61.3 / 2.82 | 20.77 / 61.6 |
+  | `kit.empi_1600bb` | EMPI 98-1948-B 85.5 mm on a 1500 | 1585 | 47.9 PS @ 3700 | none found | 19.64 / 65.8 / 2.72 | 19.45 / 66.0 |
+  | `kit.empi_87` | EMPI 98-1949-B 87 mm slip-in | 1641 | 52.5 PS @ 3700 | none found | 19.12 / 67.8 / 2.68 | 18.91 / 68.0 |
+  | `kit.empi_x100` | EMPI X-100 69.5 mm crank | 1295 | 31.7 PS @ 3300 | none found | 22.50 / 56.5 / 2.98 | 22.43 / 56.9 |
+  | `kit.empi_zenith` | EMPI Zenith 32 NDIX | 1192 | 32.8 PS @ 3700 | none found | 22.78 / 55.8 / 3.08 | 22.71 / 56.1 |
+  | `kit.dual_p11` | Dual Solex 40P11 (Inch Pincher carbs) | 1585 | 58.6 PS @ 3900 | none found | 18.53 / 70.3 / 2.65 | 18.30 / 70.5 |
+  | `kit.judson` | Judson supercharger | 1192 | 42.8 PS @ 3700 | 48 PS @ 4000 (1956 table) | 20.65 / 62.2 / 2.78 | 20.49 / 62.5 |
+  | `kit.shorrock_500` | EMPI Shorrock PSSV-500 | 1285 | 54.8 PS @ 4400 | 72 hp | 19.26 / 67.0 / 2.70 | 19.07 / 67.3 |
+  | `kit.shorrock_bb` | EMPI Shorrock PBBV-100 | 1352 | 50.3 PS @ 4000 | 78 hp | 19.73 / 65.4 / 2.72 | 19.54 / 65.7 |
+  | `kit.shorrock_1500s` | EMPI Shorrock PSKV-601 | 1493 | 55.1 PS @ 4400 | 82 hp | 19.12 / 67.6 / 2.67 | 18.93 / 67.8 |
+  | `kit.shorrock_1600s` | EMPI Shorrock PSKV-600 | 1585 | 55.9 PS @ 4400 | 85 hp (220 bhp on methanol, Inch Pincher) | 19.04 / 68.0 / 2.67 | 18.82 / 68.2 |
+  | `kit.okrasa_tsv1600` | Okrasa TSV 1600 H (Oettinger) | 1585 | 59.1 PS @ 3900 | ~58 PS @ 4200 | 18.55 / 70.2 / 2.65 | 18.31 / 70.5 |
+  | `kit.okrasa_tsv1700` | Okrasa TSV 1700 H (Oettinger) | 1699 | 62.0 PS @ 3700 | ~70 PS @ 4200 | 18.38 / 71.9 / 2.74 | 17.91 / 72.2 |
+  | `kit.scat2110` | Scat-style 2110 stroker | 2110 | 59.4 PS @ 3000 | none | 20.58 / 58.2 / 2.76 | 19.91 / 58.7 |
+  | `kit.cb_bolt78` | CB bolt-in 78 mm stroker | 1791 | 55.3 PS @ 3400 | none | 18.93 / 68.9 / 2.68 | 18.63 / 69.1 |
+  | `kit.cb1180` | CB Builder’s Choice 1180 (1776 cc) | 1775 | 81.7 PS @ 4600 | 105 hp (dual 40 IDF, 1.5 in merged exhaust) | 19.57 / 68.0 / 3.17 | 19.30 / 68.6 |
+  | `kit.ip1967` | Inch Pincher drag engine 1967 | 1898 | 93.3 PS @ 4600 | 165 hp (1966, Okrasa heads) | 19.52 / 69.4 / 3.51 | 19.27 / 70.0 |
+
+  Stock 30 PS Beetle for comparison: 23.2190 s / 54.75 mph / 3.121 60-ft on stock tyres; 23.14 s with the M&H 8.5/26.0-15 slick (`tyre.mh26x85`, v1.13.40). Same scripted driver as `test/drag_test.js` (0.45 s reaction, throttle ramp 4 / s, feather on wheelspin, shift 150 rpm under the limiter), stall-free automatic clutch from idle.
+
+* **Sources and flags.** Each new kit carries `src` (sources), `prov` (`s` sourced, `ss` sourced-secondary, `d` derived, `e` ESTIMATE per field), `claim` (what the maker advertised, not a target), optional `year` (the package's own date when its parts are later equivalents) and, where a period price is known, `period`. The kit picker now shows the description, the claim, the sources and the estimates of the chosen kit, and keeps it selected until a slot is changed. Main sources: EMPI catalogue 98-1947 / 1948 / 1949 / 1953-B displacement table; TheSamba (John Moxon, 2009) and oldspeed.net (EMPI Shorrock packages and prices); Seume p.16, 22, 29, 97; the flat4ever Okrasa / Judson / Denzel table (Judson 48 PS); the Oettinger delivery programme as listed on felix03.jimdofree.com (TSV 1600 H 1585 cc / TSV 1700 H 1695 cc, original VW dual-port heads from 1966); cbperformance.com item 1180 (contents list, 105 hp rating, 8:1, mid-grade fuel; its Eagle Racing cam 2241 is `cam.cb2241`); aircooledvintageworks.com 2110 kit; EMPI history / Drag Strip 1966 / oldeskool.tripod.com (Inch Pincher).
+  Estimates and deviations: the EMPI PSKV-601 / PSKV-600 contents are not published (derived as the 1500 engine, and 85.5 mm barrels for the 1600); TSV 1600 H / 1700 H use `carb.p11` for the Oettinger Solex 40 PDSIT and the 356 74 mm crank for the Oettinger special crank; the 1967 Inch Pincher uses the Engle W130 for the Sig Erson cam, 311 rods for the EMPI boxed rods and runs on petrol (no methanol); the Porsche transaxle of the real car is not modelled.
+
+* **Not added (cannot be sourced or built).** Bugpack street kit (no fixed, published package found); a Gene Berg kit (only separate cranks); Okrasa TS 1200 H / TSV 1300 H on the 34 / 40 PS engines (the catalogue's Okrasa heads and TSV crank rule allow only the 36 hp case; the Oettinger list names the 34 / 40 PS variants, so the rule could be widened as a separate change); the 1966 Okrasa-head Inch Pincher 1900 (Okrasa heads are 36 hp-case only and 88 mm barrels need a 40 hp-family case, so the 1967 dual-port-head engine is built instead); the 1965 Denzel-head Inch Pincher (Denzel heads and the Solex 40P11 manifold are incompatible in the catalogue).
+
+* **Fixed.** `kit.rajay_carb` (Rajay turbo plus the PICT-3 carb and advance kit) was blocked on the stock build because the PICT-3 needs the dual-port manifold; it now also sets the 1600 dual-port engine and 12 V.
+
+* **Reading the ETs.** The scripted driver launches from idle with a stall-free clutch and the engine model has a 4600 rpm limiter that no part raises, so the strongest engines (CB 1180, Inch Pincher 1967, Scat 2110) are held back by low-end torque, wheelspin on stock tyres and the limiter (the model peaks at 81.7 / 93.3 PS inside the limiter against the 105 / 165 hp claimed; claims are gross, with parts not in the game). Their ETs are therefore not a measure of the engine at high rpm.
+
+* **Tests.** New gate: every kit names real parts in the right slots and is legal on the stock build (29 kits). New `checks/v11341_kit_effect_check.mjs`: every kit changes the dyno (PS or torque or cc), the sound override keys and a rendered idle and wide-open sample versus stock, with no NaN.
+
+* **Unchanged.** Every sound (111 audio hashes, worklet md5 `3573eb1e93f9e67a1616da2296b37d72`), the stock drag strip and the old flat Mesa Road lap (`?course=mesa`, Beetle 2:51.93). Generic default-off keys (`year`, `src`, `prov`, `claim`, `period` on a kit), no per-car code, ES2017 in shipped JS.
+
 ## v1.13.40 (local, not tagged or pushed), 2026-11-28 (Beetle tyres: period street, radial and drag options)
 
 * **Why.** Queue job SR-14: the catalogue only had `tyre.stock` (5.60-15) and `tyre.radial` (Michelin X 165 R 15). Add period-correct tyres, including drag tyres, that change the drag launch, ET, top speed (diameter versus gearing, and the speedo reading) and road-course grip, all through generic keys. Front and rear tyres may differ. Live main was v1.13.39 (`3423fbc`).
