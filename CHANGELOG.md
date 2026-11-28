@@ -1,3 +1,37 @@
+## v1.13.40 (local, not tagged or pushed), 2026-11-28 (Beetle tyres: period street, radial and drag options)
+
+* **Why.** Queue job SR-14: the catalogue only had `tyre.stock` (5.60-15) and `tyre.radial` (Michelin X 165 R 15). Add period-correct tyres, including drag tyres, that change the drag launch, ET, top speed (diameter versus gearing, and the speedo reading) and road-course grip, all through generic keys. Front and rear tyres may differ. Live main was v1.13.39 (`3423fbc`).
+
+* **Catalogue.** The factory 5.60-15 keeps the shipped physics (bit-identical stock car). The description now notes period OE brands (Continental, Firestone, Dunlop) without adding no-op brand clones. New or kept tyres, with sourced sizes and estimates flagged in `prov`:
+
+  | Part | Size / construction | OD (in) | Radius (m) | Width | Mass (kg) | muPeak / muSlide / crr | Road | Notes / sources |
+  |---|---|---:|---:|---|---:|---|---|---|
+  | `tyre.stock` | 5.60-15 bias (factory) | 25.79 | 0.307 (unchanged) | 5.94 in | 7.71 (17 lb) | 0.78 / 0.62 / 0.016 (unchanged) | legal | Coker / Longstone Firestone 5.60-15 |
+  | `tyre.60015` | 6.00-15 bias | 26.00 | 0.3095 | ~6.3 in (e) | 8.62 (e, ~19 lb) | 0.80 / 0.63 / 0.016 (e) | legal | Coker / BFGoodrich 6.00-15 OD |
+  | `tyre.radial` | Michelin X 165 R 15 | 25.55 (d) | 0.304 (kept) | ~6.5 in (e) | 8.20 (e) | 0.85 / 0.70 / 0.012 (e, kept) | legal | Michelin X from 1949 |
+  | `tyre.x155` | Michelin X 155 R 15 | 24.68 | 0.2938 | 153 mm | 8.00 | 0.85 / 0.70 / 0.012 (e) | legal | closer radial equivalent of 5.60-15; OD from CA67 155HR15 |
+  | `tyre.cint165` | Pirelli Cinturato CA67 165 HR 15 | 25.55 | 0.3041 | 171 mm | 8.50 | 0.86 / 0.71 / 0.012 (e) | legal | cinturato.net / Longstone |
+  | `tyre.cint155` | Pirelli Cinturato CA67 155 HR 15 | 24.68 | 0.2938 | 153 mm | 8.00 | 0.86 / 0.71 / 0.012 (e) | legal | same sources; not a documented Inch Pincher front |
+  | `tyre.185ss` | 185 HR 15 radial (EMPI / Sprint Star era) | 25.98 | 0.3093 | 185 mm | 9.80 (e) | 0.88 / 0.73 / 0.013 (e) | legal | CA67 185HR15 660 mm; wide-tyre warning |
+  | `tyre.castler` | Castler recap slick (early drag) | 26.00 (e) | 0.3095 (e) | 7 in (e) | 8.00 (e) | 1.00 / 0.88 / 0.018 (e) | strip | EMPI history ch. 3 (brand/use only) |
+  | `tyre.mh26x6` | M&H Racemaster 26x6-15 slick | 26.00 | 0.3095 | 6 in | 6.80 (e) | 1.12 / 0.95 / 0.015 (e) | strip | ShopTalk / Glenn Ring VW size; Inch Pincher "M&H rear slicks" (EMPI ch. 4) has no size |
+  | `tyre.mh26x85` | M&H 8.5/26.0-15 slick (MHR062) | 26.00 | 0.3095 | 10.5 in sect., 8.3 in tread | 8.16 (18 lb) | 1.15 / 0.98 / 0.014 (e) | strip | M&H / Interco tables; wrinkle-wall, not DOT |
+  | `tyre.mhcheat` | M&H 8.5/26.0-15 cheater (MHD-01) | 26.00 | 0.3095 | 8.5 in tread | 7.26 (16 lb) | 1.05 / 0.88 / 0.015 (e) | DOT-strip | M&H tables; shallow tread |
+  | `tyre.gy268` | Goodyear 26.0x8.0-15 Blue Streak / Eagle slick | 26.45 | 0.3149 | 8 in | 8.20 (e) | 1.13 / 0.96 / 0.014 (e) | strip | period catalog / current equivalent ~26.4-26.5 in |
+  | `tyre.mt245` | Mickey Thompson 24.5/8-15 slick | 24.50 | 0.2916 | 8 in | 7.26 (e) | 1.14 / 0.97 / 0.014 (e) | strip | TheSamba VW discussions |
+
+  Rolling radius convention (unchanged for stock): `r = 0.307 * OD_in / 25.79`. A burnout / warm-up is not modelled; slick and cheater grip is the hot figure, with a soft warning. Front slot (hidden, property of Tyres): `tyreF.same` (default, no keys), `tyreF.stock`, `tyreF.x155`, `tyreF.cint155`, `tyreF.radial`, `tyreF.185ss`, `tyreF.mhfront` (M&H 4.5/26-15 front runner MSS-018: OD 25.9 in, 4.5 in tread, 6.5 in section, 13 lb, M&H tables). A claim that the Inch Pincher ran Pirelli fronts was not found in the EMPI history; the CA67 155 is offered as a period Pirelli front, not a documented Inch Pincher fitment.
+
+* **Generic model.** New optional keys `muPeakFront`, `muSlideFront`, `crrFront`, `tyreRadiusFront`, `speedoRadius`. When unset, the existing single `muPeak` / `crr` / `tyreRadius` path is unchanged (stock and other cars bit-identical). Staggered road-course lateral grip uses the harmonic mean of front and rear `muPeak`. Rolling resistance is load-split only when `crrFront` is set. Tyre mass (`attrs.tyreMass`) adjusts `massKg` and axle inertias in `Parts.vehicle()`; tyres never overwrite `massKg` as a whole. The period speedo stays calibrated to the stock rolling radius (`speedoRadius`); indicated speed is shown only on the analogue dash (the HUD, drag trap and brake cues stay true speed). Taller tyres make the speedo under-read; shorter tyres make it over-read.
+
+* **ETs** (same scripted drag driver as `test/drag_test.js`). Stock 30 PS Beetle, tyres all-round: stock tyres 23.2190 s / 54.755 mph / 3.121 60-ft (bit-identical); Michelin X 165 23.0323 / 55.491 / 3.109; M&H 26x6-15 slick 23.1203 / 55.034 / 3.113; M&H 8.5/26.0-15 slick 23.1402 / 55.084 / 3.122; Mickey Thompson 24.5/8-15 23.0723 / 55.330 / 3.095. The 30 PS car does not spin on stock tyres, so a slick is a small crr / diameter / mass change, not a traction win. 1600 DP longblock (legal companions): stock tyres 19.2966 s / 67.108 mph / 2.702 60-ft, 1.776 s of wheelspin; M&H 26x6-15 19.0611 / 67.395 / 2.578, no spin; M&H 8.5/26.0-15 19.0899 / 67.379 / 2.585; cheater 19.0808 / 67.335 / 2.581; Mickey Thompson 24.5/8-15 19.0363 / 67.738 / 2.567 (lowest trap-limited top speed, 140.2 vs 147.6 km/h); Goodyear 26.0x8.0-15 19.0952 / 67.320 / 2.589 (tallest, 151.4 km/h). Staggered 1600 DP, M&H 8.5 rear + M&H front runner: 19.0413 s.
+
+* **Unchanged.** Every sound (111 audio hashes, worklet md5 `3573eb1e93f9e67a1616da2296b37d72`), the stock-tyre drag strip, the old flat Mesa Road lap (`?course=mesa`, Beetle 2:51.93). No per-car code. Old saves without `tyresF` load (`Parts.full()` fills `tyreF.same`). Not pushed.
+
+* **Follow-ups (analysis only).** A Porsche 356 gearbox with a 4.59 final is not a standard 356 ratio (7:31 = 4.428, 6:31 = 5.167, 7:34 = 4.857). 4.57 is a Type 2 32:7. The Inch Pincher used a Porsche transaxle by 1967 (EMPI history). Adding a gearbox part on the existing slot (`vehicle.gears`, `finalDrive`) is a moderate follow-up, plus fitment. A chopped light Inch Pincher body: Inch Pincher Too (1971) used a chopped 1959 sunroof shell; the original also had fibreglass, plexi and weight removal. The `body` slot exists but is `menu: false` with only `body.stock`. A mass/Cd-only lightened body is easy; a visible chop is a larger art task.
+
+* **Tests.** Parts gate PASS (all new tyres compose). Stock drag bit-identical to v1.13.39. Old Mesa lap 2:51.93, output identical to v1.13.39. engine-worklet.js byte-identical. Headless tyres ET / save-load / speedo script in `/tmp/v11340_tests/tyre_et.json`.
+
 ## v1.13.39 (local, not tagged or pushed), 2026-11-28 (Beetle parts: remaining Seume interchange-manual catalogue)
 
 * **Why.** Wim's SR-13: compare the catalogue with the Bill Fisher / Seume-era VW speed books and add the parts that are still missing. The book already used in this repo (v1.13.31) is Keith Seume, *Aircooled VW Engine Interchange Manual* (Motorbooks, 1996, ISBN 0-7603-0314-2) — not John Seume. Bill Fisher's *How to Hot Rod Volkswagen Engines* (HP Books, 1970) is a different, earlier book and is not the OCR source here. Live main was v1.13.38 (`7a51130`).

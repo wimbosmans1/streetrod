@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.39)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.40)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -10074,12 +10074,14 @@ var Physics = (function () {
     var FbrDem = bpedal * B.capG * Wt * (1 - B.frontBias) * fadeR;
     this.fadeF = fadeF; this.fadeR = fadeR;
     if (B.abs || inp.abs) {   // job 8: ABS holds each axle under lock-up (v1.13.37: absAct = the share of the brake demand it is holding back, for the ABS lamp)
-      var fF0 = FbfDem, fR0 = FbrDem; FbfDem = Math.min(FbfDem, 0.97 * c.muPeak * Nf); FbrDem = Math.min(FbrDem, 0.97 * c.muPeak * Nr);
+      var fF0 = FbfDem, fR0 = FbrDem, muPf = (c.muPeakFront != null) ? c.muPeakFront : c.muPeak;
+      FbfDem = Math.min(FbfDem, 0.97 * muPf * Nf); FbrDem = Math.min(FbrDem, 0.97 * c.muPeak * Nr);
       if (inp.abs) this.absAct = Math.max((fF0 - FbfDem) / Math.max(1, fF0), (fR0 - FbrDem) / Math.max(1, fR0));
     } else if (this.absAct) this.absAct = 0;
-    if (!this.frontLocked && FbfDem > c.muPeak * Nf && this.v > 0.3) this.frontLocked = true;
-    else if (this.frontLocked && (FbfDem < c.muSlide * Nf * 0.98 || this.v < 0.05)) this.frontLocked = false;
-    var Fbf = this.frontLocked ? c.muSlide * Nf : FbfDem;
+    var muPf = (c.muPeakFront != null) ? c.muPeakFront : c.muPeak, muSf = (c.muSlideFront != null) ? c.muSlideFront : c.muSlide;
+    if (!this.frontLocked && FbfDem > muPf * Nf && this.v > 0.3) this.frontLocked = true;
+    else if (this.frontLocked && (FbfDem < muSf * Nf * 0.98 || this.v < 0.05)) this.frontLocked = false;
+    var Fbf = this.frontLocked ? muSf * Nf : FbfDem;
     if (this.tyre !== 'lock' && FbrDem > c.muPeak * Nr && this.v > 0.3) this.tyre = 'lock';
     else if (this.tyre === 'lock' && (FbrDem < c.muSlide * Nr * 0.98 || this.v < 0.05)) { this.tyre = 'roll'; this.ww = this.v / r; }
 
@@ -10141,7 +10143,10 @@ var Physics = (function () {
     var Faero = 0.5 * RHO * c.cd * c.area * this.v * this.v + (c.spinDrag || 0) * this.v;
     // rolling resistance; crr2 (p997 only, v1.11.2): the tyre's speed-dependent part, crr = crr + crr2 v^2 (SAE J2452 /
     // Ehlers form: 0.0095 / p[bar] per (100 km/h)^2), so cars without crr2 are unchanged
-    var Froll = (c.crr + (c.crr2 || 0) * this.v * this.v) * Wt;   // static-capable (treated like friction)
+    // v1.13.40: when a front tyre sets crrFront, rolling resistance is load-split; otherwise the single crr (bit-identical)
+    var Froll = (c.crrFront != null)
+      ? (c.crrFront * Nf + c.crr * Nr) + (c.crr2 || 0) * this.v * this.v * Wt
+      : (c.crr + (c.crr2 || 0) * this.v * this.v) * Wt;   // static-capable (treated like friction)
     if (inp.resist) Froll += inp.resist;   // road-course draft (generic, default off): cornering drag + off-road rolling (N), from js/road.js
     // v1.13.34 stage course (generic, default off): road grade (rise / run, + uphill), the weight's component along the road; it
     // acts with the speed-dependent body forces (moving only: at rest the brakes / rolling friction hold the car, as before)
@@ -10794,6 +10799,22 @@ var Parts = (function () {
     if (isStock(def, build)) return base;
     var s = compose(def, def.stock), c = compose(def, build), ts = tmOf(s, s), tb = tmOf(c, s);
     var v = Object.assign({}, base, c.vehicle), tab = base.torque, grid = tab.map(function (p) { return p[0]; });
+    // v1.13.40: a changed tyre keeps the speedo calibrated to the stock rolling radius (indicated vs true speed).
+    // Mass and axle inertias follow the tyre parts' attrs.tyreMass and the composed radii; stock tyres skip this (isStock above).
+    if (c.build && def.stock && (c.build.tyres !== def.stock.tyres || (def.stock.tyresF && c.build.tyresF !== def.stock.tyresF))) {
+      if (v.speedoRadius == null && base.tyreRadius) v.speedoRadius = base.tyreRadius;
+      var stockP = def.parts[def.stock.tyres], pR = partOf(def, 'tyres', c.build.tyres);
+      var pF = def.stock.tyresF ? partOf(def, 'tyresF', c.build.tyresF) : null;
+      var m0 = (stockP && stockP.attrs && stockP.attrs.tyreMass != null) ? stockP.attrs.tyreMass : 7.71;
+      var r0 = base.tyreRadius || 0.307;
+      var mR = (pR && pR.attrs && pR.attrs.tyreMass != null) ? pR.attrs.tyreMass : m0;
+      var sameF = !pF || pF.id === def.stock.tyresF || (pF.attrs && pF.attrs.sameAsRear);
+      var mF = sameF ? mR : ((pF && pF.attrs && pF.attrs.tyreMass != null) ? pF.attrs.tyreMass : m0);
+      var rR = v.tyreRadius, rF = sameF ? rR : (v.tyreRadiusFront || rR);
+      v.massKg = base.massKg + 2 * (mR - m0) + 2 * (mF - m0);
+      if (base.wheelInertiaRear) v.wheelInertiaRear = base.wheelInertiaRear * (mR / m0) * (rR * rR) / (r0 * r0);
+      if (base.wheelInertiaFront) v.wheelInertiaFront = base.wheelInertiaFront * (mF / m0) * (rF * rF) / (r0 * r0);
+    }
     var lim = v.limiterRpm || base.limiterRpm, last = grid[grid.length - 1];
     for (var n = last + 400; n <= lim + 400; n += 400) grid.push(n);
     var stockAt = function (n) { return stockTorque(ts, tab, n, lim > base.limiterRpm ? base.limiterRpm : 0); };   // v1.13.29: only builds that rev past the stock limiter
@@ -10940,6 +10961,23 @@ var Parts = (function () {
     }
     if (R.crank && c.attrs.crank === R.crank.kind && info.psMax > info.psStock * R.crank.factor) soft.push({ rule: 'crank', msg: 'Crank: stock crank known to crack when caned; power ' + (info.psMax / info.psStock).toFixed(2) + '× stock (warn above ' + R.crank.factor + '×)' });
     var clutch = c.vehicle.clutchMax; if (clutch && info.tMax > clutch * (R.clutchMargin || 0.9)) soft.push({ rule: 'clutch', msg: 'Clutch: ' + info.tMax.toFixed(0) + ' N·m peak vs ' + clutch + ' N·m capacity (estimate)' });
+    // v1.13.40 generic tyre warnings (drag slicks, front-runners on a driven axle)
+    (function () {
+      var pR = partOf(def, 'tyres', build.tyres), pF = def.stock.tyresF ? partOf(def, 'tyresF', build.tyresF) : null;
+      function kind(p) { return (p && p.attrs && p.attrs.tyrekind) || ''; }
+      function road(p) { return (p && p.attrs && p.attrs.road) || 'legal'; }
+      if (kind(pR) === 'slick' || kind(pR) === 'recap') {
+        soft.push({ rule: 'tyre', msg: (pR.label || 'Slick') + ': not street-legal; for a dry drag strip. A burnout / warm-up is not modelled; grip is the hot figure (estimate)' });
+      } else if (kind(pR) === 'cheater') {
+        soft.push({ rule: 'tyre', msg: (pR.label || 'Cheater slick') + ': DOT-marked but intended for the strip, not sustained road use. Grip is the hot figure (estimate); a burnout is not modelled' });
+      }
+      if (pR && pR.attrs && pR.attrs.axle === 'front') {
+        soft.push({ rule: 'tyre', msg: (pR.label || 'Front runner') + ': a front-runner tyre on the driven axle is the wrong way round; use it on the Front tyres slot' });
+      }
+      if (pR && pR.attrs && pR.attrs.wide) {
+        soft.push({ rule: 'tyre', msg: (pR.label || 'Wide tyre') + ': may need fender clearance or a wider wheel than the stock 4J×15 (period fitment)' });
+      }
+    })();
     if (R.noGain) def.slots.forEach(function (sl) {   // a swapped part that adds no peak power: warn (cam vs carb vs exhaust)
       if (build[sl.id] === def.stock[sl.id] || !def.parts[build[sl.id]].tm) return;
       var b0 = Object.assign({}, build); b0[sl.id] = def.stock[sl.id];
@@ -11062,14 +11100,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       { id: 'fuelpump', label: 'Fuel pump' },
       { id: 'clutch', label: 'Clutch / flywheel', props: [{ slot: 'flyhw', label: 'Flywheel' }] },
       { id: 'gearbox', label: 'Gearbox / final drive' },
-      { id: 'tyres', label: 'Tyres' }
+      { id: 'tyres', label: 'Tyres (rear / all-round)', props: [{ slot: 'tyresF', label: 'Front tyres' }] },
+      { id: 'tyresF', label: 'Front tyres', menu: false }
     ],
     stock: { body: 'body.stock', drivetrain: 'drive.stock', longblock: 'lb.30ps', crankcase: 'case.oem', crank: 'crank.oem', conrod: 'rod.oem', bearings: 'brg.oem', flyhw: 'fw.oem',
       cylinders: 'cyl.oem', saver: 'saver.none', spacer: 'spacer.none', heads: 'heads.oem', cam: 'cam.oem', lifter: 'lift.oem', pushrod: 'pr.oem', rocker: 'rkr.oem', spring: 'spr.oem',
       valves: 'valve.oem', camdrive: 'camg.oem', rings: 'ring.oem', valvecover: 'vc.oem',
       carb: 'carb.oem', fi: 'fi.none', ignition: 'ign.oem', ignacc: 'ignacc.none', exhaust: 'exh.stock', muffler: 'muf.stock', cooling: 'cool.stock', oilpump: 'pump.oem', oilfilter: 'filt.none', sump: 'sump.oem',
       windage: 'wind.none', breather: 'br.oem',
-      pulley: 'pul.oem', electrical: 'el.6v', fuel: 'fuel.regular', fuelpump: 'fp.oem', clutch: 'clutch.stock', gearbox: 'gear.stock', tyres: 'tyre.stock' },
+      pulley: 'pul.oem', electrical: 'el.6v', fuel: 'fuel.regular', fuelpump: 'fp.oem', clutch: 'clutch.stock', gearbox: 'gear.stock', tyres: 'tyre.stock', tyresF: 'tyreF.same' },
     rules: {
       years: [1960, 1969],
       octane: [[6.6, 84], [7.0, 87], [7.5, 91]],   // RON the factory asked for at each CR (30 PS / 34 PS / 1300-44 / 1500; GW Käfer engine data, ss); linear beyond
@@ -11595,10 +11634,205 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     attrs: { bell: '12 V' }, src: GSRC, warn: 'Later gearbox in a 1956 car: later mounts and axles assumed', vehicle: { gears: [3.78, 2.06, 1.26, 0.93], finalDrive: 3.875, unsyncGears: [], transText: 'VW 1600 gearbox (AS), 3.875' }, prov: { gears: 's', finalDrive: 's' } });
   add({ id: 'gear.ffly', slot: 'gearbox', label: "'Freeway Flyer' gearbox, 3.88 with 0.89 4th", desc: 'Taller 4th for cruising; needs about 80+ hp · year not verified', years: [1980, 2026], yl: 'c. 1980?',
     attrs: { bell: '12 V' }, src: GSRC, warn: 'Freeway Flyer: Engle advises about 80+ hp', vehicle: { gears: [3.78, 2.06, 1.26, 0.89], finalDrive: 3.875, unsyncGears: [], transText: "'Freeway Flyer' 3.88 / 0.89" }, prov: { gears: 's', finalDrive: 's' } });
-  add({ id: 'tyre.stock', slot: 'tyres', label: '5.60-15 cross-ply (factory)', desc: 'As shipped in the game', years: [1955, 1960] });
-  add({ id: 'tyre.radial', slot: 'tyres', label: 'Michelin X 165 R 15 radial', desc: 'More grip, less rolling drag (estimates) · year not verified', years: [1965, 2026], yl: 'c. 1965?',
-    src: 'Michelin X radial (from 1949); size geometry derived; grip and rolling drag ESTIMATES', vehicle: { tyreText: '165 R 15 radial', tyreRadius: 0.304, muPeak: 0.85, muSlide: 0.70, crr: 0.012 },
-    prov: { tyreRadius: 'd', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  // v1.13.40 tyres. Rolling radius convention (do not change stock 0.307 m): r = 0.307 * OD_in / 25.79
+  // (loaded rolling factor k ≈ 0.93731 vs geometric half-diameter). Sourced overall diameters as cited;
+  // grip (mu), rolling resistance and some masses are ESTIMATES, flagged in prov.
+  add({ id: 'tyre.stock',
+    slot: 'tyres',
+    label: '5.60-15 cross-ply (factory)',
+    desc: 'The factory 5.60-15 bias-ply. Period OE brands for the Type 1 included Continental, Firestone and Dunlop (same size; the game keeps one set of stock physics). Overall diameter 25.79 in (Coker / Longstone Firestone), about 17 lb, section 5.94 in, tread about 3.8 in.',
+    years: [1955, 1967],
+    src: 'Coker Firestone 5.60-15 Deluxe Champion: OD 25.79 in, section 5.94 in, tread 3.8 in, 17 lb, 4 in recommended rim (cokertire.com/tires/firestone-560-15.html); Longstone 5.60-15 same diameter. Period OE brands: TheSamba factory tyre threads (Continental, Firestone, Dunlop and others). Physics stay the shipped stock values so the stock car is bit-identical.',
+    attrs: { tyreMass: 7.71, odIn: 25.79, widthIn: 5.94, treadIn: 3.8, tyrekind: 'bias', road: 'legal' },
+    prov: { tyreMass: 's', odIn: 's', widthIn: 's', treadIn: 's' } });
+  add({ id: 'tyre.60015',
+    slot: 'tyres',
+    label: '6.00-15 cross-ply (later Beetle / aftermarket)',
+    desc: 'A slightly taller, slightly wider period bias-ply, used on later Beetles and as a 15 in cross-ply upgrade. Overall diameter 26.00 in (BFGoodrich / Coker). Legal on the road. Grip is an estimate, a little above the 5.60-15 because of the extra width.',
+    years: [1963, 1979],
+    yl: 'c. 1963?',
+    src: 'Coker / BFGoodrich 6.00-15 listings: overall diameter 26.00 in. Rolling radius derived from the stock 5.60-15 convention. Mass and grip ESTIMATES (mass ~19 lb vs 17 lb on the 5.60-15).',
+    vehicle: { tyreText: '6.00-15 cross-ply', tyreRadius: 0.3095, muPeak: 0.8, muSlide: 0.63, crr: 0.016 },
+    attrs: { tyreMass: 8.62, odIn: 26.0, widthIn: 6.3, tyrekind: 'bias', road: 'legal' },
+    prov: { tyreRadius: 'd', odIn: 's', muPeak: 'e', muSlide: 'e', crr: 'e', tyreMass: 'e', widthIn: 'e' } });
+  add({ id: 'tyre.radial',
+    slot: 'tyres',
+    label: 'Michelin X 165 R 15 radial',
+    desc: 'The classic Michelin X radial in 165 R 15, a common early radial upgrade on a Beetle. Slightly shorter than the factory 5.60-15, more grip, less rolling drag. Legal on the road. Grip and rolling drag are estimates (unchanged from earlier releases).',
+    years: [1965, 2026],
+    yl: 'c. 1965?',
+    src: 'Michelin X radial from 1949; 165 R 15 geometry matches a 165HR15 overall diameter of about 25.55 in under the stock rolling-radius convention (tyreRadius 0.304 m, kept from earlier releases). Grip and rolling drag ESTIMATES.',
+    vehicle: { tyreText: '165 R 15 radial', tyreRadius: 0.304, muPeak: 0.85, muSlide: 0.7, crr: 0.012 },
+    attrs: { tyreMass: 8.2, odIn: 25.55, widthIn: 6.5, tyrekind: 'radial', road: 'legal' },
+    prov: { tyreRadius: 'd', muPeak: 'e', muSlide: 'e', crr: 'e', tyreMass: 'e', odIn: 'd', widthIn: 'e' } });
+  add({ id: 'tyre.x155',
+    slot: 'tyres',
+    label: 'Michelin X 155 R 15 radial',
+    desc: '155 R 15 is the closer radial equivalent of the factory 5.60-15 (narrower and a little shorter than 165 R 15). Legal on the road. Grip is an estimate in line with the 165 X.',
+    years: [1965, 2026],
+    yl: 'c. 1965?',
+    src: 'Period advice that 155 R 15 is the radial stand-in for 5.60-15. Overall diameter taken as the sourced Pirelli Cinturato CA67 155HR15 figure of 627 mm / 24.68 in (cinturato.net / Longstone); rolling radius derived. Mass ~8 kg (Cinturato listing). Grip ESTIMATE.',
+    vehicle: { tyreText: '155 R 15 radial', tyreRadius: 0.2938, muPeak: 0.85, muSlide: 0.7, crr: 0.012 },
+    attrs: { tyreMass: 8.0, odIn: 24.68, widthIn: 6.02, tyrekind: 'radial', road: 'legal' },
+    prov: { tyreRadius: 'd', odIn: 'ss', widthIn: 'ss', tyreMass: 'ss', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.cint165',
+    slot: 'tyres',
+    label: 'Pirelli Cinturato CA67 165 HR 15',
+    desc: 'Period high-performance radial, a little more grip than a standard Michelin X (estimate). Overall diameter 649 mm / 25.55 in, width 171 mm, about 8.5 kg. Legal on the road.',
+    years: [1965, 2026],
+    yl: 'c. 1965',
+    src: 'cinturato.net / Longstone / pneucollection: CA67 165HR15 overall diameter 649 mm (25.55 in), width 171 mm, ~8.5 kg. Rolling radius derived (0.3041 m). Grip ESTIMATE, slightly above the Michelin X 165 already in the game.',
+    vehicle: { tyreText: '165 HR 15 Cinturato', tyreRadius: 0.3041, muPeak: 0.86, muSlide: 0.71, crr: 0.012 },
+    attrs: { tyreMass: 8.5, odIn: 25.55, widthIn: 6.73, tyrekind: 'radial', road: 'legal' },
+    prov: { tyreRadius: 'd', odIn: 's', widthIn: 's', tyreMass: 's', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.cint155',
+    slot: 'tyres',
+    label: 'Pirelli Cinturato CA67 155 HR 15',
+    desc: 'The narrower CA67, a period Pirelli radial also offered as a front tyre. Overall diameter 627 mm / 24.68 in, width 153 mm, about 8 kg. Legal on the road. (A claim that the Inch Pincher ran Pirelli fronts was not found in the EMPI history; this is the period Pirelli size, not a documented Inch Pincher fitment.)',
+    years: [1965, 2026],
+    yl: 'c. 1965',
+    src: 'cinturato.net / Longstone: CA67 155HR15 overall diameter 627 mm (24.68 in), width 153 mm, ~8 kg. Rolling radius derived. Grip ESTIMATE. Inch Pincher front-tyre brand was not found in the EMPI history chapters checked (ch. 3-4 mention M&H rear slicks and, earlier, Castler recap slicks, not a front brand).',
+    vehicle: { tyreText: '155 HR 15 Cinturato', tyreRadius: 0.2938, muPeak: 0.86, muSlide: 0.71, crr: 0.012 },
+    attrs: { tyreMass: 8.0, odIn: 24.68, widthIn: 6.02, tyrekind: 'radial', road: 'legal' },
+    prov: { tyreRadius: 'd', odIn: 's', widthIn: 's', tyreMass: 's', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.185ss',
+    slot: 'tyres',
+    label: '185 HR 15 radial (EMPI / Sprint Star era)',
+    desc: 'A wider period radial as used on 15 in aftermarket wheels (EMPI Sprint Star and similar; a 15x5.5 or 15x6 rim). Overall diameter 660 mm / 25.98 in (Pirelli CA67 185HR15). May need fender clearance. Legal on the road. Grip is an estimate.',
+    years: [1965, 2026],
+    yl: 'c. 1965',
+    src: 'Longstone / Cinturato CA67 185HR15: overall diameter 660 mm (25.98 in). EMPI Sprint Star 15x5 / 15x5.5 period wheels commonly carried 165 or 185 radials (period ads / TheSamba). Mass ESTIMATE (~9.8 kg). Grip ESTIMATE, a little above a 165 radial.',
+    vehicle: { tyreText: '185 HR 15 radial', tyreRadius: 0.3093, muPeak: 0.88, muSlide: 0.73, crr: 0.013 },
+    attrs: { tyreMass: 9.8, odIn: 25.98, widthIn: 7.28, tyrekind: 'radial', road: 'legal', wide: true },
+    prov: { tyreRadius: 'd', odIn: 's', widthIn: 'd', tyreMass: 'e', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.castler',
+    slot: 'tyres',
+    label: 'Castler recap slicks (early drag)',
+    desc: 'Early-1960s recap slicks, as on the Inch Pincher in its first street-car form (EMPI history). Size was not recorded; modelled as a 26 in recap with about a 7 in tread (all figures estimates except the brand/use). Not street-legal. A burnout is not modelled; grip is the hot figure.',
+    years: [1960, 1968],
+    yl: 'c. 1960',
+    src: 'EMPI history ch. 3: the early Inch Pincher street car had Castler recap slicks (brand/use sourced; size, mass, grip and rolling drag ESTIMATES).',
+    vehicle: { tyreText: 'Castler recap slick 26 in (est.)', tyreRadius: 0.3095, muPeak: 1.0, muSlide: 0.88, crr: 0.018 },
+    attrs: { tyreMass: 8.0, odIn: 26.0, widthIn: 7.0, tyrekind: 'recap', road: 'strip', wide: true },
+    prov: { tyreRadius: 'e', odIn: 'e', widthIn: 'e', tyreMass: 'e', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.mh26x6',
+    slot: 'tyres',
+    label: 'M&H Racemaster 26x6-15 slick',
+    desc: 'A common VW drag-Beetle M&H size (ShopTalk / Glenn Ring). 26.0 in overall, 6 in tread. Not DOT, not street-legal. Wrinkle-wall construction. A burnout is not modelled; grip is the hot figure (estimate). The EMPI history only says the Inch Pincher ran "M&H rear slicks", without a size; this is the widely cited VW size, not a documented Inch Pincher stencil.',
+    years: [1964, 2026],
+    yl: 'c. 1964',
+    src: 'ShopTalk / Glenn Ring and period VW drag writing commonly cite 26x6-15 M&H on Type 1 drag cars. EMPI history ch. 4: Inch Pincher "M&H rear slicks" (brand sourced, size not). OD 26.0 in taken as the nominal size; mass and grip ESTIMATES.',
+    vehicle: { tyreText: 'M&H 26x6-15 slick', tyreRadius: 0.3095, muPeak: 1.12, muSlide: 0.95, crr: 0.015 },
+    attrs: { tyreMass: 6.8, odIn: 26.0, widthIn: 6.0, tyrekind: 'slick', road: 'strip' },
+    prov: { tyreRadius: 'd', odIn: 'ss', widthIn: 'ss', tyreMass: 'e', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.mh26x85',
+    slot: 'tyres',
+    label: 'M&H Racemaster 8.5/26.0-15 slick (MHR062)',
+    desc: 'Current M&H wrinkle-wall slick in the 26 in VW diameter, 8.3 in tread, 10.5 in section, 18 lb, 8 in rim, compound HB-11. Not DOT, not street-legal. May need fender clearance. A burnout is not modelled; grip is the hot figure (estimate).',
+    years: [1968, 2026],
+    yl: 'c. 1968?',
+    src: 'M&H / Interco MHR062 8.5/26.0-15: OD 26.0 in, tread 8.3 in, section 10.5 in, 18 lb, 8 in rim, HB-11, not DOT (M&H Racemaster tables). Rolling radius derived. Grip ESTIMATE.',
+    vehicle: { tyreText: 'M&H 8.5/26.0-15 slick', tyreRadius: 0.3095, muPeak: 1.15, muSlide: 0.98, crr: 0.014 },
+    attrs: { tyreMass: 8.16, odIn: 26.0, widthIn: 10.5, treadIn: 8.3, tyrekind: 'slick', road: 'strip', wide: true },
+    prov: { tyreRadius: 'd', odIn: 's', widthIn: 's', treadIn: 's', tyreMass: 's', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.mhcheat',
+    slot: 'tyres',
+    label: 'M&H 8.5/26.0-15 cheater slick (MHD-01)',
+    desc: 'M&H street / cheater slick: same 26.0 in diameter and 8.5 in tread, 16 lb, DOT-marked with a shallow tread. Intended for the strip more than a road course. May need fender clearance. A burnout is not modelled; grip is the hot figure (estimate).',
+    years: [1970, 2026],
+    yl: 'c. 1970?',
+    src: 'M&H / Interco MHD-01 8.5/26.0-15 cheater: OD 26 in, tread 8.5 in, 16 lb, DOT, shallow tread (M&H tables). Rolling radius derived. Grip ESTIMATE, between a radial and a full slick.',
+    vehicle: { tyreText: 'M&H 8.5/26.0-15 cheater slick', tyreRadius: 0.3095, muPeak: 1.05, muSlide: 0.88, crr: 0.015 },
+    attrs: { tyreMass: 7.26, odIn: 26.0, widthIn: 8.5, treadIn: 8.5, tyrekind: 'cheater', road: 'dot-strip', wide: true },
+    prov: { tyreRadius: 'd', odIn: 's', widthIn: 's', treadIn: 's', tyreMass: 's', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.gy268',
+    slot: 'tyres',
+    label: 'Goodyear 26.0x8.0-15 Blue Streak / Eagle slick',
+    desc: 'Period Goodyear drag slick in the 26 in x 8 in-15 class (Blue Streak / later Eagle). Catalog diameter about 26.4-26.5 in, a little taller than the M&H 26.0, so a shade more top speed and a shade less launch leverage. Not street-legal. A burnout is not modelled; grip is the hot figure (estimate).',
+    years: [1965, 2026],
+    yl: 'c. 1965',
+    src: 'Period Goodyear Blue Streak / current 26.0x8.0-15 Eagle-class listings: overall diameter about 26.4-26.5 in (26.45 in used). Mass and grip ESTIMATES.',
+    vehicle: { tyreText: 'Goodyear 26.0x8.0-15 slick', tyreRadius: 0.3149, muPeak: 1.13, muSlide: 0.96, crr: 0.014 },
+    attrs: { tyreMass: 8.2, odIn: 26.45, widthIn: 8.0, tyrekind: 'slick', road: 'strip', wide: true },
+    prov: { tyreRadius: 'd', odIn: 'ss', widthIn: 'ss', tyreMass: 'e', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+  add({ id: 'tyre.mt245',
+    slot: 'tyres',
+    label: 'Mickey Thompson 24.5/8-15 slick',
+    desc: 'A shorter 24.5 in x 8 in-15 drag slick discussed on TheSamba for VW use. More launch leverage and a lower trap speed for the same peak revs than a 26 in slick. Not street-legal. A burnout is not modelled; grip is the hot figure (estimate).',
+    years: [1968, 2026],
+    yl: 'c. 1968?',
+    src: 'TheSamba discussions of Mickey Thompson 24.5/8-15 on VW drag cars (size sourced-secondary; compound and mass ESTIMATES). Rolling radius derived from the 24.5 in nominal OD.',
+    vehicle: { tyreText: 'Mickey Thompson 24.5/8-15 slick', tyreRadius: 0.2916, muPeak: 1.14, muSlide: 0.97, crr: 0.014 },
+    attrs: { tyreMass: 7.26, odIn: 24.5, widthIn: 8.0, tyrekind: 'slick', road: 'strip', wide: true },
+    prov: { tyreRadius: 'd', odIn: 'ss', widthIn: 'ss', tyreMass: 'e', muPeak: 'e', muSlide: 'e', crr: 'e' } });
+
+  // Front tyres (hidden slot tyresF). Stock default is "Same as rear" (no keys). Old saves load via Parts.full().
+  add({ id: 'tyreF.same',
+    slot: 'tyresF',
+    label: 'Same as rear',
+    desc: 'Use the same tyre as the rear / all-round choice on the front axle.',
+    years: [1955, 2026],
+    attrs: { sameAsRear: true } });
+  add({ id: 'tyreF.stock',
+    slot: 'tyresF',
+    label: '5.60-15 cross-ply (factory)',
+    desc: 'Factory 5.60-15 bias-ply on the front only. Same sourced size as the rear stock tyre.',
+    years: [1955, 1967],
+    src: 'Same sources as tyre.stock (Coker / Longstone Firestone 5.60-15). Front keys only; the rear tyre is unchanged.',
+    vehicle: { tyreTextFront: '5.60-15 cross-ply', tyreRadiusFront: 0.307, muPeakFront: 0.78, muSlideFront: 0.62, crrFront: 0.016 },
+    attrs: { tyreMass: 7.71, odIn: 25.79, widthIn: 5.94, treadIn: 3.8, tyrekind: 'bias', road: 'legal' },
+    prov: { tyreRadiusFront: 'd', muPeakFront: 'e', muSlideFront: 'e', crrFront: 'e', tyreMass: 's', odIn: 's' } });
+  add({ id: 'tyreF.x155',
+    slot: 'tyresF',
+    label: 'Michelin X 155 R 15 radial',
+    desc: 'Narrower radial on the front only. Legal on the road.',
+    years: [1965, 2026],
+    yl: 'c. 1965?',
+    src: 'Same geometry as tyre.x155 (155HR15 OD 24.68 in). Grip ESTIMATE.',
+    vehicle: { tyreTextFront: '155 R 15 radial', tyreRadiusFront: 0.2938, muPeakFront: 0.85, muSlideFront: 0.7, crrFront: 0.012 },
+    attrs: { tyreMass: 8.0, odIn: 24.68, widthIn: 6.02, tyrekind: 'radial', road: 'legal' },
+    prov: { tyreRadiusFront: 'd', muPeakFront: 'e', muSlideFront: 'e', crrFront: 'e', tyreMass: 'ss', odIn: 'ss' } });
+  add({ id: 'tyreF.cint155',
+    slot: 'tyresF',
+    label: 'Pirelli Cinturato CA67 155 HR 15',
+    desc: 'Period Pirelli radial as a front tyre (the Inch Pincher Pirelli-front claim was not independently sourced). Legal on the road.',
+    years: [1965, 2026],
+    yl: 'c. 1965',
+    src: 'Same sources as tyre.cint155 (CA67 155HR15, 627 mm). Grip ESTIMATE. Inch Pincher front brand not found in the EMPI history.',
+    vehicle: { tyreTextFront: '155 HR 15 Cinturato', tyreRadiusFront: 0.2938, muPeakFront: 0.86, muSlideFront: 0.71, crrFront: 0.012 },
+    attrs: { tyreMass: 8.0, odIn: 24.68, widthIn: 6.02, tyrekind: 'radial', road: 'legal' },
+    prov: { tyreRadiusFront: 'd', muPeakFront: 'e', muSlideFront: 'e', crrFront: 'e', tyreMass: 's', odIn: 's' } });
+  add({ id: 'tyreF.radial',
+    slot: 'tyresF',
+    label: 'Michelin X 165 R 15 radial',
+    desc: '165 R 15 Michelin X on the front only. Legal on the road.',
+    years: [1965, 2026],
+    yl: 'c. 1965?',
+    src: 'Same keys as tyre.radial (radius 0.304 m). Grip ESTIMATE.',
+    vehicle: { tyreTextFront: '165 R 15 radial', tyreRadiusFront: 0.304, muPeakFront: 0.85, muSlideFront: 0.7, crrFront: 0.012 },
+    attrs: { tyreMass: 8.2, odIn: 25.55, widthIn: 6.5, tyrekind: 'radial', road: 'legal' },
+    prov: { tyreRadiusFront: 'd', muPeakFront: 'e', muSlideFront: 'e', crrFront: 'e', tyreMass: 'e' } });
+  add({ id: 'tyreF.185ss',
+    slot: 'tyresF',
+    label: '185 HR 15 radial (EMPI / Sprint Star era)',
+    desc: 'Wider period radial on the front only. May need fender clearance. Legal on the road.',
+    years: [1965, 2026],
+    yl: 'c. 1965',
+    src: 'Same geometry as tyre.185ss (185HR15, 660 mm). Grip ESTIMATE.',
+    vehicle: { tyreTextFront: '185 HR 15 radial', tyreRadiusFront: 0.3093, muPeakFront: 0.88, muSlideFront: 0.73, crrFront: 0.013 },
+    attrs: { tyreMass: 9.8, odIn: 25.98, widthIn: 7.28, tyrekind: 'radial', road: 'legal', wide: true },
+    prov: { tyreRadiusFront: 'd', muPeakFront: 'e', muSlideFront: 'e', crrFront: 'e', tyreMass: 'e', odIn: 's' } });
+  add({ id: 'tyreF.mhfront',
+    slot: 'tyresF',
+    label: 'M&H Racemaster 4.5/26-15 front runner (MSS-018)',
+    desc: 'Dedicated drag front-runner: 25.9 in overall, 4.5 in tread, 6.5 in section, 13 lb, 4 in rim. Not a drive tyre. Not street-legal. A warning appears if this is fitted on the driven (rear) slot.',
+    years: [1968, 2026],
+    yl: 'c. 1968?',
+    src: 'M&H / Interco MSS-018 4.5/26-15: OD 25.9 in, tread 4.5 in, section 6.5 in, 13 lb, 4 in rim (M&H tables). Rolling radius derived. Front grip ESTIMATE (a skinnier runner, not a slick).',
+    vehicle: { tyreTextFront: 'M&H 4.5/26-15 front runner', tyreRadiusFront: 0.3083, muPeakFront: 0.9, muSlideFront: 0.72, crrFront: 0.014 },
+    attrs: { tyreMass: 5.9, odIn: 25.9, widthIn: 6.5, treadIn: 4.5, tyrekind: 'frontrunner', road: 'strip', axle: 'front' },
+    prov: { tyreRadiusFront: 'd', odIn: 's', widthIn: 's', treadIn: 's', tyreMass: 's', muPeakFront: 'e', muSlideFront: 'e', crrFront: 'e' } });
+
 
   // ==== v1.13.28 Type 4 conversion parts ====
   var T4ONLY = [{ attr: 'case', in: ['type4'], msg: 'Type 4 conversion part: only with a Type 4 engine' }];
@@ -12895,6 +13129,13 @@ var RoadCourse = (function () {
   var TAU_K = 0.15;           // s, path-curvature response to steering (ESTIMATE: yaw build-up of a light car)
   var ALPHA_PK = 0.12;        // rad (~7 deg), tyre slip angle at the cornering limit (ESTIMATE: bias-ply 6-10 deg)
   var MU_ASPH = 0.85;         // Bosch / Wong: dry asphalt peak (new tyre, 50 km/h): reference for the off-road ratios
+  // v1.13.40: a staggered fitment (front muPeakFront, rear muPeak) uses the harmonic mean for cornering; a single muPeak is unchanged
+  function tyreMuLat(c) {
+    var muR = c.muPeak || 0.8;
+    if (c.muPeakFront == null) return muR;
+    var muF = c.muPeakFront;
+    return (muF + muR) ? (2 * muF * muR / (muF + muR)) : muR;
+  }
   var CRR_ASPH = 0.013;       // Bosch: car tyres on concrete / asphalt
   var SURF = [                // by distance of a wheel from the centre line (m)
     { to: 3.6, name: 'asphalt', mu: 1, crr: 0 },
@@ -13155,7 +13396,7 @@ var RoadCourse = (function () {
     // a wheel pair is on the surface its distance from the centre line falls in; the car gets the mean of both sides
     var dl = Math.abs(this.y - hw), dr = Math.abs(this.y + hw), sA = surf(Math.max(dl, dr) === dl ? dl : dr), sB = surf(Math.min(dl, dr));
     var muF = (sA.mu + sB.mu) / 2, crr = (sA.crr + sB.crr) / 2;
-    var muLat = (c.muPeak || 0.8) * latK(c) * speedFactor(v) * muF;
+    var muLat = tyreMuLat(c) * latK(c) * speedFactor(v) * muF;
     return { muLat: muLat, muLong: (c.muPeak || 0.8) * muF, crr: crr, outer: sA.name, inner: sB.name, muF: muF };
   };
   Sim.prototype.kFull = function (c, v) {
@@ -13315,7 +13556,7 @@ var RoadCourse = (function () {
 
   // cornering speed limit for each bend (steady state, no braking): v = sqrt(mu_lat(v) g R) solved by iteration
   function cornerSpeed(c, R) {
-    var v = 20; for (var i = 0; i < 30; i++) v = Math.sqrt((c.muPeak || 0.8) * latK(c) * speedFactor(v) * G * R);
+    var v = 20; for (var i = 0; i < 30; i++) v = Math.sqrt(tyreMuLat(c) * latK(c) * speedFactor(v) * G * R);
     return v;
   }
   // ---- v1.13.37 brake cue (the "BRAKE" banner; generic: from the road's curvature ahead, the car's own cornering grip and braking) ----
@@ -13333,7 +13574,7 @@ var RoadCourse = (function () {
   function bendSpeed(c, k, y) {   // fastest speed (m/s) that holds lateral offset y through signed curvature k
     var ke = Math.abs(k) / Math.max(0.2, 1 - y * k), v = 40;
     if (ke < 1e-6) return 99;
-    for (var i = 0; i < 6; i++) v = Math.sqrt(CUE.USE * (c.muPeak || 0.8) * latK(c) * speedFactor(v) * G / ke);
+    for (var i = 0; i < 6; i++) v = Math.sqrt(CUE.USE * tyreMuLat(c) * latK(c) * speedFactor(v) * G / ke);
     return v;
   }
   function brakeCue(T, c, s, y, v, fade) {
@@ -13384,7 +13625,7 @@ var RoadCourse = (function () {
   }
   function profile(T, c, lane, opt) {
     opt = opt || {};
-    var n = T.k.length, v = new Float32Array(n), m = c.massKg || 1200, mu = c.muPeak || 0.8, P = powerW(c) * 0.8 * (opt.pK || 1), vt = vTop(c) * (opt.vK || 1);
+    var n = T.k.length, v = new Float32Array(n), m = c.massKg || 1200, mu = tyreMuLat(c), P = powerW(c) * 0.8 * (opt.pK || 1), vt = vTop(c) * (opt.vK || 1);
     var drv = c.awd || c.trans === 'ev' ? 1 : (c.rearFrac || 0.5), dec = 0.75 * Math.min((c.brakes && c.brakes.capG) || 0.9, mu) * G, y = lane === undefined ? START_Y : lane;
     var crr = c.crr || 0.015, cdA = (c.cd || 0.4) * (c.area || 2), cK = opt.cK || 1;
     for (var i = 0; i < n; i++) { var k = Math.abs(T.k[i] / (1 - y * T.k[i])), w = 60; for (var j = 0; j < 12; j++) w = k > 1e-6 ? Math.sqrt(cK * mu * latK(c) * speedFactor(w) * G / k) : 90; v[i] = Math.min(vt, w); }
@@ -16296,6 +16537,8 @@ var PaintedVisuals = (function () {
   }
   // ---------------------------------------------------------------- cached static layer (painting + static overlays), 2x
   function units(s) { return s.units === 'mph' ? 'mph' : 'kmh'; }
+  // v1.13.40: period speedo is calibrated to the stock rolling radius; indicated speed only on the analogue dash (true kmh is used for the HUD, cues, and the drag trap)
+  function kmhInd(s) { return (s.kmhInd != null) ? s.kmhInd : s.kmh; }
   // ---------------------------------------------------------------- v1.6 layout (flat / ink): real-size gauges from the camera, measured art windows
   function bezel(g, x, y, R, r) {   // chrome ring between the face (r) and the bezel (R), in the style's language
     g.fillStyle = STY === 'ink' ? '#d9dadf' : '#c9ccd2'; ell(g, x, y, R, R); g.fill();
@@ -16333,14 +16576,14 @@ var PaintedVisuals = (function () {
       var P = m.pods, sp = P.speedo, t = P.tach, isMph = units(s) === 'mph';
       drum(g, sp[0], sp[1] + sp[3] * 0.45, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, sp[3] * 0.17, sp[3] * 0.25);
       lamp(g, t[0] - t[3] * 0.3, t[1] + t[3] * 0.52, 3.4, '#ff3a2a', s.brake > 0.05); lamp(g, t[0] + t[3] * 0.3, t[1] + t[3] * 0.52, 3.4, '#ff3a2a', !running);
-      needle(g, sp[0], sp[1], sp[3], C.angS(isMph ? mph : s.kmh), '#ff6a1e'); needle(g, t[0], t[1], t[3], C.angT(s.rpm / 1000), '#ff6a1e');
+      needle(g, sp[0], sp[1], sp[3], C.angS(isMph ? mph : kmhInd(s)), '#ff6a1e'); needle(g, t[0], t[1], t[3], C.angT(s.rpm / 1000), '#ff6a1e');
       glass(g, sp[0], sp[1], sp[3]); glass(g, t[0], t[1], t[3]);
       dialGlass(g, m.radioDial, [55, 70, 100, 130, 160], false);
       var U = m.under, oilP = running ? Math.min(70, 18 + s.rpm / 100) : 0, amp = running ? 30 + Math.max(-12, Math.min(14, (s.rpm - 1500) / 300)) : 22;
       needle(g, U.oil[0], U.oil[1] + 2, U.oil[2] - 3, C.angOil(oilP), '#c4271c', 2.4); needle(g, U.amps[0], U.amps[1] + 2, U.amps[2] - 3, C.angAmp(amp), '#c4271c', 2.4);
       hurst(g, m, s);
     } else {
-      var rb = C.rib, x0 = rb[0], h = rb[4], y0 = rb[3], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : s.kmh) / rb[2] * (rb[1] - rb[0]);
+      var rb = C.rib, x0 = rb[0], h = rb[4], y0 = rb[3], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : kmhInd(s)) / rb[2] * (rb[1] - rb[0]);
       g.fillStyle = T.needle; g.fillRect(x0, y0 + h * 0.6, x1 - x0, h * 0.16); if (T.line) { g.strokeStyle = T.line; g.lineWidth = 1.2; g.strokeRect(x0, y0 + h * 0.6, x1 - x0, h * 0.16); }
       var R = m.ribbon; lamp(g, R[0] + 12, R[1] + h * 0.68, 3.2, '#ff3a2a', s.brake > 0.05); lamp(g, R[0] + R[2] - 12, R[1] + h * 0.68, 3.2, '#ff3a2a', !running);
       columnLever(g, m, s);
@@ -17150,7 +17393,7 @@ var PaintedVisuals = (function () {
     }
   }
   function drawInside(g, s) {
-    var car = carOf(s.carId), m = M[car], C = cache(car, s), mph = s.kmh / 1.609344, DY = artDY(car);
+    var car = carOf(s.carId), m = M[car], C = cache(car, s), mph = kmhInd(s) / 1.609344, DY = artDY(car);
     if (!(window.__pvOff || {}).backdrop) backdrop(g, car, s, Math.min(PH, C.glassY + DY));
     g.save(); if (DY) g.translate(0, DY);
     var brmSteer = car === 'brm' && !V16 && steerDelta(s) && !(window.__pvOff || {}).tyres && tyreSet('brm/in');
@@ -17176,11 +17419,11 @@ var PaintedVisuals = (function () {
       drum(g, t[0], t[1] + t[2] * 0.5, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 7, 10);
       lamp(g, t[0] - 15, t[1] + t[2] * 0.25, 3.4, '#ff3a2a', s.brake > 0.05); lamp(g, t[0] + 15, t[1] + t[2] * 0.25, 3.4, '#ff3a2a', !running);
       var oilP = running ? Math.min(5, 1.2 + s.rpm / 1800) : 0;
-      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : s.kmh), '#ff6a1e'); needle(g, t[0], t[1], t[2], C.angT(s.rpm / 1000), '#ff6a1e');
+      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : kmhInd(s)), '#ff6a1e'); needle(g, t[0], t[1], t[2], C.angT(s.rpm / 1000), '#ff6a1e');
       needle(g, G.oil[0], G.oil[1], G.oil[2], C.angOil(oilP), '#ff6a1e', 2.2); needle(g, G.fuel[0], G.fuel[1], G.fuel[2], C.angF(0.72), '#ff6a1e', 2.2);
       g.save(); g.textAlign = 'center'; g.fillStyle = '#ffb02e'; g.font = 'bold ' + Math.round(dsp[2] * 0.62) + 'px ' + FONT;
       var gl = s.gearLabel || (s.gear > 0 ? String(s.gear) : 'N'); g.fillText(gl, dsp[0], dsp[1] + dsp[2] * 0.12);
-      g.font = Math.round(dsp[2] * 0.26) + 'px ' + FONT; g.fillStyle = '#e8eef4'; g.fillText(Math.round(isMph ? mph : s.kmh) + (isMph ? ' mph' : ' km/h'), dsp[0], dsp[1] + dsp[2] * 0.58); g.restore();
+      g.font = Math.round(dsp[2] * 0.26) + 'px ' + FONT; g.fillStyle = '#e8eef4'; g.fillText(Math.round(isMph ? mph : kmhInd(s)) + (isMph ? ' mph' : ' km/h'), dsp[0], dsp[1] + dsp[2] * 0.58); g.restore();
       [sp, t, G.oil, G.fuel, dsp].forEach(function (q) { glass(g, q[0], q[1], q[2]); });
       if (m.shifter) { m._shifterSprite = 'p997-shifter'; hurst(g, m, s); }
     } else if (car === 'beetle') {
@@ -17188,14 +17431,14 @@ var PaintedVisuals = (function () {
       drum(g, sp[0], sp[1] + sp[2] * 0.42, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 7, 10);
       lamp(g, sp[0] - 18, sp[1] + sp[2] * 0.55, 3.4, '#ff3a2a', s.brake > 0.05);
       lamp(g, sp[0] + 18, sp[1] + sp[2] * 0.55, 3.4, '#ff3a2a', !running);
-      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : s.kmh), '#ff6a1e');
+      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : kmhInd(s)), '#ff6a1e');
       glass(g, sp[0], sp[1], sp[2]);
       if (m.shifter) { m._shifterSprite = 'beetle-shifter'; hurst(g, m, s); }
     } else if (car === 'gt350') {
       var G = m.gauges, sp = G.speedo, t = G.tach, isMph = units(s) === 'mph';
       drum(g, sp[0], sp[1] + sp[2] * 0.42, isMph ? s.odoKm / 1.609344 : s.odoKm, 6, 8.5, 12);
       lamp(g, t[0] - 14, t[1] + t[2] * 0.5, 4.2, '#ff3a2a', s.brake > 0.05); lamp(g, t[0] + 14, t[1] + t[2] * 0.5, 4.2, '#ff3a2a', !running);
-      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : s.kmh), '#ff6a1e'); needle(g, t[0], t[1], t[2], C.angT(s.rpm / 1000), '#ff6a1e');
+      needle(g, sp[0], sp[1], sp[2], C.angS(isMph ? mph : kmhInd(s)), '#ff6a1e'); needle(g, t[0], t[1], t[2], C.angT(s.rpm / 1000), '#ff6a1e');
       glass(g, sp[0], sp[1], sp[2]); glass(g, t[0], t[1], t[2]);
       dialGlass(g, m.radioDial, [55, 70, 100, 130, 160], false);
       if (m.under) { var U = m.under, oilP = running ? Math.min(70, 18 + s.rpm / 100) : 0, amp = running ? 30 + Math.max(-12, Math.min(14, (s.rpm - 1500) / 300)) : 22;
@@ -17205,7 +17448,7 @@ var PaintedVisuals = (function () {
     } else if (car === 'modelx') {
       drawEvScreens(g, s, m, running);
     } else {
-      var rb = C.rib, x0 = rb[0], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : s.kmh) / rb[2] * (rb[1] - rb[0]), y0 = rb[3];
+      var rb = C.rib, x0 = rb[0], x1 = rb[0] + Math.min(rb[2], units(s) === 'mph' ? mph : kmhInd(s)) / rb[2] * (rb[1] - rb[0]), y0 = rb[3];
       g.fillStyle = T.flat ? T.needle : lin(g, 0, y0 + 46, 0, y0 + 56, [[0, '#ffc07a'], [0.5, '#ff5a14'], [1, '#a82a08']]); g.fillRect(x0, y0 + 46, x1 - x0, 9);
       if (T.line) { g.strokeStyle = T.line; g.lineWidth = 1.5; g.strokeRect(x0, y0 + 46, x1 - x0, 9); }
       if (!T.flat) { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, x1, y0 + 50, 0, 30, [[0, 'rgba(255,120,40,0.85)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(x1 - 30, y0 + 20, 60, 60); g.restore();
@@ -17828,6 +18071,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.40", date: "2026-11-28", status: "done", headline: "Beetle tyres: period street, radial and drag options", text: "The Swap parts list now has period-correct tyres for the Beetle, not only the factory 5.60-15 and a Michelin X 165 R 15. Cross-plies, radials, wider aftermarket sizes and drag tyres (M&H, Goodyear, Mickey Thompson, early Castler recaps) change launch, elapsed time, top speed, the speedo reading (the period instrument stays calibrated to the stock rolling radius) and road-course grip, all through generic keys. Front and rear tyres can differ; the default is the same tyre all round, and old saves still load. A burnout is not modelled; slick grip is the hot figure, with a warning. Stock sounds, the stock-tyre drag strip and the old Mesa Road lap are unchanged." },
       { v: "v1.13.39", date: "2026-11-28", status: "done", headline: "Beetle parts: more of the Seume interchange-manual catalogue", text: "The Swap parts list now has the named parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual that were still missing after v1.13.31, plus a later same-day pass over the book's two-column cam chart (read from a clean transcription) and manufacturer or period sources for figures the OCR had missed. Valve material is a property of the heads (Manley / Del West), piston rings are a property of the barrels, and flywheel hardware sits on the existing Clutch / flywheel slot so the flywheel is not listed twice. Valve covers and the ignition coil or box stay as slots; covers are flagged no performance effect. Old saves that used the removed categories still load. Where a figure is still estimated it is marked, and parts the engine model does not yet use have a short purpose note. Stock sounds, the drag strip and the old Mesa Road lap are unchanged." },
       { v: "v1.13.33", date: "2026-11-27", status: "done", headline: "Swap parts: purpose notes, config below the list", text: "Parts that do not change power, torque, weight or grip now say so in the Swap parts list, with a short note on what they are for in real life (cooling, oil control, fitment, reliability, dress-up) so they can be modelled later. The build figures and warnings have moved to the bottom of the list, so the part selectors stay visible on a phone and in the car. Stock sounds are unchanged." },
       { v: "v1.13.31", date: "2026-11-26", status: "done", headline: "Beetle parts: book catalogue, compatibility, prices", text: "Parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual join the catalogue where they already fit a slot and have enough sourced figures to model, with prices in the picker (vendor currency and euros, or plainly 'no price found'). The Okrasa stroker is 69 mm as the book has it; the 69.5 mm crank is the separate EMPI part. The 1996 CB 044 Super Sport / Magnum 44 is listed beside the later CNC Wedge Port. Engle cam lifts are at the cam in the book and at the valve in the game, multiplied by the 1.1 rockers. Connecting rods and rocker arms are new slots that feed the same generic engine model (journal size, rod length, rocker ratio) with no per-car code. A later pass (same release) gives the CB 044 CNC a sourced 65 cc chamber so compression follows bore and stroke, adds the book's clearance and fitment rules, and opens extra slots (oil pump, spacers, flywheel hardware and the rest) where they carry a compatibility or model effect. Stock sounds are unchanged." },
@@ -19942,7 +20186,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     }
     VisualModels.get(state.visual).draw(dash, {
       view: state.view, model: state.model,
-      carId: state.carId, rpm: state.tachRpm !== null && state.tachRpm !== undefined ? state.tachRpm : c.rpm(), kmh: c.v * 3.6, units: state.units, tachMax: v.tachMax, tachRed: v.tachRed,
+      carId: state.carId, rpm: state.tachRpm !== null && state.tachRpm !== undefined ? state.tachRpm : c.rpm(), kmh: c.v * 3.6, kmhInd: c.v * 3.6 * ((v.speedoRadius || v.tyreRadius) / v.tyreRadius), units: state.units, tachMax: v.tachMax, tachRed: v.tachRed,
       odoKm: c.odo / 1000, tripKm: c.trip / 1000, gear: c.gear, gearLabel: c.gearLabel(), range: c.range,
       thr: state.throttle, brake: state.brake, garage: !!state.garage, Tf: c.Tf, Tr: c.Tr, fade: Math.min(c.fadeF || 1, c.fadeR || 1),
       tyre: c.tyre, sr: c.sr || 0, lockF: c.frontLocked, lockR: c.tyre === 'lock', limiter: c.limiterCut && c.engine === 'running',
