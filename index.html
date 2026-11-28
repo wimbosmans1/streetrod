@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.43)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.44)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -10010,8 +10010,19 @@ var Physics = (function () {
     var L = inp.launch && inp.launch.rpm > 0 && !auto && !this.shift && this.gear === 1 ? inp.launch : null;
     if (L && L.hold && this.v < 0.5) { this.lHold = true; this.lDump = false; this.clutchLocked = false; driverThr = this.matchThrottle(L.rpm, rpm); }
     else if (this.lHold) { this.lHold = false; this.lDump = !!L; }
-    if (this.lDump && (this.clutchLocked || this.v > 8 || !L)) this.lDump = false;
-    if (this.shift && this.shift.rm) { this.shift.t += dt; driverThr = this.revMatchStep(this.shift, dt, pedal, rpm); }
+    // v1.13.44 neutral staging (inp.launch.n): the car stages in N, the driver builds the revs there (held at launch.rpm when one is set,
+    // else the bare pedal), then selects 1st: clutch pedal down through the gear change with the revs kept, and the clutch is dumped as the
+    // gear goes in (launch rpm off: the normal throttle-led clutch). Same dump as the 1st-gear launch; no engine or power change.
+    // Without inp.launch.n nothing here runs.
+    var LN = inp.launch && inp.launch.n && !auto && this.v < 0.5 && (this.shift ? (this.shift.from === 0 && this.shift.to === 1 && !this.shift.rm) : this.gear === 0) ? inp.launch : null;
+    if (LN && this.gear === 0 && LN.rpm > 0 && pedal > 0.05) driverThr = this.matchThrottle(LN.rpm, rpm);
+    if (this.lDump && (this.clutchLocked || this.v > 8 || this.gear !== 1 || !(L || (inp.launch && inp.launch.n)))) this.lDump = false;
+    if (LN && this.shift) {   // v1.13.44 neutral staging: N -> 1st at the start (clutch pedal down, revs held, dump as the gear goes in)
+      var sN = this.shift; sN.t += dt; this.engageTarget = 0;
+      driverThr = LN.rpm > 0 ? (pedal > 0.05 ? this.matchThrottle(LN.rpm, rpm) : 0) : pedal;
+      if (!sN.done && sN.t >= 0.14) { this.gear = 1; sN.done = true; this.clutchLocked = false; this.engage = 0; this.lHold = false; this.lDump = LN.rpm > 0; driverThr = pedal; this.shift = null; }
+    }
+    else if (this.shift && this.shift.rm) { this.shift.t += dt; driverThr = this.revMatchStep(this.shift, dt, pedal, rpm); }
     else if (this.shift) {
       var s = this.shift; s.t += dt;
       var unsync = (c.unsyncGears || []).indexOf(s.to) >= 0;
@@ -10518,9 +10529,11 @@ var Parts = (function () {
       var rhoMf = RHO0 * pr * T0 / chargeT(b, T0 + dTc), dpd = dpChain(Qe, tm.down, rhoMf);
       rhoM = rhoMf * (1 - dpd / (P0 * pr)); Pdrive = Qb * rin * 1005 * dTc / b.eta_mech; dpIn = dpu + dpd;
     } else { dpIn = dpChain(Qe, tm.up, RHO0) + dpChain(Qe, tm.down, RHO0); rhoM = RHO0 * (1 - dpIn / P0); }
+    var FU = tm.fuel ? fuelOf(tm.fuel) : null;   // v1.13.44 generic fuel (absent = the petrol the model was fitted on)
+    if (FU) rhoM *= FU.rho;
     var fi = tu || b, X = null, dpEx, veT = ve, mepX = 0;
     if (tm.ex) {   // v1.13.27 exhaust side (see exhaustAt); replaces the single tail-velocity term
-      X = exhaustAt(tm, n, rhoM * Qe * 1.08, fi ? P0 * pr : P0 - dpIn, fi ? pr : 1 - dpIn / P0, AFR_ST / ((fi && fi.chg && fi.afr) || AFR), dpTurb);
+      X = exhaustAt(tm, n, rhoM * Qe * (FU ? FU.mx : 1.08), fi ? P0 * pr : P0 - dpIn, fi ? pr : 1 - dpIn / P0, FU ? FU.phi : AFR_ST / ((fi && fi.chg && fi.afr) || AFR), dpTurb);
       dpEx = X.dp + X.pump; veT = ve * (1 + X.dve) * (1 - X.xr) / (1 - EXM.xr_ref); mepX = X.loss;
     } else { var rhoE = P0 / (RG * 900), vt = rhoM * Qe * 1.08 / rhoE / tm.a_tail; dpEx = tm.k_exh * 0.5 * rhoE * vt * vt; }
     var etaI = TM.kc * (1 - Math.pow(tm.cr, 1 - GAM)), fSpk = 1, adv = null;
@@ -10528,7 +10541,7 @@ var Parts = (function () {
       // vacuum unit: no advance at WOT / under boost (a diaphragm cannot retard; the sound kernel's law goes negative under boost)
       adv = advAt(tm.ign, n, fi ? Math.max(0, 1 - pr) : dpIn / P0); fSpk = sparkEff(adv, burnAt(n), tm.cr);
     }
-    var imep = etaI * veT * rhoM * LHV / AFR * fSpk - mepX;
+    var imep = (FU ? etaI * veT * rhoM * LHV / AFR * fSpk * FU.e : etaI * veT * rhoM * LHV / AFR * fSpk) - mepX;
     var fmep = fmepAt(tm, n, fi ? pr : 1 - dpIn / P0), pmep = dpEx + dpTurb + ((b || tu) ? 0 : 0.5 * dpIn);
     if (fi && fi.chg) {   // v1.13.25 charge model (key chg: 1; builds without it keep the v1.13.22 boosted branch): fuel follows the trapped air at the
       // boost AFR (fi.afr, richer under boost) with the fuel-air-cycle efficiency curve; pumping uses the real manifold pressure, so boost
@@ -10777,6 +10790,19 @@ var Parts = (function () {
   }
   // relative indicated work vs equivalence ratio (fuel-air cycle, Heywood fig. 5-9 shape: flat peak near phi 1.15; ESTIMATE fit)
   function fphi(phi) { return 1 - 0.5 * (phi - 1.15) * (phi - 1.15); }
+  // ---- v1.13.44 generic fuel (tm.fuel: { lhv J/kg, afr_st, afr (running), h_fg J/kg, M g/mol, x_ev, egt }) ----
+  // Relative to the petrol the model was fitted on (LHV, AFR, AFR_ST, H_FG; FUEL_G):
+  //  e:   heat per kg of trapped air = LHV/AFR_st (only the air's oxygen burns fuel) × the fuel-air-cycle curve at the running mixture
+  //  rho: trapped-air density from the extra charge cooling (evaporated share x_ev of the latent heat per kg of air, cp 1005) and from the
+  //       air displaced by the fuel vapour (mole fraction x_ev / afr × 28.97 / M), both against petrol's own (FUEL_G, ESTIMATES)
+  //  mx:  exhaust mass per kg of air (1 + 1/afr; petrol keeps the fitted 1.08); phi: equivalence ratio for the exhaust gas model
+  var FUEL_G = { x_ev: 0.3, M: 100 };   // ESTIMATES: share of the petrol evaporated before IVC (carb + manifold), mean molar mass
+  function fuelOf(f) {
+    var e = (f.lhv / f.afr_st) / (LHV / AFR_ST) * fphi(f.afr_st / f.afr) / fphi(AFR_ST / AFR);
+    var dT = (f.x_ev * f.h_fg / f.afr - FUEL_G.x_ev * H_FG / AFR) / 1005;
+    var yf = f.x_ev / f.afr * 28.97 / f.M, yg = FUEL_G.x_ev / AFR * 28.97 / FUEL_G.M;
+    return { e: e, rho: T0 / (T0 - dT) * (1 + yg) / (1 + yf), mx: 1 + 1 / f.afr, phi: f.afr_st / f.afr, dT: dT };
+  }
   function crFrom(tm) { // compression ratio from the swept volume and the combustion chamber (head chamber + deck)
     var vs = Math.PI / 4 * tm.bore * tm.bore * tm.stroke; return (vs + tm.vc) / tm.vc;
   }
@@ -10962,6 +10988,10 @@ var Parts = (function () {
     var sc = {}, nsc = 0, vdS = s.tm.bore * s.tm.bore * s.tm.stroke, vdB = c.tm.bore * c.tm.bore * c.tm.stroke;
     if (vdB !== vdS) { sc.a_idle = vdB / vdS; nsc++; }
     if (s.attrs.ac_il !== undefined && c.attrs.ac_il !== undefined && c.attrs.ac_il !== s.attrs.ac_il) { sc.k_int = Math.pow(10, (s.attrs.ac_il - c.attrs.ac_il) / 20); nsc++; }
+    if (c.tm.fuel) {   // v1.13.44 fuel: combustion heat per cycle (charge × heat per kg of air) and the EGT law of the sound kernel
+      var FUs = fuelOf(c.tm.fuel); sc.q_comb = FUs.e * FUs.rho; nsc++;
+      if (c.tm.fuel.egt) { sc.t_prim0 = c.tm.fuel.egt; sc.t_prima = c.tm.fuel.egt; nsc += 2; }
+    }
     if (nsc) { out.scale = sc; any = true; }
     return any ? out : null;
   }
@@ -11090,7 +11120,7 @@ var Parts = (function () {
   /** merged friction: FMEP (bar, a + b·krpm + c·krpm²) -> N·m triple for the vehicle model */
   function frictionNm(fm) { var k = BAR_NM(fm.vd); return [fm.bar[0] * k, fm.bar[1] * k, fm.bar[2] * k]; }
   return { compose: compose, check: check, vehicle: vehicle, soundOverrides: soundOverrides, torqueAt: torqueAt, crFrom: crFrom, tmOf: tmOf, exhaustAt: exhaustAt, EXM: EXM, SPK: SPK, fmepAt: fmepAt, advAt: advAt, sparkEff: sparkEff, burnAt: burnAt, mbt: mbt,
-    isStock: isStock, full: full, frictionNm: frictionNm, TM: TM, defs: {} };
+    isStock: isStock, full: full, fuelOf: fuelOf, frictionNm: frictionNm, TM: TM, defs: {} };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
 </script>
@@ -11205,7 +11235,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       { id: 'wbatt', label: 'Weight: Battery', group: 'weight' },
       { id: 'wpan', label: 'Weight: Floor pan', group: 'weight' },
       { id: 'wfront', label: 'Weight: Front axle', group: 'weight' },
-      { id: 'wspare', label: 'Weight: Spare wheel & tools', group: 'weight' }
+      { id: 'wspare', label: 'Weight: Spare wheel & tools', group: 'weight' },
+      { id: 'wwheel', label: 'Weight: Wheels', group: 'weight' },
+      { id: 'wtank', label: 'Weight: Fuel tank', group: 'weight' }
     ],
     stock: { body: 'body.stock', drivetrain: 'drive.stock', longblock: 'lb.30ps', crankcase: 'case.oem', crank: 'crank.oem', conrod: 'rod.oem', bearings: 'brg.oem', flyhw: 'fw.oem',
       cylinders: 'cyl.oem', saver: 'saver.none', spacer: 'spacer.none', heads: 'heads.oem', cam: 'cam.oem', lifter: 'lift.oem', pushrod: 'pr.oem', rocker: 'rkr.oem', spring: 'spr.oem',
@@ -11213,7 +11245,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       carb: 'carb.oem', fi: 'fi.none', ignition: 'ign.oem', ignacc: 'ignacc.none', exhaust: 'exh.stock', muffler: 'muf.stock', cooling: 'cool.stock', oilpump: 'pump.oem', oilfilter: 'filt.none', sump: 'sump.oem',
       windage: 'wind.none', breather: 'br.oem',
       pulley: 'pul.oem', electrical: 'el.6v', fuel: 'fuel.regular', fuelpump: 'fp.oem', clutch: 'clutch.stock', gearbox: 'gear.stock', tyres: 'tyre.stock', tyresF: 'tyreF.same',
-      wseatr: 'wseatr.stock', wseatf: 'wseatf.stock', whood: 'whood.stock', wlid: 'wlid.stock', wfender: 'wfender.stock', wboard: 'wboard.stock', wdoor: 'wdoor.stock', wglass: 'wglass.stock', wint: 'wint.stock', wbump: 'wbump.stock', wbatt: 'wbatt.stock', wpan: 'wpan.stock', wfront: 'wfront.stock', wspare: 'wspare.stock' },
+      wseatr: 'wseatr.stock', wseatf: 'wseatf.stock', whood: 'whood.stock', wlid: 'wlid.stock', wfender: 'wfender.stock', wboard: 'wboard.stock', wdoor: 'wdoor.stock', wglass: 'wglass.stock', wint: 'wint.stock', wbump: 'wbump.stock', wbatt: 'wbatt.stock', wpan: 'wpan.stock', wfront: 'wfront.stock', wspare: 'wspare.stock', wwheel: 'wwheel.stock', wtank: 'wtank.stock' },
     rules: {
       years: [1960, 1969],
       octane: [[6.6, 84], [7.0, 87], [7.5, 91]],   // RON the factory asked for at each CR (30 PS / 34 PS / 1300-44 / 1500; GW Käfer engine data, ss); linear beyond
@@ -11410,6 +11442,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     prov: { v_batt: 's', st_teeth: 'ss', st_ratio: 'e', st_v_test: 'e', st_v_lock: 'e', st_i_lock: 'e', r_batt: 'e' } });
   add({ id: 'fuel.super', slot: 'fuel', label: 'Super petrol (about 95 RON)',
     purpose: 'higher-octane petrol (~95 RON); lowers the knock-risk warning, does not change the torque curve', desc: 'Estimate for 1960s Super', years: [1955, 2026], yl: '1950s', attrs: { ron: 95 }, prov: { ron: 'e' } });
+  // v1.13.44 race fuels. Petrol of any grade is the fuel the model was fitted on (no tm.fuel: same heating value, AFR and charge cooling);
+  // octane only moves the knock warning. Methanol goes through the generic fuel path (tm.fuel, Parts.fuelOf): heating value per kg of
+  // air at its own stoichiometry, the fuel-air-cycle curve at its running mixture, charge cooling from the evaporated share of its latent
+  // heat, and the air its vapour displaces. Sourced: LHV 19.9 MJ/kg, stoichiometric AFR 6.45, latent heat 1.17 MJ/kg, M 32 g/mol,
+  // RON 108.7 (Heywood, Internal Combustion Engine Fundamentals, table D.4 / app. D; methanol property tables). ESTIMATES: running AFR 4.8
+  // (rich race setting, about 1.35 × stoichiometric fuel), evaporated share before IVC 0.12 (methanol's vapour pressure, Antoine
+  // log10 p[mmHg] = 8.08097 − 1582.27 / (239.7 + T °C), caps the vapour near 0.12 of the fuel at the cooled charge temperature), exhaust gas
+  // temperature 0.945 × petrol (cooler burn; the sound kernel's EGT law). Net about +3.5 % heat per kg of air and about +6 % trapped air.
+  add({ id: 'fuel.avgas', slot: 'fuel', label: 'Racing / aviation petrol (100/130 avgas)', desc: '100-octane lean rating, about 105 RON; the gas classes ran petrol · 1950s–', years: [1955, 2026], yl: '1950s',
+    purpose: 'high-octane petrol (about 105 RON); lowers the knock-risk warning, does not change the torque curve (same heating value as pump petrol)',
+    src: 'NHRA gas classes (H/Gas, I/Gas): petrol, not alcohol (oldeskool.tripod.com/empi/inchpinch.html; Hot Rod Sep 1971); avgas 100/130 grade', attrs: { ron: 105 }, prov: { ron: 'e: about 105 RON for a 100 MON lean-rated avgas' } });
+  add({ id: 'fuel.methanol', slot: 'fuel', label: 'Methanol (racing alcohol)', desc: 'More charge and cooler burn; needs about 2.6 × the fuel flow (jets and pump) · 1950s–', years: [1955, 2026], yl: '1950s',
+    src: 'Heywood (ICE Fundamentals) app. D: methanol LHV 19.9 MJ/kg, (A/F)s 6.45, h_fg 1.17 MJ/kg, RON 108.7; Inch Pincher: the Shorrock-blown 1600 ran straight methanol (oldeskool.tripod.com/empi/inchpinch.html), the gas-class 1900 ran petrol',
+    warn: 'Methanol: jets about 2.6 × the petrol flow and a high-volume pump assumed; not legal in the gas classes', attrs: { ron: 109, fuelkind: 'alcohol' },
+    tm: { fuel: { lhv: 19.9e6, afr_st: 6.45, afr: 4.8, h_fg: 1.17e6, M: 32.04, x_ev: 0.12, egt: 0.945 } },
+    prov: { ron: 's: 108.7', 'tm.fuel.lhv': 's', 'tm.fuel.afr_st': 's', 'tm.fuel.h_fg': 's', 'tm.fuel.M': 's', 'tm.fuel.afr': 'e: rich race mixture', 'tm.fuel.x_ev': 'e: vapour-pressure cap (Antoine)', 'tm.fuel.egt': 'e' } });
 
 
   // ==== v1.13.25: catalogue 1950s to today (phase 1: parts that fit as data; phase 2: boost, turbo, single tail, drivetrain) ====
@@ -11516,6 +11564,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   add({ id: 'heads.vwdp', slot: 'heads', label: 'VW 1600 dual-port cylinder heads (factory part)', desc: 'Own port per cylinder, needs a dual-port manifold · 1970–', years: [1970, 2026], yl: '1970',
     src: 'VW Newsroom (1302): dual-channel intake 1970', attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'Dual-port heads: 40 hp-family case' }],
     tm: { vc: sw(0.069, 0.0855, 7.5), iv_d: 0.0355 }, sound: { car: { ev_d: 0.032 } }, prov: { cr: 'd: chamber for CR 7.5 on 85.5 × 69', 'tm.iv_d': 'e', ev_d: 'e' } });
+  // v1.13.44 the Inch Pincher's ported dual-port heads: VW castings with a race valve job and oversize valves. Valve sizes as the documented
+  // 1966 engine (Drag Strip 1966: 1.5 in inlet, 1.35 in exhaust); the 1967 head work itself is not published (1971 car: 39 × 35.5 mm).
+  // Chamber as the factory head (porting does not change it), so the high-dome pistons keep the documented 12:1.
+  add({ id: 'heads.vwdp_ip', slot: 'heads', label: 'Ported VW dual-port heads, 38 × 34 mm race valves', desc: 'Factory dual-port castings, ported, 1.5 / 1.35 in valves, race valve job · 1967–', years: [1967, 2026], yl: '1967',
+    src: 'EMPI Story (cal-look.no): VW dual-port heads on the Inch Pincher from late 1967; Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): 1.5 in inlet / 1.35 in exhaust valves; Hot Rod Sep 1971: Vittone-prepped Volks heads with oversize valves',
+    attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'Dual-port heads: 40 hp-family case' }],
+    warn: 'Ported dual-port, 38 mm inlet: valve sizes from the 1966 engine; the 1967 port work is not published',
+    tm: { vc: sw(0.069, 0.0855, 7.5), iv_d: 0.0381 }, sound: { car: { ev_d: 0.0343 } },
+    prov: { cr: 'd: chamber as heads.vwdp', 'tm.iv_d': 'ss: 1.5 in (1966 engine)', ev_d: 'ss: 1.35 in (1966 engine)' } });
   add({ id: 'heads.cb044', slot: 'heads', label: 'CB Performance 044 CNC Wedge Port heads', desc: 'Later CNC Wedge Port, 42 × 37.5 mm valves, 65 cc chamber, for 90.5–94 mm bores · late 2003– (not the 1996 Super Sport / Magnum 44)', years: [2003, 2026], yl: '2003',
     src: 'CB Performance product 1432 (044 CNC Wedge Port 42 × 37.5, 90.5/92 mm): 65 cc chamber. CSP 94 mm 044 wedge listing: 66 cc. Deck 1.0 mm is a typical assembled estimate (~0.040 in), so CR follows the current bore and stroke (not a packed 72 cc for 94 × 82). The 1996 book 044 is heads.cb044mag.',
     attrs: { ports: 'dual-port', head_bore: '905_94' },
@@ -11560,6 +11617,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       sound: { car: { adv_dur: k[2] - 34, lsa: 108, ev_lift: vLift * 0.0254 } }, tm: { ivc: k[4], rkr0: 1.1 },
       prov: { adv_dur: 'e: −34° to the 1 mm convention (as W110)', lsa: 's: Seume p.70', ev_lift: 'd: cam lift × 1.1 (Seume p.70)', 'tm.ivc': 'e' } });
   });
+  // v1.13.44 Sig Erson VW-210 (the Inch Pincher's Sig Erson grind is not published; the VW-210 is the documented Erson VW race grind):
+  // 322° advertised, IO 51 / IC 91 / EO 91 / EC 51 (LSA 110), 0.466 in valve lift with 1.5 rockers = 0.311 in at the cam (Seume via the
+  // cal-look forum Erson cam card). Game convention as the Engle cams: adv − 34°, valve lift at 1.1 rockers; IVC 74° ESTIMATE (W130 308° → 67°,
+  // W140 313° → 69.5°: 0.5° per degree of advertised duration).
+  add({ id: 'cam.erson210', slot: 'cam', label: 'Sig Erson VW-210 race camshaft', desc: '322° adv., 0.311 in at the cam, 0.342 in valve lift with stock rockers, LSA 110° · 1960s', years: [1964, 2026], yl: 'c. 1964?',
+    src: 'Sig Erson VW-210 cam card (Seume, cal-look.no forum): 322° adv., IO 51 / IC 91 / EO 91 / EC 51, 0.466 in lift with 1.5 rockers; Drag Strip 1966: Inch Pincher ran a Sig Erson cam with standard rockers',
+    warn: 'Sig Erson: the Inch Pincher grind is not published; the VW-210 card is used', requires: T1CAM, attrs: { camkind: 'aftermarket', camgear: 'bolt3', dur_adv: 322 },
+    sound: { car: { adv_dur: 288, lsa: 110, ev_lift: +(0.311 * 1.1).toFixed(3) * 0.0254 } }, tm: { ivc: 74, rkr0: 1.1 },
+    prov: { adv_dur: 'e: −34° to the 1 mm convention (as W110)', lsa: 's: from IO/IC/EO/EC', ev_lift: 'd: 0.311 in × 1.1', 'tm.ivc': 'e: 0.5° per adv. degree from the Engle W130/W140' } });
   // TCS-10: split intake/exhaust, LSA 112 (less overlap). Printed lifts sit with the 1.1-rocker valve-lift figures (W110 0.430), so they are used as valve lift, not multiplied again.
   add({ id: 'cam.tcs10', slot: 'cam', label: 'Engle TCS-10 turbo camshaft', desc: 'Intake 284° / 0.430 in, exhaust 276° / 0.420 in, LSA 112° (valve lift as printed) · 1990s turbo grind', years: [1990, 2026], yl: 'c. 1990?',
     src: 'Seume p.70: Engle TCS-10 turbo cam, intake 284° 0.430 in LSA 112, exhaust 276° 0.420 in LSA 112',
@@ -11758,11 +11824,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   wpart('wpan', 'Factory steel floor pan', [{ id: 'wpan.alu', label: 'Aluminium-reskinned floor pan', mass: -12, years: [1967, 2026], yl: '1967', desc: 'Floor halves reskinned in aluminium (−12 kg est.) · 1967–', src: WSRC + ' (pan 88 kg); ' + IPW, pm: 'e: floor halves ~18 kg steel, ~6 kg aluminium' }]);
   wpart('wfront', 'Factory torsion-bar front beam', [{ id: 'wfront.axle', label: 'Straight-axle front end (drag)', mass: -26, years: [1967, 2026], yl: '1967', desc: 'Tube straight axle with light spindles (−26 kg est.; mass only, handling not modelled) · 1967–', src: WSRC + ' (beam with drums 61 kg); ' + IPW, pm: 'e: light straight axle ~35 kg' }]);
   wpart('wspare', 'Spare wheel, jack and tools', [{ id: 'wspare.del', label: 'Spare wheel, jack and tools removed', mass: -18, years: [1955, 2026], yl: '1950s', desc: 'Spare and tools out (−18 kg est.) · any year', src: WSRC, pm: 'e: 5.60-15 wheel + tyre ~14 kg, jack + tools ~4 kg' }]);
+  // v1.13.44: wheels and fuel tank (mass only; the wheel inertia stays the tyre part's)
+  wpart('wwheel', 'Factory steel wheels', [{ id: 'wwheel.brm', label: 'BRM cast-magnesium wheels (4)', mass: -8.2, years: [1966, 2026], yl: '1966', desc: '9 lb each vs 13.5 lb steel (−8.2 kg for four) · 1966–', src: 'Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): BRM wheels 9 lb vs 13.5 lb stock; EMPI history ch. 3 (BRM wheels on the Inch Pincher, 1966)', pm: 's: 4 × 4.5 lb' }]);
+  wpart('wtank', 'Factory 40 L fuel tank (full)', [{ id: 'wtank.cell', label: 'Small drag fuel cell (about 4 L)', mass: -32.5, years: [1955, 2026], yl: '1950s', desc: 'Steel 40 L tank and its fuel out, a one-gallon cell in (−32.5 kg est.) · any year', src: 'VW Type 1 tank 40 L (factory data); kerb mass includes a full tank (DIN 70020)', pm: 'e: steel tank ~8 kg + 40 L petrol 29.8 kg − cell ~2.5 kg − 4 L 2.8 kg' }]);
 
   // v1.13.43 race clutch: Kennedy Stage III 2600 lb (stock disc)
   add({ id: 'clutch.kennedy3', slot: 'clutch', label: 'Kennedy Stage 3 clutch (200 mm, 2600 lb)', desc: 'About 260 lb-ft (353 N·m); needs a 200 mm flywheel · today', years: [2015, 2026], yl: 'today',
     src: 'kennedyeng.com via cip1.com ACC-C10-5107 / dansperformanceparts.com: Stage III 2600 lb, up to 260 lb-ft with a stock disc', warn: 'Kennedy 200 mm: needs a 200 mm (12 V-type) flywheel',
     vehicle: { clutchMax: 353 }, prov: { clutchMax: 's: up to 260 lb-ft' } });
+  // v1.13.44 Hauserman diaphragm clutch (Inch Pincher 1966); capacity not published
+  add({ id: 'clutch.hauserman', slot: 'clutch', label: 'Hauserman diaphragm race clutch (200 mm)', desc: 'Period diaphragm race clutch, about 200 lb-ft (270 N·m, estimate); needs a 200 mm flywheel · 1960s', years: [1963, 1975], yl: 'c. 1963?',
+    src: 'Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): Porsche transmission coupled to a Hauserman diaphragm clutch', warn: 'Hauserman: capacity not published (270 N·m estimate); needs a 200 mm (12 V-type) flywheel',
+    vehicle: { clutchMax: 270 }, prov: { clutchMax: 'e' } });
   var GSRC = 'Kennedy Engineered Products gear chart (richardatwell mirror); Limebug gearbox codes; Engle / So Cal Imports (Freeway Flyer)';
   add({ id: 'gear.stock', slot: 'gearbox', label: 'VW Export 4-speed, crash 1st (factory)', desc: 'Ratios as shipped in the game (4.4 final drive)', years: [1955, 1960], attrs: { bell: '6 V' } });
   add({ id: 'gear.6165', slot: 'gearbox', label: 'VW all-synchro 4-speed, 4.375 (1961–65)', desc: '3.80 / 2.06 / 1.32 / 0.89 · 1961', years: [1961, 2026], yl: '1961',
@@ -11773,6 +11846,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     attrs: { bell: '12 V' }, src: GSRC, warn: 'Later gearbox in a 1956 car: later mounts and axles assumed', vehicle: { gears: [3.78, 2.06, 1.26, 0.93], finalDrive: 3.875, unsyncGears: [], transText: 'VW 1600 gearbox (AS), 3.875' }, prov: { gears: 's', finalDrive: 's' } });
   add({ id: 'gear.ffly', slot: 'gearbox', label: "'Freeway Flyer' gearbox, 3.88 with 0.89 4th", desc: 'Taller 4th for cruising; needs about 80+ hp · year not verified', years: [1980, 2026], yl: 'c. 1980?',
     attrs: { bell: '12 V' }, src: GSRC, warn: 'Freeway Flyer: Engle advises about 80+ hp', vehicle: { gears: [3.78, 2.06, 1.26, 0.89], finalDrive: 3.875, unsyncGears: [], transText: "'Freeway Flyer' 3.88 / 0.89" }, prov: { gears: 's', finalDrive: 's' } });
+  // v1.13.44 Porsche 356B/C transaxle (741/0A), all-synchro, BBBC gear set, 7:31 = 4.428 final drive
+  add({ id: 'gear.p741', slot: 'gearbox', label: 'Porsche 356 741 transaxle, 4.428 (356B/C)', desc: '3.091 / 1.765 / 1.130 / 0.815, Porsche synchro · 1960', years: [1960, 2026], yl: '1960',
+    attrs: { bell: '12 V' }, src: 'Porsche 356B/C 741 gear set B-B-B-C 3.091 / 1.765 / 1.130 / 0.815, final drive 7:31 = 4.428 (supercars.net 356B/C specifications; DDK forum 356 gear table); Drag Strip 1966: Inch Pincher with a late-model Porsche rear end and 4.42 gears',
+    warn: 'Porsche 741 in a VW: adapted mounts and axles assumed; 200 mm (12 V-type) flywheel and bell assumed; the Inch Pincher gear set is not published (BBBC used)',
+    vehicle: { gears: [3.091, 1.765, 1.130, 0.815], finalDrive: 4.428, unsyncGears: [], transText: 'Porsche 356 741 transaxle (BBBC), 4.428' }, prov: { gears: 's: 356B/C BBBC', finalDrive: 's: 7:31' } });
   // v1.13.40 tyres. Rolling radius convention (do not change stock 0.307 m): r = 0.307 * OD_in / 25.79
   // (loaded rolling factor k ≈ 0.93731 vs geometric half-diameter). Sourced overall diameters as cited;
   // grip (mu), rolling resistance and some masses are ESTIMATES, flagged in prov.
@@ -12023,6 +12101,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     attrs: { rodj_fit: 'VW 55 mm' }, requires: [{ attr: 'case', in: ['36hp', '40hp', 'doghouse'], msg: 'Type 1 / Type 3 311 rods: Type 1 case family' }],
     warn: '311 rods: adequate to about 5000 rpm (Seume p.25); the bolt is the weak point',
     tm: { rodj: 55, rodw: 22.7, rod_l: 0.137 }, prov: { 'tm.rodj': 's: Seume p.25', 'tm.rodw': 's', 'tm.rod_l': 's: 137 mm' } });
+  // v1.13.44 EMPI boxed rods: VW rods with the beam boxed (welded plates) for strength. Same centres and journals as the 311 rod, so the
+  // torque and sound models see the same rod as the 311 (rod mass is not modelled); vs a 1200's shorter factory rod it changes what the 311 does.
+  add({ id: 'rod.empibox', slot: 'conrod', label: 'EMPI boxed VW connecting rods', desc: 'VW rods boxed and balanced for racing, 137 mm centres, 55 mm journals · 1965–', years: [1965, 2026], yl: 'c. 1965',
+    src: 'Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): Inch Pincher with EMPI boxed rods; Seume p.25 (311 rod 137 mm, 55 × 22.7 mm)',
+    attrs: { rodj_fit: 'VW 55 mm' }, requires: [{ attr: 'case', in: ['36hp', '40hp', 'doghouse'], msg: 'VW rods: Type 1 case family' }],
+    tm: { rodj: 55, rodw: 22.7, rod_l: 0.137 }, prov: { 'tm.rodj': 's: as 311', 'tm.rodw': 's', 'tm.rod_l': 'e: boxed 311-type rod assumed' } });
   add({ id: 'rod.porsche616', slot: 'conrod', label: 'Porsche 356C / SC / 912 connecting rods (R616)', desc: '5.352 in (136 mm) centres, 53 × 20 mm journals, 540 g, book limit 7000 rpm', years: [1963, 2026], yl: '1963',
     src: 'Seume p.26: Porsche 356C / SC / 912 rod R616 103 10101, 5.352 in / 136 mm, 540 g, 53 × 20 mm (0.79 in), book rpm 7000; earlier R502 rods should not be used',
     attrs: { rodj_fit: 'Porsche 53 mm' }, requires: [{ attr: 'case', in: ['36hp', '40hp', 'doghouse'], msg: 'Porsche 356 rods: Type 1 case family' }],
@@ -12236,10 +12320,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
 
   // v1.13.43: high-dome 88 mm pistons. The dome volume (tm.dome, m³) is taken off the clearance volume in Parts.tmOf, so the CR follows from the
   // bore, stroke, head chamber, deck / shims and the dome. Dome DERIVED from the documented 12:1 of the Inch Pincher with VW dual-port heads on
-  // 88 × 78 mm (Drag Strip 1966: 12:1): dome = chamber(heads.vwdp) − swept / (12 − 1). Maker and dome figure not published (flag 'd').
+  // 88 × 78 mm (Drag Strip 1966: 12:1): dome = chamber(heads.vwdp) − swept / (12 − 1). Maker Forgedtrue (Drag Strip 1966); the dome figure is not published (flag 'd').
   var DOME88 = sw(0.069, 0.0855, 7.5) - PI4 * 0.088 * 0.088 * 0.078 / 11;
-  add({ id: 'cyl.88hc', slot: 'cylinders', label: '88 mm barrels, high-dome forged pistons (race)', desc: 'Pop-up pistons for 12:1 on a 78 mm stroke with dual-port heads (' + (DOME88 * 1e6).toFixed(1) + ' cc dome) · 1966–', years: [1966, 2026], yl: '1966',
-    src: 'Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): Inch Pincher 1900 cc at 12:1; Seume p.74/p.86 (88 mm machining)',
+  add({ id: 'cyl.88hc', slot: 'cylinders', label: '88 mm barrels, Forgedtrue high-dome pistons (race)', desc: 'Pop-up pistons for 12:1 on a 78 mm stroke with dual-port heads (' + (DOME88 * 1e6).toFixed(1) + ' cc dome) · 1966–', years: [1966, 2026], yl: '1966',
+    src: 'Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): Inch Pincher 1900 cc, Forgedtrue pistons, 12:1; Seume p.74/p.86 (88 mm machining)',
     attrs: { bore: 88 }, requires: [{ attr: 'case', in: T1, msg: '88 mm barrels: 40 hp-family / 1600 case (not the 36 hp)' }],
     warn: '88 mm high-dome: race compression, needs high-octane fuel; case and head (spigot) machining (Seume p.74, p.86)',
     sound: { car: { bore: 0.088 } }, tm: { bore: 0.088, dome: DOME88 }, prov: { 'tm.dome': 'd: from 12:1 (Drag Strip 1966) with heads.vwdp on 88 × 78' } });
@@ -13253,12 +13337,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       set: { longblock: 'lb.1600dp', electrical: 'el.12v', crankcase: 'case.aftermarket', cylinders: 'cyl.905', heads: 'heads.cb044mag', cam: 'cam.cb2241', rocker: 'rkr.125', conrod: 'rod.cbrace', clutch: 'clutch.kennedy', carb: 'carb.idf40', exhaust: 'exh.gbe15', fuel: 'fuel.super' },
       src: 'cbperformance.com product 1180 "Builder\u2019s Choice Engine Kits - 105 HP 1776cc (69 x 90.5)": contents list (2241 cam, 1672 Panchito 044 heads, 1289 Super Race Rods, 1305/1303 200 mm flywheel, 1311 Kennedy Stage 1, 1685 1.25:1 rockers, 1274 CB Super Case), rating with dual 40 mm IDF and 1-1/2 in merged exhaust, compression 8:1, mid-grade fuel',
       prov: { composition: 's', cam: 's: kit item 2241 = CB 2241 camshaft', heads: 'ss: 044 Super Sport / Magnum 44 stands in for the Panchito 044 (same 40 x 35.5 mm)', claim: 's' }, claim: '105 hp (CB rating, dual 40 IDF, 1.5 in merged exhaust)' },
-    { id: 'kit.ip1967', label: 'Inch Pincher drag engine, 1967: 1898 cc, VW dual-port heads, dual 48 IDA, magneto, EMPI header', year: 1967,
-      desc: 'EMPI\u2019s Inch Pincher after the 1966 Okrasa-head engine: about 1900 cc (88 x 78 mm), VW dual-port heads from late 1967, dual Weber 48 IDA, Hunt Vertex magneto, EMPI header, a Sig Erson cam and 12:1 compression. The 1966 Okrasa-head version is not buildable here (the catalogue fits Okrasa heads only to the 36 hp case, which cannot take 88 mm barrels). The Sig Erson cam is stood in by the Engle W130 and the EMPI boxed rods by 311 rods (estimates). The 12:1 comes from high-dome pistons. The 1967 lightening is fitted as parts: glass hood, lid, fenders and doors, running boards off, Plexiglas all round, light seats, aluminium floor and a straight axle (about 110 kg; the quoted 1200 lb car is lighter still). Methanol and the Porsche transaxle are not part of the kit.',
-      set: { longblock: 'lb.1600dp', electrical: 'el.12v', crankcase: 'case.aftermarket', cylinders: 'cyl.88hc', crank: 'crank.78', conrod: 'rod.311', heads: 'heads.vwdp', cam: 'cam.w130', carb: 'carb.ida48', ignition: 'ign.vertex', exhaust: 'exh.empi', flyhw: 'fw.dowel8', fuel: 'fuel.super',
-        wseatf: 'wseatf.light', whood: 'whood.fg', wlid: 'wlid.fg', wfender: 'wfender.fg', wboard: 'wboard.del', wdoor: 'wdoor.fg', wglass: 'wglass.all', wpan: 'wpan.alu', wfront: 'wfront.axle' },
-      src: 'EMPI Story (cal-look.no) and oldeskool.tripod.com/empi/inchpinch.html: 1900 cc, dual 48 IDA, VW dual-port heads from late 1967; Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): 1900 cc, 12:1, Sig Erson cam, Weber 48, Hunt Vertex magneto, EMPI header, 165 hp; Hot Rod Dec 1972 (A Tale of Two Engines)',
-      prov: { composition: 'ss', cam: 'e: Sig Erson grind not published, W130 used', rods: 'e: EMPI boxed rods stood in by 311 rods', cr: 'd: 12:1 from the high-dome pistons (cyl.88hc, dome derived from the quoted 12:1)', weight: 'ss: 1967 glass panels, aluminium floor, straight axle, Plexiglas, light seats (masses mostly e); 1200 lb quoted', claim: 'ss' }, claim: '165 hp (Drag Strip 1966 for the Okrasa-head 1900 cc); low 12 s / high 11 s in 1967 with the Porsche transaxle' }
+    { id: 'kit.ip1967', label: 'Inch Pincher 1967 (H/Gas): 1898 cc, ported dual-port heads, dual 48 IDA, magneto, Porsche transaxle, 1200 lb', year: 1967,
+      desc: 'EMPI\u2019s Inch Pincher as rebuilt for the 1967 H/Gas season: about 1900 cc (88 x 78 mm) with Forgedtrue high-dome pistons for 12:1, EMPI boxed rods, a Sig Erson cam on stock rockers, VW dual-port heads (fitted late 1967) ported with 1.5 / 1.35 in valves, dual Weber 48 IDA, Hunt Vertex magneto, EMPI header, racing petrol (a gas class), a Porsche 356 transaxle with 4.42 final drive behind a Hauserman diaphragm clutch, and the 1967 lightening as parts: glass hood, lid, fenders and doors, running boards off, Plexiglas all round, light seats, aluminium floor, straight axle, BRM magnesium wheels, a drag fuel cell, rear seat, spare and bumpers out (about 189 kg off: about 541 kg = 1192 lb without the driver; the quoted 1200 lb may include him). The 1966 Okrasa-head version is not buildable here (the catalogue fits Okrasa heads only to the 36 hp case). Estimates: the Erson grind (VW-210 card), the 1967 head valves (as the 1966 engine), the Porsche gear set (356B/C BBBC), the clutch capacity and most weights.',
+      set: { longblock: 'lb.1600dp', electrical: 'el.12v', crankcase: 'case.aftermarket', cylinders: 'cyl.88hc', crank: 'crank.78', conrod: 'rod.empibox', heads: 'heads.vwdp_ip', cam: 'cam.erson210', carb: 'carb.ida48', ignition: 'ign.vertex', exhaust: 'exh.empi', flyhw: 'fw.dowel8', fuel: 'fuel.avgas',
+        clutch: 'clutch.hauserman', gearbox: 'gear.p741',
+        wseatf: 'wseatf.light', whood: 'whood.fg', wlid: 'wlid.fg', wfender: 'wfender.fg', wboard: 'wboard.del', wdoor: 'wdoor.fg', wglass: 'wglass.all', wpan: 'wpan.alu', wfront: 'wfront.axle',
+        wwheel: 'wwheel.brm', wtank: 'wtank.cell', wseatr: 'wseatr.del', wspare: 'wspare.del', wbump: 'wbump.del' },
+      src: 'EMPI Story (cal-look.no) and oldeskool.tripod.com/empi/inchpinch.html: 1900 cc, dual 48 IDA, VW dual-port heads from late 1967, 1967 H/Gas rebuild (glass panels, aluminium floor, straight axle, all Plexiglas, 1200 lb, a 500 lb saving); Drag Strip 1966 (cal-look.no/nostalgia/inchpincher4.html): 1900 cc, Forgedtrue pistons, 12:1, EMPI boxed rods, Sig Erson cam, standard rockers, 1.5 / 1.35 in valves, Weber 48, Hunt Vertex magneto, EMPI header, Porsche rear end with 4.42 gears, Hauserman diaphragm clutch, BRM wheels 9 lb, 165 hp, 13.30 @ 101.80 (NHRA record), best 12.95 @ 103.09; EMPI history ch. 3 (low 12s / high 11s by 1967)',
+      prov: { composition: 'ss', cam: 'e: Sig Erson grind not published, VW-210 card used', rods: 's: EMPI boxed rods', heads: 'e: 1967 head work not published, 1966 valve sizes', gearbox: 'e: Porsche 741 BBBC with the documented 4.42 final drive', clutch: 'ss: Hauserman diaphragm (capacity e)', fuel: 's: gas class, petrol', cr: 'd: 12:1 from the high-dome pistons (cyl.88hc, dome derived from the quoted 12:1)', weight: 'ss: 1967 lightening and BRM wheels documented; fuel cell, rear seat, spare and bumpers e; masses mostly e; 1200 lb quoted', claim: 'ss' }, claim: '165 hp (Drag Strip 1966 for the Okrasa-head 1900 cc); 12.95 @ 103.09 best in 1966; low 12 s / high 11 s in 1967' }
   ]);
   // the v1.13.40 Rajay + PICT-3 kit was blocked on the stock build (the PICT-3 needs the dual-port manifold): give it the 1600 dual-port it belongs to
   def.kits.forEach(function (k) { if (k.id === 'kit.rajay_carb') k.set = { longblock: 'lb.1600dp', electrical: 'el.12v', fi: 'fi.rajay', exhaust: 'exh.turbo', carb: 'carb.pict3_rajay' }; });
@@ -18325,6 +18411,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.44", date: "2026-11-28", status: "done", headline: "Inch Pincher parts, methanol, Porsche transaxle, neutral drag start", text: "The parts the Inch Pincher was missing, all through the one parts model: methanol and racing petrol (methanol goes through a generic fuel path: heating value at its own mixture, charge cooling and vapour displacement), a Porsche 356 741 transaxle with the documented 4.42 final drive, a Hauserman diaphragm clutch, EMPI boxed rods, a Sig Erson cam, ported dual-port heads with the documented race valves, BRM wheels and a drag fuel cell as weight parts. The Inch Pincher kit now carries the documented 1967 combination at about 1200 lb. On the drag strip manual cars now stage in neutral: build the revs in N, shift up into 1st at the green and the clutch is dumped (the drag card and key N switch back to a 1st-gear start)." },
       { v: "v1.13.43", date: "2026-11-28", status: "done", headline: "Beetle power model refit: CR from parts, valve flow, runner lengths, weight parts, launch rpm", text: "One engine power model, changed only through parts. The compression ratio now follows from bore, stroke, chamber, cylinder base shims and piston domes (new shim and high-dome piston parts; the Inch Pincher reaches its documented 12:1). Intake tuning uses the physical runner length of each carburettor and manifold, the VE ceiling follows the valve flow of the heads, the anchoring no longer caps builds that out-rev the stock engine, and the Judson blower displacement is fitted to its sourced boost and torque. New: individual weight-reduction parts (seats, glass panels, Plexiglas, floor, axle and more), a Kennedy Stage 3 race clutch and a launch-rpm option on the drag strip (key L)." },
       { v: "v1.13.42", date: "2026-11-28", status: "done", headline: "No rev limiter: revs are bounded by the torque curve", text: "The engine no longer has a rev limiter. The ignition cut, the refused over-rev downshift and the capped rev-match blip are gone; past the end of a torque table the torque runs off to zero instead of holding flat, and a build\u2019s curve and the picker\u2019s dyno line now run on along the parts model to where the engine stops making power. The red line stays as the tach mark and the auto-shift reference, and is raised for a build that makes its power above it. Stock Beetle drag (23.219 s) and the old Mesa lap (2:51.93) are unchanged. The CB 1180 now makes 99.7 PS (was 81.7, claim 105 hp) and the Inch Pincher 114.9 PS (was 93.3, claim 165 hp). There is no valve-float model yet." },
       { v: "v1.13.41", date: "2026-11-28", status: "done", headline: "Beetle kits: EMPI, Shorrock, Judson, Okrasa TSV, Scat, CB and Inch Pincher packages", text: "The Beetle Swap parts list gains eighteen complete engine and performance kits next to the old Okrasa TS and TSV presets, each one assembled only from parts already in the catalogue, so the sound, the dyno and the drag time follow through the existing generic paths: EMPI 82, 83, 85.5 and 87 mm big-bore kits, the EMPI X-100 crank and Zenith carburettor kits, the Judson supercharger kit, the four EMPI Shorrock packages (PSSV-500, PBBV-100, PSKV-601, PSKV-600), Okrasa Oettinger TSV 1600 H and 1700 H, dual Solex 40P11, a Scat-style 2110 stroker, the CB bolt-in 78 mm stroker, the CB Builder\u2019s Choice 1776 cc street kit and the 1967 Inch Pincher drag engine. Picking a kit now shows what it is, what the maker claimed (not a model target), the sources and which numbers are estimates. The old Rajay turbo plus carburettor kit, which could not be applied to the stock engine, now includes the 1600 dual-port it needs. Stock sounds, the stock drag strip and the old Mesa Road lap are unchanged." },
@@ -19669,10 +19756,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     ensureAudio(); var c = car(); state.started = true;
     if (c.engine === 'off') c.ignition();
     c.v = 0; c.ww = 0; c.a = 0;
-    if (c.c.trans === 'ev' || c.c.trans === 'auto') { if (c.range !== 'D') c.setRange('D'); } else if (c.gear !== 1) { c.gear = 1; c.shift = null; }
-    drag = { run: new DragStrip.Run(), car: state.carId, startDist: state.dist };
+    var manual = !(c.c.trans === 'ev' || c.c.trans === 'auto'), stN = manual && stageN();   // v1.13.44: manual cars stage in N by default
+    if (!manual) { if (c.range !== 'D') c.setRange('D'); } else if (stN) { c.gear = 0; c.shift = null; } else if (c.gear !== 1) { c.gear = 1; c.shift = null; }
+    drag = { run: new DragStrip.Run(), car: state.carId, startDist: state.dist, n: stN };
     document.getElementById('dragCard').classList.add('hidden'); document.getElementById('tree').classList.remove('hidden');
-    flash('Drag strip: wait for the green, then gas!', 2.5); updatePanel();
+    flash(stN ? 'Drag strip: staged in N. Build the revs, shift up into 1st at the green!' : 'Drag strip: wait for the green, then gas!', 3); updatePanel();
   }
   function dragExit() { drag = null; document.getElementById('tree').classList.add('hidden'); document.getElementById('dragCard').classList.add('hidden'); updatePanel(); }
   function fmt(x, d) { return x === undefined || x === null ? '–' : x.toFixed(d === undefined ? 3 : d); }
@@ -19687,12 +19775,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       '<tr class="et"><td>1/4 mile</td><td>' + fmt(r.quarter) + ' s @ ' + sp(r.quarterMph) + '</td></tr></table>' +
       '<p class="best">' + (isBest ? 'New best for this car!' : best ? 'Best: ' + fmt(best.quarter) + ' s @ ' + sp(best.mph) + ' (' + best.date + ')' : 'Red light: no time recorded') + '</p>' +
       '<p class="note">Reaction 0.500 = perfect on a full tree (measured from the last amber). Period road tests: GT350 \u2248 15 s, \u201959 Cadillac \u2248 17\u201318 s, 911 Carrera 4S (997) \u2248 12.9\u201313.2 s.</p>' +
-      (spec().trans === 'auto' || spec().trans === 'ev' ? '' : '<p class="note">Launch rpm (L): <select data-launch="1">' + LAUNCH_OPTS.map(function (v) { return '<option value="' + v + '"' + (v === launchRpm() ? ' selected' : '') + '>' + (v ? v + ' rpm' : 'off') + '</option>'; }).join('') + '</select></p>') +
+      (spec().trans === 'auto' || spec().trans === 'ev' ? '' : '<p class="note">Launch rpm (L): <select data-launch="1">' + LAUNCH_OPTS.map(function (v) { return '<option value="' + v + '"' + (v === launchRpm() ? ' selected' : '') + '>' + (v ? v + ' rpm' : 'off') + '</option>'; }).join('') + '</select>' +
+        ' Stage in: <select data-stage="1"><option value="n"' + (stageN() ? ' selected' : '') + '>N (shift up into 1st at the green)</option><option value="1"' + (stageN() ? '' : ' selected') + '>1st (gas at the green)</option></select></p>') +
       '<div class="row"><button class="tb" data-act2="again">Run again</button><button class="tb" data-act2="exit">Exit drag strip</button></div>';
     var el = document.getElementById('dragCard'); el.innerHTML = h; el.classList.remove('hidden');
     window.__lastDrag = r;
   }
-  document.getElementById('dragCard').addEventListener('change', function (e) { if (e.target && e.target.dataset && e.target.dataset.launch) setLaunch(+e.target.value); });
+  document.getElementById('dragCard').addEventListener('change', function (e) { if (e.target && e.target.dataset && e.target.dataset.launch) setLaunch(+e.target.value); if (e.target && e.target.dataset && e.target.dataset.stage) setStage(e.target.value); });
   document.getElementById('dragCard').addEventListener('pointerup', function (e) {
     var b = e.target.closest && e.target.closest('[data-act2]'); if (!b) return;
     if (b.dataset.act2 === 'again') dragEnter(); else dragExit();
@@ -19701,7 +19790,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (!drag) return;
     if (drag.car !== state.carId) { dragExit(); return; }
     var run = drag.run, prevPhase = run.phase;
-    run.update(dt, c.v, c.engine === 'running' && (c.c.trans === 'ev' ? (c.range === 'D' || c.range === 'R') : (c.c.trans === 'auto' ? c.range !== 'N' : c.gear > 0)));
+    run.update(dt, c.v, c.engine === 'running' && (c.c.trans === 'ev' ? (c.range === 'D' || c.range === 'R') : (c.c.trans === 'auto' ? c.range !== 'N' : (drag.n || c.gear > 0))));   // v1.13.44: staged in N counts as ready
     var t = run.tree, el = document.getElementById('tree');
     if (el.dataset.k !== [t.pre, t.stage, t.amber, t.green, t.red].join()) {
       el.dataset.k = [t.pre, t.stage, t.amber, t.green, t.red].join();
@@ -19719,9 +19808,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   function launchRpm() { var v = 0; try { v = +(localStorage.getItem(launchKey()) || 0); } catch (e) {} return LAUNCH_OPTS.indexOf(v) >= 0 ? v : 0; }
   function setLaunch(v) { lsSet(launchKey(), String(v)); flash(v ? 'Launch: hold ' + v + ' rpm, dump the clutch on the gas' : 'Launch rpm off', 2); }
   function cycleLaunch() { var i = LAUNCH_OPTS.indexOf(launchRpm()); setLaunch(LAUNCH_OPTS[(i + 1) % LAUNCH_OPTS.length]); }
+  // v1.13.44 neutral staging (default for manual cars; 'Stage in' on the drag card): N at the line, the revs built in N (held at the launch
+  // rpm when one is set), then shift up (key → or the ▲ button on touch) at the green: clutch down, 1st in, clutch dumped. 1st = the v1.13.43 start.
+  function stageKey() { return 'streetrod.drag.stage'; }
+  function stageN() { var v = null; try { v = localStorage.getItem(stageKey()); } catch (e) {} return v !== '1'; }
+  function setStage(v) { lsSet(stageKey(), v === '1' ? '1' : 'n'); flash(v === '1' ? 'Drag start: staged in 1st' : 'Drag start: staged in N, shift up into 1st at the green', 2); }
   function launchInput(c) {
     if (!drag || c.c.trans === 'auto' || c.c.trans === 'ev') return null;
-    var lr = launchRpm(); if (!lr) return null;
+    var lr = launchRpm();
+    if (drag.n) return drag.run.phase === 'done' ? null : { rpm: lr, hold: false, n: true };
+    if (!lr) return null;
     var ph = drag.run.phase;
     var pre = ph === 'staging' || ph === 'tree';
     return { rpm: lr, hold: pre && (!drag.run.tree.green || (state.throttle < 0.5 && c.v < 0.5)) };
@@ -19888,6 +19984,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       case 'u': case 'U': toggleUnits(); break;
       case 'q': case 'Q': if (drag) dragExit(); else dragEnter(); break;
       case 'l': case 'L': if (drag) cycleLaunch(); break;
+      case 'n': case 'N': if (drag) setStage(stageN() ? '1' : 'n'); break;   // v1.13.44 drag staging N / 1st (next run)
       case 'c': case 'C': if (road) roadExit(); else roadEnter(); break;   // road course (draft)
       case 'r': case 'R': toggleRadio(); break;
       case 'g': case 'G': if (spec().trans === 'manual') toggleGearbox(); break;
