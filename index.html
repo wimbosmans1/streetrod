@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.38)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.39)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -11036,15 +11036,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       { id: 'pushrod', label: 'Pushrods', group: 'longblock' },
       { id: 'rocker', label: 'Rocker arms', group: 'longblock' },
       { id: 'spring', label: 'Valve springs', group: 'longblock' },
+      { id: 'valves', label: 'Valves (material)', group: 'longblock' },
+      { id: 'camdrive', label: 'Cam drive / timing gears', group: 'longblock' },
+      { id: 'rings', label: 'Piston rings', group: 'longblock' },
+      { id: 'valvecover', label: 'Valve covers', group: 'longblock' },
       { id: 'carb', label: 'Carburettor / manifold', group: 'induction' },
       { id: 'fi', label: 'Forced induction', group: 'induction' },
       { id: 'ignition', label: 'Distributor', group: 'longblock' },
+      { id: 'ignacc', label: 'Ignition coil / box', group: 'longblock' },
       { id: 'exhaust', label: 'Exhaust manifold', group: 'exhaust' },
       { id: 'muffler', label: 'Muffler', group: 'exhaust' },
       { id: 'cooling', label: 'Oil / cooling' },
       { id: 'oilpump', label: 'Oil pump', group: 'cooling' },
       { id: 'oilfilter', label: 'Oil filter', group: 'cooling' },
       { id: 'sump', label: 'Sump', group: 'cooling' },
+      { id: 'windage', label: 'Windage tray', group: 'cooling' },
+      { id: 'breather', label: 'Oil filler / breather', group: 'cooling' },
       { id: 'pulley', label: 'Crank pulley', group: 'cooling' },
       { id: 'electrical', label: 'Electrics / starter' },
       { id: 'fuel', label: 'Fuel' },
@@ -11055,7 +11062,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     ],
     stock: { body: 'body.stock', drivetrain: 'drive.stock', longblock: 'lb.30ps', crankcase: 'case.oem', crank: 'crank.oem', conrod: 'rod.oem', bearings: 'brg.oem', flyhw: 'fw.oem',
       cylinders: 'cyl.oem', saver: 'saver.none', spacer: 'spacer.none', heads: 'heads.oem', cam: 'cam.oem', lifter: 'lift.oem', pushrod: 'pr.oem', rocker: 'rkr.oem', spring: 'spr.oem',
-      carb: 'carb.oem', fi: 'fi.none', ignition: 'ign.oem', exhaust: 'exh.stock', muffler: 'muf.stock', cooling: 'cool.stock', oilpump: 'pump.oem', oilfilter: 'filt.none', sump: 'sump.oem',
+      valves: 'valve.oem', camdrive: 'camg.oem', rings: 'ring.oem', valvecover: 'vc.oem',
+      carb: 'carb.oem', fi: 'fi.none', ignition: 'ign.oem', ignacc: 'ignacc.none', exhaust: 'exh.stock', muffler: 'muf.stock', cooling: 'cool.stock', oilpump: 'pump.oem', oilfilter: 'filt.none', sump: 'sump.oem',
+      windage: 'wind.none', breather: 'br.oem',
       pulley: 'pul.oem', electrical: 'el.6v', fuel: 'fuel.regular', fuelpump: 'fp.oem', clutch: 'clutch.stock', gearbox: 'gear.stock', tyres: 'tyre.stock' },
     rules: {
       years: [1960, 1969],
@@ -11904,7 +11913,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
    ['c25', 'C25', 275, 0.385, 'Bus and off-road, small cc; 5000 rpm maximum', 5000],
    ['c35', 'C35', 286, 0.410, 'Street and off-road; good power spread; 6000 rpm', 6000],
    ['c45', 'C45', 296, 0.418, 'Street and strip; heavy idle; 4500–6500 rpm', 6500],
-   ['c55', 'C55', 312, 0.428, 'Circle track; good mid-range; 4500–6500 rpm', 6500]].forEach(function (k) {
+   ['c55', 'C55', 312, 0.428, 'Circle track; good mid-range; 4500–6500 rpm', 6500],
+   ['c65', 'C65', 318, 0.440, 'Super Vee etc; variable rpm application', 7000],
+   ['c75', 'C75', 342, 0.445, 'Drag race competition; heavy car; 5000–7000 rpm', 7000],
+   ['c95', 'C95', 286, 0.475, 'All-round competition; large displacement', 7000]].forEach(function (k) {
     var advE = k[2] + 40, ivc = Math.round(advE / 2 + 108 - 180 - 15);
     add({ id: 'cam.' + k[0], slot: 'cam', label: 'Scat ' + k[1] + ' camshaft', desc: k[2] + '° at 0.050 in, ' + k[3].toFixed(3) + ' in valve lift with 1.1 rockers, LSA 108° · ' + k[4], years: [1975, 2026], yl: 'c. 1975?',
       src: 'Seume p.71: Scat ' + k[1] + ', ' + k[2] + '° duration at 0.050, ' + k[3] + ' in lift at the valve with 1.1 rockers, LSA 108. ' + k[4],
@@ -11948,6 +11960,434 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     warn: 'GBE merged header: no cabin heat; a stinger or race muffler is the usual pairing (Seume p.113–116)',
     sound: { car: { hx: null, prim_len: 0.91, prim_d: 0.0348, head_len: 0.20, coll_d: 0.044 } },
     prov: { prim_d: 'd: 1.500 in OD, 16 ga wall ~34.8 mm ID (Seume p.116)', prim_len: 's: about 36 in street length (p.113)', head_len: 'e: merge collector', coll_d: 'e' } });
+
+  // -- v1.13.39: remaining named parts from Keith Seume, Aircooled VW Engine Interchange Manual (Motorbooks 1996, ISBN 0-7603-0314-2) --
+  // Valve sizes and cam figures are as printed. Chamber volumes that the book does not print are estimates (same 54/56 cc convention as the v1.13.31 GBE / Pauter / Scat heads). No per-car code.
+
+  // Engle VZ-series (p.70): advertised duration, lift at the cam, LSA 108°, same 1.1 rocker and IVC convention as the W / FK cams.
+  [['vz14', 'VZ-14', 274, 0.420, 'Small displacement off-road closed course'],
+   ['vz15', 'VZ-15', 279, 0.435, 'Medium displacement off-road closed course'],
+   ['vz25', 'VZ-25', 286, 0.429, 'Midget circle track; bracket race; off-road competition'],
+   ['vz30', 'VZ-30', 298, 0.461, 'Off-road and drag race competition'],
+   ['vz35', 'VZ-35', 309, 0.448, 'Off-road and drag race competition']].forEach(function (k) {
+    var vLift = +(k[3] * 1.1).toFixed(3), ivc = fkIvc(k[2]);
+    add({ id: 'cam.' + k[0], slot: 'cam', label: 'Engle ' + k[1] + ' camshaft', desc: k[2] + '° adv., ' + k[3].toFixed(3) + ' in at the cam, ' + vLift.toFixed(3) + ' in valve lift with 1.1 rockers, LSA 108° · ' + k[4], years: [1970, 2026], yl: 'c. 1970?',
+      src: 'Seume p.70: Engle ' + k[1] + ', advertised duration ' + k[2] + '°, lift at the cam ' + k[3] + ' in, LSA 108°. ' + k[4],
+      requires: T1CAM, attrs: { camkind: 'aftermarket', camgear: 'bolt3', dur_adv: k[2] },
+      warn: 'Engle ' + k[1] + ': IVC is estimated on the W110 convention (adv/2 + LSA − 180 − 15°)',
+      sound: { car: { adv_dur: k[2], lsa: 108, ev_lift: vLift * 0.0254 } }, tm: { ivc: ivc, rkr0: 1.1 },
+      prov: { adv_dur: 's: Seume p.70', lsa: 's: Seume p.70', ev_lift: 'd: ' + k[3] + ' in at the cam × 1.1 rockers (Seume p.70)', 'tm.ivc': 'e: W110 IVC convention' } });
+  });
+
+  add({ id: 'cam.gb302', slot: 'cam', label: 'GBE GB302 camshaft', desc: '308° adv., 0.405 in at the cam, 0.446 in valve lift with 1.1 rockers, 2500–6500 rpm · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.55: GBE GB302 worked example, advertised duration 308°, lift at the cam 0.405 in, 2500–6500 rpm; springs GB273A dual (or GB269 at higher rpm)',
+    requires: T1CAM, attrs: { camkind: 'aftermarket', camgear: 'bolt3', dur_adv: 308 },
+    warn: 'GBE GB302: IVC is estimated on the W110 convention; other GBE grind numbers on p.69 were not added (OCR figures unreliable)',
+    sound: { car: { adv_dur: 308, lsa: 108, ev_lift: 0.446 * 0.0254 } }, tm: { ivc: fkIvc(308), rkr0: 1.1 },
+    prov: { adv_dur: 's: Seume p.55', lsa: 'e: 108° as the Engle table on p.70 (GBE card does not print LSA)', ev_lift: 'd: 0.405 in at the cam × 1.1 rockers (Seume p.55)', 'tm.ivc': 'e: W110 IVC convention' } });
+
+  [['e1466', '1466', 252, 0.350, 'Stock street'],
+   ['e1467', '1467', 263, 0.352, 'Street; single or dual carbs'],
+   ['e1468', '1468', 272, 0.360, 'Mild street; single or dual carbs']].forEach(function (k) {
+    var vLift = +(k[3] * 1.1).toFixed(3), ivc = fkIvc(k[2]);
+    add({ id: 'cam.' + k[0], slot: 'cam', label: 'Engle ' + k[1] + ' hydraulic camshaft', desc: k[2] + '° adv., ' + k[3].toFixed(3) + ' in at the cam, ' + vLift.toFixed(3) + ' in valve lift with 1.1 rockers · ' + k[4], years: [1970, 2026], yl: 'c. 1970?',
+      src: 'Seume p.70: Engle hydraulic-lifter cams, ' + k[1] + ', advertised duration ' + k[2] + '°, lift ' + k[3] + ' in, LSA 108°. ' + k[4] + '. For 1.1:1 rockers or high-ratio',
+      requires: T1CAM, attrs: { camkind: 'hydraulic', camgear: 'bolt3', dur_adv: k[2] },
+      warn: 'Engle ' + k[1] + ': hydraulic street cam; pair with hydraulic lifters (lift.hyd). Lift taken as at the cam (Engle p.70 convention). IVC estimated',
+      sound: { car: { adv_dur: k[2], lsa: 108, ev_lift: vLift * 0.0254 } }, tm: { ivc: ivc, rkr0: 1.1 },
+      prov: { adv_dur: 's: Seume p.70', lsa: 's: Seume p.70', ev_lift: 'd: ' + k[3] + ' in at the cam × 1.1 rockers (Seume p.70)', 'tm.ivc': 'e: W110 IVC convention' } });
+  });
+
+  add({ id: 'crank.spg82', slot: 'crank', label: 'SPG 82 mm roller-bearing stroker crankshaft', desc: 'Pressed-together roller crank, 82 mm stroke; typically sold with its own rods · 1960s–', years: [1965, 2026], yl: 'c. 1965?',
+    src: 'Seume p.22: SPG roller-bearing crankshaft (roller on each rod, pressed together in sections). Book advice: pass it by — popular with early drag racers but cranks twisted on the start line. Hot Rod Feb 1971: SPG 78 / 82 mm',
+    attrs: { crank: 'stroker', rodj: 'SPG roller', fw: 'dowel8', counterwt: 'yes', roller: 'spg' },
+    requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' }],
+    warn: 'SPG roller crank: Seume p.22 says pass it by (twisted on the start line). The assembly usually includes its own roller rods (the conrod slot is then only a label). Case and cam clearancing assumed done',
+    sound: { car: { stroke: 0.082 } }, tm: { stroke: 0.082 }, prov: { stroke: 's: 82 mm SPG (Hot Rod Feb 1971; Seume p.22 does not reprint the 82 mm figure)' } });
+
+  function headEst(id, label, desc, years, yl, src, iv, ev, vchCc, ports, warn, extraAttr) {
+    var p = { id: id, slot: 'heads', label: label, desc: desc, years: years, yl: yl, src: src,
+      attrs: Object.assign({ ports: ports || 'dual-port' }, extraAttr || {}),
+      requires: [{ attr: 'case', in: T1, msg: label.replace(/ heads.*$/, '') + ': 40 hp-family / 1600 case' }],
+      tm: { vch: vchCc * 1e-6, deck: 0.001, iv_d: iv }, sound: { car: { ev_d: ev } },
+      prov: { 'tm.iv_d': 's: Seume', ev_d: 's: Seume', 'tm.vch': 'e: ' + vchCc + ' cc (chamber not printed in the book)', 'tm.deck': 'e: 1.0 mm typical assembled deck' } };
+    if (warn) p.warn = warn;
+    add(p);
+  }
+  headEst('heads.gb870', 'GBE GB870 competition heads', '42 (or 43.7) × 37.5 mm, fully welded, relocated 12 mm plugs, to 94 mm · 1990s', [1990, 2026], 'c. 1990?',
+    'Seume p.43: GBE GB870, fully welded, relocated spark plugs, 42 or 43.7 mm inlet, 37.5 mm exhaust, Chevy-style springs, 12 mm plugs, max bore 94 mm',
+    0.042, 0.0375, 56, 'dual-port', 'GBE GB870: 42 mm inlet used (43.7 mm also listed); chamber not printed (56 cc estimate)');
+  headEst('heads.gb872', 'GBE GB872 ultimate race heads', '44.45 × 38.1 mm, titanium valves and retainers · 1990s', [1990, 2026], 'c. 1990?',
+    'Seume p.43: GBE GB872 ultimate race head, 44.45 × 38.1 mm, titanium valves and retainers; matching manifolds to order',
+    0.04445, 0.0381, 58, 'dual-port', 'GBE GB872: chamber not printed (58 cc estimate)');
+  headEst('heads.pauterb', 'Pauter B competition heads (040 based)', '42 (or 44) × 37 mm, dual springs, 12 mm long-reach plugs · 1990s', [1990, 2026], 'c. 1990?',
+    'Seume p.44: Pauter B competition head (040 based), 42 or 44 mm inlet, 37 mm exhaust, dual springs (extra-heavy Vasco optional), 12 mm long-reach plugs',
+    0.042, 0.037, 56, 'dual-port', 'Pauter B: 42 mm inlet used (44 mm also listed); chamber not printed (56 cc estimate)');
+  headEst('heads.sf1', 'Bugpack Superflo SF-1 heads', '42 (or 44 / 48) × 37.5 mm, Cosworth-style inlets, for 92–94 mm · 1980s–', [1985, 2026], 'c. 1985?',
+    'Seume p.45: Bugpack Superflo SF-1, Cosworth-style ports larger than SF-2, inlet 42 / 44 / 48 mm, exhaust 37.5 mm (38 mm with a 48 mm inlet), short 1/2 in reach plugs, for 92 / 94 mm',
+    0.042, 0.0375, 56, 'dual-port', 'SF-1: 42 mm inlet used (44 and 48 mm also listed; 48 mm often treated as a maximum on 94 mm). Chamber not printed (56 cc estimate)');
+  headEst('heads.sf2', 'Bugpack Superflo SF-2 heads', '42 (or 44) × 37.5 mm, 3-bolt manifold, short-reach plugs · 1980s–', [1985, 2026], 'c. 1985?',
+    'Seume p.46: Bugpack Superflo SF-2, inlet 42 or 44 mm, exhaust 37.5 mm, short 1/2 in reach plugs, 3-bolt manifold',
+    0.042, 0.0375, 56, 'dual-port', 'SF-2: 42 mm inlet used (44 mm also listed); chamber not printed (56 cc estimate)');
+  headEst('heads.angelflo', 'Bugpack A/F (Angle-Flo) heads', '48 × 38 mm, angled exhaust (special header), 12 mm plugs · 1980s–', [1985, 2026], 'c. 1985?',
+    'Seume p.46: Bugpack A/F (Angle-Flo), 48 × 38 mm, 1.375 in Chevy-style springs, 12 mm plugs; angled exhaust needs a special header',
+    0.048, 0.038, 58, 'dual-port', 'Angle-Flo: a special header is required (Seume p.46); chamber not printed (58 cc estimate)');
+  headEst('heads.cbcompelim', 'CB Competition Eliminator heads', '42 (or 44 / 48) × 37 mm, for 92–94 mm · 1990s', [1990, 2026], 'c. 1990?',
+    'Seume p.46: CB Competition Eliminator, inlet 42 / 44 / 48 mm, exhaust 37 / 38 / 40 mm, for 92 / 94 mm',
+    0.042, 0.037, 56, 'dual-port', 'Competition Eliminator: 42 × 37 mm used (larger sizes listed); chamber not printed (56 cc estimate)');
+  headEst('heads.cbelim2000', 'CB Eliminator 2000 / Street Eliminator heads', '40 (or 42 / 44) × 35.5 mm, for 85.5–94 mm · 1990s', [1990, 2026], 'c. 1990?',
+    'Seume p.46: CB Eliminator 2000 / Street Eliminator, inlet 40 / 42 / 44 mm, exhaust 35.5 / 37.5 mm, for 85.5 / 92 / 94 mm. Some reports of overheating on the street and of soft castings allowing seats to move',
+    0.040, 0.0355, 54, 'dual-port', 'Eliminator 2000: 40 × 35.5 mm used (larger sizes listed). Seume notes some experts say they run too hot for regular street use; still require porting. Chamber not printed (54 cc estimate)');
+  headEst('heads.bugse', 'Bugpack S/E heads', '40 (or 42 / 44) × 35.5 mm, for 85.5–94 mm · 1990s', [1990, 2026], 'c. 1990?',
+    'Seume p.46: Bugpack S/E, inlet 40 / 42 / 44 mm, exhaust 35.5 / 37.5 mm, for 85.5 / 92 / 94 mm',
+    0.040, 0.0355, 54, 'dual-port', 'Bugpack S/E: 40 × 35.5 mm used (larger sizes listed); chamber not printed (54 cc estimate)');
+  headEst('heads.superho', 'Super HO heads (Performance Technology)', '40 (or 42 / 44) × 35.5 mm, for 85.5–94 mm · 1990s', [1990, 2026], 'c. 1990?',
+    'Seume p.46: Super HO heads (Performance Technology), inlet 40 / 42 / 44 mm, exhaust 35.5 / 37.5 mm, for 85.5 / 92 / 94 mm',
+    0.040, 0.0355, 54, 'dual-port', 'Super HO: 40 × 35.5 mm used (larger sizes listed); chamber not printed (54 cc estimate)');
+  headEst('heads.ac910', 'Auto-Craft 910 race heads', '48 (up to 55) × 37.5 mm, 206 alloy, for 94–101 mm · 1990s', [1992, 2026], 'c. 1992?',
+    'Seume p.48: Auto-Craft 910, 206 alloy, bore 94–101 mm, inlet 48–55 mm, exhaust 37.5–45 mm, Chevy-style retainers, 12 mm 3/4 in reach plugs, 4-bolt dowelled manifold for 48 IDA / IDF or Auto-Craft FI',
+    0.048, 0.0375, 58, 'dual-port', 'Auto-Craft 910: 48 × 37.5 mm used (the low end of the printed ranges). Special manifold and valve-cover. Chamber not printed (58 cc estimate)');
+  headEst('heads.pauterspro', 'Pauter Super Pro cylinder heads', '52 × 40 mm (or 54 × 41), for bores to 4.25 in; unique rockers and six-bolt exhaust · 1990s', [1994, 2026], 'c. 1994?',
+    'Seume p.50: Pauter Super Pro, max bore 4.25 in, O-ringed 3-bolt manifold, six-bolt exhaust for 2.0 in and larger headers, unique 7075-T6 roller-tip rockers, valve sizes 52 / 40 mm or 54 / 41 mm',
+    0.052, 0.040, 62, 'dual-port', 'Pauter Super Pro: 52 × 40 mm used (54 × 41 also listed). Unique rockers and a large-tube header are required. Chamber not printed (62 cc estimate)');
+  headEst('heads.scatsplit', 'Scat Split-Port individual cylinder heads', '42 × 37 mm on 92 mm (48 × 38 on 94–96.8; 50 × 40 on 4.0 in), 6° valve angle · 1990s', [1994, 2026], 'c. 1994?',
+    'Seume p.51: Scat Split-Port, 356 H-450 three-part (head, rocker box, cover), valve angle 6° vs factory 9.5°, valves by bore 92 mm 42 × 37, 94 / 96.8 mm 48 × 38, 101.6 mm 50 × 40. Inlet centred in the bore at 0.500 in lift',
+    0.042, 0.037, 56, 'dual-port', 'Scat Split-Port: 42 × 37 mm (92 mm listing) used; larger bores take 48 × 38 or 50 × 40. Chamber not printed (56 cc estimate)');
+
+  add({ id: 'heads.gb850', slot: 'heads', label: 'GBE GB850 modified single-port heads',
+    purpose: 'period single-port starting head (Seume p.42); valve sizes are not printed, so the model keeps the long-block valves',
+    desc: 'Modified single-port, heavy-duty single springs, three-angle seats · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.42: GBE GB850 modified single-port; most people would upgrade to dual-ports rather than play with singles',
+    attrs: { ports: 'single-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB850: 40 hp-family / 1600 case' }],
+    warn: 'GBE GB850: valve sizes not printed — no performance model. Seume: most people would go to dual-ports' });
+  add({ id: 'heads.gb840', slot: 'heads', label: 'GBE GB840 dual-port starting heads',
+    purpose: 'GBE dual-port starting head for up to 90.5 mm (Seume p.42); valve sizes are not printed, so the model keeps the long-block valves',
+    desc: 'Starting dual-port, optional Semi-Hemi chamber, to 90.5 mm · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.42: GBE GB840 dual-port starting head, 90.5 mm bore, optional Semi-Hemi (lowers CR, claimed better flame travel)',
+    attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB840: 40 hp-family / 1600 case' }],
+    warn: 'GBE GB840: valve sizes not printed — no performance model. Semi-Hemi CR effect is not modelled' });
+  add({ id: 'heads.gb852', slot: 'heads', label: 'GBE GB852 / GB854 dual-port heads',
+    purpose: 'GBE dual-port (single or dual springs; GB854 can be fully ported); valve sizes are not printed, so the model keeps the long-block valves',
+    desc: 'GB852 heavy-duty single springs; GB854 dual springs, optional full porting · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.42–43: GBE GB852 (HD single springs) / GB854 (dual springs); GB854 with full porting and reshaped chambers is listed as GB855',
+    attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB852/854: 40 hp-family / 1600 case' }],
+    warn: 'GBE GB852 / GB854: valve sizes not printed — no performance model' });
+  add({ id: 'heads.gb855', slot: 'heads', label: 'GBE GB855 ported dual-port heads',
+    purpose: 'GBE ported dual-port with reshaped chambers (Seume p.43); valve sizes are not printed, so the model keeps the long-block valves',
+    desc: 'Ported and polished dual-port, reshaped chambers · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.43: GBE GB855 ported dual-port (GB854 plus reshaped chambers)',
+    attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB855: 40 hp-family / 1600 case' }],
+    warn: 'GBE GB855: valve sizes not printed — no performance model' });
+
+  function carbTwin(id, label, desc, years, yl, src, nThr, thrMm, nVen, venMm, venNote, acIl, warn, extraProv) {
+    var p = { id: id, slot: 'carb', label: label, desc: desc, years: years, yl: yl, src: src,
+      attrs: { carbkind: 'twin', carbport: 'dual-port', ac_il: acIl },
+      sound: { car: { carb: label, th_area_wot: nThr * PI4 * thrMm * thrMm, v_man: 0.0010 } },
+      tm: { up: [['venturi ' + nVen + ' × ' + Math.round(venMm * 1000) + ' (' + label + ')', nVen, venMm, 1.0, 1, 0]], down: [['runner', 4, 0.036, 1.5, 1, 0, 0.12], ['dual port', 4, 0.032, 1.2, 1, 0, 0.08]] },
+      prov: Object.assign({ th_area_wot: 'd: ' + nThr + ' × ' + Math.round(thrMm * 1000) + ' mm throats', v_man: 'e', 'tm.venturi': venNote, 'tm.down': 'e', ac_il: 'e' }, extraProv || {}) };
+    if (warn) p.warn = warn;
+    add(p);
+  }
+  carbTwin('carb.p11', 'Dual Solex 40P11 carburettors', 'Two 40P11 twin-chokes, as used on the early Inch Pincher · 1960s', [1965, 1975], 'c. 1965?',
+    'Seume p.97: dual Solex 40P11 (Inch Pincher)', 4, 0.040, 4, 0.036, 'e: 36 mm venturi (throat 40 mm; venturi not printed)', 1,
+    'Solex 40P11: venturi is an ESTIMATE (book names the carb, not the venturi). Period Inch Pincher use is from Seume p.97; the 1971 Inch Pincher Too used 48 IDA');
+  carbTwin('carb.dcn40', 'Weber 40 DCN / DCNL dual carburettors', 'Two 40 DCN or DCNL twin-chokes · 1960s–', [1965, 2026], 'c. 1965?',
+    'Seume p.97: Weber 40DCN / 40DCNL', 4, 0.040, 4, 0.032, 'e: 32 mm venturi (as a 40 mm DCN/IDF-class twin-choke; venturi not printed)', 1,
+    'Weber 40 DCN: venturi is an ESTIMATE (book does not print it)');
+  carbTwin('carb.dell34', 'CB Baby Dell 34 FRD dual carburettors', 'Two 34 FRD (Dellorto), typically on a dual-port manifold · 1980s–', [1985, 2026], 'c. 1985?',
+    'Seume p.99: CB “Baby Dell” 34FRD, typically dual in the book’s recommendations', 2, 0.034, 2, 0.028, 'e: 28 mm venturi (as the 34 ICT; venturi not printed)', 2,
+    'Baby Dell 34 FRD: venturi is an ESTIMATE; treated as two single-choke 34 mm carbs');
+  carbTwin('carb.impe32', 'Autocavan 32 IMPE dual carburettors', 'Two 32 IMPE (discontinued by the book date) · 1970s–80s', [1975, 1990], 'c. 1975?',
+    'Seume p.99: Autocavan 32IMPE (discontinued)', 2, 0.032, 2, 0.026, 'e: 26 mm venturi (32 mm throat; venturi not printed)', 2,
+    'Autocavan 32 IMPE: discontinued by 1996; venturi is an ESTIMATE');
+  carbTwin('carb.dcnf42', 'Berg 42 DCNF Specials (dual)', 'Two modified 42 DCNF; later kits used rebuilt 42 DCNF · 1970s–', [1975, 2026], 'c. 1975?',
+    'Seume p.101: Berg 42 DCNF Specials (modified); kits later used rebuilt 42DCNF', 4, 0.042, 4, 0.036, 'e: 36 mm venturi (42 mm DCNF; venturi not printed)', 1,
+    'Berg 42 DCNF: venturi is an ESTIMATE');
+  carbTwin('carb.berg58', 'Berg 58 mm IDA-pattern carburettors (dual)', 'Two 58 mm IDA-pattern bodies, Weber jets · 1980s–', [1985, 2026], 'c. 1985?',
+    'Seume p.104: Berg 58 mm IDA-pattern carburetors, Weber jets', 4, 0.058, 4, 0.050, 'e: 50 mm venturi (58 mm throttle; venturi not printed)', 1,
+    'Berg 58 mm IDA-pattern: venturi is an ESTIMATE (throttle size is sourced)');
+  carbTwin('carb.jaycee62', 'JayCee Terminator 62 mm carburettors (dual)', 'Two 62 mm bodies; 55 mm venturi used from the printed flow point (range 48–58 mm) · 1990s–', [1990, 2026], 'c. 1990?',
+    'Seume p.104: JayCee Terminator 62 mm, 356 T-6 body, 6061 lid, venturi range 48–58 mm; flow at 25 in water with a 55 mm venturi (633 cfm/venturi; the printed two-carb total is OCR-uncertain)', 4, 0.062, 4, 0.055, 's: 55 mm as the printed flow-bench venturi (range 48–58 mm, Seume p.104)', 1,
+    'JayCee Terminator: 55 mm venturi used (the book’s flow-bench point; range 48–58 mm)');
+
+  add({ id: 'carb.t3solex', slot: 'carb', label: 'Type 3 Solex (24 mm venturi) on a Type 1', desc: 'Single Type 3 Solex, 21.5 / 23 / 24 mm venturis (24 mm used); needs aftermarket linkage · 1960s–', years: [1965, 2026], yl: 'c. 1965?',
+    src: 'Seume p.98: Type 3 Solex (21.5 / 23 / 24 mm) on a Type 1, needs aftermarket linkage',
+    attrs: { carbkind: 'single', carbport: 'single-port', ac_il: 4 },
+    warn: 'Type 3 Solex on a Type 1: 24 mm venturi used (21.5 and 23 mm also listed). Aftermarket linkage required',
+    sound: { car: { carb: 'Type 3 Solex 24 mm', th_area_wot: PI4 * 0.030 * 0.030, v_man: 0.0012 } },
+    tm: { up: [['venturi Type 3 Solex 24 mm', 1, 0.024, 1.0, 4, 0]], down: [['runner', 4, 0.028, 1.5, 1, 0, 0.12], ['port', 4, 0.026, 1.2, 1, 0, 0.08]] },
+    prov: { 'tm.venturi': 's: 24 mm as the largest listed (Seume p.98)', th_area_wot: 'e: 30 mm throat assumed', v_man: 'e', 'tm.down': 'e', ac_il: 'e' } });
+
+  add({ id: 'carb.buggydeuce', slot: 'carb', label: 'Carter Buggy Deuce carburettor',
+    purpose: 'period single carb named in Seume p.97; jetting and venturi are not printed, so the model is unchanged',
+    desc: 'Named period carb; detailed jetting / cfm not given · 1960s–70s', years: [1965, 1980], yl: 'c. 1965?',
+    src: 'Seume p.97: Carter Buggy Deuce (named; detailed jetting/cfm not given)',
+    attrs: { carbkind: 'single' },
+    warn: 'Carter Buggy Deuce: no venturi or cfm in the book — no performance model' });
+
+  add({ id: 'ign.019', slot: 'ignition', label: 'Bosch 019 centrifugal distributor', desc: 'Centrifugal 28–32° all in by 3500; a common mod removes one spring so it is all in by about 2000 · pre-1959 Porsche / Type 2', years: [1950, 1965], yl: 'c. 1955?',
+    src: 'Seume p.119: Bosch 019 distributor (pre-1959 Porsche / Type 2), centrifugal 28–32° in by 3500 rpm; common modification: remove one spring, max ~2000 rpm',
+    attrs: { dist: '019', ignadv: 'centrifugal' }, requires: T1DIST,
+    warn: 'Bosch 019: 30° mid of the 28–32° band used; static timing and the start rpm are not printed (0° static and a 1200 rpm start are estimates, as the 031)',
+    sound: { car: { spark0: 0, ign: { cent: [[1200, 0], [3500, 30]], vac: 0 } } },
+    prov: { spark0: 'e: 0° (not printed; same convention as the 031 on p.119)', 'ign.cent': 's: 30° mid of 28–32 all in by 3500 (Seume p.119); start 1200 rpm e', 'ign.vac': 's: none (centrifugal)' } });
+
+  add({ id: 'ign.050', slot: 'ignition', label: 'Bosch 050 centrifugal distributor', desc: 'Centrifugal, faster curve than the 009 (all-in rpm is an estimate) · 1970s–', years: [1972, 2026], yl: 'c. 1972?',
+    src: 'Seume p.119: Bosch 050, no number-3 retard, curve faster than the 009',
+    attrs: { dist: '050', ignadv: 'centrifugal' }, requires: T1DIST,
+    warn: 'Bosch 050: Seume only says “faster than the 009”; the 009 numbers with an earlier all-in (2200 vs 2600) are an ESTIMATE',
+    sound: { car: { spark0: 7, ign: { cent: [[900, 5], [2200, 21]], vac: 0 } } },
+    prov: { spark0: 'e: as the 009 (Seume does not print a 050 static)', 'ign.cent': 'e: 009 curve, all in by 2200 instead of 2600 (“faster than 009”, Seume p.119)', 'ign.vac': 's: none (centrifugal)' } });
+
+  add({ id: 'ign.vertex', slot: 'ignition', label: 'Vertex / Scintilla magneto (Joe Hunt / OAC / OXC)', desc: 'Magneto, no battery needed at speed; 38° total advance as a period VW drag setting · 1950s–', years: [1955, 2026], yl: 'c. 1955?',
+    src: 'Seume p.124: Vertex / Scintilla OAC (540 V at 10,000, integral coil) and OXC (600 V, external transformer, large cap). Beware cheap industrial/NATO magnetos. Hot Rod Dec 1972 (A Tale of Two Engines): Vittone set a Joe Hunt Vertex at 37–39° maximum advance on a Type 1 drag engine',
+    attrs: { dist: 'magneto', ignadv: 'magneto' }, requires: T1DIST,
+    warn: 'Vertex magneto: Seume does not print a curve. 10° static + 28° centrifugal = 38° total (mid of the 37–39° period VW drag setting, Hot Rod Dec 1972) is an ESTIMATE for this catalogue part, not a per-car special. The model’s MBT cap is 32°, so the extra lead is mostly a warning',
+    sound: { car: { spark0: 10, ign: { cent: [[1200, 0], [3000, 28]], vac: 0 } } },
+    prov: { spark0: 'e: 10° static (not printed)', 'ign.cent': 'e: 28° all in by 3000, 38° total mid of 37–39° (Hot Rod Dec 1972, Joe Hunt Vertex on a Type 1 drag engine; Seume p.124 product only)', 'ign.vac': 's: none (magneto)' } });
+
+  add({ id: 'ign.mallory', slot: 'ignition', label: 'Mallory Super Mag magneto', desc: 'Magneto, 350–400 V primary, 0.018 in plug gap · period', years: [1960, 2026], yl: 'c. 1960?',
+    src: 'Seume p.124: Mallory Super Mag magneto, primary 350–400 V, plug gap 0.018 in (stock 0.025 in)',
+    attrs: { dist: 'magneto', ignadv: 'magneto' }, requires: T1DIST,
+    warn: 'Mallory Super Mag: Seume does not print a curve; the 38° total (as the period Vertex setting) is an ESTIMATE',
+    sound: { car: { spark0: 10, ign: { cent: [[1200, 0], [3000, 28]], vac: 0 } } },
+    prov: { spark0: 'e', 'ign.cent': 'e: 38° total as the period magneto setting used for the Vertex (Seume p.124 has no Mallory curve)', 'ign.vac': 's: none (magneto)' } });
+
+  add({ id: 'ign.stinger', slot: 'ignition', label: 'GBE Stinger S4 GB629B distributor', desc: 'Vega-based large-cap, magnetic pickup; 009-like to 5500, then 2° / 1000 rpm retard · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.121: GBE Stinger S4 GB629 / 629A / 629B, Vega-based large cap, magnetic pickup, claimed 2.5× energy, tested to 10,000 rpm. 629A: dual pickups, switchable timing (nitrous). 629B: 009-like to 5500, then retard 2°/1000 rpm',
+    attrs: { dist: 'stinger', ignadv: 'centrifugal' }, requires: T1DIST,
+    warn: 'GBE Stinger: the 629B curve is used (009-like to 5500, then 2°/1000 rpm retard). 629 / 629A are not separate parts',
+    sound: { car: { spark0: 7, ign: { cent: [[900, 5], [2600, 21], [5500, 21], [7500, 17], [9500, 13]], vac: 0 } } },
+    prov: { spark0: 'e: as the 009 (static not printed)', 'ign.cent': 's: 009-like to 5500, then retard 2° per 1000 rpm (Seume p.121, GB629B); 009 shape to 2600 is e', 'ign.vac': 's: none' } });
+
+  function rod311(id, label, desc, years, yl, src, warn) {
+    var p = { id: id, slot: 'conrod', label: label, purpose: 'stronger connecting rod (reliability / rpm); length and journals as a 311, so displacement and the torque curve do not change',
+      desc: desc, years: years, yl: yl, src: src, attrs: { rodj_fit: 'VW 55 mm' },
+      requires: [{ attr: 'case', in: ['36hp', '40hp', 'doghouse'], msg: 'Type 1 / Type 3 311-length rods: Type 1 case family' }] };
+    if (warn) p.warn = warn;
+    add(p);
+  }
+  rod311('rod.rimco', 'Rimco Super Rod (modified 311B)', 'Shot-peened, stroker-clearanced 311B, 3/8 in SPS bolts; budget race rod · period', [1970, 2026], 'c. 1970?',
+    'Seume p.26: Rimco Super Rod (modified 311B), 3/8 in SPS bolts, shot-peened, stroker-clearanced, end-for-end balanced; good for 7500 rpm (and frequently more). Not for all-out high-rpm, high-CR or turbo use (p.34)',
+    'Rimco Super Rod: 311 length / VW 55 mm journals assumed (modified 311B). Compat only for strength; no power model');
+  rod311('rod.gb191', 'GBE GB191 / GB191S modified 311 rods', 'Modified 311, GB191S shot-peened · period', [1970, 2026], 'c. 1970?',
+    'Seume p.26: GBE modified 311 rods GB191 / GB191S (shot-peened); GBE does not remove quite as much material from the side of the rod as others',
+    'GBE GB191: 311 length / VW 55 mm journals. Compat only for strength; no power model');
+  rod311('rod.carrillo', 'Carrillo E4340 H-section connecting rods', 'E4340 H-section, SPS bolts, cap alignment bushes · period', [1970, 2026], 'c. 1970?',
+    'Seume p.29–31: Carrillo E4340 H-section con-rods, SPS bolts, alignment bushes in the cap; measure bolt stretch (0.006 in) rather than a generic torque (author 53 lbf·ft, oil lightly, no moly)',
+    'Carrillo: 311 length / VW 55 mm journals assumed (book does not reprint a different centre distance). Compat only for strength; no power model');
+  rod311('rod.pauter', 'Pauter E4340 billet cruciform (slipper) rods', 'E4340 billet slipper beam, SPS or ARP bolts · period', [1980, 2026], 'c. 1980?',
+    'Seume p.32: Pauter E4340 billet cruciform (slipper) con-rods, SPS or ARP bolts',
+    'Pauter E4340 rods: 311 length / VW 55 mm journals assumed. Compat only for strength; no power model');
+  rod311('rod.pauteraa', 'Pauter AA/Billet aluminum/steel connecting rods', 'Aluminum/steel AA-style pair · period', [1985, 2026], 'c. 1985?',
+    'Seume p.32: Pauter AA/Billet aluminum/steel con-rods',
+    'Pauter AA/Billet rods: 311 length / VW 55 mm journals assumed. Compat only for strength; no power model');
+  rod311('rod.jet', 'Jet titanium connecting rods', 'Titanium race rods · period', [1980, 2026], 'c. 1980?',
+    'Seume p.29: Jet titanium con-rods',
+    'Jet titanium rods: 311 length / VW 55 mm journals assumed. Compat only for strength; no power model');
+  rod311('rod.bugpack', 'Bugpack Race Rods', 'Period aftermarket race rods · period', [1975, 2026], 'c. 1975?',
+    'Seume p.31: Bugpack Race Rods',
+    'Bugpack Race Rods: 311 length / VW 55 mm journals assumed. Compat only for strength; no power model');
+  rod311('rod.cbrace', 'CB Race Rods', 'Period aftermarket race rods · period', [1985, 2026], 'c. 1985?',
+    'Seume p.34: CB Race Rods',
+    'CB Race Rods: 311 length / VW 55 mm journals assumed. Compat only for strength; no power model');
+  rod311('rod.denzelalum', 'Denzel aluminum connecting rods', 'Period aluminum rods (Denzel) · 1950s–60s', [1954, 1970], 'c. 1954?',
+    'Seume p.26: Denzel aluminum con-rods',
+    'Denzel aluminum rods: length/journals not reprinted; 311-family fit is an ESTIMATE. Compat only for strength; no power model. Aluminum rods are a reliability risk at high rpm');
+
+  add({ id: 'lift.roller', slot: 'lifter', label: 'Pauter roller cam followers',
+    purpose: 'roller tappets for a roller cam (less side-load and friction, higher spring pressure; Seume p.57); valve lift is unchanged unless a roller-cam grind is selected',
+    desc: 'Roller lifters, as sold with a Pauter roller cam · period', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'Seume p.57: Pauter roller camshaft and roller lifters; higher spring pressures and extreme profiles with less side-load and friction. Chevrolet roller lifters also mentioned with the Pauter big-block case (p.83)',
+    attrs: { lifter: 'roller' },
+    warn: 'Pauter roller lifters: no roller-cam grind is in the book with numbers, so this part does not change the cam profile' });
+
+  add({ id: 'pr.jaycee', slot: 'pushrod', label: 'JayCee tapered chrome-moly pushrods',
+    purpose: 'tapered chrome-moly pushrods (reliability at high lift; Seume p.59)',
+    desc: 'Tapered chrome-moly pushrods (compat only)', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'Seume p.59: JayCee tapered chrome-moly pushrods' });
+
+  add({ id: 'case.rimco', slot: 'crankcase', label: 'Rimco Super Case (align-bored late VW case)',
+    purpose: 'align-bored / rebuilt late VW case with shuffle pins (strength / clearance; Seume p.74)',
+    desc: 'Rebuilt late case, align-bored, shuffle pins (compat only) · period', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.74: Rimco Super Case (align-bored / rebuilt late VW case) and shuffle pins',
+    attrs: { casekind: 'aftermarket', gallery: 'large' } });
+  add({ id: 'case.gbe', slot: 'crankcase', label: 'GBE performance case VWB403-101-025C',
+    purpose: 'GBE performance Type 1 case (strength / clearance; Seume p.83)',
+    desc: 'GBE performance case (compat only) · period', years: [1980, 2026], yl: 'c. 1980?',
+    src: 'Seume p.83: GBE performance case VWB403-101-025C',
+    attrs: { casekind: 'aftermarket', gallery: 'large' } });
+  add({ id: 'case.scatkiller', slot: 'crankcase', label: 'Scat 3-piece Killer case',
+    purpose: 'aftermarket 3-piece performance case (strength / clearance; Seume p.81). The early 1977 5-piece Killer is the same slot',
+    desc: 'Scat Killer case, 3-piece (current at the book date) (compat only) · 1977–', years: [1977, 2026], yl: '1977',
+    src: 'Seume p.81: early Scat 5-piece “Killer” case (1977) and the later 3-piece Killer case (current at the book date)',
+    attrs: { casekind: 'aftermarket', gallery: 'large' } });
+  add({ id: 'case.autocraft', slot: 'crankcase', label: 'Auto-Craft Pro-Series 4-piece case',
+    purpose: 'aftermarket 4-piece performance case (strength / clearance; Seume p.82)',
+    desc: 'Auto-Craft Pro-Series 4-piece case (compat only) · period', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'Seume p.82: Auto-Craft Pro-Series 4-piece case',
+    attrs: { casekind: 'aftermarket', gallery: 'large' } });
+  add({ id: 'case.pauterspro', slot: 'crankcase', label: 'Pauter 5-piece Super Pro big-block case',
+    purpose: 'aftermarket 5-piece big-block case (strength / clearance; Seume p.83)',
+    desc: 'Pauter 5-piece Super Pro big-block case (compat only) · period', years: [1990, 2026], yl: 'c. 1990?',
+    src: 'Seume p.83: Pauter 5-piece Super Pro big-block case',
+    attrs: { casekind: 'aftermarket', gallery: 'large' } });
+  add({ id: 'case.bugpack', slot: 'crankcase', label: 'Bugpack Race Case (356 T-6)',
+    purpose: 'aftermarket 356 T-6 race case (strength / clearance; Seume p.80)',
+    desc: 'Bugpack Race Case, ex-ARPM, 356 T-6 (compat only) · period', years: [1980, 2026], yl: 'c. 1980?',
+    src: 'Seume p.80: Bugpack Race Case (ex-ARPM), 356 T-6 aftermarket case',
+    attrs: { casekind: 'aftermarket', gallery: 'large' } });
+
+  add({ id: 'brg.glyco', slot: 'bearings', label: 'Glyco steel-backed main and rod bearings',
+    purpose: 'steel-backed bearings (durability); journal family must match the crank (Seume p.22)',
+    desc: 'Glyco steel-backed shells; journal family must match the crank (compat only)', years: [1955, 2026],
+    src: 'Seume p.22: Glyco steel-backed main and rod bearings',
+    attrs: { brg: 'aftermarket' } });
+
+  add({ id: 'fw.light', slot: 'flyhw', label: 'Lightened and Blanchard-ground stock flywheel',
+    purpose: 'lighter flywheel for faster revving (Seume p.12); engine inertia is not in the model, so the curve and launch do not change',
+    desc: 'Lightened, Blanchard-ground stock-pattern flywheel (compat only) · period', years: [1960, 2026], yl: 'c. 1960?',
+    src: 'Seume p.12: lightened and Blanchard-ground stock flywheel',
+    attrs: { fw_fit: 'factory' },
+    warn: 'Lightened flywheel: mass and inertia are not modelled — no performance effect' });
+  add({ id: 'fw.wedge', slot: 'flyhw', label: 'Wedgemated crank and flywheel',
+    purpose: 'tapered crank/flywheel joint for more holding power (Seume p.13); required fitment, no power',
+    desc: 'Wedgemated (tapered) crank and flywheel (compat only) · period', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.13: wedgemated crank and flywheel',
+    attrs: { fw_fit: 'wedge' } });
+
+  add({ id: 'cool.serck', slot: 'cooling', label: 'Serck auxiliary oil cooler',
+    purpose: 'extra oil cooling (reliability); raises the cooling-headroom warning only',
+    desc: 'Auxiliary oil cooler (Serck) · period', years: [1965, 2026], yl: 'c. 1965?',
+    src: 'Seume p.130: Serck auxiliary oil cooler',
+    attrs: { cooling: 'extra' } });
+  add({ id: 'cool.scatfan', slot: 'cooling', label: 'Scat aftermarket fan housing (nine vanes)',
+    purpose: 'aftermarket fan housing with factory-style ducting (cooling capacity; Seume p.129); only the warning is live',
+    desc: 'Nine-vane housing, factory-style ducting (compat only) · period', years: [1980, 2026], yl: 'c. 1980?',
+    src: 'Seume p.129: Scat aftermarket fan housing (nine vanes, factory-style ducting)',
+    attrs: { cooling: 'extra' } });
+  add({ id: 'cool.empi2t3', slot: 'cooling', label: 'EMPI dual Type 3 oil coolers (rear-window louvers)',
+    purpose: 'two Type 3 oil coolers under rear-window louvers (reliability; Seume p.130); raises the cooling-headroom warning only',
+    desc: 'Late-1960s EMPI dual Type 3 coolers under rear-window louvers', years: [1967, 1975], yl: 'c. 1968?',
+    src: 'Seume p.130: EMPI late-1960s dual Type 3 oil coolers under rear-window louvers',
+    attrs: { cooling: 'extra' } });
+
+  add({ id: 'pul.dragbtn', slot: 'pulley', label: 'Pauter degree-marked pulley and drag button (no fan belt)',
+    purpose: 'degree-marked crank pulley with a drag button and no fan belt (Seume p.141); fan power and the loss of cooling are not modelled',
+    desc: 'Steel degree pulley and drag button, no fan belt (compat only) · period', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'Seume p.141: Pauter steel degree-marked crank pulley and “drag button” (no fan belt)',
+    attrs: { pulley: 'dragbutton' },
+    warn: 'Drag button: no fan belt — cooling and fan-power are not in the model' });
+  add({ id: 'pul.gbe', slot: 'pulley', label: 'GBE Achiever and Equalizer crank pulleys',
+    purpose: 'GBE street/race crank pulleys (Seume p.141); diameters are not printed, so fan speed is unchanged',
+    desc: 'GBE Achiever / Equalizer crank pulleys (compat only) · period', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.141: GBE Achiever and Equalizer crank pulleys',
+    attrs: { pulley: 'gbe' },
+    warn: 'GBE Achiever / Equalizer: diameters not printed — no power-pulley cooling model' });
+  add({ id: 'pul.serpentine', slot: 'pulley', label: 'CB Performance serpentine belt kit',
+    purpose: 'serpentine belt, jockey pulley, stock-diameter crank pulley (Seume p.141); fan speed is unchanged',
+    desc: 'Serpentine belt kit, stock-diameter crank pulley at the book date (compat only) · 1990s–', years: [1990, 2026], yl: 'c. 1990?',
+    src: 'Seume p.141: CB Performance serpentine belt kit (jockey pulley, stock-diameter crank pulley at book date)',
+    attrs: { pulley: 'serpentine' } });
+
+  add({ id: 'muf.gbe903', slot: 'muffler', label: 'GBE GB903DP dual muffler (heater hookups)',
+    purpose: 'street dual muffler with heater hookups for 13/15/1600 (Seume p.115); no geometry is printed, so the exhaust model is unchanged',
+    desc: 'Dual muffler, heater hookups, 1300 / 1500 / 1600 · period', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.115: GBE GB903DP dual muffler (13/15/1600 with heater hookups)',
+    attrs: { muffler: 'street' },
+    warn: 'GBE GB903DP: pipe sizes are not printed — no performance model' });
+  add({ id: 'muf.fatquiet', slot: 'muffler', label: 'FAT Performance mid-1970s dual quiet mufflers',
+    purpose: 'period dual quiet mufflers (Seume p.114); no geometry is printed, so the exhaust model is unchanged',
+    desc: 'Dual quiet mufflers · mid-1970s', years: [1974, 1985], yl: 'c. 1975?',
+    src: 'Seume p.114: FAT mid-1970s dual quiet mufflers',
+    attrs: { muffler: 'street' },
+    warn: 'FAT quiet mufflers: pipe sizes are not printed — no performance model' });
+
+  add({ id: 'exh.sstubes', slot: 'exhaust', label: 'Bugpack Street Tubes',
+    purpose: 'street extractor tubes (Seume p.114); no primary size is printed, so the exhaust model is unchanged',
+    desc: 'Bugpack Street Tubes (compat only) · period', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.114: Bugpack Street Tubes',
+    attrs: { exh: 'extractor', exhfit: 'Type 1' },
+    warn: 'Bugpack Street Tubes: primary size not printed — no performance model' });
+
+  add({ id: 'valve.oem', slot: 'valves', label: 'Valves of the chosen heads', desc: 'Factory or head-kit valves (material only)', oem: true, attrs: { valve_mat: 'stock' } });
+  add({ id: 'valve.manley', slot: 'valves', label: 'Manley stainless steel valves',
+    purpose: 'stainless valves (durability / higher rpm; Seume p.39); diameter comes from the heads, so the torque curve does not change',
+    desc: 'Manley stainless valves (compat only)', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.39: Manley stainless steel valves',
+    attrs: { valve_mat: 'stainless' } });
+  add({ id: 'valve.delwest', slot: 'valves', label: 'Del West titanium valves',
+    purpose: 'titanium valves (lighter valvetrain; Seume p.39); diameter comes from the heads, and valvetrain mass is not modelled',
+    desc: 'Del West titanium valves (compat only)', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'Seume p.39: Del West titanium valves',
+    attrs: { valve_mat: 'titanium' } });
+
+  add({ id: 'camg.oem', slot: 'camdrive', label: 'Factory helical cam and crank gears', desc: 'Quiet helical timing gears (compat only)', oem: true, attrs: { camgear_cut: 'helical' } });
+  add({ id: 'camg.straight', slot: 'camdrive', label: 'Straight-cut cam and crank timing gears',
+    purpose: 'straight-cut gears (less friction, noisier) with optional double-thrust bearings and an adjustable (offset-washer) cam gear (Seume p.68); cam timing is not modelled, so the curve does not change',
+    desc: 'Straight-cut gears; optional steel-on-steel, double-thrust bearings, adjustable cam gear (compat only)', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.68: stock gears are helical (quiet, thrust load); straight-cut are noisier with less friction, recommended with very strong springs; steel-on-steel optional; aluminum cam gears wear quickly; double-thrust cam bearings; adjustable (offset-washer) cam gear',
+    attrs: { camgear_cut: 'straight' } });
+
+  add({ id: 'ring.oem', slot: 'rings', label: 'Factory piston rings of the chosen barrels', desc: 'Rings supplied with the barrels (compat only)', oem: true, attrs: { rings: 'stock' } });
+  add({ id: 'ring.totalseal', slot: 'rings', label: 'Total Seal / gapless performance rings',
+    purpose: 'gapless or Dykes performance rings (seal and oil control; Seume p.90); blow-by is not in the model',
+    desc: 'Total Seal, Z-Gap, Berg TS, CB Zero-Gap or Dykes rings (compat only)', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.90: performance piston rings — Total Seal, Childs & Albert Z-Gap, Berg TS, CB Zero-Gap, Dykes',
+    attrs: { rings: 'gapless' } });
+
+  add({ id: 'vc.oem', slot: 'valvecover', label: 'Factory valve covers of the chosen heads', desc: 'Stock pressed-steel or kit covers (cosmetic)', oem: true, attrs: { vcover: 'stock' } });
+  add({ id: 'vc.gbesf', slot: 'valvecover', label: 'GBE SF-head valve-cover conversion (clip-on)',
+    purpose: 'adapter so a stock VW clip-on cover fits Superflo-style heads (Seume p.45); cosmetic / fitment only',
+    desc: 'GBE conversion to a stock clip-on cover on SF heads (cosmetic)', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'Seume p.45: GBE SF-head valve-cover conversion (stock clip-on cover)',
+    attrs: { vcover: 'gbe-clipon' } });
+
+  add({ id: 'ignacc.none', slot: 'ignacc', label: 'Coil of the chosen distributor / magneto', desc: 'No extra coil or ignition box', oem: true, attrs: { ignacc: 'none' } });
+  add({ id: 'ignacc.bluecoil', slot: 'ignacc', label: 'Bosch Blue Coil (6 V or 12 V, marked)',
+    purpose: 'stronger coil (spark energy; Seume p.125); the advance curve comes from the distributor, so the torque curve does not change',
+    desc: 'Bosch Blue Coil, 6 V or 12 V as marked (compat only)', years: [1960, 2026], yl: 'c. 1960?',
+    src: 'Seume p.125: Bosch Blue Coil (6 V or 12 V, marked)',
+    attrs: { ignacc: 'bluecoil' } });
+  add({ id: 'ignacc.pertronix', slot: 'ignacc', label: 'Pertronix Ignitor (in a 009 or 050)',
+    purpose: 'points-replacement electronic trigger in a 009 or 050 (reliability / spark; Seume p.122); the advance curve is still the distributor’s',
+    desc: 'Ignitor conversion in a 009 or 050 (compat only)', years: [1980, 2026], yl: 'c. 1980?',
+    src: 'Seume p.122: Pertronix Ignitor electronic ignition conversion (in a 009 or 050)',
+    attrs: { ignacc: 'pertronix' } });
+  add({ id: 'ignacc.msd', slot: 'ignacc', label: 'MSD 6A / 6AL CD ignition box',
+    purpose: 'capacitive-discharge ignition box (spark energy; Seume p.123, also 5 / 7AL-2); the advance curve is still the distributor’s',
+    desc: 'MSD 6A or 6AL (5 and 7AL-2 also listed) with Blaster / Pro-Power coil (compat only)', years: [1972, 2026], yl: 'c. 1972?',
+    src: 'Seume p.123: MSD 5, 6A, 6AL and 7AL-2, with Blaster / Pro-Power coils, optional crank trigger',
+    attrs: { ignacc: 'msd' } });
+  add({ id: 'ignacc.crane', slot: 'ignacc', label: 'Crane XR700 / XR3000 / HI-6 ignition box',
+    purpose: 'electronic ignition box (spark energy; Seume p.122); the advance curve is still the distributor’s',
+    desc: 'Crane XR700, XR3000, HI-6 or HI-6R (compat only)', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.122: Crane XR700, XR3000, HI-6, HI-6R / HI-GR ignition boxes',
+    attrs: { ignacc: 'crane' } });
+  add({ id: 'ignacc.jacobs', slot: 'ignacc', label: 'Jacobs Bug-Pak / Omni-Pak ignition',
+    purpose: 'aftermarket ignition pack (spark energy; Seume p.123); the advance curve is still the distributor’s',
+    desc: 'Jacobs Bug-Pak / Bug-Pack or Omni-Pak (compat only)', years: [1980, 2026], yl: 'c. 1980?',
+    src: 'Seume p.123: Jacobs Bug-Pak / Bug-Pack and Omni-Pak',
+    attrs: { ignacc: 'jacobs' } });
+  add({ id: 'ignacc.compufire', slot: 'ignacc', label: 'Compu-Fire wasted-spark ignition',
+    purpose: 'dual closed-core coil wasted-spark ignition (spark energy; Seume p.122); the advance curve is still the distributor’s',
+    desc: 'Compu-Fire dual closed-core coil wasted-spark (compat only)', years: [1985, 2026], yl: 'c. 1985?',
+    src: 'Seume p.122: Compu-Fire dual closed-core coil wasted-spark ignition',
+    attrs: { ignacc: 'compufire' } });
+
+  add({ id: 'wind.none', slot: 'windage', label: 'No windage tray', desc: 'Open sump (factory)', oem: true, attrs: { windage: 'none' } });
+  add({ id: 'wind.tray', slot: 'windage', label: 'Windage tray',
+    purpose: 'windage tray (oil control; Seume p.138, “maybe slalom/road race only”); crank windage is not in the model',
+    desc: 'Sump windage tray (compat only)', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.138: windage tray; book verdict “maybe slalom/road race only”',
+    attrs: { windage: 'tray' } });
+
+  add({ id: 'br.oem', slot: 'breather', label: 'Factory oil-filler and crankcase breathers', desc: 'Stock filler and breathers (compat only)', oem: true, attrs: { breather: 'stock' } });
+  add({ id: 'br.gbe', slot: 'breather', label: 'GBE baffled oil-filler breather tower',
+    purpose: 'baffled oil-filler breather tower, generator or alternator versions (Seume p.139); crankcase pressure is not in the model',
+    desc: 'GBE baffled breather tower (compat only)', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.139: GBE baffled oil-filler breather tower (generator or alternator versions); street size 3/8 in or −6, race 1/2 in or −8',
+    attrs: { breather: 'gbe' } });
 
   // kits: period packages that fill several slots at once (data only; the generic menu shows them as presets)
   def.kits = [
@@ -17018,6 +17458,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.39", date: "2026-11-28", status: "done", headline: "Beetle parts: more of the Seume interchange-manual catalogue", text: "The Swap parts list now has the named parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual that were still missing after v1.13.31: the rest of the Engle VZ and hydraulic cams, the remaining Scat C grinds and the GBE GB302, the SPG 82 mm roller crank, more GBE / Bugpack / Pauter / CB / Scat / Auto-Craft heads, period carbs (including the dual Solex 40P11 and the Berg and JayCee IDA-pattern bodies), Bosch 019 and 050 distributors, Vertex and Mallory magnetos, the GBE Stinger, and stronger 311-length rods. Where the book does not give a figure the model can use (chamber volume, a venturi, a magneto curve), the part is marked as an estimate, or it is listed with a short purpose note and no performance effect — the same treatment as in v1.13.33. New slots (valve material, cam gears, piston rings, valve covers, an ignition coil or box, a windage tray, a breather) are fitment and reliability only. Stock sounds, the drag strip and the old Mesa Road lap are unchanged." },
       { v: "v1.13.33", date: "2026-11-27", status: "done", headline: "Swap parts: purpose notes, config below the list", text: "Parts that do not change power, torque, weight or grip now say so in the Swap parts list, with a short note on what they are for in real life (cooling, oil control, fitment, reliability, dress-up) so they can be modelled later. The build figures and warnings have moved to the bottom of the list, so the part selectors stay visible on a phone and in the car. Stock sounds are unchanged." },
       { v: "v1.13.31", date: "2026-11-26", status: "done", headline: "Beetle parts: book catalogue, compatibility, prices", text: "Parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual join the catalogue where they already fit a slot and have enough sourced figures to model, with prices in the picker (vendor currency and euros, or plainly 'no price found'). The Okrasa stroker is 69 mm as the book has it; the 69.5 mm crank is the separate EMPI part. The 1996 CB 044 Super Sport / Magnum 44 is listed beside the later CNC Wedge Port. Engle cam lifts are at the cam in the book and at the valve in the game, multiplied by the 1.1 rockers. Connecting rods and rocker arms are new slots that feed the same generic engine model (journal size, rod length, rocker ratio) with no per-car code. A later pass (same release) gives the CB 044 CNC a sourced 65 cc chamber so compression follows bore and stroke, adds the book's clearance and fitment rules, and opens extra slots (oil pump, spacers, flywheel hardware and the rest) where they carry a compatibility or model effect. Stock sounds are unchanged." },
       { v: "v1.13.30", date: "2026-11-26", status: "done", headline: "Beetle parts: turbo lag in the drivetrain, turbo charge physics", text: "Turbo lag is now real: the boost is a state in the game physics that builds with the turbo's spool time (slower at low revs) and limits the torque at the wheels, and the sound follows that same boost. Hot charge air costs less than before (the DIN / SAE temperature law instead of the full 1/T), the header ahead of the turbine counts at its real pressure, and below the boost threshold the engine sees its carburettor vacuum instead of free atmospheric pressure. The Rajay kit now builds its 10 psi by 5400 rpm with no wastegate, as Hot Rod reported in 1971. Under boost the sound no longer pulls the spark back (a vacuum unit cannot retard). New part: the Rajay carb and advance kit for the 34 PICT-3 (richer jets, plugged enrichment bleeds, new throttle lever, recurved distributor), fitted only with the Rajay turbo. Stock sounds are unchanged." },
