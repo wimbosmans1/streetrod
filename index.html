@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.36)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.37)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -375,20 +375,30 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
   .partsBox .pdesc, .partsBox .pprice, .partsBox .ppurpose { margin-left: 0; }
 }
 /* road course (draft): HUD (time, sector, next bend, mini map), steering pad and result card; all hidden unless the mode is on */
-#roadHud { position: absolute; z-index: 11; display: flex; gap: 8px; align-items: flex-start; pointer-events: none; max-width: 70%; }
-#roadHud.hidden, #steerPad.hidden, #roadCard.hidden { display: none; }
-#roadHudT { background: rgba(22,18,14,.78); color: #f6ead0; border-radius: 8px; padding: 5px 9px; font: 13px/1.35 'Trebuchet MS', Arial, sans-serif; }
-#roadHudT .rt { font: bold 20px 'Courier New', monospace; } #roadHudT .rs { opacity: .8; } #roadHudT .rn { color: #ffd36a; } #roadHudT .rb { opacity: .85; }
+/* v1.13.37 road HUD: one compact, translucent line top left (the v1.13.36 box with map / best time / next-bend text covered the view), the
+   mini map a small tile top right, the TC / ABS lamps at the end of the line, and the brake banner under it (in the sky, never over the road) */
+#roadHud { position: absolute; z-index: 11; font-size: 12px; display: flex; gap: 5px; align-items: center; pointer-events: none; max-width: calc(100% - 100px); }
+#roadHud.hidden, #steerPad.hidden, #roadCard.hidden, #roadMapBox.hidden, #roadBrake.hidden { display: none; }
+#roadHudT { background: rgba(22,18,14,.40); color: #f6ead0; border-radius: 6px; padding: .08em .67em; font: 1em/1.5 'Trebuchet MS', Arial, sans-serif; white-space: nowrap; text-shadow: 0 1px 1px rgba(0,0,0,.7); }
+#roadHudT > span { margin-right: .67em; } #roadHudT > span:last-of-type { margin-right: 0; }
+#roadHudT .rt { font: bold 1.17em 'Courier New', monospace; } #roadHudT .rs { opacity: .85; }
 #roadHudT b.g { color: #6be37b; } #roadHudT b.r { color: #ff7a5a; }
-/* v1.13.34 stage course: Lotus-style countdown (big), position */
-#roadHudT .rc { display: inline-block; min-width: 1.6em; font: bold 30px/1 'Trebuchet MS', Arial, sans-serif; color: #ffd36a; text-shadow: 0 1px 0 #000; vertical-align: -3px; }
-#roadHudT .rc.low { color: #ff5a3c; animation: rcPulse .5s infinite alternate; } #roadHudT .rc.out { font-size: 18px; color: #ff5a3c; }
+/* v1.13.34 stage course: Lotus-style countdown, position */
+#roadHudT .rc { display: inline-block; min-width: 1.4em; font: bold 1.67em/1 'Trebuchet MS', Arial, sans-serif; color: #ffd36a; vertical-align: -2px; }
+#roadHudT .rc.low { color: #ff5a3c; animation: rcPulse .5s infinite alternate; } #roadHudT .rc.out { font-size: 1.1em; color: #ff5a3c; }
 #roadHudT .rp { font-weight: bold; color: #9fe0ff; } @keyframes rcPulse { to { opacity: .45; } }
-@media (max-height: 430px) { #roadHudT .rc { font-size: 22px; } }
-#roadHud.narrow #roadHudT .rc { font-size: 22px; }
-#roadMap svg { display: block; background: rgba(22,18,14,.55); border-radius: 8px; }
-#roadMap .rmRoad { stroke: #f6ead0; stroke-width: 2.2; stroke-linejoin: round; } #roadMap .rmCar { fill: #ff4a2a; stroke: #fff; stroke-width: 1.2; }
+#roadAids { display: flex; gap: 3px; pointer-events: auto; }
+#roadAids .ra { font: bold .83em/1 'Trebuchet MS', Arial, sans-serif; letter-spacing: .04em; padding: .3em .45em; border-radius: .45em; border: 0; background: rgba(22,18,14,.32); color: rgba(246,234,208,.55); cursor: pointer; touch-action: manipulation; }
+#roadAids .ra.on { background: #ffb020; color: #1a120c; box-shadow: 0 0 6px rgba(255,176,32,.8); }
+#roadAids .ra.off { text-decoration: line-through; opacity: .5; }
+#roadMapBox { position: absolute; z-index: 11; pointer-events: none; opacity: .62; }
+#roadMap, #roadMap svg { display: block; width: 100%; height: 100%; }
+#roadMap svg { background: rgba(22,18,14,.45); border-radius: 8px; }
+#roadMap .rmRoad { stroke: #f6ead0; stroke-width: 2.6; stroke-linejoin: round; } #roadMap .rmCar { fill: #ff4a2a; stroke: #fff; stroke-width: 1.2; }
 #roadMap .rmStart { fill: #6be37b; } #roadMap .rmFin { fill: #fff; stroke: #000; stroke-width: 1; }
+#roadBrake { position: absolute; z-index: 12; font-size: 13px; pointer-events: none; transform: translateX(-50%); white-space: nowrap; padding: .15em .85em; border-radius: 1em; font: bold 1em/1.45 'Trebuchet MS', Arial, sans-serif; letter-spacing: .03em; color: #1a120c; background: rgba(255,176,32,.80); text-shadow: none; }
+#roadBrake.red { background: rgba(224,48,36,.88); color: #fff; animation: rcPulse .35s infinite alternate; }
+html.roadOn #astatus { display: none; }   /* the sound debug line is not part of the game view */
 /* v1.13.36 road-course drive controls (#roadCtl, placed by layoutRoad() in js/main.js): steering pad bottom left (left thumb),
    GAS and BRAKE bottom right (right thumb), a small gear chip (AUTO by default) above the brake. Several fingers at once. */
 #roadCtl { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 13; pointer-events: none; }
@@ -416,10 +426,8 @@ html.roadOn #touch .pedal, html.roadOn #touch .shifts { display: none; }
 #roadCard tr.et td { font-size: 17px; border-top: 1px solid #c9b98f; } #roadCard .best { margin: 6px 0 2px; font-weight: bold; } #roadCard .note { margin: 2px 0 8px; font-size: 12px; color: #6a5a42; }
 #roadCard .row { display: flex; gap: 8px; justify-content: center; }
 html.vis-ink #roadCard { background: #f6eedb; border: 3px solid #1c1a17; border-radius: 6px; box-shadow: 6px 6px 0 #1c1a17; font-family: 'Trebuchet MS', sans-serif; }
-html.vis-ink #roadHudT, html.vis-ink #roadMap svg { border: 2px solid #1c1a17; }
 html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: system-ui, sans-serif; border-radius: 10px; } html.vis-flat #roadCard h3 { color: #ffb23e !important; } html.vis-flat #roadCard .note { color: #8a93a0; }
-@media (max-height: 430px) { #roadHudT { font-size: 11px; padding: 3px 6px; } #roadHudT .rt { font-size: 16px; } #roadMap svg { width: 80px; height: 80px; } }
-#roadHud.narrow #roadMap { display: none; } #roadHud.narrow #roadHudT { font-size: 11px; padding: 3px 7px; } #roadHud.narrow #roadHudT .rt { font-size: 16px; }
+#roadHud.narrow #roadHudT > span { margin-right: 6px; }
 </style>
 <script>
 /* v1.8.2: self-reporting on real devices. Any uncaught error or rejected promise is shown in a red box at the bottom of the page
@@ -494,7 +502,9 @@ html.vis-flat #roadCard { background: #1f242c; color: #dfe3ea; font-family: syst
     </div>
     <div id="tree" class="hidden" aria-label="Drag tree"><div class="lbl">PRE</div><div class="pair"><i class="b" data-b="pre"></i><i class="b" data-b="pre"></i></div><div class="lbl">STAGE</div><div class="pair"><i class="b" data-b="stage"></i><i class="b" data-b="stage"></i></div><div class="pair am"><i class="b" data-b="a1"></i><i class="b" data-b="a1"></i></div><div class="pair am"><i class="b" data-b="a2"></i><i class="b" data-b="a2"></i></div><div class="pair am"><i class="b" data-b="a3"></i><i class="b" data-b="a3"></i></div><div class="pair gr"><i class="b" data-b="g"></i><i class="b" data-b="g"></i></div><div class="pair rd"><i class="b" data-b="r"></i><i class="b" data-b="r"></i></div></div>
     <div id="dragCard" class="hidden"></div>
-    <div id="roadHud" class="hidden" aria-live="off"><div id="roadMap"></div><div id="roadHudT"></div></div>
+    <div id="roadHud" class="hidden" aria-live="off"><div id="roadHudT"></div><div id="roadAids"><button class="ra" id="raTC" data-act="aids" title="Traction control (key T switches TC + ABS on / off)">TC</button><button class="ra" id="raABS" data-act="aids" title="ABS (key T switches TC + ABS on / off)">ABS</button></div></div>
+    <div id="roadMapBox" class="hidden" aria-hidden="true"><div id="roadMap"></div></div>
+    <div id="roadBrake" class="hidden" aria-live="off"></div>
     <div id="roadCtl" class="hidden">
       <div id="steerPad" aria-label="Steering: hold the left or right half (the outer part is full lock); slide toward the middle for less"><div class="spTrack"><span class="spL">&#9664;</span><span class="spR">&#9654;</span><i class="spMid"></i><i id="spKnob"></i></div></div>
       <div class="pedal rp" id="rpBrake" data-pedal="brake"><div class="fill"></div><span>BRAKE</span></div>
@@ -9927,6 +9937,14 @@ var Physics = (function () {
     if (rpm < 300) wot *= rpm / 300;
     return thr * (wot + fric) - fric;
   };
+  // v1.13.37: the throttle at which engineTorque(rpm, thr) = T (engineTorque is linear in thr). Used by the traction control (inp.tcl).
+  Vehicle.prototype.throttleFor = function (rpm, T) {
+    var k = rpm / 1000, fric = this.fricNm(k);
+    if (rpm < 50) fric *= rpm / 50;
+    var wot = this.wotAt(rpm);
+    if (rpm < 300) wot *= rpm / 300;
+    return clamp((T + fric) / Math.max(1e-6, wot + fric), 0, 1);
+  };
 
   Vehicle.prototype.couplingTorque = function (we, wt) {
     // fluid coupling: T = K we^2 (1 - SR^4) driving, symmetric when overrunning
@@ -9997,6 +10015,29 @@ var Physics = (function () {
     if (c.boost) this.stepBoost(dt, rpm, cut ? 0 : this.thrAct);
     var Te = cut ? this.engineTorque(rpm, 0) : this.engineTorque(rpm, this.thrAct);
     if (!ignitionOn) Te = Math.min(Te, 0) + Tstarter;
+    // v1.13.37 traction control (generic, default off: inp.tcl = share of the tyres' peak force the driven axle may be asked for, 0.9 ..
+    // 0.95; absent = unchanged, bit-identical). The engine torque is limited to what the driven tyres can take now: peak friction
+    // (muPeak) x the driven axle's load Nd (static + weight transfer, x inp.grip = what the cornering leaves, the friction circle) plus
+    // the part of the drive force that only spins up the rotating parts (Jeq a). Feed-forward, so the wheels never light up and there is
+    // no on / off surging: the throttle is trimmed (thrAct), the same way a real system cuts throttle / spark, never below idle.
+    if (inp.tcl) {
+      var tcInst = 0; this.tcTq = Infinity;
+      if (ignitionOn && this.tyre !== 'lock' && this.ratio() > 0 && !(auto && this.range === 'N')) {
+        var Gt = this.ratio(), Wt0 = m * G0, Nr0 = clamp(Wt0 * c.rearFrac + m * this.a * c.cgHeight / c.wheelbase, 0.15 * Wt0, 0.85 * Wt0);
+        var Nd0 = c.awd ? Math.min(Wt0, Nr0 / (1 - c.awd.frontMax)) : Nr0;
+        if (inp.grip !== undefined && inp.grip < 1) Nd0 *= Math.max(0.05, inp.grip);
+        var Jw0 = c.awd ? c.wheelInertiaRear + c.wheelInertiaFront : c.wheelInertiaRear, Jeq = (Jw0 + (!auto && this.clutchLocked ? Je * Gt * Gt : 0)) / (r * r), Fcap;   // the engine's inertia only counts with the clutch locked
+        // rolling: up to tcl x peak friction (+ the rotating parts' share); already spinning: well under the sliding friction, so that the wheel grips again
+        Fcap = inp.tcl * c.muPeak * Nd0 + Jeq * Math.max(0, this.a);
+        if (this.tyre === 'spin') { var qs = clamp(((this.sr || 0) - 0.10) / 0.06, 0, 1); Fcap += (0.6 * c.muSlide * Nd0 - Fcap) * qs; }   // slip past the peak (10 .. 16 %): cut towards 0.6 x sliding friction
+        var TeMax = Fcap * r / (Gt * c.drivelineEff); this.tcTq = TeMax;
+        if (!cut && Te > TeMax) {
+          var thrN = Math.max(this.throttleFor(rpm, TeMax), this.idleThr);
+          if (thrN < this.thrAct) { this.thrAct = thrN; Te = this.engineTorque(rpm, thrN); tcInst = cmd > 0.02 ? clamp(1 - thrN / cmd, 0, 1) : 0; }   // tcAct: how much of the demanded throttle is held back (for the TC lamp)
+        }
+      }
+      this.tcAct = tcInst;
+    } else if (this.tcAct) this.tcAct = 0;
     this.Te = Te; if (!this.TeRef) this.TeRef = Math.max(1, this.engineTorque(3500, 1));   // torque fraction for the gear whine (v4)
     this.soundThr = cut ? 0 : driverThr;  // throttle as the synth hears it
 
@@ -10015,7 +10056,10 @@ var Physics = (function () {
     var FbfDem = bpedal * B.capG * Wt * B.frontBias * fadeF;
     var FbrDem = bpedal * B.capG * Wt * (1 - B.frontBias) * fadeR;
     this.fadeF = fadeF; this.fadeR = fadeR;
-    if (B.abs || inp.abs) { FbfDem = Math.min(FbfDem, 0.97 * c.muPeak * Nf); FbrDem = Math.min(FbrDem, 0.97 * c.muPeak * Nr); }   // job 8: ABS holds each axle under lock-up
+    if (B.abs || inp.abs) {   // job 8: ABS holds each axle under lock-up (v1.13.37: absAct = the share of the brake demand it is holding back, for the ABS lamp)
+      var fF0 = FbfDem, fR0 = FbrDem; FbfDem = Math.min(FbfDem, 0.97 * c.muPeak * Nf); FbrDem = Math.min(FbrDem, 0.97 * c.muPeak * Nr);
+      if (inp.abs) this.absAct = Math.max((fF0 - FbfDem) / Math.max(1, fF0), (fR0 - FbrDem) / Math.max(1, fR0));
+    } else if (this.absAct) this.absAct = 0;
     if (!this.frontLocked && FbfDem > c.muPeak * Nf && this.v > 0.3) this.frontLocked = true;
     else if (this.frontLocked && (FbfDem < c.muSlide * Nf * 0.98 || this.v < 0.05)) this.frontLocked = false;
     var Fbf = this.frontLocked ? c.muSlide * Nf : FbfDem;
@@ -10030,6 +10074,7 @@ var Physics = (function () {
         G = this.ratio();
         this.fill = Math.min(1, this.fill + dt / 0.45);
         Tc = this.couplingTorque(this.we, this.ww * G) * (0.3 + 0.7 * this.fill);
+        if (inp.tcl && Tc > this.tcTq) { this.tcAct = Math.max(this.tcAct, clamp(1 - this.tcTq / Tc, 0, 1)); Tc = this.tcTq; }   // v1.13.37 traction control: the converter passes no more than the tyres can take
       } else G = 0;
     } else if (G > 0) {
       // automated clutch ("stall-free"): bites progressively with engine speed + throttle
@@ -10066,6 +10111,7 @@ var Physics = (function () {
           var kc = cap / 0.5, dwN = dw + dt * (Te / Je - G * this.a / r);
           Tc = clamp(kc * dwN / (1 + kc * dt / Je), -cap, cap);
         }
+        if (inp.tcl && Tc > this.tcTq) { this.tcAct = Math.max(this.tcAct, clamp(1 - this.tcTq / Tc, 0, 1)); Tc = this.tcTq; }   // v1.13.37 traction control: a slipping clutch passes no more than the tyres can take
         if ((!rmS || rmS.ph === 'in') && Math.abs(dw) < (this.tyre === 'spin' ? 5.0 : 2.0) && this.engage > 0.5 && (this.tyre === 'roll' || (this.tyre === 'spin' && (this.sr || 0) < 0.15 && this.v > 5)) && rpm > c.idleRpm * 1.05) { this.clutchLocked = true; this.engage = 1; }
       }
       locked = this.clutchLocked;
@@ -10150,7 +10196,7 @@ var Physics = (function () {
       }
       this.Tc = locked ? Te - Je * G * aw : Tc;
       a = bodyAccel(Ft, mEff, Fbf + FbrDem + Froll);
-      if ((this.ww * r - (v + a * dt)) / Math.max(v, 2.0) < 0.04) { this.tyre = 'roll'; }   // back inside the grip region
+      if ((this.ww * r - (v + a * dt)) / Math.max(v, 2.0) < (inp.tcl ? 0.115 : 0.04)) { this.tyre = 'roll'; }   // back inside the grip region
       this.skid = clamp((Math.abs(sr) - 0.12) * 2, 0, 1) * clamp(Math.abs(slipV) / 3, 0, 1);
       this.brakeForce = Fbf + FbrDem;
       this.heat(dt, Fbf, FbrDem);
@@ -10240,6 +10286,13 @@ var Physics = (function () {
     var TR = drive ? limited(c.torqueRear || 400, c.powerRearW || 248000, wR, tqCmd) : 0;
     var eff = c.drivelineEff || 0.95;
     var Fdrv = (TF * ratioF / rF + TR * ratioR / rR) * eff * dir;
+    // v1.13.37 traction control for the EV (generic, default off: inp.tcl): drive force limited to tcl x peak friction x the car's weight
+    // (both axles driven; x inp.grip = the share the cornering leaves). The EV model has no wheelspin; this keeps its drive inside the tyres' grip.
+    if (inp.tcl) {
+      var tcE = 0, gkE = inp.grip !== undefined && inp.grip < 1 ? Math.max(0.05, inp.grip) : 1, FcapE = inp.tcl * c.muPeak * m * G0 * gkE;
+      if (Math.abs(Fdrv) > FcapE) { var scE = FcapE / Math.abs(Fdrv); TF *= scE; TR *= scE; Fdrv *= scE; tcE = 1 - scE; }
+      this.tcAct = tcE;
+    } else if (this.tcAct) this.tcAct = 0;
     var spd = Math.abs(this.v);
     var Fdrag = 0;
     if (spd > 0.02) {
@@ -10250,6 +10303,10 @@ var Physics = (function () {
     if (inp.grade && spd > 0.02) Fdrag -= m * G0 * inp.grade;   // v1.13.34 stage course: grade (generic, default off)
     var Fb = 0;
     if (bpedal > 0 && spd > 0.05) Fb = -(this.v >= 0 ? 1 : -1) * bpedal * (c.brakes && c.brakes.capG ? c.brakes.capG : 1) * m * G0 * 0.85;
+    if (inp.abs) {   // v1.13.37: ABS for the EV (generic, default off): the brake force stays at 97 % of the tyres' peak friction (x inp.grip)
+      var FbCap = 0.97 * c.muPeak * m * G0 * (inp.grip !== undefined && inp.grip < 1 ? Math.max(0.05, inp.grip) : 1);
+      this.absAct = Math.abs(Fb) > FbCap ? 1 - FbCap / Math.abs(Fb) : 0; if (Math.abs(Fb) > FbCap) Fb = Fb < 0 ? -FbCap : FbCap;
+    } else if (this.absAct) this.absAct = 0;
 
     if (range === 'P' && spd < 0.6) {
       this.v = 0; this.a = 0; Fdrv = 0; TF = 0; TR = 0; tqCmd = 0;
@@ -12213,7 +12270,9 @@ var RoadCourse = (function () {
   };
   // inputs for the longitudinal solver this step (from the state at the end of the last step)
   Sim.prototype.inputs = function () {
-    if (this.T.arcade) return { grip: this.grip, resist: this.resist, grade: this.grade || 0, abs: 1, tc: this.tcK };   // v1.13.36 arcade: driving aids (js/physics.js keys abs / tc, default off)
+    // v1.13.36 arcade: driving aids (js/physics.js keys abs / tc, default off); v1.13.37: + tcl (traction control to the tyres' grip), and
+    // the host must pass ALL of these to the engine model (v1.13.36's main.js passed only grip / resist / grade, so the aids never ran live)
+    if (this.T.arcade) return this.aids === false ? { grip: this.grip, resist: this.resist, grade: this.grade || 0 } : { grip: this.grip, resist: this.resist, grade: this.grade || 0, abs: 1, tc: this.tcK, tcl: ARC.TCL };
     return this.T.hilly ? { grip: this.grip, resist: this.resist, grade: this.grade } : { grip: this.grip, resist: this.resist };
   };
   var TAU_SPIN = 0.55;        // s, decay of a collision yaw rate (ESTIMATE: tyres re-align a car spun by a glancing hit in about a second)
@@ -12294,9 +12353,12 @@ var RoadCourse = (function () {
     CIRC: 0.35, CIRCMIN: 0.7,    // aMax x sqrt(1 - 0.35 (ax / mu g)^2), at least sqrt(0.7) = 84 %: driving / braking costs a little line, not the car
     TAUA: 0.25,                  // s, the longitudinal load used for that follows the car's acceleration smoothly (no flicker from gear changes)
     GRIPUSE: 0.35,               // grip left for driving / braking at the cornering limit: 1 - 0.35 (ay / ayCap)^2 (at least 65 %)
-    TCSR: 0.1, TCK: 10, TCSPIN: 0.3,  // traction aid: wheelspin past 10 % slip (about the tyre's peak; the squeal starts at 12 %) trims the throttle,
-    TCDN: 0.05, TCUP: 0.35, TCMIN: 0.1, // x (1 - 10 (slip - 0.1)), at least 0.3; down in 0.05 s, back in 0.35 s
-    TCOVER: 10, TCOVER0: 0.03    // ... and so does driving past the cornering limit: throttle x (1 - 10 (over - 0.03)), at least 0.1
+    // v1.13.37 driver aids (course key arcade; Sim.aids, default on). Traction control: the physics limits the drive torque to TCL x the
+    // peak force the driven tyres can take now (inp.tcl, js/physics.js; includes what the cornering leaves: inp.grip). On top of that a
+    // stability aid trims the throttle when the car is being driven past its cornering limit (Lotus 2: lift to pull in), smoothly:
+    // throttle x (1 - TCOVER (over - TCOVER0)), at least TCMIN, followed with time constant TCTAU (no on / off surging).
+    TCL: 0.92,                   // share of the tyres' peak force: the tyre curve peaks at 12 % slip (js/physics.js tyreMu); 92 % is at about 11 %
+    TCOVER: 10, TCOVER0: 0.03, TCMIN: 0.15, TCTAU: 0.10
   };
   function arcLat(v) { return Math.min(ARC.LATMAX, ARC.LAT0 + ARC.LATK * v, ARC.LATV * v); }
   Sim.prototype.stepArcade = function (dt, car, steer) {
@@ -12333,9 +12395,8 @@ var RoadCourse = (function () {
       if (vOut > 1) { car.v *= 0.7; if (car.ww !== undefined && c.tyreRadius) car.ww = car.v / c.tyreRadius; this.crash = 1; }
     }
     this.grip = lim.muF * (1 - ARC.GRIPUSE * Math.pow(Math.min(1, ay / Math.max(0.1, ayCap)), 2));
-    // traction / stability aid: wheelspin, or driving the car past its cornering limit, trims the throttle (never the brakes)
-    var tcT = Math.max(ARC.TCMIN, 1 - ARC.TCOVER * Math.max(0, over - ARC.TCOVER0)); if (car.tyre === 'spin' && (car.sr || 0) > ARC.TCSR) tcT = Math.min(tcT, Math.max(ARC.TCSPIN, 1 - ARC.TCK * (car.sr - ARC.TCSR)));
-    this.tcK = tcT < this.tcK ? Math.max(tcT, this.tcK - dt / ARC.TCDN) : Math.min(tcT, this.tcK + dt / ARC.TCUP);
+    // stability aid: driving the car past its cornering limit trims the throttle (never the brakes); the wheelspin part is the physics' tcl
+    var tcT = Math.max(ARC.TCMIN, 1 - ARC.TCOVER * Math.max(0, over - ARC.TCOVER0)); this.tcK += (tcT - this.tcK) * (1 - Math.exp(-dt / ARC.TCTAU));
     this.resist = m * ay * Math.sin(alpha) + lim.crr * m * G + m * Math.min(ARC.SCRUB * Math.max(0, aReq - aMax), ARC.SCRUBMAX * (c.muSlide || 0.6) * lim.muF * G);
     this.surf = lim;
     return this.timing(dt, lim, v);
@@ -12425,6 +12486,42 @@ var RoadCourse = (function () {
     var v = 20; for (var i = 0; i < 30; i++) v = Math.sqrt((c.muPeak || 0.8) * latK(c) * speedFactor(v) * G * R);
     return v;
   }
+  // ---- v1.13.37 brake cue (the "BRAKE" banner; generic: from the road's curvature ahead, the car's own cornering grip and braking) ----
+  // For every point d metres ahead the fastest speed that holds the lane there is bendSpeed (the same lateral grip the arcade model uses:
+  // tyre muPeak x latK x speed factor, dry asphalt, x USE). If the car is faster than that, it needs (v^2 - vc^2) / (2 aB) metres to get down
+  // to it (aB = the car's achievable braking, x DERATE: load transfer, fade and a human's pedal work); the slack is d minus that distance.
+  // The point with the least slack controls. slack <= 0: the brake point has gone by.
+  var CUE = { USE: 0.93, DERATE: 0.85, STEP: 3, LOOK: 8, RED_T: 0.45, AMBER_T: 2.8 };   // USE: 7 % margin below the grip limit; DERATE and USE are ESTIMATES (checked in test/aids_test.js)
+  // fade: the brakes' present strength 0..1 (drums fade with heat: js/physics.js fadeFactor; the host passes bias x fadeF + (1 - bias) x fadeR)
+  function brakeFade(car) { var B = car && car.c && car.c.brakes; if (!B || car.fadeF === undefined) return 1; var b = B.frontBias === undefined ? 0.6 : B.frontBias; return b * car.fadeF + (1 - b) * car.fadeR; }
+  function brakeDecel(c, fade) {
+    var cap = c.brakes && c.brakes.capG ? c.brakes.capG * (c.trans === 'ev' ? 0.85 : 1) * (fade || 1) : 0.9;   // js/physics.js stepEv: 0.85 x capG
+    return Math.min(cap, 0.97 * (c.muPeak || 0.8)) * G * CUE.DERATE;
+  }
+  function bendSpeed(c, k, y) {   // fastest speed (m/s) that holds lateral offset y through signed curvature k
+    var ke = Math.abs(k) / Math.max(0.2, 1 - y * k), v = 40;
+    if (ke < 1e-6) return 99;
+    for (var i = 0; i < 6; i++) v = Math.sqrt(CUE.USE * (c.muPeak || 0.8) * latK(c) * speedFactor(v) * G / ke);
+    return v;
+  }
+  function brakeCue(T, c, s, y, v, fade) {
+    var aB = brakeDecel(c, fade), maxD = Math.min(900, 40 + v * CUE.LOOK + v * v / (2 * aB)), best = null;
+    for (var d = 4; d <= maxD; d += CUE.STEP) {
+      var k = kAt(T, s + d); if (Math.abs(k) < 1 / 3000) continue;
+      var vc = bendSpeed(c, k, y); if (vc >= v - 0.3) continue;
+      var slack = d - (v * v - vc * vc) / (2 * aB);
+      if (!best || slack < best.slack) best = { slack: slack, d: d, vt: vc, k: k, s: s + d };
+    }
+    return best;
+  }
+  // banner level: 0 none, 1 amber ("brake in X m": the brake point is less than AMBER_T s away), 2 red ("BRAKE": it is less than RED_T s away or
+  // gone; once red it stays red until the car is within 5 % of the target speed). prevRed: the last level was 2.
+  function cueLevel(best, v, prevRed) {
+    if (!best) return 0;
+    if (prevRed && v > best.vt * 1.05) return 2;
+    var t = best.slack / Math.max(v, 1);
+    return t < CUE.RED_T ? 2 : t < CUE.AMBER_T ? 1 : 0;
+  }
   var cache = {};
   function course(id) { id = id || 'mesa'; if (!COURSES[id]) id = 'mesa'; if (!cache[id]) cache[id] = build(COURSES[id]); return cache[id]; }
 
@@ -12482,7 +12579,7 @@ var RoadCourse = (function () {
   };
 
   return { ARC: ARC, arcLat: arcLat, course: course, Sim: Sim, Stage: Stage, profile: profile, profTime: profTime, pose: pose, kAt: kAt, elev: elev, gradeAt: gradeAt, cornerSpeed: cornerSpeed, speedFactor: speedFactor, surf: surf,
-    ASSIST: ASSIST, FENCE: FENCE, MI: MI, SURF: SURF, PROP: PROP, COURSES: COURSES, latK: latK };
+    brakeCue: brakeCue, brakeFade: brakeFade, cueLevel: cueLevel, bendSpeed: bendSpeed, brakeDecel: brakeDecel, CUE: CUE, ASSIST: ASSIST, FENCE: FENCE, MI: MI, SURF: SURF, PROP: PROP, COURSES: COURSES, latK: latK };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = RoadCourse;
 </script>
@@ -16811,6 +16908,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
+      { v: "v1.13.37", date: "2026-11-28", status: "done", headline: "Stage course: traction control and ABS that work, a brake cue, a cleaner HUD", text: "The stage is drivable with GAS and BRAKE held fully down. A real traction control limits the drive torque to what the tyres can take, also while cornering, so the BRM, GT350 and Cadillac no longer sit in wheelspin; ABS holds the wheels just under lock-up. Two small lamps (TC, ABS) show when they work, tap them or press T to switch the aids off. A small BRAKE banner turns amber, then red, when you must brake for the bend ahead (from the road, your speed and the car's brakes). The box in the top left is gone: one slim translucent line shows time left, speed, gear, position and checkpoint; the small map moved to the top right. Drag strip, cruising, the old lap and every sound are unchanged." },
       { v: "v1.13.36", date: "2026-11-27", status: "done", headline: "Stage course: new drive controls, grip when you power out and brake in", text: "The road course is meant to be fun now. Touch: a big steering pad bottom left (hold the left or right half for full lock, slide toward the middle for less) and big GAS and BRAKE buttons bottom right, so one thumb steers while the other drives; gears shift themselves (AUTO; tap it for manual). Keyboard: arrows or WASD, the left and right arrows now steer on the course. Full throttle out of a bend and braking into one no longer light up or lock the tyres: on the stage the tyres keep most of their grip for driving and braking while cornering, a traction aid trims wheelspin and power past the cornering limit, and the brakes do not lock. Drag strip, cruising, the old lap and every sound are unchanged." },
       { v: "v1.13.35", date: "2026-11-27", status: "done", headline: "Stage course: Lotus 2-style handling on the real engine", text: "On the Mesa Run stage the car now handles like Lotus Turbo Challenge 2: it stays pointed down the road, steering moves it across the road at a rate that grows with speed, and bends carry it to the outside harder the faster you go. Hold the steering into the bend to keep your line; too fast and you are carried wide and lose speed, but you never spin. Lifting off pulls you in. The verge slows you down. Better tyres corner faster. Hits still bounce you and cost speed, with a short wobble and no spins. Engine, gearbox, drag and hills are the real model as before. The old flat lap (?course=mesa), drag strip and every sound are unchanged." },
       { v: "v1.13.34", date: "2026-11-27", status: "done", headline: "Road course: Lotus-style stage with hills, traffic, rivals and collisions (prototype)", text: "The Road course is now a stage in the spirit of Lotus Turbo Challenge 2 (Amiga, 1991), drawn in this game\u2019s own painted style: Mesa Run, 6.2 km with crests and dips, five checkpoints and a countdown (each checkpoint adds time, time left carries on; out of time the engine is cut and you can still coast over the next checkpoint), three rivals that drive your car\u2019s own numbers, slower traffic and oncoming cars with lights, and road-side posts, chevron boards and fallen boulders. A new generic collision engine (oriented boxes, swept so nothing passes through at speed, impulses with bounce and friction) handles car against car and car against objects: you bounce, lose speed and may spin; light posts and boards get knocked flying. Hills feed a new generic grade input to the physics. The old flat lap is still there with ?course=mesa. Stock sounds unchanged." },
@@ -18205,13 +18303,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
 
   // ---- keyboard ----
   var HANDLED = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'PageUp', 'PageDown'];
-  var ROAD_KEYS = ['ArrowLeft', 'ArrowRight', 'w', 'W', 's', 'S', '.', ',', '>', '<', 'PageUp', 'PageDown', 'o', 'O'];
+  var ROAD_KEYS = ['ArrowLeft', 'ArrowRight', 'w', 'W', 's', 'S', '.', ',', '>', '<', 'PageUp', 'PageDown', 'o', 'O', 't', 'T'];
   window.addEventListener('keydown', function (e) {
     if (HANDLED.indexOf(e.key) >= 0) e.preventDefault();
     if (e.repeat) return;
     state.keys[e.key] = true;
     if (road && ROAD_KEYS.indexOf(e.key) >= 0) {   // v1.13.36 road course: arrows / WASD drive (tick reads state.keys); . , PageUp / PageDown shift; O auto-shift
-      if (e.key === '.' || e.key === '>' || e.key === 'PageUp') shiftUp(); else if (e.key === ',' || e.key === '<' || e.key === 'PageDown') shiftDown(); else if (e.key === 'o' || e.key === 'O') toggleAutoShift();
+      if (e.key === '.' || e.key === '>' || e.key === 'PageUp') shiftUp(); else if (e.key === ',' || e.key === '<' || e.key === 'PageDown') shiftDown(); else if (e.key === 'o' || e.key === 'O') toggleAutoShift(); else if (e.key === 't' || e.key === 'T') toggleAids();   // v1.13.37: T = traction control + ABS on / off
       return;
     }
     switch (e.key) {
@@ -18271,7 +18369,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   // ---- tap buttons: act on pointerup (reliable on iOS), ignore the follow-up click ----
   var ACTIONS = {
     ign: ignition, car: function (b) { selectCar(b.dataset.v); }, view: function (b) { setView(+b.dataset.v); }, brmsound: function (b) { setBrmSound(b.dataset.v); },
-    units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, road: function () { if (road) roadExit(); else roadEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox, autoshift: function () { toggleAutoShift(); },
+    units: toggleUnits, mute: toggleMute, drag: function () { if (drag) dragExit(); else dragEnter(); }, road: function () { if (road) roadExit(); else roadEnter(); }, radio: toggleRadio, up: shiftUp, down: shiftDown, gearbox: toggleGearbox, autoshift: function () { toggleAutoShift(); }, aids: function () { toggleAids(); },
     about: function () { openSpecs(false); openAbout(true); }, aboutClose: function () { openAbout(false); }, aboutHow: function () { openAboutHow(); },
     specs: function () { openSpecs(true); }, specsClose: function () { openSpecs(false); },
     menu: function () { document.getElementById('topbar').classList.toggle('open'); },
@@ -18341,7 +18439,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
   }
   function roadExit() {
     road = null; state.lat = 0;
-    ['roadHud', 'roadCtl', 'roadCard'].forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
+    ['roadHud', 'roadCtl', 'roadCard', 'roadMapBox', 'roadBrake'].forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
     document.documentElement.classList.remove('roadOn'); state.touchGas = state.touchBrake = 0; state.touchSteer = null;
     updatePanel();
   }
@@ -18378,37 +18476,47 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var ox = (W - (bx[2] - bx[0]) * sc) / 2 - bx[0] * sc, oy = (H - (bx[3] - bx[1]) * sc) / 2 - bx[1] * sc, pts = [];
     for (var i = 0; i < T.x.length; i += 15) pts.push((T.x[i] * sc + ox).toFixed(1) + ',' + (T.y[i] * sc + oy).toFixed(1));
     var pf = RoadCourse.pose(T, T.finish), p0 = RoadCourse.pose(T, 0);
-    document.getElementById('roadMap').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '"><polyline points="' + pts.join(' ') + '" fill="none" class="rmRoad"/>' +
+    document.getElementById('roadMap').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '"><polyline points="' + pts.join(' ') + '" fill="none" class="rmRoad"/>' +
       '<circle cx="' + (p0.x * sc + ox).toFixed(1) + '" cy="' + (p0.y * sc + oy).toFixed(1) + '" r="3" class="rmStart"/><circle cx="' + (pf.x * sc + ox).toFixed(1) + '" cy="' + (pf.y * sc + oy).toFixed(1) + '" r="3" class="rmFin"/>' +
       '<circle id="rmCar" r="4" class="rmCar"/></svg>';
     roadMap = { sc: sc, ox: ox, oy: oy, dot: document.getElementById('rmCar') };
   }
   function roadHud(force) {
     var el = document.getElementById('roadHudT'); if (!road || !el) return;
-    var sim = road.sim, T = sim.T, best = roadBest(), next = null, run = road.run, st = run && run.stage;
-    for (var i = 0; i < T.bends.length; i++) if (T.bends[i].s1 > sim.s) { next = T.bends[i]; break; }
+    var sim = road.sim, T = sim.T, best = roadBest(), run = road.run, st = run && run.stage;
     var t = sim.phase === 'grid' ? 0 : sim.phase === 'done' && sim.res ? sim.res.time : sim.t, sec = Math.min(sim.splitT.length + 1, T.splits.length + 1);
     var dl = '';
     if (best && best.sectors && sim.splitT.length && sim.phase === 'run') { var k = sim.splitT.length - 1, bs = 0; for (var j = 0; j <= k; j++) bs += best.sectors[j]; var d = sim.splitT[k] - bs; dl = ' <b class="' + (d <= 0 ? 'g' : 'r') + '">' + (d <= 0 ? '\u2212' : '+') + Math.abs(d).toFixed(2) + '</b>'; }
-    var mph = state.units === 'mph', bendTxt = '';
-    if (next) { var dist = next.s0 - sim.s, vs = RoadCourse.cornerSpeed(spec(), next.R); bendTxt = (dist > 0 ? Math.round(dist) + ' m: ' : 'Now: ') + (next.name || (next.dir > 0 ? 'Right' : 'Left')) + ' ' + (next.dir > 0 ? '\u21b1' : '\u21b0') + ' R' + next.R + ' \u00b7 grip limit ' + Math.round(mph ? vs * 2.236936 : vs * 3.6) + (mph ? ' mph' : ' km/h'); }
+    // v1.13.37: one compact translucent line (the v1.13.36 box with map, best time and next-bend text covered the top-left of the view): time left,
+    // time, position, checkpoint; a short tag only when something is wrong (gravel, too fast). Speed and gear are on the dash panel.
     var surf = sim.surf && sim.surf.outer !== 'asphalt' ? ' <b class="r">' + sim.surf.outer.toUpperCase() + '</b>' : '', slide = sim.spin && Math.abs(sim.spin) > 0.6 ? ' <b class="r">SPIN</b>' : sim.over > 0.12 ? ' <b class="r">' + (T.arcade ? 'TOO FAST' : 'SLIDING') + '</b>' : '';
     if (st) {   // v1.13.34 stage: Lotus-style countdown, checkpoint, position
       var left = Math.max(0, st.left), low = left < 10 && sim.phase === 'run';
       var pos = run.traffic ? run.traffic.position(sim.s) : 1, nR = run.traffic ? run.traffic.rivals().length + 1 : 1, toCp = st.cp < st.cps.length ? Math.max(0, st.cps[st.cp] - sim.s) : 0;
-      el.innerHTML = '<span class="rc' + (low ? ' low' : '') + (st.out ? ' out' : '') + '">' + (st.out ? 'TIME UP' : Math.ceil(left)) + '</span> <span class="rt">' + fmtT(t) + '</span>' + dl + surf + slide +
-        '<br><span class="rs">CP ' + Math.min(st.cp + 1, st.cps.length) + '/' + st.cps.length + ' \u00b7 ' + (toCp > 0 ? (toCp >= 1000 ? (toCp / 1000).toFixed(1) + ' km' : Math.round(toCp) + ' m') : 'finish') + '</span> <span class="rp">P' + pos + '/' + nR + '</span>' +
-        '<br><span class="rb">' + (best ? 'Best ' + fmtT(best.time) : sim.phase === 'grid' ? 'Go when ready' : 'No best yet') + '</span>' +
-        (bendTxt ? '<br><span class="rn">' + bendTxt + '</span>' : '');
+      el.innerHTML = '<span class="rc' + (low ? ' low' : '') + (st.out ? ' out' : '') + '">' + (st.out ? 'TIME UP' : Math.ceil(left)) + '</span><span class="rt">' + fmtT(t) + '</span>' + dl +
+        '<span class="rp">P' + pos + '/' + nR + '</span><span class="rs">CP ' + Math.min(st.cp + 1, st.cps.length) + '/' + st.cps.length + (toCp > 0 ? ' \u00b7 ' + (toCp >= 1000 ? (toCp / 1000).toFixed(1) + ' km' : Math.round(toCp) + ' m') : '') + '</span>' + surf + slide;
     } else
-    el.innerHTML = '<span class="rt">' + fmtT(t) + '</span> <span class="rs">S' + sec + '/' + (T.splits.length + 1) + '</span>' + dl + surf + slide +
-      '<br><span class="rb">' + (best ? 'Best ' + fmtT(best.time) : sim.phase === 'grid' ? 'Go when ready' : 'No best yet') + ' \u00b7 ' + Math.max(0, Math.min(100, sim.s / T.finish * 100)).toFixed(0) + ' %</span>' +
-      (bendTxt ? '<br><span class="rn">' + bendTxt + '</span>' : '');
+    el.innerHTML = '<span class="rt">' + fmtT(t) + '</span><span class="rs">S' + sec + '/' + (T.splits.length + 1) + '</span>' + dl + '<span class="rs">' + Math.max(0, Math.min(100, sim.s / T.finish * 100)).toFixed(0) + ' %</span>' + surf + slide;
     if (roadMap) { var p = RoadCourse.pose(T, sim.s); roadMap.dot.setAttribute('cx', (p.x * roadMap.sc + roadMap.ox).toFixed(1)); roadMap.dot.setAttribute('cy', (p.y * roadMap.sc + roadMap.oy).toFixed(1)); }
     var gc = car(), gEl = document.getElementById('rcGearN'), man = gc.c.trans === 'manual';
     if (gEl) gEl.textContent = man ? (gc.gear > 0 ? String(gc.gear) : 'N') : (gc.range || 'D');
     var chip = document.getElementById('rcGear'); if (chip) { chip.classList.toggle('noman', !man); chip.classList.toggle('auto', man && state.roadAuto); }
     var ab = document.getElementById('rcAuto'); if (ab) ab.classList.toggle('on', !!state.roadAuto);
+    roadBrakeCue();
+  }
+  // v1.13.37 brake banner: a small pill in the sky part of the view (never over the road). Amber: the brake point is coming ("Brake in 90 m");
+  // red: brake now ("BRAKE" and the speed to get down to). Computed from the road ahead, this car's cornering grip, its brakes (with fade) and speed
+  // (RoadCourse.brakeCue / cueLevel in js/road.js). Hidden when nothing needs braking at the present speed.
+  function roadBrakeCue() {
+    var el = document.getElementById('roadBrake'); if (!road || !el) return;
+    var sim = road.sim, c = car(), v = Math.max(0, c.v), lvl = 0, best = null;
+    if (sim.phase === 'run' && !(road.run && road.run.stage && road.run.stage.out) && v > 3) { best = RoadCourse.brakeCue(sim.T, c.c, sim.s, sim.y, v, RoadCourse.brakeFade(c)); lvl = RoadCourse.cueLevel(best, v, road.cueLvl === 2); }
+    road.cueLvl = lvl;
+    if (!lvl) { if (!el.classList.contains('hidden')) el.classList.add('hidden'); road.cueTxt = ''; return; }
+    var mph = state.units === 'mph', vt = Math.round(best.vt * (mph ? 2.236936 : 3.6)), txt = lvl === 2 ? 'BRAKE \u00b7 ' + vt + (mph ? ' mph' : ' km/h') : 'Brake in ' + Math.max(10, Math.round(best.slack / 10) * 10) + ' m';
+    txt = (best.k > 0 ? '\u21b1 ' : '\u21b0 ') + txt;
+    if (txt !== road.cueTxt) { el.textContent = txt; road.cueTxt = txt; }
+    el.classList.toggle('red', lvl === 2); el.classList.toggle('amber', lvl === 1); el.classList.remove('hidden');
   }
   // the steering pad and the HUD sit on the canvas (bottom centre / top left), placed from the canvas box so every layout works
   function layoutRoad() {
@@ -18419,6 +18527,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var hud = document.getElementById('roadHud'), top = Math.max(cr.top, tb.bottom > cr.top && tb.bottom < cr.top + cr.height * 0.5 ? tb.bottom : cr.top) + (port ? 44 : 0);
     hud.style.left = Math.round(cr.left - st.left + 8) + 'px'; hud.style.top = Math.round(top - st.top + 6) + 'px';
     hud.classList.toggle('narrow', cr.width < 520);
+    var hs = Math.max(1, Math.min(1.5, cr.width / 900)); hud.style.fontSize = (12 * hs).toFixed(1) + 'px'; var bnE = document.getElementById('roadBrake'); if (bnE) bnE.style.fontSize = (13 * hs).toFixed(1) + 'px';   // the Tesla's 1920 px scene gets 1.5 x
+    var mp = document.getElementById('roadMapBox'), mps = Math.round(Math.max(52, Math.min(96, cr.width * 0.06)));   // v1.13.37: the mini map is a small translucent tile in the top-right corner
+    if (mp) { mp.style.left = Math.round(cr.right - st.left - mps - 8) + 'px'; mp.style.top = Math.round(cr.top - st.top + 8) + 'px'; mp.style.width = mp.style.height = mps + 'px'; mp.classList.toggle('hidden', port || cr.width < 520); }
+    var bn = document.getElementById('roadBrake');   // v1.13.37 brake banner: centred, just under the HUD line, in the sky
+    if (bn) { bn.style.left = Math.round(cr.left - st.left + cr.width / 2) + 'px'; bn.style.top = Math.round(top - st.top + 6 + (hud.offsetHeight || 26) + 6) + 'px'; }
     // v1.13.36 drive controls. A control deck under the scene (phone portrait, 4:3 tablets) holds them; otherwise they sit on the
     // scene's bottom corners, clear of the speed panel (bottom centre, about 32-70 % of the width) and the HUD (top left)
     var R = {}, cl = function (x, a, b) { return Math.max(a, Math.min(b, x)); };
@@ -18462,7 +18575,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (g < n && rpm > 0.93 * red && thr > 0.05) { c.shiftUp(); road.asT = 0; }
     else if (g > 1 && down < 0.86 * red && (rpm < 0.42 * red || (brk > 0.15 && rpm < 0.62 * red) || (thr > 0.9 && rpm < 0.55 * red && down < 0.8 * red))) { c.shiftDown(); road.asT = 0; }
   }
-  function roadTickPre() { return road ? (road.run ? road.run.inputs() : road.sim.inputs()) : null; }
+  // v1.13.37 driver aids on the road course: traction control + ABS (default ON, saved; key T, or tap the TC / ABS lights). Off = the raw
+  // v1.13.35 feel. The lights show when an aid is working (held 0.25 s so a short intervention is visible).
+  state.roadAids = lsGet('streetrod.road.aids', '1') !== '0';
+  function toggleAids() { state.roadAids = !state.roadAids; lsSet('streetrod.road.aids', state.roadAids ? '1' : '0'); flash(state.roadAids ? 'Traction control + ABS: on' : 'Traction control + ABS: off', 1.5); if (road) roadAidLights(0, true); }
+  function roadAidLights(dt, force) {
+    if (!road) return;
+    var c = car(), on = state.roadAids, tc = on && ((c.tcAct || 0) > 0.03 || road.sim.tcK < 0.93), ab = on && (c.absAct || 0) > 0.02;
+    road.tcHold = tc ? 0.25 : Math.max(0, (road.tcHold || 0) - dt); road.absHold = ab ? 0.25 : Math.max(0, (road.absHold || 0) - dt);
+    var st = (on ? 1 : 0) + (road.tcHold > 0 ? 2 : 0) + (road.absHold > 0 ? 4 : 0);
+    if (st === road.aidSt && !force) return; road.aidSt = st;
+    var a = document.getElementById('raTC'), b = document.getElementById('raABS');
+    if (a) { a.classList.toggle('on', road.tcHold > 0); a.classList.toggle('off', !on); } if (b) { b.classList.toggle('on', road.absHold > 0); b.classList.toggle('off', !on); }
+  }
+  function roadTickPre() { if (!road) return null; road.sim.aids = state.roadAids; return road.run ? road.run.inputs() : road.sim.inputs(); }
   function roadTickPost(dt, c) {
     if (!road) return;
     if (road.car !== state.carId) { roadExit(); return; }
@@ -18478,7 +18604,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     if (st) while (road.ev < st.events.length) { var e = st.events[road.ev++]; if (!e.fin) flash('CHECKPOINT  +' + e.add + ' s', 2); }
     if (st && st.over && !road.done) { road.done = true; roadDone(null, true); }
     if (!road.done && road.sim.phase === 'done') { road.done = true; roadDone(road.sim.res); }
-    roadHudT += dt; if (roadHudT > 0.1) { roadHudT = 0; roadHud(); }
+    roadAidLights(dt); roadHudT += dt; if (roadHudT > 0.1) { roadHudT = 0; roadHud(); }
     var kn = document.getElementById('spKnob'), pd = document.getElementById('steerPad');
     if (kn && pd) kn.style.transform = 'translateX(' + (state.steer * (pd.clientWidth / 2 - 24)).toFixed(1) + 'px)';
   }
@@ -18641,7 +18767,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     var rIn = road ? roadTickPre() : null;
     if (road) roadAutoShift(dt, c, thr, brk);
     if (road && road.run && road.run.stage && road.run.stage.out) thr = 0;   // v1.13.34: out of time, the engine is cut and the car coasts
-    c.update(dt, rIn ? (rIn.grade !== undefined ? { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist, grade: rIn.grade } : { throttle: thr, brake: brk, grip: rIn.grip, resist: rIn.resist }) : { throttle: thr, brake: brk });
+    c.update(dt, rIn ? Object.assign({ throttle: thr, brake: brk }, rIn) : { throttle: thr, brake: brk });   // v1.13.37: ALL of the course's keys (grip, resist, grade, abs, tc, tcl); v1.13.36 passed only grip / resist / grade, so its aids never reached the engine model
     if (state.garage) { c.v = 0; c.ww = 0; c.a = 0; }
     dragTick(dt, c);
     roadTickPost(dt, c);
