@@ -10,7 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<title>Street Rod: engine sound + driving demo (v1.13.41)</title>
+<title>Street Rod: engine sound + driving demo (v1.13.42)</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: #1a120c; color: #eadfc6; font: 15px/1.45 Georgia, 'Times New Roman', serif; }
@@ -9757,14 +9757,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Vehicles;
 var Physics = (function () {
   var G0 = 9.81, RHO = 1.2, AMB = 25;
   function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
-  function interp(tab, x) {
+  // v1.13.42: there is no rev limiter. Past the last point of a torque table the torque no longer holds flat (the table's last point used to
+  // be unreachable behind the ignition cut): it runs off linearly to zero, along the table's own last slope, but never more gently than
+  // "zero within a quarter of the last table rpm" (ESTIMATE: the shipped tables end at their over-rev run-off, so this only continues it).
+  // Below the last point this is the same arithmetic as before (bit-identical); ICE tables only (the EV motor table is not run off).
+  function runoff(tab, x) {
+    var n = tab.length, b = tab[n - 1], a = tab[n - 2], T = b[1];
+    var slope = n > 1 ? (b[1] - a[1]) / (b[0] - a[0]) : 0;
+    var steep = -T / (0.25 * b[0]);
+    if (!(slope < steep)) slope = steep;   // more negative of the two (slope >= 0 -> the steep default)
+    return Math.max(0, T + slope * (x - b[0]));
+  }
+  function interp(tab, x, tail) {
     if (x <= tab[0][0]) return tab[0][1];
     for (var i = 1; i < tab.length; i++) if (x <= tab[i][0]) {
       var a = tab[i - 1], b = tab[i], u = (x - a[0]) / (b[0] - a[0]);
       return a[1] + (b[1] - a[1]) * u;
     }
-    return tab[tab.length - 1][1];
+    return tail ? runoff(tab, x) : tab[tab.length - 1][1];
   }
+  // Numeric guard, NOT a rev limiter: engine speed above this (or not a number) is a runaway of the integrator, never a driven state.
+  // No engine in the game gets near it (torque has run off to zero long before, and closed-throttle friction brakes the engine above that).
+  var RPM_GUARD = 30000;
   function fadeFactor(type, T) {
     if (type === 'drum') return T < 200 ? 1 : Math.max(0.38, 1 - 0.6 * (T - 200) / 250);   // 50s drums: bad fade
     return T < 350 ? 1 : Math.max(0.68, 1 - 0.3 * (T - 350) / 250);                        // disc: mild fade
@@ -9790,7 +9804,6 @@ var Physics = (function () {
     this.frontLocked = false;
     this.shift = null;              // {t, from, to}
     this.autoTimer = 0; this.fill = 1;
-    this.limiterCut = false; this.cutT = 0;
     this.Tf = AMB; this.Tr = AMB;   // brake temperatures (degC)
     this.odo = 0; this.trip = 0;
     this.angF = 0; this.angR = 0;    // v1.10.6 draft: wheel rotation angles (rad, front / driven rear) for the visuals; nothing reads them back
@@ -9861,9 +9874,9 @@ var Physics = (function () {
     if (c.trans === 'auto') { var R = ['N', 'D', 'S', 'L'], i = R.indexOf(this.range); if (i > 0) this.setRange(R[i - 1]); return; }
     if (this.shift || this.gear <= 0) return;
     var to = this.gear - 1;
-    if (to > 0) {
+    if (to > 0) {   // v1.13.42: no rev limiter, so no "would over-rev" refusal either; only the numeric guard (RPM_GUARD) refuses a downshift
       var rpmNew = this.ww * c.gears[to - 1] * c.finalDrive * RPM;
-      if (rpmNew > c.limiterRpm + 250) { this.lastShiftMsg = 'Downshift refused: ' + Math.round(rpmNew) + ' rpm would over-rev'; this.msgT = 2; return; }
+      if (rpmNew > RPM_GUARD) { this.lastShiftMsg = 'Downshift refused: ' + Math.round(rpmNew) + ' rpm is beyond the numeric guard'; this.msgT = 2; return; }
     }
     this.shift = this.newShift(to);
   };
@@ -9890,7 +9903,7 @@ var Physics = (function () {
   Vehicle.prototype.revMatchStep = function (s, dt, pedal, rpm) {
     var c = this.c;
     if (pedal > s.pedal0 + 0.15 && pedal > 0.2) s.own = true;   // the driver blips with their own foot: their throttle wins
-    var target = Math.min(this.ww * c.gears[s.to - 1] * c.finalDrive * RPM, c.limiterRpm - 100);
+    var target = Math.min(this.ww * c.gears[s.to - 1] * c.finalDrive * RPM, RPM_GUARD);   // v1.13.42: matched to the gear's real speed (was capped 100 rpm under the limiter)
     s.target = target;
     var ctrl = this.matchThrottle(target, rpm), thr;
     if (s.ph === 'out') {
@@ -9939,12 +9952,12 @@ var Physics = (function () {
   };
   // full-throttle torque at the present boost: through (0, na), (steady WOT boost, table) and (dp_wg, full), linear in boost between
   Vehicle.prototype.wotAt = function (rpm) {
-    var c = this.c, b = c.boost, ss = interp(c.torque, rpm);
+    var c = this.c, b = c.boost, ss = interp(c.torque, rpm, true);
     if (!b) return ss * c.netFactor;
-    var bss = this.boostTarget(rpm, 1), q = this.boost || 0, na = interp(b.na, rpm), T;
+    var bss = this.boostTarget(rpm, 1), q = this.boost || 0, na = interp(b.na, rpm, true), T;
     if (bss > 1 && q <= bss) T = na + (ss - na) * q / bss;
-    else if (bss <= 1) T = na + (interp(b.full, rpm) - na) * Math.min(1, q / b.dp_wg);
-    else T = ss + (interp(b.full, rpm) - ss) * Math.min(1, (q - bss) / Math.max(1, b.dp_wg - bss));
+    else if (bss <= 1) T = na + (interp(b.full, rpm, true) - na) * Math.min(1, q / b.dp_wg);
+    else T = ss + (interp(b.full, rpm, true) - ss) * Math.min(1, (q - bss) / Math.max(1, b.dp_wg - bss));
     return T * c.netFactor;
   };
   Vehicle.prototype.engineTorque = function (rpm, thr) {
@@ -10024,11 +10037,10 @@ var Physics = (function () {
       var base = this.engineBaseIdle();
       this.idleThr = clamp(base + 0.5 * err + this.idleI, 0, 0.35);
     } else { this.idleThr = 0; this.idleI = 0; }
-    // rpm limiter (ignition cut with hysteresis)
-    if (rpm > c.limiterRpm) this.limiterCut = true;
-    else if (rpm < c.limiterRpm - 150) this.limiterCut = false;
+    // v1.13.42: no rev limiter (the ignition cut at limiterRpm is gone): the revs are bounded by the torque curve running off to zero and by the
+    // friction of the engine (see runoff() and RPM_GUARD). limiterRpm stays as data: the rated / red-line rpm (tach, shift reference), not a cut.
     var cmd = Math.max(driverThr, this.idleThr);
-    var cut = this.limiterCut || !ignitionOn;
+    var cut = !ignitionOn;
     this.thrAct += (cmd - this.thrAct) * (1 - Math.exp(-dt / 0.06));
     if (c.boost) this.stepBoost(dt, rpm, cut ? 0 : this.thrAct);
     var Te = cut ? this.engineTorque(rpm, 0) : this.engineTorque(rpm, this.thrAct);
@@ -10229,6 +10241,7 @@ var Physics = (function () {
     this.a = a;
     if (this.tyre === 'roll') { this.ww = this.v / r; if (locked) this.we = this.ww * G; }
     if (this.we < 0) this.we = 0;
+    if (!(this.we * RPM <= RPM_GUARD)) this.we = (this.we === this.we) ? RPM_GUARD / RPM : c.idleRpm / RPM;   // numeric guard (NaN or runaway), not a limiter
     // hard stall-free floor while running (idle control can't keep up with a dumped clutch)
     if (ignitionOn && this.we * RPM < c.idleRpm * 0.7) this.we = c.idleRpm * 0.7 / RPM;
     var ds = this.v * dt; this.odo += ds; this.trip += ds;
@@ -10391,6 +10404,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Physics;
  */
 var Parts = (function () {
   'use strict';
+  var RPM_MODEL_MAX = 16000;   // v1.13.42 numeric guard on how far a build's torque table is extended (not a rev limiter: the curve ends where the model torque reaches zero)
   var P0 = 101325, T0 = 293.15, RG = 287, RHO0 = P0 / (RG * T0), LHV = 43.0e6, AFR = 12.5, GAM = 1.32, AFR_ST = 14.7, H_FG = 350e3;
   var KP = { 1: 2.6, 2: 1.8, 4: 1.3 };   // ESTIMATE: peak / mean flow factor vs cylinders sharing a path
   var BAR_NM = function (vd) { return vd * 1e5 / (4 * Math.PI); };   // 1 bar FMEP -> N·m of crank torque (4-stroke)
@@ -10818,18 +10832,32 @@ var Parts = (function () {
     }
     var lim = v.limiterRpm || base.limiterRpm, last = grid[grid.length - 1];
     for (var n = last + 400; n <= lim + 400; n += 400) grid.push(n);
+    var nE = grid[grid.length - 1];   // the table as shipped up to here (anchored: stock shape x build / stock model)
     var stockAt = function (n) { return stockTorque(ts, tab, n, lim > base.limiterRpm ? base.limiterRpm : 0); };   // v1.13.29: only builds that rev past the stock limiter
-    v.torque = grid.map(function (n) {
-      if (n <= 0) return [n, tab[0][1] * ratio(ts, tb, 800)];
-      return [n, Math.max(0, stockAt(n) * ratio(ts, tb, n))];
-    });
+    // v1.13.42: no rev limiter. Past nE the curve carries on along the BUILD's own model shape from the anchored value at nE, to where the engine
+    // breathes out (model torque <= 0), so the revs are bounded by physics (intake, exhaust, friction as the parts model has them). RPM_MODEL_MAX is a
+    // numeric guard on the table length, not a limiter (no build gets near it). There is no valve-float model: if one is added it belongs here.
+    var tAt = function (n, dpo) {
+      if (n <= 0) return tab[0][1] * ratio(ts, tb, 800, dpo);
+      if (n <= nE) return Math.max(0, stockAt(n) * ratio(ts, tb, n, dpo));
+      var TE = Math.max(0, stockAt(nE) * ratio(ts, tb, nE, dpo)), ME = torqueAt(tb, nE, dpo).T;
+      return (TE > 0 && ME > 1) ? TE * Math.max(0, torqueAt(tb, n, dpo).T) / ME : 0;
+    };
+    // A build whose engine model equals the stock one (tyres, brakes, no-effect parts) keeps the shipped table: physics.js runs it off, exactly as for the stock car.
+    var sameEng = true;
+    for (var q = 800; q <= RPM_MODEL_MAX && sameEng; q += 400) { var qa = torqueAt(ts, q).T, qb = torqueAt(tb, q).T; if (Math.abs(qa - qb) > 1e-9 * Math.max(1, Math.abs(qa))) sameEng = false; }
+    if (!sameEng) for (var nx = nE + 400; nx <= RPM_MODEL_MAX; nx += 400) { grid.push(nx); if (tAt(nx) <= 0) break; }
+    v.torque = grid.map(function (n) { return [n, tAt(n)]; });
+    // rated / red-line rpm (tach red, auto-shift reference; NOT a cut): the part data, raised for a build whose power peaks above it
+    var rated = summary(def, c, s).limiter;
+    if (rated > (v.limiterRpm || 0)) { v.limiterRpm = rated; v.tachRed = Math.max(v.tachRed || 0, rated); v.tachMax = Math.max(v.tachMax || 0, Math.ceil((rated + 100) / 1000) * 1000); }
     if (tb.turbo && tb.turbo.lag && c.car.turbo) {   // v1.13.30 turbo lag in the drivetrain (turbo key lag: 1, absent = steady table only)
       // The game's torque table is the steady WOT curve (boost on its spool law). For the transient the vehicle gets the same anchored
       // curve at zero boost (na) and at the wastegate boost (full); physics.js keeps the boost as a state (first-order spool with the
       // sound model's own tau_up / tau_dn, slower at low exhaust flow) and interpolates the torque in boost through (0, na), (steady
       // boost, torque) and (dp_wg, full), so a settled WOT pull returns the steady table exactly. The worklet gets that boost (ctl bst).
       var tu = tb.turbo, ks = c.car.turbo, dpw = tu.dp_wg;
-      var at = function (dpo) { return grid.map(function (n) { return [n, n <= 0 ? tab[0][1] * ratio(ts, tb, 800, dpo) : Math.max(0, stockAt(n) * ratio(ts, tb, n, dpo))]; }); };
+      var at = function (dpo) { return grid.map(function (n) { return [n, tAt(n, dpo)]; }); };
       v.boost = { n0: tu.n0, n1: tu.n1, dp_wg: dpw, dp_max: tu.dp_max || dpw, tau_up: ks.tau_up != null ? ks.tau_up : 0.8, tau_dn: ks.tau_dn != null ? ks.tau_dn : 0.3,
         tau_flow: tu.lag_flow ? 1 : 0, na: at(0), full: at(dpw) };
     }
@@ -10878,6 +10906,10 @@ var Parts = (function () {
     // Without this, a longer/shorter rod changed the torque model's exhaust pumping but not the worklet.
     if (c.tm.rod_l) c.car = Object.assign({}, c.car, { rod: c.tm.rod_l });
     var ts = tmOf(s, s), tb = tmOf(c, s);
+    // v1.13.42: no rev limiter. A build whose power peaks above its part-data red line gets the raised red line (see summary().limiter) in the
+    // sound model too, so the kernel's rpm / redline scaling stays where it was designed (rr = 1 at the red line). Builds that are not raised: unchanged.
+    var sInfo = summary(def, c, s);
+    if (sInfo.limiter > sInfo.limiterData) c.car = Object.assign({}, c.car, { redline: Math.max(c.car.redline || 0, sInfo.limiter) });
     if (Math.abs(tb.cr - ts.cr) > 1e-9) c.car.cr = s.car.cr * tb.cr / ts.cr;   // anchored CR (vch+deck or vc / bore / stroke)
     ['car', 'phys'].forEach(function (g) {
       Object.keys(c[g]).forEach(function (k) { if (JSON.stringify(c[g][k]) !== JSON.stringify(s[g][k])) { out[g][k] = c[g][k]; any = true; } });
@@ -10908,6 +10940,7 @@ var Parts = (function () {
       var a = c.attrs[m.a], b2 = c.attrs[m.b]; if (a !== undefined && b2 !== undefined && a !== b2) hard.push({ part: m.label || m.a, msg: m.msg.replace('{a}', a).replace('{b}', b2) });
     });
     // v1.13.31: generic numeric limits and "if A then B" rules (data only; the UI shows msg as the block / warning reason)
+    var info = summary(def, c, s);   // (v1.13.42: before the limits, the 'limiter' attr reads its effective rated rpm)
     var tbN = tmOf(c, s), tsN = tmOf(s, s), crN = (s.car && s.car.cr) ? s.car.cr * tbN.cr / tsN.cr : tbN.cr;
     function numHit(op, v, val) {
       return op === 'gt' ? v > val : op === 'gte' ? v >= val : op === 'lt' ? v < val : op === 'lte' ? v <= val : false;
@@ -10925,7 +10958,7 @@ var Parts = (function () {
         return c.car.ev_lift * rk / 0.0254;
       }
       if (key === 'cc') return tbN.ncyl * Math.PI / 4 * tbN.bore * tbN.bore * tbN.stroke * 1e6;
-      if (key === 'limiter' && c.vehicle && c.vehicle.limiterRpm) return c.vehicle.limiterRpm;
+      if (key === 'limiter') return info.limiter || (c.vehicle && c.vehicle.limiterRpm) || undefined;   // v1.13.42: rated rpm (red line), not a cut: the part data, raised to 1.10 x the peak-power rpm of the build
       if (key === 'dur_adv' && c.attrs.dur_adv != null) return +c.attrs.dur_adv;
       return undefined;
     }
@@ -10949,7 +10982,6 @@ var Parts = (function () {
       var k, ok = true; for (k in W.need) { var v = c.attrs[k]; if (W.need[k].indexOf(v) < 0) ok = false; }
       if (!ok) (W.hard ? hard : soft).push({ rule: 'requireWhen', part: W.label || 'Parts', msg: W.msg });
     });
-    var info = summary(def, c, s);
     if (R.octane && c.attrs.ron !== undefined) {   // knock: effective CR at peak boost vs the fuel's octane (estimate table)
       var crEff = info.cr * Math.pow(Math.max(1, info.prMax), 1 / GAM)   // prMax = manifold pressure ratio at the power peak
      , need = lerpTab(R.octane, crEff);
@@ -10993,15 +11025,24 @@ var Parts = (function () {
     var ts = tmOf(s, s), tb = tmOf(c, s), base = def.vehicleBase ? def.vehicleBase() : null;
     var tab = base ? base.torque : null, best = { t: 0, tn: 0, p: 0, pn: 0, pr: 1 }, ps0 = 0;
     var lim0 = (s.vehicle.limiterRpm || 5000), lim = (c.vehicle.limiterRpm || lim0);
-    for (var n = 1000; n <= Math.max(lim, lim0); n += 100) {
-      var t0 = tab ? stockTorque(ts, tab, n, lim > lim0 ? lim0 : 0) : torqueAt(ts, n).T, rb = torqueAt(tb, n);
+    // v1.13.42: no rev limiter. The dyno line covers the whole curve (to where the build's model torque reaches zero); the same table as
+    // vehicle() (stock shape x build / stock model up to the shipped table end nE, then the build's own model shape). `lim` stays the
+    // part data (rated / red-line rpm); `limiter` below is the effective rated rpm (never below 1.10 x the rpm of peak power, about the way
+    // the shipped stock Beetle is red-lined 3800 for a 3400 rpm peak).
+    var nE = tab ? tab[tab.length - 1][0] : 0;
+    if (tab) for (var ne = nE + 400; ne <= lim + 400; ne += 400) nE = ne;
+    var stk = function (n) { return tab ? stockTorque(ts, tab, n, lim > lim0 ? lim0 : 0) : torqueAt(ts, n).T; };
+    var TE = tab ? Math.max(0, stk(nE) * ratio(ts, tb, nE)) : 0, ME = tab ? torqueAt(tb, nE).T : 0;
+    for (var n = 1000; n <= RPM_MODEL_MAX; n += 100) {
+      var t0 = stk(n), rb = torqueAt(tb, n);
       if (n <= lim0) ps0 = Math.max(ps0, t0 * n * 2 * Math.PI / 60 / 735.5);
-      if (n > lim) continue;
-      var tB = t0 * ratio(ts, tb, n), p = tB * n * 2 * Math.PI / 60 / 735.5;
+      var tB = (!tab || n <= nE) ? t0 * ratio(ts, tb, n) : ((TE > 0 && ME > 1) ? TE * Math.max(0, rb.T) / ME : 0), p = tB * n * 2 * Math.PI / 60 / 735.5;
+      if (n > Math.max(lim, lim0) && tB <= 0) break;   // the engine has breathed out
       if (tB > best.t) { best.t = tB; best.tn = n; }
       if (p > best.p) { best.p = p; best.pn = n; best.pr = rb.pr; }   // boost at the power peak (period figures: ~5 psi at peak revs)
     }
-    return { cc: Math.round(tb.ncyl * Math.PI / 4 * tb.bore * tb.bore * tb.stroke * 1e6), cr: s.car.cr * tb.cr / crFrom(ts), tMax: best.t, tRpm: best.tn, psMax: best.p, psRpm: best.pn, prMax: best.pr, psStock: ps0 || best.p, limiter: lim };
+    var rated = Math.max(lim, Math.round(1.10 * best.pn / 100) * 100);
+    return { cc: Math.round(tb.ncyl * Math.PI / 4 * tb.bore * tb.bore * tb.stroke * 1e6), cr: s.car.cr * tb.cr / crFrom(ts), tMax: best.t, tRpm: best.tn, psMax: best.p, psRpm: best.pn, prMax: best.pr, psStock: ps0 || best.p, limiter: rated, limiterData: lim };
   }
   /** merged friction: FMEP (bar, a + b·krpm + c·krpm²) -> N·m triple for the vehicle model */
   function frictionNm(fm) { var k = BAR_NM(fm.vd); return [fm.bar[0] * k, fm.bar[1] * k, fm.bar[2] * k]; }
@@ -18071,7 +18112,6 @@ var PaintedVisuals = (function () {
     var tags = [];
     if (s.tyre === 'spin' && s.sr > 0.15) tags.push(['WHEELSPIN', H.accent]);
     if (s.lockF || s.lockR) tags.push(['BRAKES LOCKED', H.brk]);
-    if (s.limiter) tags.push(['REV LIMIT', H.brk]);
     g.textAlign = 'right'; g.font = hudFont(H, 18, true);
     for (var t = 0; t < tags.length; t++) { var tw = g.measureText(tags[t][0]).width + 24; hudPanel(g, W - 16 - tw, 64 + t * 42 + (L.port && !inside ? 80 : 0), tw, 32, H); g.fillStyle = STY === 'ink' ? H.text : tags[t][1]; g.fillText(tags[t][0], W - 28, 86 + t * 42 + (L.port && !inside ? 80 : 0)); }
     if (s.msg) { g.textAlign = 'center'; g.font = hudFont(H, 24, true); var mw = g.measureText(s.msg).width + 40; hudPanel(g, W / 2 - mw / 2, 150, mw, 42, H); g.fillStyle = H.text; g.fillText(s.msg, W / 2, 179); }
@@ -18171,6 +18211,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
+      { v: "v1.13.42", date: "2026-11-28", status: "done", headline: "No rev limiter: revs are bounded by the torque curve", text: "The engine no longer has a rev limiter. The ignition cut, the refused over-rev downshift and the capped rev-match blip are gone; past the end of a torque table the torque runs off to zero instead of holding flat, and a build\u2019s curve and the picker\u2019s dyno line now run on along the parts model to where the engine stops making power. The red line stays as the tach mark and the auto-shift reference, and is raised for a build that makes its power above it. Stock Beetle drag (23.219 s) and the old Mesa lap (2:51.93) are unchanged. The CB 1180 now makes 99.7 PS (was 81.7, claim 105 hp) and the Inch Pincher 114.9 PS (was 93.3, claim 165 hp). There is no valve-float model yet." },
       { v: "v1.13.41", date: "2026-11-28", status: "done", headline: "Beetle kits: EMPI, Shorrock, Judson, Okrasa TSV, Scat, CB and Inch Pincher packages", text: "The Beetle Swap parts list gains eighteen complete engine and performance kits next to the old Okrasa TS and TSV presets, each one assembled only from parts already in the catalogue, so the sound, the dyno and the drag time follow through the existing generic paths: EMPI 82, 83, 85.5 and 87 mm big-bore kits, the EMPI X-100 crank and Zenith carburettor kits, the Judson supercharger kit, the four EMPI Shorrock packages (PSSV-500, PBBV-100, PSKV-601, PSKV-600), Okrasa Oettinger TSV 1600 H and 1700 H, dual Solex 40P11, a Scat-style 2110 stroker, the CB bolt-in 78 mm stroker, the CB Builder\u2019s Choice 1776 cc street kit and the 1967 Inch Pincher drag engine. Picking a kit now shows what it is, what the maker claimed (not a model target), the sources and which numbers are estimates. The old Rajay turbo plus carburettor kit, which could not be applied to the stock engine, now includes the 1600 dual-port it needs. Stock sounds, the stock drag strip and the old Mesa Road lap are unchanged." },
       { v: "v1.13.40", date: "2026-11-28", status: "done", headline: "Beetle tyres: period street, radial and drag options", text: "The Swap parts list now has period-correct tyres for the Beetle, not only the factory 5.60-15 and a Michelin X 165 R 15. Cross-plies, radials, wider aftermarket sizes and drag tyres (M&H, Goodyear, Mickey Thompson, early Castler recaps) change launch, elapsed time, top speed, the speedo reading (the period instrument stays calibrated to the stock rolling radius) and road-course grip, all through generic keys. Front and rear tyres can differ; the default is the same tyre all round, and old saves still load. A burnout is not modelled; slick grip is the hot figure, with a warning. Stock sounds, the stock-tyre drag strip and the old Mesa Road lap are unchanged." },
       { v: "v1.13.39", date: "2026-11-28", status: "done", headline: "Beetle parts: more of the Seume interchange-manual catalogue", text: "The Swap parts list now has the named parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual that were still missing after v1.13.31, plus a later same-day pass over the book's two-column cam chart (read from a clean transcription) and manufacturer or period sources for figures the OCR had missed. Valve material is a property of the heads (Manley / Del West), piston rings are a property of the barrels, and flywheel hardware sits on the existing Clutch / flywheel slot so the flywheel is not listed twice. Valve covers and the ignition coil or box stay as slots; covers are flagged no performance effect. Old saves that used the removed categories still load. Where a figure is still estimated it is marked, and parts the engine model does not yet use have a short purpose note. Stock sounds, the drag strip and the old Mesa Road lap are unchanged." },
@@ -18618,7 +18659,7 @@ var EngineSpecs = (function () {
     ];
     if (P && P.rotation) rows.push(row('Rotation', 'Clockwise, viewed from the front'));
     var idleV = v.idleRpm, idleS = car && car.idle_rpm, redV = v.limiterRpm, redS = car && car.redline;
-    rows.push(row('Idle / limiter (driving)', Math.round(idleV) + ' / ' + Math.round(redV) + ' rpm'));
+    rows.push(row('Idle / red line (driving, no limiter)', Math.round(idleV) + ' / ' + Math.round(redV) + ' rpm'));
     if (idleS && (Math.round(idleS) !== Math.round(idleV) || Math.round(redS) !== Math.round(redV))) {
       rows.push(row('Idle / redline (sound model)', Math.round(idleS) + ' / ' + Math.round(redS) + ' rpm'));
     }
@@ -19318,10 +19359,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     });
     var totLine = nPriced ? ('Build total: €' + tot.toFixed(0) + (totEst ? ' est.' : '') + (nNone ? ' · ' + nNone + ' part' + (nNone > 1 ? 's' : '') + ' with no price found' : '')) : (nNone ? 'Build total: no price found for the selected parts' : '');
     html += '<div class="psum">';
-    html += '<div class="pinfo">' + i.cc + ' cc · CR ' + i.cr.toFixed(1) + ' · ' + i.tMax.toFixed(0) + ' N·m @ ' + i.tRpm + ' · ' + i.psMax.toFixed(1) + ' PS @ ' + i.psRpm + (i.prMax > 1.01 ? ' · ' + ((i.prMax - 1) * 14.7).toFixed(1) + ' psi' : '') + (tag ? '<br>' + esc(tag) : '') + (totLine ? '<br>' + esc(totLine) : '') + '</div>';
+    html += '<div class="pinfo">' + i.cc + ' cc · CR ' + i.cr.toFixed(1) + ' · ' + i.tMax.toFixed(0) + ' N·m @ ' + i.tRpm + ' · ' + i.psMax.toFixed(1) + ' PS @ ' + i.psRpm + (i.prMax > 1.01 ? ' · ' + ((i.prMax - 1) * 14.7).toFixed(1) + ' psi' : '') + (i.limiter ? ' · red line ' + Math.round(i.limiter) + ' rpm' : '') + (tag ? '<br>' + esc(tag) : '') + (totLine ? '<br>' + esc(totLine) : '') + '</div>';
     r.hard.forEach(function (m) { html += '<div class="pmsg hard">Blocked: ' + esc(m.part) + ': ' + esc(m.msg) + '</div>'; });
     r.soft.forEach(function (m) { html += '<div class="pmsg soft">' + esc(m.msg) + '</div>'; });
-    html += '<div class="pnote">Curves: the stock table × a lean parts model (estimate). Sound follows the swapped parts. Changes take effect when you press Apply.</div>';
+    html += '<div class="pnote">Curves: the stock table × a lean parts model (estimate); there is no rev limiter, so the line runs to where the engine stops making power. The red line is the tach mark and the auto-shift reference. Sound follows the swapped parts. Changes take effect when you press Apply.</div>';
     html += '</div>';
     body.innerHTML = html; body.scrollTop = keepY;
     var es = body.querySelector('select[data-era]');
@@ -20034,7 +20075,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
     for (var k in R) { var el = document.getElementById(k); if (!el) continue; var q = R[k];
       el.style.left = Math.round(q[0]) + 'px'; el.style.top = Math.round(q[1]) + 'px'; el.style.width = Math.round(q[2]) + 'px'; el.style.height = Math.round(q[3]) + 'px'; }
   }
-  // v1.13.36 road course: gears shift themselves (manual cars; AUTO, on by default, key O / the AUTO button). Up near the limiter,
+  // v1.13.36 road course: gears shift themselves (manual cars; AUTO, on by default, key O / the AUTO button). Up near the red line (limiterRpm: the rated rpm, no longer a cut, v1.13.42),
   // down when the lower gear has room and the revs are low (or earlier when braking), never two shifts within 0.45 s.
   state.roadAuto = lsGet('streetrod.road.autoshift', '1') !== '0';
   function toggleAutoShift() { state.roadAuto = !state.roadAuto; lsSet('streetrod.road.autoshift', state.roadAuto ? '1' : '0'); flash(state.roadAuto ? 'Gears: automatic' : 'Gears: manual (. / , or + / -)', 1.5); if (road) roadHud(true); }
@@ -20296,7 +20337,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       carId: state.carId, rpm: state.tachRpm !== null && state.tachRpm !== undefined ? state.tachRpm : c.rpm(), kmh: c.v * 3.6, kmhInd: c.v * 3.6 * ((v.speedoRadius || v.tyreRadius) / v.tyreRadius), units: state.units, tachMax: v.tachMax, tachRed: v.tachRed,
       odoKm: c.odo / 1000, tripKm: c.trip / 1000, gear: c.gear, gearLabel: c.gearLabel(), range: c.range,
       thr: state.throttle, brake: state.brake, garage: !!state.garage, Tf: c.Tf, Tr: c.Tr, fade: Math.min(c.fadeF || 1, c.fadeR || 1),
-      tyre: c.tyre, sr: c.sr || 0, lockF: c.frontLocked, lockR: c.tyre === 'lock', limiter: c.limiterCut && c.engine === 'running',
+      tyre: c.tyre, sr: c.sr || 0, lockF: c.frontLocked, lockR: c.tyre === 'lock',
       drag: drag ? { start: -drag.run.fromLine(), finish: DragStrip.QUARTER - drag.run.fromLine() } : null,
       wAngF: c.angF || 0, wAngR: c.angR || 0, wW: c.ww || 0, wWF: c.frontLocked ? 0 : c.v / (v.tyreRadiusFront || v.tyreRadius),   // v1.10.6 draft: wheel angles + speeds (rad, rad/s)
       engine: c.engine, viewBlend: state.viewBlend, steer: state.steer, lat: state.lat, dist: state.dist, time: state.time, accel: c.a / 9.81,
