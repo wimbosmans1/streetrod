@@ -345,6 +345,7 @@ html.touch { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-actio
 .partsBox .pdesc { margin: 0 0 2px 38%; font-size: 11.5px; line-height: 1.25; color: #5a4a34; }
 .partsBox .pprice { margin: 0 0 5px 38%; font-size: 11px; line-height: 1.25; color: #3a4a2a; }
 .partsBox .ppurpose { margin: -2px 0 6px 38%; font-size: 11px; line-height: 1.3; color: #7a6a54; font-style: italic; }
+.partsBox .prow.pprop span { font-weight: normal; font-style: italic; }
 .touch .partsBox .pdesc, .touch .partsBox .pprice, .touch .partsBox .ppurpose { margin-left: 0; }
 /* v1.13.33: config / build summary sits at the bottom of the slot list (not sticky), so the parts stay visible first */
 .partsBox .psum { margin: 8px -14px 0; padding: 8px 14px 6px;
@@ -11026,19 +11027,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       { id: 'crank', label: 'Crankshaft', group: 'longblock' },
       { id: 'conrod', label: 'Connecting rods', group: 'longblock' },
       { id: 'bearings', label: 'Bearings', group: 'longblock' },
-      { id: 'flyhw', label: 'Flywheel hardware', group: 'longblock' },
-      { id: 'cylinders', label: 'Cylinders / pistons', group: 'longblock' },
+      { id: 'flyhw', label: 'Flywheel hardware', group: 'longblock', menu: false },
+      { id: 'cylinders', label: 'Cylinders / pistons', group: 'longblock', props: [{ slot: 'rings', label: 'Piston rings' }] },
       { id: 'saver', label: 'Case savers', group: 'longblock' },
       { id: 'spacer', label: 'Cylinder spacers', group: 'longblock' },
-      { id: 'heads', label: 'Cylinder heads', group: 'longblock' },
+      { id: 'heads', label: 'Cylinder heads', group: 'longblock', props: [{ slot: 'valves', label: 'Valve material' }] },
       { id: 'cam', label: 'Camshaft', group: 'longblock' },
       { id: 'lifter', label: 'Lifters / tappets', group: 'longblock' },
       { id: 'pushrod', label: 'Pushrods', group: 'longblock' },
       { id: 'rocker', label: 'Rocker arms', group: 'longblock' },
       { id: 'spring', label: 'Valve springs', group: 'longblock' },
-      { id: 'valves', label: 'Valves (material)', group: 'longblock' },
+      { id: 'valves', label: 'Valve material', group: 'longblock', menu: false },
       { id: 'camdrive', label: 'Cam drive / timing gears', group: 'longblock' },
-      { id: 'rings', label: 'Piston rings', group: 'longblock' },
+      { id: 'rings', label: 'Piston rings', group: 'longblock', menu: false },
       { id: 'valvecover', label: 'Valve covers', group: 'longblock' },
       { id: 'carb', label: 'Carburettor / manifold', group: 'induction' },
       { id: 'fi', label: 'Forced induction', group: 'induction' },
@@ -11056,7 +11057,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       { id: 'electrical', label: 'Electrics / starter' },
       { id: 'fuel', label: 'Fuel' },
       { id: 'fuelpump', label: 'Fuel pump' },
-      { id: 'clutch', label: 'Clutch / flywheel' },
+      { id: 'clutch', label: 'Clutch / flywheel', props: [{ slot: 'flyhw', label: 'Flywheel' }] },
       { id: 'gearbox', label: 'Gearbox / final drive' },
       { id: 'tyres', label: 'Tyres' }
     ],
@@ -11469,8 +11470,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     prov: { th_area_wot: 'd: two 34 mm throats', v_man: 'e', 'tm.venturi': 'e: 28 mm', 'tm.down': 'e', ac_il: 'e' } });
   add({ id: 'carb.hw3236', slot: 'carb', label: 'Holley-Weber 32/36 progressive carburettor', desc: 'Single progressive 32/36 on an isolated-runner dual-port manifold (Scat 30098HO) · 1970s–', years: [1974, 2026], yl: 'c. 1974?',
     src: 'Seume p.98: Holley-Weber 32/36 progressive, Scat 30098HO isolated-runner manifold, electric choke', attrs: { carbkind: 'twinchoke', carbport: 'dual-port', ac_il: 3 },
-    sound: { car: { carb: 'Holley-Weber 32/36', th_area_wot: PI4 * 0.036 * 0.036, v_man: 0.0014 } }, tm: { up: [['venturi 32/36 progressive (36 mm open)', 1, 0.028, 1.0, 4, 0]], down: [['isolated runner', 2, 0.032, 1.5, 2, 1, 0.22], ['dual port', 4, 0.030, 1.2, 1, 0, 0.08]] },
-    prov: { th_area_wot: 'd: 36 mm secondary at WOT', v_man: 'e', 'tm.venturi': 'e', 'tm.down': 'e: isolated-runner manifold', ac_il: 'e' } });
+    sound: { car: { carb: 'Holley-Weber 32/36', th_area_wot: PI4 * 0.036 * 0.036, v_man: 0.0014 } }, tm: { up: [['venturi 32/36 progressive (27 mm secondary)', 1, 0.027, 1.0, 4, 0]], down: [['isolated runner', 2, 0.032, 1.5, 2, 1, 0.22], ['dual port', 4, 0.030, 1.2, 1, 0, 0.08]] },
+    prov: { th_area_wot: 'd: 36 mm secondary throttle at WOT (Seume p.97–98)', v_man: 'e', 'tm.venturi': 'ss: 27 mm secondary / 26 mm primary, standard Weber 32/36 DGAV-DFEV factory chokes (the book prints throttle 32/36, not the venturi)', 'tm.down': 'e: isolated-runner manifold', ac_il: 'e' } });
 
   // v1.13.30 Rajay carb and advance kit (Hot Rod Oct 1971: "a special kit to open up the carburetor and revise the distributor advance curve",
   // nearly +100 %, close to 120 hp; Hot Rod Feb 1972: kit carb mods = main jet change, plugged power-enrichment air bleeds, Loctite on the pump
@@ -11908,22 +11909,27 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     warn: 'TCS-20: intake lift used as valve lift (as TCS-10); exhaust 0.530 in is as printed and looks high — convention is uncertain',
     sound: { car: { adv_dur: 260, lsa: 112, ev_lift: 0.435 * 0.0254 } }, tm: { ivc: 64, rkr0: 1.1 },
     prov: { ev_lift: 's: intake 0.435 in as printed (valve-lift convention as TCS-10)', 'tm.ivc': 'e: TCS-10 59° plus 5° for 294 vs 284', lsa: 's: Seume p.70' } });
-  // Scat C-series: lift at the valve with 1.1 rockers; 0.050 duration only, advertised and IVC estimated (0.050 + 40°, then the W110 IVC fudge)
-  [['c20', 'C20', 278, 0.338, 'Street; mild; good with 1.4:1 rockers', 5000],
-   ['c25', 'C25', 275, 0.385, 'Bus and off-road, small cc; 5000 rpm maximum', 5000],
-   ['c35', 'C35', 286, 0.410, 'Street and off-road; good power spread; 6000 rpm', 6000],
-   ['c45', 'C45', 296, 0.418, 'Street and strip; heavy idle; 4500–6500 rpm', 6500],
-   ['c55', 'C55', 312, 0.428, 'Circle track; good mid-range; 4500–6500 rpm', 6500],
-   ['c65', 'C65', 318, 0.440, 'Super Vee etc; variable rpm application', 7000],
-   ['c75', 'C75', 342, 0.445, 'Drag race competition; heavy car; 5000–7000 rpm', 7000],
-   ['c95', 'C95', 286, 0.475, 'All-round competition; large displacement', 7000]].forEach(function (k) {
-    var advE = k[2] + 40, ivc = Math.round(advE / 2 + 108 - 180 - 15);
-    add({ id: 'cam.' + k[0], slot: 'cam', label: 'Scat ' + k[1] + ' camshaft', desc: k[2] + '° at 0.050 in, ' + k[3].toFixed(3) + ' in valve lift with 1.1 rockers, LSA 108° · ' + k[4], years: [1975, 2026], yl: 'c. 1975?',
-      src: 'Seume p.71: Scat ' + k[1] + ', ' + k[2] + '° duration at 0.050, ' + k[3] + ' in lift at the valve with 1.1 rockers, LSA 108. ' + k[4],
-      requires: T1CAM, attrs: { camkind: 'aftermarket', camgear: 'bolt3', dur_adv: advE, rkr125: (k[0] === 'c20' ? 'ok' : undefined) },
-      warn: 'Scat ' + k[1] + ': advertised duration and IVC are estimates from the 0.050 figure (0.050 + 40°) (Seume p.71)',
-      sound: { car: { adv_dur: advE - 34, lsa: 108, ev_lift: k[3] * 0.0254 } }, vehicle: { limiterRpm: k[5] }, tm: { ivc: ivc, rkr0: 1.1 },
-      prov: { ev_lift: 's: valve lift with 1.1 rockers, Seume p.71', 'tm.ivc': 'e: from 0.050 duration + 40° then the W110 IVC fudge', dur_adv: 'e: 0.050 duration + 40°' } });
+  // Scat C-series (Seume p.71, clean table): first duration column is advertised, optional second is at 0.050, lift at the valve, LSA 108°.
+  // The earlier catalogue treated the first column as duration at 0.050 — that was wrong (C25 lists 275° advertised / 235° at 0.050).
+  // Limebug current Scat cards agree the first column is advertised, with small period-vs-current differences; book figures are used. IVC is still estimated.
+  // k: id, name, advertised, duration at 0.050 or 0 if unprinted, valve lift, note, limiter, rkr (1.1 unless the card is for 1.4 / 1.5).
+  [['c20', 'C20', 278, 0, 0.338, 'Street; mild; good with 1.4:1 rockers', 5000, 1.1],
+   ['c25', 'C25', 275, 235, 0.385, 'Bus and off-road, small cc; 5000 rpm maximum', 5000, 1.1],
+   ['c35', 'C35', 286, 247, 0.410, 'Street and off-road; good power spread; 6000 rpm', 6000, 1.1],
+   ['c45', 'C45', 296, 254, 0.418, 'Street and strip; heavy idle; 4500–6500 rpm', 6500, 1.1],
+   ['c55', 'C55', 312, 268, 0.428, 'Circle track; good mid-range; 4500–6500 rpm', 6500, 1.1],
+   ['c65', 'C65', 318, 272, 0.440, 'Super Vee etc; variable rpm application', 7000, 1.1],
+   ['c75', 'C75', 342, 292, 0.445, 'Drag race competition; heavy car; 5000–7000 rpm', 7000, 1.1],
+   ['c95', 'C95', 286, 262, 0.475, 'All-round competition; large displacement', 7000, 1.1],
+   ['c85', 'C85', 330, 294, 0.574, '5500–8500 rpm; competition only; lift at the valve with 1.4:1 rockers', 8500, 1.4],
+   ['c89', 'C89', 325, 269, 0.618, 'Drag race competition; lift at the valve with 1.5:1 rockers', 8500, 1.5]].forEach(function (k) {
+    var adv = k[2], d050 = k[3], vLift = k[4], rkr = k[7], ivc = fkIvc(adv);
+    add({ id: 'cam.' + k[0], slot: 'cam', label: 'Scat ' + k[1] + ' camshaft', desc: adv + '° adv.' + (d050 ? ', ' + d050 + '° at 0.050' : '') + ', ' + vLift.toFixed(3) + ' in valve lift, LSA 108° · ' + k[5], years: [1975, 2026], yl: 'c. 1975?',
+      src: 'Seume p.71: Scat ' + k[1] + ', advertised duration ' + adv + '°' + (d050 ? ', ' + d050 + '° at 0.050' : '') + ', ' + vLift + ' in lift at the valve, LSA 108. ' + k[5] + '. (Confirmed as advertised vs 0.050 against Limebug current Scat cards, https://limebug.com/scatcamshaftdata/ — book figures are used where they differ.)',
+      requires: T1CAM, attrs: { camkind: 'aftermarket', camgear: 'bolt3', dur_adv: adv, rkr125: (k[0] === 'c20' ? 'ok' : undefined), rkr14: (rkr >= 1.35 ? 'ok' : undefined) },
+      warn: 'Scat ' + k[1] + ': IVC is estimated on the W110 convention. Advertised duration is the book\'s first column, not duration at 0.050',
+      sound: { car: { adv_dur: adv - 34, lsa: 108, ev_lift: vLift * 0.0254 } }, vehicle: { limiterRpm: k[6] }, tm: { ivc: ivc, rkr0: rkr },
+      prov: { ev_lift: 's: lift at the valve, Seume p.71', 'tm.ivc': 'e: advertised/2 + LSA − 180 − 15° (W110 convention)', dur_adv: 's: Seume p.71 advertised duration (first column)', lsa: 's: Seume p.71', 'tm.rkr0': rkr === 1.1 ? 's: 1.1 (table heading)' : 's: ' + rkr + ' (table heading for this grind)' } });
   });
 
   add({ id: 'carb.bugspray200', slot: 'carb', label: 'Holley Bugspray 200 cfm (single)', desc: '23.5 mm venturi, 200 cfm, on a single-port or dual-port manifold as fitted · 1960s–', years: [1965, 2026], yl: 'c. 1965?',
@@ -11980,11 +11986,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   });
 
   add({ id: 'cam.gb302', slot: 'cam', label: 'GBE GB302 camshaft', desc: '308° adv., 0.405 in at the cam, 0.446 in valve lift with 1.1 rockers, 2500–6500 rpm · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
-    src: 'Seume p.55: GBE GB302 worked example, advertised duration 308°, lift at the cam 0.405 in, 2500–6500 rpm; springs GB273A dual (or GB269 at higher rpm)',
+    src: 'Seume p.55: GBE GB302 worked example, advertised duration 308°, lift at the cam 0.405 in, 2500–6500 rpm; springs GB273A dual (or GB269 at higher rpm). Seume p.69 chart (TheSamba Engine Blueprint Specifications worksheet transcription): 308° adv., 267° at 0.050, 0.405 in at the cam, LSA 108°, 1900 cc and up',
     requires: T1CAM, attrs: { camkind: 'aftermarket', camgear: 'bolt3', dur_adv: 308 },
-    warn: 'GBE GB302: IVC is estimated on the W110 convention; other GBE grind numbers on p.69 were not added (OCR figures unreliable)',
+    warn: 'GBE GB302: IVC is estimated on the W110 convention',
     sound: { car: { adv_dur: 308, lsa: 108, ev_lift: 0.446 * 0.0254 } }, tm: { ivc: fkIvc(308), rkr0: 1.1 },
-    prov: { adv_dur: 's: Seume p.55', lsa: 'e: 108° as the Engle table on p.70 (GBE card does not print LSA)', ev_lift: 'd: 0.405 in at the cam × 1.1 rockers (Seume p.55)', 'tm.ivc': 'e: W110 IVC convention' } });
+    prov: { adv_dur: 's: Seume p.55 / p.69 chart', lsa: 's: 108°, Seume p.69 chart (TheSamba blueprint transcription)', ev_lift: 'd: 0.405 in at the cam × 1.1 rockers (Seume p.55, p.69)', 'tm.ivc': 'e: W110 IVC convention' } });
 
   [['e1466', '1466', 252, 0.350, 'Stock street'],
    ['e1467', '1467', 263, 0.352, 'Street; single or dual carbs'],
@@ -11998,12 +12004,358 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
       prov: { adv_dur: 's: Seume p.70', lsa: 's: Seume p.70', ev_lift: 'd: ' + k[3] + ' in at the cam × 1.1 rockers (Seume p.70)', 'tm.ivc': 'e: W110 IVC convention' } });
   });
 
+  // Seume p.69–71 cam specification chart, cleaned from the TheSamba Engine Blueprint
+  // Specifications worksheet (a clean transcription of the book's two-column tables):
+  // https://www.thesamba.com/vw/archives/info/Engine_Blueprint_Specifications_Worksheet.pdf
+  // Already-catalogued Engle W/FK/VZ/TCS/hydraulic, GBE GB302 and Scat C20–C95 are not repeated.
+  function seumeIvc(adv, lsa) { return Math.round(adv / 2 + (lsa || 108) - 180 - 15); }
+  function addSeumeChartCam(o) {
+    var rkr = o.rkr, lsa = o.lsa || 108, lsaSrc = o.lsa ? 's' : 'e';
+    var vLift = o.liftAt === 'valve' ? o.lift : +(o.lift * rkr).toFixed(3);
+    var ivc = seumeIvc(o.adv, lsa);
+    var desc = o.adv + '° adv.' + (o.d050 ? ', ' + o.d050 + '° at 0.050' : '') +
+      ', ' + o.lift.toFixed(3) + ' in at the ' + (o.liftAt === 'valve' ? 'valve' : 'cam') +
+      (o.liftAt === 'cam' ? ', ' + vLift.toFixed(3) + ' in valve lift with ' + rkr + ':1 rockers' : '') +
+      ', LSA ' + lsa + '°' + (o.note ? ' · ' + o.note : '');
+    var src = 'Seume p.69–71 cam chart (TheSamba Engine Blueprint Specifications worksheet transcription). ' + o.brand + ' ' + o.grind +
+      ': advertised ' + o.adv + '°' + (o.d050 ? ', ' + o.d050 + '° at 0.050' : '') +
+      ', lift ' + o.lift + ' in at the ' + (o.liftAt === 'valve' ? 'valve' : 'cam') +
+      (o.lsa ? ', LSA ' + o.lsa + '°' : ', LSA not printed (108° used)') + (o.note ? '. ' + o.note : '');
+    var attrs = { camkind: o.kind, camgear: 'bolt3', dur_adv: o.adv };
+    if (rkr >= 1.35) attrs.rkr14 = 'ok';
+    else if (rkr >= 1.2) attrs.rkr125 = 'ok';
+    var warn;
+    if (o.kind === 'hydraulic') warn = o.brand + ' ' + o.grind + ': hydraulic cam; pair with hydraulic lifters (lift.hyd). IVC is estimated';
+    else if (o.kind === 'roller') warn = o.brand + ' ' + o.grind + ': roller cam; pair with roller lifters (lift.roller). IVC is estimated';
+    else if (o.adv > 290) warn = o.brand + ' ' + o.grind + ': advertised duration is over 290° (Seume p.56 street caution). IVC is estimated';
+    add({ id: o.id, slot: 'cam', label: o.brand + ' ' + o.grind + ' camshaft', desc: desc, years: [1970, 2026], yl: 'c. 1970?',
+      src: src, requires: T1CAM, attrs: attrs, warn: warn,
+      sound: { car: { adv_dur: o.adv - 34, lsa: lsa, ev_lift: vLift * 0.0254 } }, tm: { ivc: ivc, rkr0: rkr },
+      prov: { adv_dur: 's: Seume p.69–71 (TheSamba blueprint transcription)',
+        lsa: lsaSrc === 's' ? 's: Seume p.69–71 (TheSamba blueprint transcription)' : 'e: 108° (LSA not printed on this card)',
+        ev_lift: o.liftAt === 'valve' ? 's: lift at the valve (Seume p.69–71 table heading)' : 'd: ' + o.lift + ' in at the cam × ' + rkr + ' rockers (Seume p.69–71)',
+        'tm.ivc': 'e: advertised/2 + LSA − 180 − 15° (W110 convention)',
+        'tm.rkr0': 's: table rocker-ratio heading' } });
+  }
+  [
+    { id: 'cam.ac9500', brand: 'Auto-Craft', grind: '9500', adv: 250, lift: 0.41, liftAt: 'valve', rkr: 1.1, lsa: 111, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9505', brand: 'Auto-Craft', grind: '9505', adv: 285, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9506', brand: 'Auto-Craft', grind: '9506', adv: 285, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 106, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9515', brand: 'Auto-Craft', grind: '9515', adv: 285, lift: 0.427, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9523', brand: 'Auto-Craft', grind: '9523', adv: 297, lift: 0.427, liftAt: 'valve', rkr: 1.1, lsa: 103, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9525', brand: 'Auto-Craft', grind: '9525', adv: 297, lift: 0.427, liftAt: 'valve', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9588b', brand: 'Auto-Craft', grind: '9588B', adv: 297, lift: 0.427, liftAt: 'valve', rkr: 1.1, lsa: 109, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9527', brand: 'Auto-Craft', grind: '9527', adv: 297, lift: 0.427, liftAt: 'valve', rkr: 1.1, lsa: 104, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9528', brand: 'Auto-Craft', grind: '9528', adv: 297, lift: 0.427, liftAt: 'valve', rkr: 1.1, lsa: 101, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9529', brand: 'Auto-Craft', grind: '9529', adv: 292, lift: 0.428, liftAt: 'valve', rkr: 1.1, lsa: 102, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9530', brand: 'Auto-Craft', grind: '9530', adv: 292, lift: 0.428, liftAt: 'valve', rkr: 1.1, lsa: 105, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9531', brand: 'Auto-Craft', grind: '9531', adv: 292, lift: 0.428, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9532', brand: 'Auto-Craft', grind: '9532', adv: 292, lift: 0.428, liftAt: 'valve', rkr: 1.1, lsa: 106, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9533', brand: 'Auto-Craft', grind: '9533', adv: 292, lift: 0.428, liftAt: 'valve', rkr: 1.1, lsa: 104, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9534', brand: 'Auto-Craft', grind: '9534', adv: 292, lift: 0.42, liftAt: 'valve', rkr: 1.1, lsa: 104, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9535', brand: 'Auto-Craft', grind: '9535', adv: 297, lift: 0.427, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9545', brand: 'Auto-Craft', grind: '9545', adv: 280, lift: 0.45, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9555', brand: 'Auto-Craft', grind: '9555', adv: 280, lift: 0.45, liftAt: 'valve', rkr: 1.1, lsa: 106, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9565', brand: 'Auto-Craft', grind: '9565', adv: 285, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9575', brand: 'Auto-Craft', grind: '9575', adv: 285, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.ac9585', brand: 'Auto-Craft', grind: '9585', adv: 285, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 104, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9595', brand: 'Auto-Craft', grind: '9595', adv: 268, lift: 0.42, liftAt: 'valve', rkr: 1.1, lsa: 106, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9596', brand: 'Auto-Craft', grind: '9596', adv: 285, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.ac7767', brand: 'Auto-Craft', grind: '776.7', adv: 287, lift: 0.43, liftAt: 'valve', rkr: 1.1, lsa: 106, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac600b', brand: 'Auto-Craft', grind: '600B', adv: 287, lift: 0.43, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac120', brand: 'Auto-Craft', grind: '120', adv: 261, lift: 0.435, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac125', brand: 'Auto-Craft', grind: '125', adv: 270, lift: 0.46, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac428hv', brand: 'Auto-Craft', grind: '428HV', adv: 280, lift: 0.4, liftAt: 'cam', rkr: 1.25, lsa: 106, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.acsco', brand: 'Auto-Craft', grind: 'SCO', adv: 287, lift: 0.43, liftAt: 'cam', rkr: 1.25, lsa: 104, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac900tx', brand: 'Auto-Craft', grind: '900TX', adv: 318, lift: 0.43, liftAt: 'cam', rkr: 1.25, lsa: 110, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac925', brand: 'Auto-Craft', grind: '925', adv: 287, lift: 0.43, liftAt: 'cam', rkr: 1.25, lsa: 112, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ac9526', brand: 'Auto-Craft', grind: '9526', adv: 297, lift: 0.427, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.bp406110', brand: 'Bugpack', grind: '4061-10', adv: 270, lift: 0.396, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 234, kind: 'aftermarket', note: 'Small displacement; high torque; bus or off-road' },
+    { id: 'cam.bp406210', brand: 'Bugpack', grind: '4062-10', adv: 284, lift: 0.415, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 244, kind: 'aftermarket', note: 'Good all-round street cam. up to 6500rpm' },
+    { id: 'cam.bp406310', brand: 'Bugpack', grind: '4063-10', adv: 296, lift: 0.43, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 268, kind: 'aftermarket', note: 'Street and strip; heavy idle; up to 7000rpm' },
+    { id: 'cam.bp406411', brand: 'Bugpack', grind: '4064-11', adv: 282, lift: 0.448, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Dual-lobe; off-road competition ; head work' },
+    { id: 'cam.bp406510', brand: 'Bugpack', grind: '4065-10', adv: 268, lift: 0.364, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Turbo cam; good bottom end; reduced turbo lag' },
+    { id: 'cam.bp406410', brand: 'Bugpack', grind: '4064-10', adv: 302, lift: 0.633, liftAt: 'valve', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Dual lobe; midget competition; high rpm' },
+    { id: 'cam.bp406412', brand: 'Bugpack', grind: '4064-12', adv: 328, lift: 0.645, liftAt: 'valve', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Dual lobe; drag race competition; 5500rpm up' },
+    { id: 'cam.bp406511', brand: 'Bugpack', grind: '4065-11', adv: 297, lift: 0.515, liftAt: 'valve', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Super street; heavy idle. mid to high rpm' },
+    { id: 'cam.bp406512', brand: 'Bugpack', grind: '4065-12', adv: 304, lift: 0.573, liftAt: 'valve', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Street and strip; heady idle; 4500rpm up' },
+    { id: 'cam.cb2229', brand: 'CB Performance', grind: '2229', adv: 262, lift: 0.3, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 216, kind: 'aftermarket', note: 'Street; 1500-4500rpm; mild engine mods' },
+    { id: 'cam.cb2230', brand: 'CB Performance', grind: '2230', adv: 266, lift: 0.302, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Street; 1500-4500rpm; mild engine mods' },
+    { id: 'cam.cb2231', brand: 'CB Performance', grind: '2231*', adv: 274, lift: 0.317, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Street; 1500-4500rpm; mild engine mods' },
+    { id: 'cam.cb2233', brand: 'CB Performance', grind: '2233', adv: 272, lift: 0.37, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 230, kind: 'aftermarket', note: 'Street and bracket race; off-road' },
+    { id: 'cam.cb2234', brand: 'CB Performance', grind: '2234', adv: 274, lift: 0.388, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 234, kind: 'aftermarket', note: 'Super street and off-road; dual carbs; larger cc' },
+    { id: 'cam.cb2235', brand: 'CB Performance', grind: '2235', adv: 273, lift: 0.375, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Street and bracket race; good mileage and bhp' },
+    { id: 'cam.cb2236', brand: 'CB Performance', grind: '2236*', adv: 278, lift: 0.335, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Hot street; head work; dual carbs etc' },
+    { id: 'cam.cb2237', brand: 'CB Performance', grind: '2237', adv: 278, lift: 0.423, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 244, kind: 'aftermarket', note: 'Super street; dual carbs; larger displacement' },
+    { id: 'cam.cb2238', brand: 'CB Performance', grind: '2238*', adv: 280, lift: 0.309, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Hot street; head work; dual carbs etc' },
+    { id: 'cam.cb2239', brand: 'CB Performance', grind: '2239', adv: 282, lift: 0.385, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Street and bracket race; off-road' },
+    { id: 'cam.cb2240', brand: 'CB Performance', grind: '2240', adv: 284, lift: 0.42, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 248, kind: 'aftermarket', note: 'Super street and off-road; dual carbs; larger cc' },
+    { id: 'cam.cb2241', brand: 'CB Performance', grind: '2241', adv: 286, lift: 0.39, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Hot street and off-road; head work; dual carbs etc' },
+    { id: 'cam.cb2242', brand: 'CB Performance', grind: '2242*', adv: 300, lift: 0.392, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Hot street and off-road; head work; dual carbs etc' },
+    { id: 'cam.cb2243', brand: 'CB Performance', grind: '2243', adv: 306, lift: 0.424, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 250, kind: 'aftermarket', note: '' },
+    { id: 'cam.cb2245', brand: 'CB Performance', grind: '2245', adv: 314, lift: 0.393, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: 'High rpm midget racing etc' },
+    { id: 'cam.cb2246', brand: 'CB Performance', grind: '2246', adv: 314, lift: 0.436, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: 'All-out competition' },
+    { id: 'cam.cb2247', brand: 'CB Performance', grind: '2247', adv: 322, lift: 0.408, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 278, kind: 'aftermarket', note: 'All-out competition' },
+    { id: 'cam.cb2248', brand: 'CB Performance', grind: '2248*', adv: 325, lift: 0.426, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 276, kind: 'aftermarket', note: 'All-out competition' },
+    { id: 'cam.cb2250', brand: 'CB Performance', grind: '2250*', adv: 290, lift: 0.408, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 256, kind: 'aftermarket', note: 'Off-road; wide power band' },
+    { id: 'cam.cb2251', brand: 'CB Performance', grind: '2251', adv: 273, lift: 0.375, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2252', brand: 'CB Performance', grind: '2252', adv: 291, lift: 0.422, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2253', brand: 'CB Performance', grind: '2253', adv: 273, lift: 0.374, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2254', brand: 'CB Performance', grind: '2254', adv: 305, lift: 0.375, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2255', brand: 'CB Performance', grind: '2255', adv: 317, lift: 0.423, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2256', brand: 'CB Performance', grind: '2256', adv: 322, lift: 0.408, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2257', brand: 'CB Performance', grind: '2257', adv: 325, lift: 0.426, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2262', brand: 'CB Performance', grind: '2262', adv: 328, lift: 0.477, liftAt: 'cam', rkr: 1.1, lsa: 115, d050: 0, kind: 'aftermarket', note: 'Dual lobe; or lobe centers' },
+    { id: 'cam.cb2208', brand: 'CB Performance', grind: '2208*', adv: 254, lift: 0.413, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Street and bracket race; good low and mid-rabge' },
+    { id: 'cam.cb2209', brand: 'CB Performance', grind: '2209*', adv: 260, lift: 0.395, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Hot street; head work; dual carbs etc' },
+    { id: 'cam.cb2207', brand: 'CB Performance', grind: '2207', adv: 274, lift: 0.418, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Super street; dual carbs; larger displacement' },
+    { id: 'cam.cb2210', brand: 'CB Performance', grind: '2210', adv: 283, lift: 0.446, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Super street; dual carbs; larger displacement' },
+    { id: 'cam.cb2211', brand: 'CB Performance', grind: '2211', adv: 295, lift: 0.448, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 260, kind: 'aftermarket', note: 'Super street; dual carbs; larger displacement' },
+    { id: 'cam.cb2212', brand: 'CB Performance', grind: '2212', adv: 301, lift: 0.446, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 270, kind: 'aftermarket', note: 'All-out competition' },
+    { id: 'cam.cb2213', brand: 'CB Performance', grind: '2213', adv: 308, lift: 0.446, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 274, kind: 'aftermarket', note: 'All-out competition' },
+    { id: 'cam.cb2214', brand: 'CB Performance', grind: '2214', adv: 320, lift: 0.446, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 292, kind: 'aftermarket', note: 'All-out competition' },
+    { id: 'cam.cb2215', brand: 'CB Performance', grind: '2215', adv: 328, lift: 0.478, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'High rpm midget racing etc' },
+    { id: 'cam.cb2216', brand: 'CB Performance', grind: '2216', adv: 330, lift: 0.448, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'High rpm midget racing etc' },
+    { id: 'cam.cb2288', brand: 'CB Performance', grind: '2288', adv: 303, lift: 0.385, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Dual lobe; drag racing competition' },
+    { id: 'cam.cb2289', brand: 'CB Performance', grind: '2289', adv: 314, lift: 0.39, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Dual lobe; drag racing competition' },
+    { id: 'cam.cb2298', brand: 'CB Performance', grind: '2298', adv: 319, lift: 0.405, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Dual lobe; drag racing competition' },
+    { id: 'cam.cb2299', brand: 'CB Performance', grind: '2299', adv: 321, lift: 0.44, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Dual lobe; drag racing competition' },
+    { id: 'cam.cb1469', brand: 'CB Performance', grind: '1469', adv: 282, lift: 0.365, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'hydraulic', note: 'Strong mid-range or top end' },
+    { id: 'cam.cb1470', brand: 'CB Performance', grind: '1470', adv: 288, lift: 0.375, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'hydraulic', note: 'Full-race; dual carbs; good idle' },
+    { id: 'cam.cb2260', brand: 'CB Performance', grind: '2260', adv: 266, lift: 0.393, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'hydraulic', note: 'Street; strong mid-range; 5000rpm up' },
+    { id: 'cam.cb2261', brand: 'CB Performance', grind: '2261', adv: 278, lift: 0.41, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'hydraulic', note: 'Hot street; dual carbs' },
+    { id: 'cam.cb2263', brand: 'CB Performance', grind: '2263', adv: 288, lift: 0.44, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'hydraulic', note: 'Hot street; good mid-range and top end' },
+    { id: 'cam.cb2264', brand: 'CB Performance', grind: '2264', adv: 305, lift: 0.44, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'hydraulic', note: 'Road race for kit cars; dual carbs; good idle' },
+    { id: 'cam.cr61002', brand: 'Crower', grind: '61002', adv: 260, lift: 0.375, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 220, kind: 'aftermarket', note: 'Dual lobe; stock replacement; 1000-5000rpm' },
+    { id: 'cam.cr61000', brand: 'Crower', grind: '61000', adv: 268, lift: 0.354, liftAt: 'valve', rkr: 1.1, lsa: 110, d050: 227, kind: 'aftermarket', note: 'Lower- to mid-range torque; 1800-6000+rpm' },
+    { id: 'cam.cr61003', brand: 'Crower', grind: '61003', adv: 276, lift: 0.429, liftAt: 'valve', rkr: 1.1, lsa: 107, d050: 234, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr61004', brand: 'Crower', grind: '61004', adv: 284, lift: 0.429, liftAt: 'valve', rkr: 1.1, lsa: 107, d050: 244, kind: 'aftermarket', note: 'Dual lobe; up to 2180cc; 2000-7000+rpm' },
+    { id: 'cam.cr61005', brand: 'Crower', grind: '61005', adv: 290, lift: 0.452, liftAt: 'valve', rkr: 1.1, lsa: 107, d050: 252, kind: 'aftermarket', note: 'Dual lobe; up to 1800cc; 2500-7500+rpm' },
+    { id: 'cam.cr61006', brand: 'Crower', grind: '61006', adv: 298, lift: 0.468, liftAt: 'valve', rkr: 1.1, lsa: 107, d050: 260, kind: 'aftermarket', note: 'Dual lobe; increased CR 3000-8000+rpm' },
+    { id: 'cam.cr61007', brand: 'Crower', grind: '61007', adv: 306, lift: 0.489, liftAt: 'valve', rkr: 1.1, lsa: 107, d050: 272, kind: 'aftermarket', note: 'Dual lobe; 2000cc and up; 3500-8500+rpm' },
+    { id: 'cam.cr36', brand: 'Crower', grind: '36', adv: 282, lift: 0.372, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr38', brand: 'Crower', grind: '38', adv: 276, lift: 0.351, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr41', brand: 'Crower', grind: '41', adv: 286, lift: 0.424, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr42', brand: 'Crower', grind: '42', adv: 302, lift: 0.429, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr45', brand: 'Crower', grind: '45', adv: 314, lift: 0.432, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr46', brand: 'Crower', grind: '46', adv: 314, lift: 0.452, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr47', brand: 'Crower', grind: '47', adv: 322, lift: 0.449, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr48', brand: 'Crower', grind: '48', adv: 325, lift: 0.469, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr50', brand: 'Crower', grind: '50', adv: 296, lift: 0.43, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.cr52', brand: 'Crower', grind: '52', adv: 291, lift: 0.464, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr54', brand: 'Crower', grind: '54', adv: 305, lift: 0.412, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr55', brand: 'Crower', grind: '55', adv: 317, lift: 0.466, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr56', brand: 'Crower', grind: '56', adv: 314, lift: 0.458, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr57', brand: 'Crower', grind: '57', adv: 325, lift: 0.469, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr88', brand: 'Crower', grind: '88', adv: 303, lift: 0.385, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr89', brand: 'Crower', grind: '89', adv: 314, lift: 0.39, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr98', brand: 'Crower', grind: '98', adv: 319, lift: 0.405, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr99', brand: 'Crower', grind: '99', adv: 321, lift: 0.44, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Dual lobe' },
+    { id: 'cam.cr9', brand: 'Crower', grind: '9', adv: 260, lift: 0.434, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Wide base lifters only' },
+    { id: 'cam.cr10', brand: 'Crower', grind: '10', adv: 283, lift: 0.49, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Wide base lifters only' },
+    { id: 'cam.cr13', brand: 'Crower', grind: '13', adv: 308, lift: 0.49, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Wide base lifters only' },
+    { id: 'cam.cr14', brand: 'Crower', grind: '14', adv: 320, lift: 0.49, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Wide base lifters only' },
+    { id: 'cam.cr16', brand: 'Crower', grind: '16', adv: 330, lift: 0.492, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'aftermarket', note: 'Wide base lifters only' },
+    { id: 'cam.entcs30', brand: 'Engle', grind: 'TCS-30', adv: 308, lift: 0.419, liftAt: 'cam', rkr: 1.1, lsa: 112, d050: 267, kind: 'aftermarket', note: 'Turbo cam; drag race only, large cc; low CR' },
+    { id: 'cam.enfk41', brand: 'Engle', grind: 'FK-41', adv: 269, lift: 0.364, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 240, kind: 'aftermarket', note: 'Torque for bottom & midrange power 1000-5000' },
+    { id: 'cam.enfk42', brand: 'Engle', grind: 'FK-42', adv: 275, lift: 0.373, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 246, kind: 'aftermarket', note: 'Medium disp. engines midrange torque street/OHV' },
+    { id: 'cam.enfk43', brand: 'Engle', grind: 'FK-43', adv: 284, lift: 0.383, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 252, kind: 'aftermarket', note: 'Large disp. street race/OHV comp/drags 2500-6500' },
+    { id: 'cam.enfk44', brand: 'Engle', grind: 'FK-44', adv: 290, lift: 0.389, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 258, kind: 'aftermarket', note: 'Off road comp/drag, competition only 3000-7000' },
+    { id: 'cam.enfk45', brand: 'Engle', grind: 'FK-45', adv: 295, lift: 0.401, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 264, kind: 'aftermarket', note: 'Off road comp/drag, competition only 3500-7500' },
+    { id: 'cam.enfk46', brand: 'Engle', grind: 'FK-46', adv: 303, lift: 0.409, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 271, kind: 'aftermarket', note: 'Off road comp/drag, competition only 3800-7800' },
+    { id: 'cam.enfk47', brand: 'Engle', grind: 'FK-47', adv: 308, lift: 0.419, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 278, kind: 'aftermarket', note: 'Off road comp/drag, competition only 4000-8000' },
+    { id: 'cam.enfk48', brand: 'Engle', grind: 'FK-48', adv: 314, lift: 0.42, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 280, kind: 'aftermarket', note: 'Off road comp/drag, competition only 4200-8200' },
+    { id: 'cam.enfk91', brand: 'Engle', grind: 'FK-91', adv: 328, lift: 0.429, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Drag racing competition only' },
+    { id: 'cam.enkb424', brand: 'Engle', grind: 'KB-424', adv: 334, lift: 0.407, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Drag race only; :1 rockers' },
+    { id: 'cam.enkb425', brand: 'Engle', grind: 'KB-425', adv: 338, lift: 0.41, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Drag race only; :1 rockers' },
+    { id: 'cam.enkb435', brand: 'Engle', grind: 'KB-435', adv: 333, lift: 0.43, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Drag race only; :1 rockers' },
+    { id: 'cam.ene746522', brand: 'Engle', grind: 'E746522', adv: 274, lift: 0.38, liftAt: 'cam', rkr: 1.1, lsa: 106, d050: 220, kind: 'aftermarket', note: '' },
+    { id: 'cam.ene749622', brand: 'Engle', grind: 'E749622', adv: 278, lift: 0.44, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 225, kind: 'aftermarket', note: '' },
+    { id: 'cam.ene749422', brand: 'Engle', grind: 'E749422', adv: 280, lift: 0.441, liftAt: 'cam', rkr: 1.1, lsa: 106, d050: 242, kind: 'aftermarket', note: '' },
+    { id: 'cam.ene740422', brand: 'Engle', grind: 'E740422', adv: 288, lift: 0.47, liftAt: 'cam', rkr: 1.1, lsa: 110, d050: 258, kind: 'aftermarket', note: '' },
+    { id: 'cam.ene745322', brand: 'Engle', grind: 'E745322', adv: 322, lift: 0.466, liftAt: 'cam', rkr: 1.25, lsa: 110, d050: 286, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxv252', brand: 'Engle', grind: 'XV252', adv: 252, lift: 0.306, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 214, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxv260', brand: 'Engle', grind: 'XV260', adv: 260, lift: 0.379, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 222, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxv272', brand: 'Engle', grind: 'XV272', adv: 272, lift: 0.392, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 234, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxv280', brand: 'Engle', grind: 'XV280', adv: 280, lift: 0.404, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 242, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxv290', brand: 'Engle', grind: 'XV290', adv: 290, lift: 0.419, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 252, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxv304', brand: 'Engle', grind: 'XV304', adv: 304, lift: 0.427, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxv308', brand: 'Engle', grind: 'XV308', adv: 308, lift: 0.456, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 268, kind: 'aftermarket', note: '' },
+    { id: 'cam.enpkv280', brand: 'Engle', grind: 'PKV280', adv: 280, lift: 0.419, liftAt: 'cam', rkr: 1.1, lsa: 106, d050: 232, kind: 'aftermarket', note: 'Dual-lobe' },
+    { id: 'cam.enpkv304', brand: 'Engle', grind: 'PKV304', adv: 304, lift: 0.427, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: 'Dual-lobe' },
+    { id: 'cam.enpkv305', brand: 'Engle', grind: 'PKV305', adv: 304, lift: 0.482, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: 'Dual-lobe' },
+    { id: 'cam.enpkv308', brand: 'Engle', grind: 'PKV308', adv: 308, lift: 0.456, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 268, kind: 'aftermarket', note: 'Dual-lobe' },
+    { id: 'cam.enxr262', brand: 'Engle', grind: 'XR262', adv: 262, lift: 0.33, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 224, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr270', brand: 'Engle', grind: 'XR270', adv: 270, lift: 0.35, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 232, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr280', brand: 'Engle', grind: 'XR280', adv: 280, lift: 0.362, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 242, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr296', brand: 'Engle', grind: 'XR296', adv: 296, lift: 0.366, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 254, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr302', brand: 'Engle', grind: 'XR302', adv: 302, lift: 0.379, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 260, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr310', brand: 'Engle', grind: 'XR310', adv: 310, lift: 0.393, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 268, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr316', brand: 'Engle', grind: 'XR316', adv: 316, lift: 0.387, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 274, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr320', brand: 'Engle', grind: 'XR320', adv: 320, lift: 0.4, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 278, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr324', brand: 'Engle', grind: 'XR324', adv: 324, lift: 0.393, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 280, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr328', brand: 'Engle', grind: 'XR328', adv: 328, lift: 0.421, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 286, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr329', brand: 'Engle', grind: 'XR329', adv: 330, lift: 0.396, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 288, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr330', brand: 'Engle', grind: 'XR330', adv: 330, lift: 0.433, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 288, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr332', brand: 'Engle', grind: 'XR332', adv: 332, lift: 0.439, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 290, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr342', brand: 'Engle', grind: 'XR342', adv: 342, lift: 0.411, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 300, kind: 'aftermarket', note: '' },
+    { id: 'cam.enxr356', brand: 'Engle', grind: 'XR356', adv: 356, lift: 0.382, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 314, kind: 'aftermarket', note: '' },
+    { id: 'cam.enpkr270', brand: 'Engle', grind: 'PKR270', adv: 270, lift: 0.342, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 232, kind: 'aftermarket', note: 'Dual-lobe' },
+    { id: 'cam.enpkr302', brand: 'Engle', grind: 'PKR302', adv: 302, lift: 0.379, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 260, kind: 'aftermarket', note: 'Dual-lobe' },
+    { id: 'cam.enpkr310', brand: 'Engle', grind: 'PKR310', adv: 310, lift: 0.393, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 266, kind: 'aftermarket', note: 'Dual-lobe' },
+    { id: 'cam.fatfc400', brand: 'FAT Performance', grind: 'FC400', adv: 274, lift: 0.424, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 234, kind: 'aftermarket', note: 'Mild street; small displacement, low compression' },
+    { id: 'cam.fatfc410', brand: 'FAT Performance', grind: 'FC410', adv: 284, lift: 0.43, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 244, kind: 'aftermarket', note: 'Street; single or dual carb, up to 2000cc' },
+    { id: 'cam.fatfc411', brand: 'FAT Performance', grind: 'FC411', adv: 284, lift: 0.442, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 247, kind: 'aftermarket', note: 'Dual lobe; off-road; Class 9 competition' },
+    { id: 'cam.fatfc415', brand: 'FAT Performance', grind: 'FC415', adv: 290, lift: 0.45, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 252, kind: 'aftermarket', note: 'Dual lobe; off-road comp; Class 1/2 and 5/1600' },
+    { id: 'cam.fatfc420', brand: 'FAT Performance', grind: 'FC420', adv: 294, lift: 0.434, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 252, kind: 'aftermarket', note: 'Off-road; 1600cc and up; head work' },
+    { id: 'cam.fatfc425', brand: 'FAT Performance', grind: 'FC425', adv: 301, lift: 0.442, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: 'Off-road; large displacement; single or dual carb' },
+    { id: 'cam.fatfc430', brand: 'FAT Performance', grind: 'FC430', adv: 309, lift: 0.444, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 268, kind: 'aftermarket', note: 'Off-road; large displacement; head work; carb etc' },
+    { id: 'cam.gb295', brand: 'GBE', grind: 'GB295', adv: 276, lift: 0.418, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 242, kind: 'aftermarket', note: 'Small capacity. short course off-road' },
+    { id: 'cam.gb296', brand: 'GBE', grind: 'GB296', adv: 276, lift: 0.374, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 236, kind: 'aftermarket', note: '1300-1700cc single 2-bbl or dual carbs' },
+    { id: 'cam.gb296a', brand: 'GBE', grind: 'GB296A', adv: 279, lift: 0.433, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 250, kind: 'aftermarket', note: '1200-1700cc short course or heavy street car' },
+    { id: 'cam.gb297', brand: 'GBE', grind: 'GB297', adv: 284, lift: 0.385, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 247, kind: 'aftermarket', note: 'All-around street cam; up to 5800rpm' },
+    { id: 'cam.gb297a', brand: 'GBE', grind: 'GB297A', adv: 288, lift: 0.425, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 256, kind: 'aftermarket', note: 'Similar but needs head work; 1600cc and up' },
+    { id: 'cam.gb300', brand: 'GBE', grind: 'GB300', adv: 294, lift: 0.39, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 253, kind: 'aftermarket', note: '1700cc and up; 1500-5500rpm; dual carbs' },
+    { id: 'cam.gb300a', brand: 'GBE', grind: 'GB300A', adv: 292, lift: 0.45, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: 'Similar but wilder rpm range; good bottom end' },
+    { id: 'cam.gb301', brand: 'GBE', grind: 'GB301', adv: 300, lift: 0.405, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: 'Street engine with dual carbs and head work' },
+    { id: 'cam.gb302a', brand: 'GBE', grind: 'GB302A', adv: 309, lift: 0.445, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 278, kind: 'aftermarket', note: 'Similar but wilder rpm range; large dual carbs' },
+    { id: 'cam.gb303', brand: 'GBE', grind: 'GB303', adv: 313, lift: 0.424, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 274, kind: 'aftermarket', note: 'More top end; less lower end; from 4000rpm up' },
+    { id: 'cam.gb307', brand: 'GBE', grind: 'GB307', adv: 278, lift: 0.341, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 237, kind: 'aftermarket', note: '1600cc and up; single 2-bbl or dual 1-bbl carbs' },
+    { id: 'cam.gb308', brand: 'GBE', grind: 'GB308', adv: 286, lift: 0.356, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 246, kind: 'aftermarket', note: '1600cc and up; dual carbs; 100-5000rpm' },
+    { id: 'cam.gb309', brand: 'GBE', grind: 'GB309', adv: 297, lift: 0.335, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 254, kind: 'aftermarket', note: 'Small to mid-size engine; ratio rocker arms' },
+    { id: 'cam.gb310', brand: 'GBE', grind: 'GB310', adv: 304, lift: 0.38, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 257, kind: 'aftermarket', note: 'Street or buggy; large motor; head work; exhaust' },
+    { id: 'cam.gb311', brand: 'GBE', grind: 'GB311', adv: 306, lift: 0.378, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 270, kind: 'aftermarket', note: 'Larger engine; head work; 3500-7000rpm' },
+    { id: 'cam.gb315', brand: 'GBE', grind: 'GB315', adv: 320, lift: 0.39, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 276, kind: 'aftermarket', note: 'Hot street; large engine; 48IDA carbs; close ratios' },
+    { id: 'cam.gb316', brand: 'GBE', grind: 'GB316', adv: 329, lift: 0.411, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 282, kind: 'aftermarket', note: 'All-out race; very popular drag race cam' },
+    { id: 'cam.gb316b', brand: 'GBE', grind: 'GB316B', adv: 328, lift: 0.429, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 282, kind: 'aftermarket', note: 'Similar but for more radical heads' },
+    { id: 'cam.gb317', brand: 'GBE', grind: 'GB317', adv: 328, lift: 0.436, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 287, kind: 'aftermarket', note: 'Similar but for more radical heads' },
+    { id: 'cam.gb318', brand: 'GBE', grind: 'GB318', adv: 332, lift: 0.44, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 291, kind: 'aftermarket', note: 'All-out race; over 2200cc; radical heads' },
+    { id: 'cam.gb319', brand: 'GBE', grind: 'GB319', adv: 334, lift: 0.407, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 294, kind: 'aftermarket', note: 'All-out race; even more duration and lift' },
+    { id: 'cam.gb319a', brand: 'GBE', grind: 'GB319A', adv: 338, lift: 0.41, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 296, kind: 'aftermarket', note: 'All-out race; even more duration and lift' },
+    { id: 'cam.gb319b', brand: 'GBE', grind: 'GB319B', adv: 333, lift: 0.43, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 297, kind: 'aftermarket', note: 'All-out race; even more lift' },
+    { id: 'cam.nr329s', brand: 'Norris', grind: '329S', adv: 272, lift: 0.329, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'Any ratio rocker, street, broad power 2500-6200' },
+    { id: 'cam.nr330s', brand: 'Norris', grind: '330S', adv: 282, lift: 0.33, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'Any ratio rocker, street, broad power 2500-6500' },
+    { id: 'cam.nr336s', brand: 'Norris', grind: '336S', adv: 290, lift: 0.336, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'Any ratio rocker street/comp mid/topend 3500-7200' },
+    { id: 'cam.nr352s', brand: 'Norris', grind: '352S', adv: 254, lift: 0.352, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'Any ratio rocker, RV gas miser 1500-5000' },
+    { id: 'cam.nr355s', brand: 'Norris', grind: '355S', adv: 304, lift: 0.355, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'Any ratio rocker street/comp mid/topend 3500-7200' },
+    { id: 'cam.nr389s', brand: 'Norris', grind: '389S', adv: 298, lift: 0.389, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '1:1 ratio only, street/comp wide torque 3500-6500' },
+    { id: 'cam.nr407s', brand: 'Norris', grind: '407S', adv: 280, lift: 0.407, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '1:1 ratio only, street/comp wide torque 3500-6500' },
+    { id: 'cam.nr408s', brand: 'Norris', grind: '408S', adv: 300, lift: 0.408, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '1:1 ratio only, street/comp mid/top end 3500-7200' },
+    { id: 'cam.nrv425s', brand: 'Norris', grind: 'V425S', adv: 278, lift: 0.425, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '1:1 ratio only, street, broad power 2500-6500' },
+    { id: 'cam.nrv431s', brand: 'Norris', grind: 'V431S', adv: 290, lift: 0.431, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '1:1 ratio only, street, broad power 2500-6500' },
+    { id: 'cam.nr444s', brand: 'Norris', grind: '444S', adv: 325, lift: 0.444, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '1:1 ratio only, competition only 3000-7200' },
+    { id: 'cam.nr404s', brand: 'Norris', grind: '404S', adv: 326, lift: 0.404, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'ratio or larger competition only 4000-9000' },
+    { id: 'cam.nr410s', brand: 'Norris', grind: '410S', adv: 318, lift: 0.41, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'ratio or larger competition only 3500-8000' },
+    { id: 'cam.nr412s', brand: 'Norris', grind: '412S', adv: 328, lift: 0.412, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'ratio or larger competition only 3500-8000' },
+    { id: 'cam.nr428s', brand: 'Norris', grind: '428S', adv: 332, lift: 0.428, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'ratio or larger competition only 3500-8000' },
+    { id: 'cam.nr427s', brand: 'Norris', grind: '427S', adv: 308, lift: 0.427, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'ratio or larger competition only 3500-7200' },
+    { id: 'cam.ptb4', brand: 'Pauter', grind: 'B4', adv: 262, lift: 0.372, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 234, kind: 'aftermarket', note: 'Mild street; under 2000cc' },
+    { id: 'cam.ptb6', brand: 'Pauter', grind: 'B6', adv: 264, lift: 0.409, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 238, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptc7', brand: 'Pauter', grind: 'C7', adv: 268, lift: 0.363, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 236, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptd7', brand: 'Pauter', grind: 'D7', adv: 270, lift: 0.385, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 243, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptf5', brand: 'Pauter', grind: 'F5', adv: 274, lift: 0.393, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 246, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptf6e7', brand: 'Pauter', grind: 'F6E7', adv: 274, lift: 0.424, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: 'Dual lobe; off-road' },
+    { id: 'cam.ptf8e7', brand: 'Pauter', grind: 'F8E7', adv: 276, lift: 0.366, liftAt: 'cam', rkr: 1.1, lsa: 107, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.pth7', brand: 'Pauter', grind: 'H7', adv: 282, lift: 0.393, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 250, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptj7', brand: 'Pauter', grind: 'J7', adv: 286, lift: 0.398, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 260, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptk7', brand: 'Pauter', grind: 'K7', adv: 288, lift: 0.384, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 255, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptk8e8', brand: 'Pauter', grind: 'K8E8', adv: 288, lift: 0.384, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Strong mid-range' },
+    { id: 'cam.ptm3', brand: 'Pauter', grind: 'M3', adv: 292, lift: 0.409, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 268, kind: 'aftermarket', note: '' },
+    { id: 'cam.pto3', brand: 'Pauter', grind: 'O3', adv: 296, lift: 0.398, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 255, kind: 'aftermarket', note: '' },
+    { id: 'cam.pto8e8', brand: 'Pauter', grind: 'O8E8', adv: 296, lift: 0.465, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Off-road; 2000cc plus' },
+    { id: 'cam.ptp3', brand: 'Pauter', grind: 'P3', adv: 297, lift: 0.429, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 264, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptp4e8', brand: 'Pauter', grind: 'P4E8', adv: 298, lift: 0.371, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Hot street' },
+    { id: 'cam.ptr8', brand: 'Pauter', grind: 'R8', adv: 304, lift: 0.421, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 274, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptt1e8', brand: 'Pauter', grind: 'T1E8', adv: 307, lift: 0.35, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptt2', brand: 'Pauter', grind: 'T2', adv: 307, lift: 0.419, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 271, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptt3', brand: 'Pauter', grind: 'T3', adv: 307, lift: 0.437, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 274, kind: 'aftermarket', note: 'Off-road; light vehicle; large displacement' },
+    { id: 'cam.ptt7', brand: 'Pauter', grind: 'T7', adv: 308, lift: 0.416, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 276, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptt7e8', brand: 'Pauter', grind: 'T7E8', adv: 308, lift: 0.415, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 276, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptt8e8', brand: 'Pauter', grind: 'T8E8', adv: 307, lift: 0.451, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptu4', brand: 'Pauter', grind: 'U4', adv: 310, lift: 0.435, liftAt: 'cam', rkr: 1.25, lsa: 108, d050: 280, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptv4', brand: 'Pauter', grind: 'V4', adv: 314, lift: 0.406, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 278, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptv4b', brand: 'Pauter', grind: 'V4', adv: 314, lift: 0.451, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 282, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptv5e8', brand: 'Pauter', grind: 'V5E8', adv: 314, lift: 0.451, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptv9e0', brand: 'Pauter', grind: 'V9E0', adv: 315, lift: 0.367, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 0, kind: 'aftermarket', note: 'Off-road; large displacement' },
+    { id: 'cam.ptx3', brand: 'Pauter', grind: 'X3', adv: 320, lift: 0.417, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 284, kind: 'aftermarket', note: 'Drag race competition; high rpm' },
+    { id: 'cam.ptx5e0', brand: 'Pauter', grind: 'X5E0', adv: 321, lift: 0.475, liftAt: 'cam', rkr: 1.4, lsa: 110, d050: 0, kind: 'aftermarket', note: 'Drag race competition; high rpm' },
+    { id: 'cam.ptx6e0', brand: 'Pauter', grind: 'X6E0', adv: 324, lift: 0.372, liftAt: 'cam', rkr: 1.4, lsa: 110, d050: 0, kind: 'aftermarket', note: '' },
+    { id: 'cam.pty3', brand: 'Pauter', grind: 'Y3', adv: 331, lift: 0.43, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 294, kind: 'aftermarket', note: '' },
+    { id: 'cam.pty7', brand: 'Pauter', grind: 'Y7', adv: 336, lift: 0.425, liftAt: 'cam', rkr: 1.4, lsa: 108, d050: 298, kind: 'aftermarket', note: '' },
+    { id: 'cam.ptvn025', brand: 'Pauter', grind: 'VN025', adv: 293, lift: 0.406, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'roller', note: 'Dune buggy; off-road; large motor' },
+    { id: 'cam.ptvn011', brand: 'Pauter', grind: 'VN011', adv: 312, lift: 0.452, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'roller', note: 'Hot off-road; turbo dune buggy etc' },
+    { id: 'cam.ptvn130', brand: 'Pauter', grind: 'VN130', adv: 314, lift: 0.438, liftAt: 'cam', rkr: 1.1, lsa: 108, d050: 0, kind: 'roller', note: 'Drag race (turbo or carb); midget race' },
+    { id: 'cam.wc86', brand: 'Web-Cam', grind: '86', adv: 270, lift: 0.358, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 234, kind: 'aftermarket', note: 'Street and off-road' },
+    { id: 'cam.wc111', brand: 'Web-Cam', grind: '111', adv: 272, lift: 0.476, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 238, kind: 'aftermarket', note: '272 238 108 Tremendous torque for small displacement' },
+    { id: 'cam.wc119', brand: 'Web-Cam', grind: '119', adv: 276, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 240, kind: 'aftermarket', note: 'Street and off-road; broad power band; turbo' },
+    { id: 'cam.wc218', brand: 'Web-Cam', grind: '218', adv: 280, lift: 0.455, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 242, kind: 'aftermarket', note: 'Street or turbo. Can be used with rockers' },
+    { id: 'cam.wc218119', brand: 'Web-Cam', grind: '218/119', adv: 280, lift: 0.455, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 242, kind: 'aftermarket', note: 'Dual lobe; off-road competition; Class 1/2 1600' },
+    { id: 'cam.wc118', brand: 'Web-Cam', grind: '118', adv: 283, lift: 0.402, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 246, kind: 'aftermarket', note: 'Street; good mid-range and top end' },
+    { id: 'cam.wc163', brand: 'Web-Cam', grind: '163', adv: 284, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 249, kind: 'aftermarket', note: 'Hot street; wide power band' },
+    { id: 'cam.wc110', brand: 'Web-Cam', grind: '110', adv: 284, lift: 0.435, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 256, kind: 'aftermarket', note: 'Hot street and off-road; strong mid- and high rpm' },
+    { id: 'cam.wc110119', brand: 'Web-Cam', grind: '110/119', adv: 284, lift: 0.435, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 256, kind: 'aftermarket', note: '284 256 108 1-1600 class off road with restrictor plates' },
+    { id: 'cam.wc276', brand: 'Web-Cam', grind: '276', adv: 240, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '240 108' },
+    { id: 'cam.wc110163', brand: 'Web-Cam', grind: '110/163', adv: 284, lift: 0.435, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 256, kind: 'aftermarket', note: '284 256 108 1/2 1600 class off road with restrictor plates' },
+    { id: 'cam.wc288', brand: 'Web-Cam', grind: '288', adv: 250, lift: 0.43, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '250 108' },
+    { id: 'cam.wc109', brand: 'Web-Cam', grind: '109', adv: 286, lift: 0.465, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 260, kind: 'aftermarket', note: '286 260 108 Hot street and off road engines' },
+    { id: 'cam.wc109119', brand: 'Web-Cam', grind: '109/119', adv: 286, lift: 0.465, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 260, kind: 'aftermarket', note: '286 260 108 1/2 1600 off road with restrictor plates' },
+    { id: 'cam.wc276b', brand: 'Web-Cam', grind: '276', adv: 240, lift: 0.422, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '240 108 added RPM power' },
+    { id: 'cam.wc109163', brand: 'Web-Cam', grind: '109/163', adv: 286, lift: 0.465, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 260, kind: 'aftermarket', note: '286 260 108 1-2 1600 off road mid and top end' },
+    { id: 'cam.wc288b', brand: 'Web-Cam', grind: '288', adv: 250, lift: 0.43, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 0, kind: 'aftermarket', note: '250 108' },
+    { id: 'cam.wc109119b', brand: 'Web-Cam', grind: '109/119', adv: 287, lift: 0.465, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 260, kind: 'aftermarket', note: 'Dual lobe; off-road competition; Class 1/2 1600' },
+    { id: 'cam.wc125', brand: 'Web-Cam', grind: '125', adv: 288, lift: 0.478, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 260, kind: 'aftermarket', note: '” Off road competition' },
+    { id: 'cam.wc122125', brand: 'Web-Cam', grind: '122/125', adv: 288, lift: 0.506, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 262, kind: 'aftermarket', note: 'Dual lobe; large displacement street and off-road' },
+    { id: 'cam.wc121', brand: 'Web-Cam', grind: '121', adv: 298, lift: 0.49, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 271, kind: 'aftermarket', note: 'Hot street and off-road; large displacement' },
+    { id: 'cam.wc121125', brand: 'Web-Cam', grind: '121/125', adv: 298, lift: 0.49, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 270, kind: 'aftermarket', note: 'Dual lobe; large displacement' },
+    { id: 'cam.wc165', brand: 'Web-Cam', grind: '165', adv: 312, lift: 0.492, liftAt: 'valve', rkr: 1.1, lsa: 108, d050: 273, kind: 'aftermarket', note: 'Hot street; large displacement; mid- to high rpm' },
+    { id: 'cam.wc86a', brand: 'Web-Cam', grind: '86a', adv: 290, lift: 0.502, liftAt: 'valve', rkr: 1.5, lsa: 108, d050: 252, kind: 'aftermarket', note: 'Hot street and off-road' },
+    { id: 'cam.wc86b', brand: 'Web-Cam', grind: '86b', adv: 300, lift: 0.575, liftAt: 'valve', rkr: 1.5, lsa: 108, d050: 260, kind: 'aftermarket', note: 'Hot street and strip; large displacement; high rpm' },
+    { id: 'cam.wc86c', brand: 'Web-Cam', grind: '86c', adv: 310, lift: 0.585, liftAt: 'valve', rkr: 1.5, lsa: 108, d050: 272, kind: 'aftermarket', note: 'Drag race competition; high rpm' },
+    { id: 'cam.wc226', brand: 'Web-Cam', grind: '226', adv: 304, lift: 0.61, liftAt: 'valve', rkr: 1.5, lsa: 108, d050: 278, kind: 'aftermarket', note: 'Good mid- to high rpm for drag cars. N/A' },
+    { id: 'cam.wc251', brand: 'Web-Cam', grind: '251', adv: 324, lift: 0.63, liftAt: 'valve', rkr: 1.5, lsa: 108, d050: 285, kind: 'aftermarket', note: 'Large displacement. carb dragster and pro sedans' },
+    { id: 'cam.wc277', brand: 'Web-Cam', grind: '277', adv: 320, lift: 0.66, liftAt: 'valve', rkr: 1.5, lsa: 108, d050: 288, kind: 'aftermarket', note: 'Large displacement. carb dragster and pro sedans' },
+    { id: 'cam.wc197', brand: 'Web-Cam', grind: '197', adv: 328, lift: 0.656, liftAt: 'valve', rkr: 1.5, lsa: 108, d050: 295, kind: 'aftermarket', note: 'Large displacement. carb dragster and pro sedans' },
+    { id: 'cam.wb529521h', brand: 'Weber Cam', grind: '529-521H', adv: 274, lift: 0.35, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Dual lobe street cam' },
+    { id: 'cam.wb56th', brand: 'Weber Cam', grind: '56TH', adv: 282, lift: 0.338, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Dual lobe street cam' },
+    { id: 'cam.wb58th', brand: 'Weber Cam', grind: '58TH', adv: 294, lift: 0.342, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Dual lobe hot street cam' },
+    { id: 'cam.wb60th', brand: 'Weber Cam', grind: '60TH', adv: 308, lift: 0.37, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Dual lobe hot street cam' },
+    { id: 'cam.wb76', brand: 'Weber Cam', grind: '76', adv: 270, lift: 0.323, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Low end torque; street or van' },
+    { id: 'cam.wb91', brand: 'Weber Cam', grind: '91', adv: 275, lift: 0.382, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Street or off-road' },
+    { id: 'cam.wb142', brand: 'Weber Cam', grind: '142', adv: 282, lift: 0.395, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Mid-range and good top end' },
+    { id: 'cam.wb91b', brand: 'Weber Cam', grind: '91', adv: 286, lift: 0.336, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'For use with ratio rockers' },
+    { id: 'cam.wb142b', brand: 'Weber Cam', grind: '142', adv: 294, lift: 0.395, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Hot street; off-road; circle track' },
+    { id: 'cam.wbwc1', brand: 'Weber Cam', grind: 'WC-1', adv: 299, lift: 0.46, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Hot street; sand buggy; top end power' },
+    { id: 'cam.wb151', brand: 'Weber Cam', grind: '151', adv: 316, lift: 0.45, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Drag race only; use rockers' },
+    { id: 'cam.wb153', brand: 'Weber Cam', grind: '153', adv: 314, lift: 0.461, liftAt: 'cam', rkr: 1.1, lsa: 0, d050: 0, kind: 'hydraulic', note: 'Dual lobe; turbo drag race' }
+  ].forEach(function (o) { if (!o.lsa) o.lsa = 0; if (!o.d050) o.d050 = 0; addSeumeChartCam(o); });
+
+
   add({ id: 'crank.spg82', slot: 'crank', label: 'SPG 82 mm roller-bearing stroker crankshaft', desc: 'Pressed-together roller crank, 82 mm stroke; typically sold with its own rods · 1960s–', years: [1965, 2026], yl: 'c. 1965?',
     src: 'Seume p.22: SPG roller-bearing crankshaft (roller on each rod, pressed together in sections). Book advice: pass it by — popular with early drag racers but cranks twisted on the start line. Hot Rod Feb 1971: SPG 78 / 82 mm',
     attrs: { crank: 'stroker', rodj: 'SPG roller', fw: 'dowel8', counterwt: 'yes', roller: 'spg' },
     requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' }],
     warn: 'SPG roller crank: Seume p.22 says pass it by (twisted on the start line). The assembly usually includes its own roller rods (the conrod slot is then only a label). Case and cam clearancing assumed done',
-    sound: { car: { stroke: 0.082 } }, tm: { stroke: 0.082 }, prov: { stroke: 's: 82 mm SPG (Hot Rod Feb 1971; Seume p.22 does not reprint the 82 mm figure)' } });
+    sound: { car: { stroke: 0.082 } }, tm: { stroke: 0.082 }, prov: { stroke: 'ss: 82 mm SPG (Hot Rod Feb 1971; Seume p.22 does not reprint the stroke)' } });
+  add({ id: 'crank.spg78', slot: 'crank', label: 'SPG 78 mm roller-bearing stroker crankshaft', desc: 'Pressed-together roller crank, 78 mm stroke; typically sold with its own rods · 1960s–', years: [1965, 2026], yl: 'c. 1965?',
+    src: 'Seume p.22: SPG roller-bearing crankshaft (no stroke printed). Hot Rod Feb 1971: SPG 78 / 82 mm',
+    attrs: { crank: 'stroker', rodj: 'SPG roller', fw: 'dowel8', counterwt: 'yes', roller: 'spg', stroke_mm: 78 },
+    requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' }],
+    warn: 'SPG roller crank: Seume p.22 says pass it by (twisted on the start line). The assembly usually includes its own roller rods',
+    sound: { car: { stroke: 0.078 } }, tm: { stroke: 0.078 }, prov: { stroke: 'ss: 78 mm SPG (Hot Rod Feb 1971; Seume p.22 does not reprint the stroke)' } });
+  add({ id: 'crank.bp86', slot: 'crank', label: 'Bugpack forged 86 mm stroker crankshaft (Porsche journals)', desc: 'E4340, Nitrided, 86 mm, Porsche 53 mm rod journals, 8-dowel SPG pattern, Type 4 centre main · period', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.18: Bugpack forged stroker, E4340 chrome-moly, Nitrided, Magnafluxed, balanced; 82 / 84 / 86 / 90 mm with Porsche rod journals; 86–90 mm machined for a Type 4 centre main; 8-dowel SPG pattern',
+    attrs: { crank: 'stroker', rodj: 'Porsche 53 mm', fw: 'dowel8', counterwt: 'yes', stroke_mm: 86 },
+    requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' }],
+    warn: 'Bugpack 86 mm: case and cam clearancing, and usually barrel spacers (Seume p.16, p.86); machining assumed done. 84 mm is the practical maximum in a stock Type 1 case',
+    sound: { car: { stroke: 0.086 } }, tm: { stroke: 0.086, rodj: 53 }, prov: { stroke: 's: Seume p.18', 'tm.rodj': 's: Porsche journals, Seume p.18' } });
+  add({ id: 'crank.bp90', slot: 'crank', label: 'Bugpack forged 90 mm stroker crankshaft (Porsche journals)', desc: 'E4340, Nitrided, 90 mm, Porsche 53 mm rod journals, 8-dowel SPG pattern, Type 4 centre main; needs a special aftermarket case · period', years: [1975, 2026], yl: 'c. 1975?',
+    src: 'Seume p.18: Bugpack forged stroker, 90 mm with Porsche rod journals, Type 4 centre main, 8-dowel SPG pattern. p.16: 88–92 mm only in a special aftermarket case',
+    attrs: { crank: 'stroker', rodj: 'Porsche 53 mm', fw: 'dowel8', counterwt: 'yes', stroke_mm: 90 },
+    requires: [{ attr: 'case', in: T1, msg: 'Stroker cranks: 40 hp-family case (not the 36 hp case)' },
+      { attr: 'casekind', in: ['aftermarket'], msg: 'A 90 mm stroke needs a special aftermarket case (Seume p.16)' }],
+    warn: 'Bugpack 90 mm: 88–92 mm only in a special aftermarket case (Seume p.16); barrel spacers and clearancing assumed done',
+    sound: { car: { stroke: 0.090 } }, tm: { stroke: 0.090, rodj: 53 }, prov: { stroke: 's: Seume p.18', 'tm.rodj': 's: Porsche journals, Seume p.18' } });
+
 
   function headEst(id, label, desc, years, yl, src, iv, ev, vchCc, ports, warn, extraAttr) {
     var p = { id: id, slot: 'heads', label: label, desc: desc, years: years, yl: yl, src: src,
@@ -12054,30 +12406,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     'Seume p.51: Scat Split-Port, 356 H-450 three-part (head, rocker box, cover), valve angle 6° vs factory 9.5°, valves by bore 92 mm 42 × 37, 94 / 96.8 mm 48 × 38, 101.6 mm 50 × 40. Inlet centred in the bore at 0.500 in lift',
     0.042, 0.037, 56, 'dual-port', 'Scat Split-Port: 42 × 37 mm (92 mm listing) used; larger bores take 48 × 38 or 50 × 40. Chamber not printed (56 cc estimate)');
 
-  add({ id: 'heads.gb850', slot: 'heads', label: 'GBE GB850 modified single-port heads',
-    purpose: 'period single-port starting head (Seume p.42); valve sizes are not printed, so the model keeps the long-block valves',
-    desc: 'Modified single-port, heavy-duty single springs, three-angle seats · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
-    src: 'Seume p.42: GBE GB850 modified single-port; most people would upgrade to dual-ports rather than play with singles',
-    attrs: { ports: 'single-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB850: 40 hp-family / 1600 case' }],
-    warn: 'GBE GB850: valve sizes not printed — no performance model. Seume: most people would go to dual-ports' });
-  add({ id: 'heads.gb840', slot: 'heads', label: 'GBE GB840 dual-port starting heads',
-    purpose: 'GBE dual-port starting head for up to 90.5 mm (Seume p.42); valve sizes are not printed, so the model keeps the long-block valves',
-    desc: 'Starting dual-port, optional Semi-Hemi chamber, to 90.5 mm · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
-    src: 'Seume p.42: GBE GB840 dual-port starting head, 90.5 mm bore, optional Semi-Hemi (lowers CR, claimed better flame travel)',
-    attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB840: 40 hp-family / 1600 case' }],
-    warn: 'GBE GB840: valve sizes not printed — no performance model. Semi-Hemi CR effect is not modelled' });
-  add({ id: 'heads.gb852', slot: 'heads', label: 'GBE GB852 / GB854 dual-port heads',
-    purpose: 'GBE dual-port (single or dual springs; GB854 can be fully ported); valve sizes are not printed, so the model keeps the long-block valves',
-    desc: 'GB852 heavy-duty single springs; GB854 dual springs, optional full porting · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
-    src: 'Seume p.42–43: GBE GB852 (HD single springs) / GB854 (dual springs); GB854 with full porting and reshaped chambers is listed as GB855',
-    attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB852/854: 40 hp-family / 1600 case' }],
-    warn: 'GBE GB852 / GB854: valve sizes not printed — no performance model' });
-  add({ id: 'heads.gb855', slot: 'heads', label: 'GBE GB855 ported dual-port heads',
-    purpose: 'GBE ported dual-port with reshaped chambers (Seume p.43); valve sizes are not printed, so the model keeps the long-block valves',
-    desc: 'Ported and polished dual-port, reshaped chambers · 1970s–', years: [1975, 2026], yl: 'c. 1975?',
-    src: 'Seume p.43: GBE GB855 ported dual-port (GB854 plus reshaped chambers)',
-    attrs: { ports: 'dual-port' }, requires: [{ attr: 'case', in: T1, msg: 'GBE GB855: 40 hp-family / 1600 case' }],
-    warn: 'GBE GB855: valve sizes not printed — no performance model' });
+  headEst('heads.gb850', 'GBE GB850 modified single-port heads', '35.5 × 32 mm factory valves, heavy-duty single springs, three-angle seats · 1970s–', [1975, 2026], 'c. 1975?',
+    'Seume p.42: GBE GB850 modified single-port for 1500 and US-spec 1600, heavy-duty single springs, three-angle seats. Valve sizes are not printed on the part; factory 35.5 × 32 mm of the 1500/1600 single-port head are used (workshop / interchange standard)',
+    0.0355, 0.032, 54, 'single-port', 'GBE GB850: valve sizes are not printed on the part — factory 35.5 × 32 mm of the 1500/1600 single-port head used (ss). Chamber not printed (54 cc estimate). Seume: most people would go to dual-ports');
+  headEst('heads.gb840', 'GBE GB840 dual-port starting heads', '35.5 × 32 mm factory valves, valve job, to 90.5 mm · 1970s–', [1975, 2026], 'c. 1975?',
+    'Seume p.42: GBE GB840 is a stock dual-port head given a valve job, shimmed stock springs, cut for 90.5 mm, optional Semi-Hemi. Valve sizes are not printed; factory 35.5 × 32 mm of the 1600 dual-port head are used',
+    0.0355, 0.032, 54, 'dual-port', 'GBE GB840: factory 35.5 × 32 mm valves used (ss; not printed on the part). Chamber not printed (54 cc estimate). Semi-Hemi CR effect is not modelled');
+  headEst('heads.gb852', 'GBE GB852 / GB854 dual-port heads', '35.5 × 32 mm factory-spec unleaded valves; GB852 HD singles, GB854 duals · 1970s–', [1975, 2026], 'c. 1975?',
+    'Seume p.42–43: GBE GB852 (HD single springs) / GB854 (dual springs), factory-spec unleaded valves. Factory 35.5 × 32 mm of the 1600 dual-port head are used',
+    0.0355, 0.032, 54, 'dual-port', 'GBE GB852 / GB854: “factory-spec unleaded valves” taken as 35.5 × 32 mm (ss). Chamber not printed (54 cc estimate)');
+  headEst('heads.gb855', 'GBE GB855 ported dual-port heads', '35.5 × 32 mm factory valves, ported and polished, reshaped chambers · 1970s–', [1975, 2026], 'c. 1975?',
+    'Seume p.43: GBE GB855 is GB854 plus full porting and reshaped chambers. Valve sizes are not printed; factory 35.5 × 32 mm of the 1600 dual-port head are used (GB860 is the large-valve step up)',
+    0.0355, 0.032, 54, 'dual-port', 'GBE GB855: factory 35.5 × 32 mm valves used (ss; not printed on the part; GB860 is the 40 mm step up). Chamber not printed (54 cc estimate; reshaped, not measured)');
 
   function carbTwin(id, label, desc, years, yl, src, nThr, thrMm, nVen, venMm, venNote, acIl, warn, extraProv) {
     var p = { id: id, slot: 'carb', label: label, desc: desc, years: years, yl: yl, src: src,
@@ -12089,11 +12429,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     add(p);
   }
   carbTwin('carb.p11', 'Dual Solex 40P11 carburettors', 'Two 40P11 twin-chokes, as used on the early Inch Pincher · 1960s', [1965, 1975], 'c. 1965?',
-    'Seume p.97: dual Solex 40P11 (Inch Pincher)', 4, 0.040, 4, 0.036, 'e: 36 mm venturi (throat 40 mm; venturi not printed)', 1,
-    'Solex 40P11: venturi is an ESTIMATE (book names the carb, not the venturi). Period Inch Pincher use is from Seume p.97; the 1971 Inch Pincher Too used 48 IDA');
+    'Seume p.97: dual Solex 40P11 (Inch Pincher). Venturi 32 mm from the Porsche 912 Solex 40 P II-4 factory specification (Porsche 912 workshop manual / 912 archives carburetor specifications)', 4, 0.040, 4, 0.032, 'ss: 32 mm, Porsche 912 Solex 40 P II-4 workshop manual (the book names the carb, not the venturi)', 1,
+    'Solex 40P11: 32 mm venturi from the Porsche 912 Solex 40 P II-4 factory specification (ss). Period Inch Pincher use is from Seume p.97; the 1971 Inch Pincher Too used 48 IDA');
   carbTwin('carb.dcn40', 'Weber 40 DCN / DCNL dual carburettors', 'Two 40 DCN or DCNL twin-chokes · 1960s–', [1965, 2026], 'c. 1965?',
-    'Seume p.97: Weber 40DCN / 40DCNL', 4, 0.040, 4, 0.032, 'e: 32 mm venturi (as a 40 mm DCN/IDF-class twin-choke; venturi not printed)', 1,
-    'Weber 40 DCN: venturi is an ESTIMATE (book does not print it)');
+    'Seume p.97: Weber 40DCN / 40DCNL. Venturi 34 mm from the Weber factory jetting table for 40 DCNL (carb.parts / Weber calibration charts); 40 DCNF factory is often 32 mm and chokes 28–36 mm are interchangeable', 4, 0.040, 4, 0.034, 'ss: 34 mm, Weber 40 DCNL factory jetting table (the book does not print the venturi)', 1,
+    'Weber 40 DCN / DCNL: 34 mm venturi from the Weber 40 DCNL factory calibration (ss). DCNF factory is often 32 mm; chokes are interchangeable');
   carbTwin('carb.dell34', 'CB Baby Dell 34 FRD dual carburettors', 'Two 34 FRD (Dellorto), typically on a dual-port manifold · 1980s–', [1985, 2026], 'c. 1985?',
     'Seume p.99: CB “Baby Dell” 34FRD, typically dual in the book’s recommendations', 2, 0.034, 2, 0.028, 'e: 28 mm venturi (as the 34 ICT; venturi not printed)', 2,
     'Baby Dell 34 FRD: venturi is an ESTIMATE; treated as two single-choke 34 mm carbs');
@@ -12107,16 +12447,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     'Seume p.104: Berg 58 mm IDA-pattern carburetors, Weber jets', 4, 0.058, 4, 0.050, 'e: 50 mm venturi (58 mm throttle; venturi not printed)', 1,
     'Berg 58 mm IDA-pattern: venturi is an ESTIMATE (throttle size is sourced)');
   carbTwin('carb.jaycee62', 'JayCee Terminator 62 mm carburettors (dual)', 'Two 62 mm bodies; 55 mm venturi used from the printed flow point (range 48–58 mm) · 1990s–', [1990, 2026], 'c. 1990?',
-    'Seume p.104: JayCee Terminator 62 mm, 356 T-6 body, 6061 lid, venturi range 48–58 mm; flow at 25 in water with a 55 mm venturi (633 cfm/venturi; the printed two-carb total is OCR-uncertain)', 4, 0.062, 4, 0.055, 's: 55 mm as the printed flow-bench venturi (range 48–58 mm, Seume p.104)', 1,
+    'Seume p.104: JayCee Terminator 62 mm, 356 T-6 body, 6061 lid, venturi range 48–58 mm; flow at 25 in water with a 55 mm venturi (633 cfm/venturi; the printed two-carb total is OCR-uncertain)', 4, 0.062, 4, 0.055, 's: 55 mm as the printed flow-bench venturi (range 48–58 mm, Seume p.104); two-carb total 2532 cfm is 4 × 633 cfm (OCR 253 vs 2532 resolved)', 1,
     'JayCee Terminator: 55 mm venturi used (the book’s flow-bench point; range 48–58 mm)');
 
-  add({ id: 'carb.t3solex', slot: 'carb', label: 'Type 3 Solex (24 mm venturi) on a Type 1', desc: 'Single Type 3 Solex, 21.5 / 23 / 24 mm venturis (24 mm used); needs aftermarket linkage · 1960s–', years: [1965, 2026], yl: 'c. 1965?',
-    src: 'Seume p.98: Type 3 Solex (21.5 / 23 / 24 mm) on a Type 1, needs aftermarket linkage',
+  add({ id: 'carb.t3solex', slot: 'carb', label: 'Type 3 Solex (23 mm venturi) on a Type 1', desc: 'Single Type 3 Solex, 21.5 / 23 / 24 mm venturis (23 mm used, typical 1600 Type 3); needs aftermarket linkage · 1960s–', years: [1965, 2026], yl: 'c. 1965?',
+    src: 'Seume p.98: Type 3 Solex (21.5 / 23 / 24 mm) on a Type 1, needs aftermarket linkage. 23 mm venturi and 32 mm throttle are the typical 1600 Type 3 32/34 Solex (ShopTalk / period Type 3 descriptions)',
     attrs: { carbkind: 'single', carbport: 'single-port', ac_il: 4 },
-    warn: 'Type 3 Solex on a Type 1: 24 mm venturi used (21.5 and 23 mm also listed). Aftermarket linkage required',
-    sound: { car: { carb: 'Type 3 Solex 24 mm', th_area_wot: PI4 * 0.030 * 0.030, v_man: 0.0012 } },
-    tm: { up: [['venturi Type 3 Solex 24 mm', 1, 0.024, 1.0, 4, 0]], down: [['runner', 4, 0.028, 1.5, 1, 0, 0.12], ['port', 4, 0.026, 1.2, 1, 0, 0.08]] },
-    prov: { 'tm.venturi': 's: 24 mm as the largest listed (Seume p.98)', th_area_wot: 'e: 30 mm throat assumed', v_man: 'e', 'tm.down': 'e', ac_il: 'e' } });
+    warn: 'Type 3 Solex on a Type 1: 23 mm venturi used (typical 1600 Type 3; 21.5 and 24 mm also listed). Aftermarket linkage required',
+    sound: { car: { carb: 'Type 3 Solex 23 mm', th_area_wot: PI4 * 0.032 * 0.032, v_man: 0.0012 } },
+    tm: { up: [['venturi Type 3 Solex 23 mm', 1, 0.023, 1.0, 4, 0]], down: [['runner', 4, 0.028, 1.5, 1, 0, 0.12], ['port', 4, 0.026, 1.2, 1, 0, 0.08]] },
+    prov: { 'tm.venturi': 'ss: 23 mm typical 1600 Type 3 Solex (Seume p.98 also lists 21.5 and 24 mm)', th_area_wot: 'ss: 32 mm throttle of the typical 1600 Type 3 32/34 Solex', v_man: 'e', 'tm.down': 'e', ac_il: 'e' } });
 
   add({ id: 'carb.buggydeuce', slot: 'carb', label: 'Carter Buggy Deuce carburettor',
     purpose: 'period single carb named in Seume p.97; jetting and venturi are not printed, so the model is unchanged',
@@ -12125,26 +12465,32 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
     attrs: { carbkind: 'single' },
     warn: 'Carter Buggy Deuce: no venturi or cfm in the book — no performance model' });
 
-  add({ id: 'ign.019', slot: 'ignition', label: 'Bosch 019 centrifugal distributor', desc: 'Centrifugal 28–32° all in by 3500; a common mod removes one spring so it is all in by about 2000 · pre-1959 Porsche / Type 2', years: [1950, 1965], yl: 'c. 1955?',
-    src: 'Seume p.119: Bosch 019 distributor (pre-1959 Porsche / Type 2), centrifugal 28–32° in by 3500 rpm; common modification: remove one spring, max ~2000 rpm',
+  add({ id: 'ign.019', slot: 'ignition', label: 'Bosch 019 centrifugal distributor', desc: 'Centrifugal, starts about 1200, about 32° crank (16° at the distributor) all in by 3600; typically timed 28–32° total at all-in · pre-1959 Type 2', years: [1950, 1965], yl: 'c. 1955?',
+    src: 'Seume p.119: Bosch 019, centrifugal 28–32° in by 3500 rpm. sparkingplugs.com (CFI) VW distributor curves: the 019 starts at about 600 rpm at the distributor (1200 crank) and is all in at about 16° at the distributor (32° crank) by about 1800 / 3600 rpm. TheSamba: typically set 28–32° BTDC at 3000–3500 (full advance), not by static timing',
     attrs: { dist: '019', ignadv: 'centrifugal' }, requires: T1DIST,
-    warn: 'Bosch 019: 30° mid of the 28–32° band used; static timing and the start rpm are not printed (0° static and a 1200 rpm start are estimates, as the 031)',
-    sound: { car: { spark0: 0, ign: { cent: [[1200, 0], [3500, 30]], vac: 0 } } },
-    prov: { spark0: 'e: 0° (not printed; same convention as the 031 on p.119)', 'ign.cent': 's: 30° mid of 28–32 all in by 3500 (Seume p.119); start 1200 rpm e', 'ign.vac': 's: none (centrifugal)' } });
+    warn: 'Bosch 019: a common period mod removes one spring so it is all in by about 2000 (Seume p.119); that shorter curve is not this part. Static is ~0° when timed to about 32° total at all-in',
+    sound: { car: { spark0: 0, ign: { cent: [[1200, 0], [3600, 32]], vac: 0 } } },
+    prov: { spark0: 'ss: 0° when timed to full advance 28–32° (TheSamba; CFI curve is all-centrifugal 32° crank)', 'ign.cent': 'ss: start 1200 crank, 32° crank (16° distributor) all in by 3600 (sparkingplugs.com CFI); Seume p.119 28–32° by 3500 agrees', 'ign.vac': 's: none (centrifugal)' } });
 
-  add({ id: 'ign.050', slot: 'ignition', label: 'Bosch 050 centrifugal distributor', desc: 'Centrifugal, faster curve than the 009 (all-in rpm is an estimate) · 1970s–', years: [1972, 2026], yl: 'c. 1972?',
-    src: 'Seume p.119: Bosch 050, no number-3 retard, curve faster than the 009',
+  add({ id: 'ign.050', slot: 'ignition', label: 'Bosch 050 centrifugal distributor', desc: 'Centrifugal, about 26° crank all in by 3100, starts a little earlier than the 009 · 1970s–', years: [1972, 2026], yl: 'c. 1972?',
+    src: 'Seume p.119: Bosch 050, faster curve than the 009, no number-3 retard. type2.com (Andy McKinley, “050 Distributor Reviewed”): smoother than the 009, kicks in about 100 rpm earlier, about 26° at ~3100 rpm (009 about 21° at ~2650 on his comparison). sparkingplugs.com CFI: about 13° at the distributor / 26° at the crank',
     attrs: { dist: '050', ignadv: 'centrifugal' }, requires: T1DIST,
-    warn: 'Bosch 050: Seume only says “faster than the 009”; the 009 numbers with an earlier all-in (2200 vs 2600) are an ESTIMATE',
-    sound: { car: { spark0: 7, ign: { cent: [[900, 5], [2200, 21]], vac: 0 } } },
-    prov: { spark0: 'e: as the 009 (Seume does not print a 050 static)', 'ign.cent': 'e: 009 curve, all in by 2200 instead of 2600 (“faster than 009”, Seume p.119)', 'ign.vac': 's: none (centrifugal)' } });
+    warn: 'Bosch 050: static timing is not printed (6° used so total is 32° at all-in, in the usual VW 28–32° window). Start rpm is taken as about 100 rpm earlier than the 009',
+    sound: { car: { spark0: 6, ign: { cent: [[800, 0], [3100, 26]], vac: 0 } } },
+    prov: { spark0: 'e: 6° so total is 32° at all-in (not printed)', 'ign.cent': 'ss: 26° crank all in by about 3100 (type2.com / CFI); start ~800 e (about 100 rpm earlier than the 009, type2.com)', 'ign.vac': 's: none (centrifugal)' } });
+  add({ id: 'ign.scatmallory', slot: 'ignition', label: 'Scat/Mallory centrifugal-adjustable distributor', desc: 'Centrifugal, adjustable 18–28°, factory set 24° · period', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.121: Scat/Mallory centrifugal-adjustable distributor, 18–28°, factory set 24°. (Not the Mallory Super Mag magneto on p.124.)',
+    attrs: { dist: 'scatmallory', ignadv: 'centrifugal' }, requires: T1DIST,
+    warn: 'Scat/Mallory: 24° treated as centrifugal (factory set). Static and all-in rpm are not printed (8° static and 3000 rpm all-in are estimates, so total is 32° in the usual VW window)',
+    sound: { car: { spark0: 8, ign: { cent: [[1000, 0], [3000, 24]], vac: 0 } } },
+    prov: { spark0: 'e: 8° (not printed; total 32° at all-in)', 'ign.cent': 's: 24° factory set, adjustable 18–28° (Seume p.121); start 1000 and all-in 3000 e', 'ign.vac': 's: none (centrifugal)' } });
 
   add({ id: 'ign.vertex', slot: 'ignition', label: 'Vertex / Scintilla magneto (Joe Hunt / OAC / OXC)', desc: 'Magneto, no battery needed at speed; 38° total advance as a period VW drag setting · 1950s–', years: [1955, 2026], yl: 'c. 1955?',
     src: 'Seume p.124: Vertex / Scintilla OAC (540 V at 10,000, integral coil) and OXC (600 V, external transformer, large cap). Beware cheap industrial/NATO magnetos. Hot Rod Dec 1972 (A Tale of Two Engines): Vittone set a Joe Hunt Vertex at 37–39° maximum advance on a Type 1 drag engine',
     attrs: { dist: 'magneto', ignadv: 'magneto' }, requires: T1DIST,
-    warn: 'Vertex magneto: Seume does not print a curve. 10° static + 28° centrifugal = 38° total (mid of the 37–39° period VW drag setting, Hot Rod Dec 1972) is an ESTIMATE for this catalogue part, not a per-car special. The model’s MBT cap is 32°, so the extra lead is mostly a warning',
+    warn: 'Vertex magneto: Seume p.124 lists the magneto but not a curve. 10° static + 28° centrifugal = 38° total is the mid of the 37–39° period VW drag setting (Hot Rod Dec 1972, Joe Hunt Vertex on a Type 1 drag engine) — not a per-car special. The model’s MBT cap is 32°, so the extra lead is mostly a warning',
     sound: { car: { spark0: 10, ign: { cent: [[1200, 0], [3000, 28]], vac: 0 } } },
-    prov: { spark0: 'e: 10° static (not printed)', 'ign.cent': 'e: 28° all in by 3000, 38° total mid of 37–39° (Hot Rod Dec 1972, Joe Hunt Vertex on a Type 1 drag engine; Seume p.124 product only)', 'ign.vac': 's: none (magneto)' } });
+    prov: { spark0: 'ss: 10° static, implied by 38° total mid of 37–39° (Hot Rod Dec 1972); not printed in Seume', 'ign.cent': 'ss: 28° all in by 3000 e, 38° total mid of 37–39° (Hot Rod Dec 1972, Joe Hunt Vertex on a Type 1 drag engine; Seume p.124 product only)', 'ign.vac': 's: none (magneto)' } });
 
   add({ id: 'ign.mallory', slot: 'ignition', label: 'Mallory Super Mag magneto', desc: 'Magneto, 350–400 V primary, 0.018 in plug gap · period', years: [1960, 2026], yl: 'c. 1960?',
     src: 'Seume p.124: Mallory Super Mag magneto, primary 350–400 V, plug gap 0.018 in (stock 0.025 in)',
@@ -12194,13 +12540,34 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Parts;
   rod311('rod.denzelalum', 'Denzel aluminum connecting rods', 'Period aluminum rods (Denzel) · 1950s–60s', [1954, 1970], 'c. 1954?',
     'Seume p.26: Denzel aluminum con-rods',
     'Denzel aluminum rods: length/journals not reprinted; 311-family fit is an ESTIMATE. Compat only for strength; no power model. Aluminum rods are a reliability risk at high rpm');
+  add({ id: 'rod.chevy327', slot: 'conrod', label: 'Chevrolet 327 connecting rods (modified for VW)', desc: '5.70 in (144.78 mm) centres, 2.00 in / 50.8 mm journals, 22.7 mm big-end width, 585 g · period', years: [1965, 2026], yl: 'c. 1965?',
+    src: 'Seume p.28: Chevrolet 327 con-rod modified for VW, 5.70 in / 144.78 mm, 585 g, 2.00 in / 50.8 mm journal, 22.7 mm width',
+    attrs: { rodj_fit: 'Chevy 50.8 mm' },
+    requires: [{ attr: 'case', in: T1, msg: 'Chevy 327 rods: Type 1 case family' }],
+    warn: 'Chevy 327 rods: 50.8 mm (2.00 in) journals need a matching crank (not the standard VW 55 or Porsche 53 mm)',
+    tm: { rodj: 50.8, rodw: 22.7, rod_l: 0.14478 },
+    prov: { 'tm.rodj': 's: Seume p.28', 'tm.rodw': 's: 22.7 mm', 'tm.rod_l': 's: 144.78 mm', 'attrs.rodj_fit': 's: Seume p.28' } });
+  add({ id: 'rod.chevy400', slot: 'conrod', label: 'Chevrolet 400 connecting rods (modified for VW)', desc: '5.55 in (140.97 mm) centres; journals optionally 55 or 53 mm (55 mm used) · period', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.29: modified Chevrolet 400 con-rod, 5.55 in / 140.97 mm, journals optionally 55 or 53 mm',
+    attrs: { rodj_fit: 'VW 55 mm' },
+    requires: [{ attr: 'case', in: T1, msg: 'Chevy 400 rods: Type 1 case family' }],
+    warn: 'Chevy 400 rods: 55 mm journals used (53 mm Porsche also listed). Longer than a 311 rod (140.97 vs 137 mm)',
+    tm: { rodj: 55, rod_l: 0.14097 },
+    prov: { 'tm.rodj': 's: 55 mm as one of the two printed options (Seume p.29 also lists 53 mm)', 'tm.rod_l': 's: 140.97 mm', 'attrs.rodj_fit': 's: 55 mm option, Seume p.29' } });
+  add({ id: 'rod.capri', slot: 'conrod', label: 'Chevrolet Capri connecting rods (modified for VW)', desc: '5.55 in (140.97 mm) centres, 2.125 in / 54 mm journals · period', years: [1970, 2026], yl: 'c. 1970?',
+    src: 'Seume p.29: Chevrolet Capri con-rod, 5.55 in, 2.125 in / 54 mm journal',
+    attrs: { rodj_fit: 'Chevy 54 mm' },
+    requires: [{ attr: 'case', in: T1, msg: 'Chevy Capri rods: Type 1 case family' }],
+    warn: 'Chevy Capri rods: 54 mm journals need a matching crank (not the standard VW 55 or Porsche 53 mm)',
+    tm: { rodj: 54, rod_l: 0.14097 },
+    prov: { 'tm.rodj': 's: 54 mm, Seume p.29', 'tm.rod_l': 's: 5.55 in / 140.97 mm', 'attrs.rodj_fit': 's: Seume p.29' } });
 
   add({ id: 'lift.roller', slot: 'lifter', label: 'Pauter roller cam followers',
     purpose: 'roller tappets for a roller cam (less side-load and friction, higher spring pressure; Seume p.57); valve lift is unchanged unless a roller-cam grind is selected',
     desc: 'Roller lifters, as sold with a Pauter roller cam · period', years: [1985, 2026], yl: 'c. 1985?',
     src: 'Seume p.57: Pauter roller camshaft and roller lifters; higher spring pressures and extreme profiles with less side-load and friction. Chevrolet roller lifters also mentioned with the Pauter big-block case (p.83)',
     attrs: { lifter: 'roller' },
-    warn: 'Pauter roller lifters: no roller-cam grind is in the book with numbers, so this part does not change the cam profile' });
+    warn: 'Pauter roller lifters: valve lift is unchanged unless a roller-cam grind is selected (Pauter VN025 / VN011 / VN130 on the p.71 chart)' });
 
   add({ id: 'pr.jaycee', slot: 'pushrod', label: 'JayCee tapered chrome-moly pushrods',
     purpose: 'tapered chrome-moly pushrods (reliability at high lift; Seume p.59)',
@@ -17458,7 +17825,7 @@ var ProjectHistory = {
   
   tracks: [
     { title: "Sound models", items: [
-      { v: "v1.13.39", date: "2026-11-28", status: "done", headline: "Beetle parts: more of the Seume interchange-manual catalogue", text: "The Swap parts list now has the named parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual that were still missing after v1.13.31: the rest of the Engle VZ and hydraulic cams, the remaining Scat C grinds and the GBE GB302, the SPG 82 mm roller crank, more GBE / Bugpack / Pauter / CB / Scat / Auto-Craft heads, period carbs (including the dual Solex 40P11 and the Berg and JayCee IDA-pattern bodies), Bosch 019 and 050 distributors, Vertex and Mallory magnetos, the GBE Stinger, and stronger 311-length rods. Where the book does not give a figure the model can use (chamber volume, a venturi, a magneto curve), the part is marked as an estimate, or it is listed with a short purpose note and no performance effect — the same treatment as in v1.13.33. New slots (valve material, cam gears, piston rings, valve covers, an ignition coil or box, a windage tray, a breather) are fitment and reliability only. Stock sounds, the drag strip and the old Mesa Road lap are unchanged." },
+      { v: "v1.13.39", date: "2026-11-28", status: "done", headline: "Beetle parts: more of the Seume interchange-manual catalogue", text: "The Swap parts list now has the named parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual that were still missing after v1.13.31, plus a later same-day pass over the book's two-column cam chart (read from a clean transcription) and manufacturer or period sources for figures the OCR had missed. Valve material is a property of the heads (Manley / Del West), piston rings are a property of the barrels, and flywheel hardware sits on the existing Clutch / flywheel slot so the flywheel is not listed twice. Valve covers and the ignition coil or box stay as slots; covers are flagged no performance effect. Old saves that used the removed categories still load. Where a figure is still estimated it is marked, and parts the engine model does not yet use have a short purpose note. Stock sounds, the drag strip and the old Mesa Road lap are unchanged." },
       { v: "v1.13.33", date: "2026-11-27", status: "done", headline: "Swap parts: purpose notes, config below the list", text: "Parts that do not change power, torque, weight or grip now say so in the Swap parts list, with a short note on what they are for in real life (cooling, oil control, fitment, reliability, dress-up) so they can be modelled later. The build figures and warnings have moved to the bottom of the list, so the part selectors stay visible on a phone and in the car. Stock sounds are unchanged." },
       { v: "v1.13.31", date: "2026-11-26", status: "done", headline: "Beetle parts: book catalogue, compatibility, prices", text: "Parts from Keith Seume's 1996 Aircooled VW Engine Interchange Manual join the catalogue where they already fit a slot and have enough sourced figures to model, with prices in the picker (vendor currency and euros, or plainly 'no price found'). The Okrasa stroker is 69 mm as the book has it; the 69.5 mm crank is the separate EMPI part. The 1996 CB 044 Super Sport / Magnum 44 is listed beside the later CNC Wedge Port. Engle cam lifts are at the cam in the book and at the valve in the game, multiplied by the 1.1 rockers. Connecting rods and rocker arms are new slots that feed the same generic engine model (journal size, rod length, rocker ratio) with no per-car code. A later pass (same release) gives the CB 044 CNC a sourced 65 cc chamber so compression follows bore and stroke, adds the book's clearance and fitment rules, and opens extra slots (oil pump, spacers, flywheel hardware and the rest) where they carry a compatibility or model effect. Stock sounds are unchanged." },
       { v: "v1.13.30", date: "2026-11-26", status: "done", headline: "Beetle parts: turbo lag in the drivetrain, turbo charge physics", text: "Turbo lag is now real: the boost is a state in the game physics that builds with the turbo's spool time (slower at low revs) and limits the torque at the wheels, and the sound follows that same boost. Hot charge air costs less than before (the DIN / SAE temperature law instead of the full 1/T), the header ahead of the turbine counts at its real pressure, and below the boost threshold the engine sees its carburettor vacuum instead of free atmospheric pressure. The Rajay kit now builds its 10 psi by 5400 rpm with no wastegate, as Hot Rod reported in 1971. Under boost the sound no longer pulls the spark back (a vacuum unit cannot retard). New part: the Rajay carb and advance kit for the 34 PICT-3 (richer jets, plugged enrichment bleeds, new throttle lever, recurved distributor), fitted only with the Rajay turbo. Stock sounds are unchanged." },
@@ -18569,6 +18936,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       if (cur.desc) html += '<div class="pdesc">' + esc(cur.desc) + '</div>';   // v1.13.24: the part name is already in the select
       html += '<div class="pprice">' + esc(fmtPrice(cur.price)) + '</div>';   // v1.13.31
       if (cur.purpose) html += '<div class="ppurpose">No performance effect \u2014 purpose: ' + esc(cur.purpose) + '</div>';   // v1.13.33: parts that do not change the dyno / weight / grip
+      (sl.props || []).forEach(function (pr) {   // v1.13.39: valve material, piston rings and flywheel hardware are properties of the parent slot, not their own categories
+        var opts2 = Object.keys(d.parts).filter(function (id) { return d.parts[id].slot === pr.slot && (inEra(d.parts[id]) || partsPending[pr.slot] === id); });
+        var cur2 = d.parts[partsPending[pr.slot]] || {};
+        var name2 = function (p) { return p.oem && lb.sub && lb.sub[pr.slot] ? 'Factory: ' + lb.sub[pr.slot] : p.label; };
+        html += '<label class="prow pprop"><span>' + esc(pr.label) + '</span><select data-slot="' + pr.slot + '">' + opts2.map(function (id) {
+          var yt = yearOf(d.parts[id]);
+          return '<option value="' + id + '"' + (partsPending[pr.slot] === id ? ' selected' : '') + '>' + esc(name2(d.parts[id]) + (yt ? ' (' + yt + ')' : '')) + '</option>';
+        }).join('') + '</select></label>';
+        if (cur2.desc) html += '<div class="pdesc pprop">' + esc(cur2.desc) + '</div>';
+        html += '<div class="pprice pprop">' + esc(fmtPrice(cur2.price)) + '</div>';
+        if (cur2.purpose) html += '<div class="ppurpose pprop">No performance effect \u2014 purpose: ' + esc(cur2.purpose) + '</div>';
+      });
     });
     var r = Parts.check(d, partsPending, { maxYear: maxY }), i = r.info, at = r.attrs || {};
     var tag = (R.caseNames && R.caseNames[at.case] ? R.caseNames[at.case] : '') + (at.volts ? ' · ' + at.volts + ' V' : '');   // v1.13.25 compatibility tags
