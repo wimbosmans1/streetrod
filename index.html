@@ -16846,12 +16846,35 @@ var PaintedVisuals = (function () {
     if (y1 < cv.height) { var h2 = Math.min(cv.height - y1, y1 - y0); band(0, y1 - h2, cv.width, h2, 0, y1, false, true); }
     g.restore();
   }
-  // v1.13.38: chase-view rear-view strip, drawn in canvas / safe-area space so the painting crop cannot hide it.
+  // true when the car's own rear-view glass (interior mirror or a stalk) has a readable patch in the safe area
+  function cabinMirrorVisible(L, car, p) {
+    var m = M[car]; if (!m || !p) return false;
+    var dy0 = 0, minW = 28 * L.px, minH = 18 * L.px, S = L.safe;
+    function vis(x, y, w, h, dy) {
+      var x0 = p.ox + x * p.k, y0 = p.oy + (y + (dy || 0)) * p.k, x1 = x0 + w * p.k, y1 = y0 + h * p.k;
+      return Math.min(x1, S[2]) - Math.max(x0, S[0]) >= minW && Math.min(y1, S[3]) - Math.max(y0, S[1]) >= minH;
+    }
+    if (m.mirror) { var mr = m.mirror; if (vis(mr[0], mr[1], mr[2], mr[3], 0)) return true; }
+    if (m.stalks) { var i, st; for (i = 0; i < m.stalks.length; i++) { st = m.stalks[i]; if (vis(st[0] - st[2], st[1] - st[2], st[2] * 2, st[2] * 2, artDY(car))) return true; } }
+    return false;
+  }
+  // v1.13.38: rear-view strip in canvas / safe-area space, used in the chase view and as a fallback when the cabin glass is off-screen
   function chaseMirrorStrip(g, s, L) {
     if (!canLiveRear(s) || s.garage) return;
     var S = L.safe, u = L.px, cssW = Math.min(300, Math.max(160, (S[2] - S[0]) / u * 0.26)), cssH = L.port ? 48 : 56;
     var w = cssW * u, h = cssH * u, pad = 5 * u, rad = 8 * u;
-    var x = (S[0] + S[2]) / 2 - w / 2, y = S[1] + (L.port ? 82 : 6) * u;   // portrait: sit under the top speed panel
+    var x = (S[0] + S[2]) / 2 - w / 2, y = S[1] + ((L.port && !(s.viewBlend > 0.5)) ? 82 : 6) * u;   // portrait chase sits under the speed panel; interior fallback sits just under the top bar
+    // stay clear of the mini-map if it shares this band
+    var mp = document.getElementById('roadMapBox');
+    if (mp && !mp.classList.contains('hidden') && g.canvas && g.canvas.getBoundingClientRect) {
+      var cr = g.canvas.getBoundingClientRect(), mr = mp.getBoundingClientRect();
+      var mx = (mr.left - cr.left) * u, gap = 8 * u;
+      if (x + w > mx - gap && x < mx + mr.width * u) {
+        var maxR = mx - gap; if (maxR - x >= 120 * u) w = maxR - x;
+        else x = Math.max(S[0] + 8 * u, Math.min(x, maxR - w));
+        if (x + w > maxR) w = Math.max(120 * u, maxR - x);
+      }
+    }
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
     g.fillStyle = STY === 'ink' ? 'rgba(18,14,10,0.88)' : 'rgba(12,12,14,0.82)';
     rr(g, x - pad, y - pad, w + pad * 2, h + pad * 2, rad + 3); g.fill();
@@ -16913,6 +16936,7 @@ var PaintedVisuals = (function () {
       else paint(g, p, drawInside, s);
     }
     if (b < 0.5) chaseMirrorStrip(g, s, L);
+    else if (canLiveRear(s) && !cabinMirrorVisible(L, car, LF.in)) chaseMirrorStrip(g, s, L);
     themedHud(g, s, L, b, b > 0.5);
   }
   function draw(dash, s) {
@@ -17091,7 +17115,7 @@ var ProjectHistory = {
       { v: "v1.9", date: "2026-11-11", status: "done", headline: "The 1953 BRM P30 Mk II V16 joins the garage", text: "The 1953 BRM P30 Mk II V16 joins the GT350 and the Cadillac. Photo-derived British Racing Green art in Visuals v4 (flat) and v5 (ink); v1, v2 and v3 fall back to the flat cockpit (there is no drawn or 3D BRM). A period 5-speed lever, stalk rear-view mirrors and Smiths / ribbon-tach sweeps sit in the cockpit; the chase view shows the P30 Mk II’s two banks of short exhaust stubs. The sound is a real-time port of the BRM v8 model (additive half-orders plus supercharger whine at 8.30× crank), in the AudioWorklet and the ScriptProcessor fallback, including on older iPads. The GT350 and Cadillac are unchanged." },
     ] },
     { title: "Driving and controls", items: [
-      { v: "v1.13.38", date: "2026-11-28", status: "done", headline: "Stage map, coloured VW Beetle rivals, a live rear-view mirror, and a higher interior HUD", text: "The mini-map now shows the whole Mesa Run, with you as a heading marker, each rival in its own colour, and the checkpoints and finish marked. A short position list sits under the tile (tap the map, or press M, to enlarge it). The map is also on in phone portrait, in the top-right corner beside the dash, and stays out of the road view. The three rivals are VW Beetles in red, yellow and blue (or a spare colour if that would match your paint) — a generic course key, not per-car code. Their pace is unchanged: 0.90, 0.95 and 0.99 of your car’s profile. The interior rear-view glass (and the BRM’s stalk glasses) now shows a live view of the road behind, with rivals and traffic, flipped left-to-right like a real mirror; the chase view has a small mirror strip at the top of the frame. In the interior view the race HUD sits in the visor / sky band at the top, clear of the dashboard and the road. Traffic cars, the drag strip, the old lap and every sound are unchanged." },
+      { v: "v1.13.38", date: "2026-11-28", status: "done", headline: "Stage map, coloured VW Beetle rivals, a live rear-view mirror, and a higher interior HUD", text: "The mini-map now shows the whole Mesa Run, with you as a heading marker, each rival in its own colour, and the checkpoints and finish marked. A short position list sits under the tile (tap the map, or press M, to enlarge it). The map is also on in phone portrait, in the top-right corner beside the dash, and stays out of the road view. The three rivals are VW Beetles in red, yellow and blue (or a spare colour if that would match your paint) — a generic course key, not per-car code. Their pace is unchanged: 0.90, 0.95 and 0.99 of your car’s profile. The interior rear-view glass (and the BRM’s stalk glasses) now shows a live view of the road behind, with rivals and traffic, flipped left-to-right like a real mirror; the chase view has a small mirror strip at the top of the frame, and that same strip is used in the interior view when the cabin glass cannot fit (a short phone landscape, where the glass would sit behind the top bar). The map stays clear of the on-screen pedals and the gear buttons. In the interior view the race HUD sits in the visor / sky band at the top, clear of the dashboard and the road. Traffic cars, the drag strip, the old lap and every sound are unchanged." },
       { v: "v1.13.37", date: "2026-11-28", status: "done", headline: "Stage course: traction control and ABS that work, a brake cue, a cleaner HUD", text: "The stage is drivable with GAS and BRAKE held fully down. A real traction control limits the drive torque to what the tyres can take, also while cornering, so the BRM, GT350 and Cadillac no longer sit in wheelspin; ABS holds the wheels just under lock-up. Two small lamps (TC, ABS) show when they work, tap them or press T to switch the aids off. A small BRAKE banner turns amber, then red, when you must brake for the bend ahead (from the road, your speed and the car's brakes). The box in the top left is gone: one slim translucent line shows time left, speed, gear, position and checkpoint; the small map moved to the top right. Drag strip, cruising, the old lap and every sound are unchanged." },
       { v: "v1.13.36", date: "2026-11-27", status: "done", headline: "Stage course: new drive controls, grip when you power out and brake in", text: "The road course is meant to be fun now. Touch: a big steering pad bottom left (hold the left or right half for full lock, slide toward the middle for less) and big GAS and BRAKE buttons bottom right, so one thumb steers while the other drives; gears shift themselves (AUTO; tap it for manual). Keyboard: arrows or WASD, the left and right arrows now steer on the course. Full throttle out of a bend and braking into one no longer light up or lock the tyres: on the stage the tyres keep most of their grip for driving and braking while cornering, a traction aid trims wheelspin and power past the cornering limit, and the brakes do not lock. Drag strip, cruising, the old lap and every sound are unchanged." },
       { v: "v1.13.35", date: "2026-11-27", status: "done", headline: "Stage course: Lotus 2-style handling on the real engine", text: "On the Mesa Run stage the car now handles like Lotus Turbo Challenge 2: it stays pointed down the road, steering moves it across the road at a rate that grows with speed, and bends carry it to the outside harder the faster you go. Hold the steering into the bend to keep your line; too fast and you are carried wide and lose speed, but you never spin. Lifting off pulls you in. The verge slows you down. Better tyres corner faster. Hits still bounce you and cost speed, with a short wobble and no spins. Engine, gearbox, drag and hills are the real model as before. The old flat lap (?course=mesa), drag strip and every sound are unchanged." },
@@ -18768,25 +18792,39 @@ if (typeof module !== 'undefined' && module.exports) module.exports = EngineSpec
       var showList = !!(list && (big || (deckHere && !port) || cr.height >= 700));
       if (list) list.classList.toggle('hidden', !showList);
       var lh = showList ? (list.offsetHeight || (big ? 72 : 52)) : 0;
-      var boxW = mps, topY = Math.round(cr.top - st.top + (port && big ? 50 : (inside && !big ? 72 : 8))), leftM = Math.round(cr.right - st.left - boxW - 8);
-      if (big && !deckHere && tb.bottom > cr.top && tb.bottom < cr.top + cr.height * 0.4) topY = Math.max(topY, Math.round(tb.bottom - st.top + 4));   // sit under the top bar when the enlarged tile moves left into it
-      // ceiling / side: never cover on-scene pedals. When enlarged on a layout with controls on the canvas
-      // (phone landscape, desktop), sit in the sky to the left of GAS / AUTO so the tile can be taller and the list fits.
-      var ceil = cr.bottom - st.top - 6;
+      // Interior: drop the small tile under the visor / mirror only when the top-right is free (deck below the
+      // scene, or portrait). On a short landscape with GAS / AUTO on the canvas, that drop put the tile on the buttons.
+      var drop = !!(inside && !big && (deckHere || port));
+      var boxW = mps, topY = Math.round(cr.top - st.top + (port && big ? 50 : (drop ? 72 : 8))), leftM = Math.round(cr.right - st.left - boxW - 8);
+      // ceiling / side: never cover on-scene pedals or the gear chip (phone landscape, desktop).
+      var ceil = cr.bottom - st.top - 6, rightWall = cr.right - st.left - 8, ctrls = [];
       if (!deckHere) {
-        if (big) {
-          var rightWall = cr.right - st.left - 8;
-          ['rpGas', 'rpBrake', 'rcGear'].forEach(function (id) { var e = document.getElementById(id); if (!e) return; var r = e.getBoundingClientRect(); if (r.width && r.left < cr.right) rightWall = Math.min(rightWall, r.left - st.left - 8); });
-          if (rightWall - boxW < 8) boxW = Math.max(120, rightWall - 8);
-          leftM = Math.round(rightWall - boxW);
-          ceil = Math.min(ceil, cr.top - st.top + Math.round(cr.height * 0.52));   // stay in the sky, above the car / dash
-        } else {
-          ['rpGas', 'rpBrake', 'rcGear', 'steerPad'].forEach(function (id) { var e = document.getElementById(id); if (!e) return; var r = e.getBoundingClientRect(); if (r.width && r.top > cr.top) ceil = Math.min(ceil, r.top - st.top - 8); });
-        }
+        ['rpGas', 'rpBrake', 'rcGear', 'steerPad'].forEach(function (id) {
+          var e = document.getElementById(id); if (!e) return; var r = e.getBoundingClientRect();
+          if (!r.width) return; ctrls.push(r);
+          if (r.top > cr.top) ceil = Math.min(ceil, r.top - st.top - 8);
+        });
+        if (big) ceil = Math.min(ceil, cr.top - st.top + Math.round(cr.height * 0.52));   // stay in the sky, above the car / dash
       }
-      var boxH = Math.min(mps + lh, Math.max(64, ceil - topY));
-      if (boxH < mps + (showList ? 24 : 0) && showList && !big) { showList = false; if (list) list.classList.add('hidden'); lh = 0; boxH = Math.min(mps, Math.max(64, ceil - topY)); }
-      var svgH = Math.max(56, boxH - lh);
+      // if the tile would sit on a control, move it left of that control (and shrink if needed)
+      ctrls.forEach(function (r) {
+        var rt = r.top - st.top, rb = r.bottom - st.top, rl = r.left - st.left;
+        if (rb > topY - 4 && rt < topY + mps + 80 && rl < cr.right - st.left && r.left < cr.right)
+          rightWall = Math.min(rightWall, rl - 8);
+      });
+      if (leftM + boxW > rightWall) {
+        if (rightWall - boxW < 8) boxW = Math.max(big ? 120 : 72, rightWall - 8);
+        leftM = Math.round(rightWall - boxW);
+      }
+      // sit under the top bar when the tile has moved left into it (enlarged, or the small tile on a short landscape)
+      if (!deckHere && tb.bottom > cr.top && tb.bottom < cr.top + cr.height * 0.5
+          && leftM < tb.right - st.left && leftM + boxW > tb.left - st.left)
+        topY = Math.max(topY, Math.round(tb.bottom - st.top + 4));
+      var room = Math.max(0, ceil - topY);
+      var boxH = Math.min(mps + lh, room);
+      if (boxH < mps + (showList ? 24 : 0) && showList && !big) { showList = false; if (list) list.classList.add('hidden'); lh = 0; boxH = Math.min(mps, room); }
+      if (boxH < 48 && room >= 48) boxH = 48;
+      var svgH = Math.max(40, boxH - lh);
       mp.style.left = leftM + 'px'; mp.style.top = topY + 'px'; mp.style.width = boxW + 'px'; mp.style.height = boxH + 'px';
       var svg = document.getElementById('roadMap'); if (svg) { svg.style.width = boxW + 'px'; svg.style.height = svgH + 'px'; }
       mp.classList.remove('hidden'); mp.setAttribute('aria-hidden', 'false');
